@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const msgDiv = document.getElementById("msg");
   let items = {};
 
-  fetch("https://script.google.com/macros/s/AKfycbwqjsnV0H9NlrtmIdx4iKe-M6uK4XFdfEX0oRhshnhGeQRc0ud4iJNUFWt26z7Gch2H/exec")
+  fetch("https://script.google.com/macros/s/AKfycby9sbIHW--2qnby33Rl4n25IO989a66UN8KR1RpvpKxOxrYyOkNOaPn_yKOo-teCh2Z/exec")
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formData = new FormData(this);
 
-    fetch("https://script.google.com/macros/s/AKfycbxtDxY8VpFlbc1jN1RZzCJayplVIJTGqe13IQlejp5o5L7y3cokbwoFihNIKvDQBlM0/exec", {
+    fetch("https://script.google.com/macros/s/AKfycby9sbIHW--2qnby33Rl4n25IO989a66UN8KR1RpvpKxOxrYyOkNOaPn_yKOo-teCh2Z/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
