@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let items = {};
 
   // 1) 물품 리스트 관리 시트에서 선택지 가져오기
-  fetch("https://script.google.com/macros/s/AKfycby9sbIHW--2qnby33Rl4n25IO989a66UN8KR1RpvpKxOxrYyOkNOaPn_yKOo-teCh2Z/exec")  // → 여기 YOUR_DEPLOYED_SCRIPT_ID 변경
+  fetch("https://script.google.com/macros/s/AKfycbzz2soCh2aH82mwI0keEGiqK1BVv4T77LdhutC3bXA4bk3wGKb5fNqdLjS7vix1Pg6i/exec")  // → 여기 YOUR_DEPLOYED_SCRIPT_ID 변경
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formData = new FormData(this);
     // POST 전송 (URL은 doPost 함수가 배포된 URL)
-    fetch("https://script.google.com/macros/s/AKfycby9sbIHW--2qnby33Rl4n25IO989a66UN8KR1RpvpKxOxrYyOkNOaPn_yKOo-teCh2Z/exec", {  // → 여기도 변경
+    fetch("https://script.google.com/macros/s/AKfycbzz2soCh2aH82mwI0keEGiqK1BVv4T77LdhutC3bXA4bk3wGKb5fNqdLjS7vix1Pg6i/exec", {  // → 여기도 변경
       method: "POST",
       body: new URLSearchParams(formData)
     })
