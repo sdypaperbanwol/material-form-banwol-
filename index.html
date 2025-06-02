@@ -4,26 +4,37 @@
   <meta charset="UTF-8" />
   <title>자재창고 물품 관리(반월)</title>
   <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
+    }
+
     form {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-width: 320px;
+      width: 90%;
+      max-width: 600px;
       margin: 20px auto;
-      font-family: Arial, sans-serif;
     }
+
     label {
       font-weight: bold;
     }
+
     select, input {
       padding: 6px 8px;
       font-size: 14px;
     }
+
     button {
       padding: 10px;
       font-size: 16px;
       cursor: pointer;
     }
+
     .message {
       margin-top: 10px;
       font-weight: bold;
@@ -68,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let items = {};
 
   // 1) 물품 리스트 관리 시트에서 선택지 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbwqjsnV0H9NlrtmIdx4iKe-M6uK4XFdfEX0oRhshnhGeQRc0ud4iJNUFWt26z7Gch2H/exec")  // → 여기 YOUR_DEPLOYED_SCRIPT_ID 변경
+  fetch("https://script.google.com/macros/s/AKfycbwqjsnV0H9NlrtmIdx4iKe-M6uK4XFdfEX0oRhshnhGeQRc0ud4iJNUFWt26z7Gch2H/exec")
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -110,8 +121,8 @@ document.addEventListener("DOMContentLoaded", function () {
     msgDiv.style.color = "green";
 
     const formData = new FormData(this);
-    // POST 전송 (URL은 doPost 함수가 배포된 URL)
-    fetch("https://script.google.com/macros/s/AKfycbwqjsnV0H9NlrtmIdx4iKe-M6uK4XFdfEX0oRhshnhGeQRc0ud4iJNUFWt26z7Gch2H/exec", {  // → 여기도 변경
+
+    fetch("https://script.google.com/macros/s/AKfycbwqjsnV0H9NlrtmIdx4iKe-M6uK4XFdfEX0oRhshnhGeQRc0ud4iJNUFWt26z7Gch2H/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
