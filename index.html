@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let items = {};
 
   // 물품 리스트 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbyDmBEil3e79qnkiUcRlQFm4pTtJwz0A3_GfdhKLLRy1qxDNC5C58FqBFkLQQlafP83/exec")
+  fetch("https://script.google.com/macros/s/AKfycbzlTweFAlrAH289K0hhAnIdNaw87HD3p5jshr1b7gxn2a3-sFpsqQTD8gy0q8ZTSgIr/exec")
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
     msgDiv.style.color = "green";
 
     const formData = new FormData(this);
-    fetch("https://script.google.com/macros/s/AKfycbyDmBEil3e79qnkiUcRlQFm4pTtJwz0A3_GfdhKLLRy1qxDNC5C58FqBFkLQQlafP83/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbzlTweFAlrAH289K0hhAnIdNaw87HD3p5jshr1b7gxn2a3-sFpsqQTD8gy0q8ZTSgIr/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
