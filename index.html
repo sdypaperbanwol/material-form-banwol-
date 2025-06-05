@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>현장 요청사항(반월)</title>
+  <title>자재창고 물품 관리(반월)</title>
   <style>
     form {
       display: flex;
@@ -34,27 +34,25 @@
 <body>
 
   <form id="materialForm">
-    <label for="category">대분류</label>
+    <label for="category">물품 종류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="subcategory">중분류</label>
+    <label for="subcategory">세부 종류</label>
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <div id="sizeWrapper">
-      <label for="size">소분류</label>
-      <select id="size" name="size" required>
-        <option value="">-- 선택하세요 --</option>
-      </select>
-    </div>
+    <label for="size">사이즈</label>
+    <select id="size" name="size" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
     <label for="name">이름</label>
     <input type="text" id="name" name="name" placeholder="이름을 입력하세요" required />
 
-    <label for="quantity" id="quantityLabel">수량</label>
+    <label for="quantity">수량</label>
     <input type="number" id="quantity" name="quantity" placeholder="수량을 입력하세요" min="1" required />
 
     <button type="submit">저장</button>
@@ -65,27 +63,19 @@
 document.addEventListener("DOMContentLoaded", function () {
   const categorySelect = document.getElementById("category");
   const subSelect = document.getElementById("subcategory");
-  const sizeWrapper = document.getElementById("sizeWrapper");
   const sizeSelect = document.getElementById("size");
-  const quantityInput = document.getElementById("quantity");
-  const quantityLabel = document.getElementById("quantityLabel");
   const msgDiv = document.getElementById("msg");
   let items = {};
 
-  // Google Apps Script 웹 앱 URL (doGet) - JSON 데이터 불러오기
-  const apiUrl = "https://script.google.com/macros/s/AKfycbxHEAhq0bfT-AN_fwIwROdl8zNDRfa7jxJJyOey7XybBebFaxF0iP__xEKF0BgYMr1G/exec";
-
-  fetch(apiUrl)
-    .then(res => {
-      if (!res.ok) throw new Error("네트워크 오류");
-      return res.json();
-    })
+  // 1) 물품 리스트 가져오기
+  fetch("https://script.google.com/macros/s/AKfycbwtgGSJpoZ5qpzn_JbKgKnZHOjzAW63b_wYOB_d8krKu0UM_WpsPaJBWx0nPN3UyRkY/exec")  // ← 배포된 스크립트 주소로 교체
+    .then(res => res.json())
     .then(data => {
       items = data;
       populateCategory();
     })
     .catch(err => {
-      console.error("fetch error:", err);
+      console.error("데이터 로드 실패", err);
       msgDiv.textContent = "물품 데이터 로드 실패!";
       msgDiv.style.color = "red";
     });
@@ -97,54 +87,28 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // 대분류 선택 이벤트
+  // 대분류 → 세부종류
   categorySelect.addEventListener("change", () => {
     const category = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeWrapper.style.display = "block";
 
-    if (category === "기타 요청사항") {
-      // 기타 요청사항은 소분류 숨김, 수량 텍스트로 변경
-      sizeWrapper.style.display = "none";
-
-      quantityLabel.textContent = "요청사항을 입력해주세요";
-      quantityInput.type = "text";
-      quantityInput.placeholder = "요청사항을 입력하세요";
-      quantityInput.required = true;
-      quantityInput.value = "";
-
-      if (items[category]) {
-        items[category].types.forEach(type => {
-          subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-        });
-      }
-    } else {
-      sizeWrapper.style.display = "block";
-
-      quantityLabel.textContent = "수량";
-      quantityInput.type = "number";
-      quantityInput.placeholder = "수량을 입력하세요";
-      quantityInput.min = "1";
-      quantityInput.required = true;
-      quantityInput.value = "";
-
-      if (items[category]) {
-        items[category].types.forEach(type => {
-          subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-        });
-      }
+    if (items[category]) {
+      items[category].types.forEach(type => {
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+      });
     }
   });
 
-  // 중분류 선택 시 소분류 옵션 업데이트
+  // 세부종류 → 사이즈(재고 표시)
   subSelect.addEventListener("change", () => {
     const category = categorySelect.value;
     const selectedType = subSelect.value;
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
 
-    if (category !== "기타 요청사항" && items[category]) {
+    if (items[category]) {
       const stockMap = items[category].stockMap;
+
       Object.entries(stockMap).forEach(([key, stock]) => {
         const [type, size] = key.split("__");
         if (type === selectedType) {
@@ -155,14 +119,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // 폼 제출 이벤트
+  // 2) 폼 제출
   document.getElementById("materialForm").addEventListener("submit", function(e) {
     e.preventDefault();
     msgDiv.textContent = "";
     msgDiv.style.color = "green";
 
     const formData = new FormData(this);
-    fetch(apiUrl, {
+    fetch("https://script.google.com/macros/s/AKfycbwtgGSJpoZ5qpzn_JbKgKnZHOjzAW63b_wYOB_d8krKu0UM_WpsPaJBWx0nPN3UyRkY/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
@@ -173,10 +137,6 @@ document.addEventListener("DOMContentLoaded", function () {
         this.reset();
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        sizeWrapper.style.display = "block";
-        quantityLabel.textContent = "수량";
-        quantityInput.type = "number";
-        quantityInput.placeholder = "수량을 입력하세요";
       } else {
         throw new Error("서버 오류");
       }
