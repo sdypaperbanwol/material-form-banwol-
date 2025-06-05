@@ -74,6 +74,7 @@
     <div class="message" id="msg"></div>
   </form>
 
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const categorySelect = document.getElementById("category");
@@ -83,10 +84,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let items = {};
 
-  // **중요!** 여기에 구글 앱스크립트 웹앱 URL 넣기 (배포된 URL)
-  const webAppURL = "https://script.google.com/macros/s/AKfycbzE4p5Y12ncCE4GK8To9OHHPGMM-4-UKp_AzU3pMrkn03MNo13tenrcfXc97N842Vbg/exec";
-
-  fetch(webAppURL)
+  // 1) 물품 리스트 가져오기
+  fetch("https://script.google.com/macros/s/AKfycbxwohoXlCWRzpDuQAZ8S4DHhoVCFTm8QEhvUm8XgE1uI40j-tsuBaiAIZy_E4GKXxsj/exec")  // ← 실제 배포된 앱스크립트 URL로 교체하세요
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -105,6 +104,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // 대분류 → 세부종류
   categorySelect.addEventListener("change", () => {
     const category = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
@@ -119,6 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // 세부종류 → 사이즈(재고 표시 & 경고 메시지)
   subSelect.addEventListener("change", () => {
     const category = categorySelect.value;
     const selectedType = subSelect.value;
@@ -139,6 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // 재고 없을 때 경고 메시지 표시 (사이즈 선택 후)
   sizeSelect.addEventListener("change", () => {
     const selectedOption = sizeSelect.selectedOptions[0];
     const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
@@ -152,14 +154,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // 2) 폼 제출
   document.getElementById("materialForm").addEventListener("submit", function(e) {
     e.preventDefault();
 
+    const sizeSelect = document.getElementById("size");
     const selectedOption = sizeSelect.selectedOptions[0];
     const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
+
     const remarksInput = document.getElementById("remarks");
     let remarksText = remarksInput.value.trim();
 
+    // 재고 0이면 '구매 요청' 문구 자동 추가
     if(currentStock === 0){
       if(remarksText.length > 0){
         remarksText += " / 구매 요청";
@@ -171,7 +177,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formData = new FormData(this);
 
-    fetch(webAppURL, {
+    fetch("https://script.google.com/macros/s/AKfycbxwohoXlCWRzpDuQAZ8S4DHhoVCFTm8QEhvUm8XgE1uI40j-tsuBaiAIZy_E4GKXxsj/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
@@ -181,19 +187,19 @@ document.addEventListener("DOMContentLoaded", function () {
         msgDiv.textContent = "신청이 저장되었습니다!";
         msgDiv.style.color = "green";
         this.reset();
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       } else {
-        msgDiv.textContent = "저장 중 오류가 발생했습니다.";
-        msgDiv.style.color = "red";
+        throw new Error("서버 오류");
       }
     })
     .catch(err => {
-      console.error(err);
-      msgDiv.textContent = "서버 통신 실패.";
+      msgDiv.textContent = "저장 중 오류가 발생했습니다.";
       msgDiv.style.color = "red";
+      console.error(err);
     });
   });
+
 });
 </script>
 
