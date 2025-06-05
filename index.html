@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>자재창고 물품 관리(반월)</title>
+  <title>자재창고 물품 관리(시화)</title>
   <style>
     form {
       display: flex;
@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let items = {};
 
   // 1) 물품 리스트 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbwtgGSJpoZ5qpzn_JbKgKnZHOjzAW63b_wYOB_d8krKu0UM_WpsPaJBWx0nPN3UyRkY/exec")  // ← 배포된 스크립트 주소로 교체
+  fetch("https://script.google.com/macros/s/AKfycbzLwpAIH3C0m48IwEj7SudspbPnhy4ln_6YgEOkIkHhkZLYlxtBeA6KWMRoBDGE1iky/exec")  // ← 배포된 스크립트 주소로 교체
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function () {
     msgDiv.style.color = "green";
 
     const formData = new FormData(this);
-    fetch("https://script.google.com/macros/s/AKfycbwtgGSJpoZ5qpzn_JbKgKnZHOjzAW63b_wYOB_d8krKu0UM_WpsPaJBWx0nPN3UyRkY/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbzLwpAIH3C0m48IwEj7SudspbPnhy4ln_6YgEOkIkHhkZLYlxtBeA6KWMRoBDGE1iky/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
