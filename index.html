@@ -205,3 +205,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </body>
 </html>
+<script>
+  function submitRequest() {
+    const data = {
+      name: "홍길동",
+      category: "안전용품",
+      subcategory: "안전화",
+      size: "270",
+      quantity: "2",
+      remarks: "빠른 처리 부탁"
+    };
+
+    fetch("https://script.google.com/macros/s/AKfycbzTcAKc361PVzIeNoJYfTyrMmbfpjDuw6CbUMIcKmPj7K3ipZH81KiDUGY18qxnvL7C/exec", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams(data)
+    })
+    .then(response => response.json())
+    .then(json => {
+      console.log("성공:", json);
+    })
+    .catch(error => {
+      console.error("에러:", error);
+    });
+  }
+</script>
+
+<button onclick="submitRequest()">물품 요청 보내기</button>
