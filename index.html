@@ -64,12 +64,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const categorySelect = document.getElementById("category");
   const subSelect = document.getElementById("subcategory");
   const sizeSelect = document.getElementById("size");
+  const quantityField = document.getElementById("quantity");
   const msgDiv = document.getElementById("msg");
-  const quantityInput = document.getElementById("quantity");
   let items = {};
 
-  // 1) 물품 리스트 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbwn3BTxJHCi3NUVujAuWFOy6W9oqZNjSno_kl-OSstSF7NlUjcTzr8WIZLXZqm-UFxx/exec") // ← 실제 주소로 교체
+  // 물품 리스트 가져오기
+  fetch("https://script.google.com/macros/s/AKfycbxZr49m3lDghTqCRgbB1Ae-aVdNaCzgr32cI-VLkMAZGJqe5sESitL9PFiLt-sHlIP2/exec")
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -88,31 +88,30 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // 대분류 변경 시 세부종류, 사이즈 초기화 + 수량 타입 조정
   categorySelect.addEventListener("change", () => {
     const category = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-
-    // 👉 기타물품이면 수량을 자유 입력(text)
-    if (category === "기타물품") {
-      quantityInput.type = "text";
-      quantityInput.placeholder = "요청사항 등 자유 입력";
-      quantityInput.removeAttribute("min");
-    } else {
-      quantityInput.type = "number";
-      quantityInput.placeholder = "수량을 입력하세요";
-      quantityInput.setAttribute("min", "1");
-    }
 
     if (items[category]) {
       items[category].types.forEach(type => {
         subSelect.innerHTML += `<option value="${type}">${type}</option>`;
       });
     }
+
+    // 👉 여기서 수량 필드 타입을 동적으로 변경
+    quantityField.value = "";
+    if (category === "기타물품") {
+      quantityField.type = "text";
+      quantityField.placeholder = "요청 내용을 입력하세요";
+      quantityField.removeAttribute("min");
+    } else {
+      quantityField.type = "number";
+      quantityField.placeholder = "수량을 입력하세요";
+      quantityField.setAttribute("min", "1");
+    }
   });
 
-  // 세부 종류 선택 시 사이즈 표시
   subSelect.addEventListener("change", () => {
     const category = categorySelect.value;
     const selectedType = subSelect.value;
@@ -131,14 +130,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // 2) 폼 제출
+  // 폼 제출
   document.getElementById("materialForm").addEventListener("submit", function(e) {
     e.preventDefault();
     msgDiv.textContent = "";
     msgDiv.style.color = "green";
 
     const formData = new FormData(this);
-    fetch("https://script.google.com/macros/s/AKfycbwn3BTxJHCi3NUVujAuWFOy6W9oqZNjSno_kl-OSstSF7NlUjcTzr8WIZLXZqm-UFxx/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbxZr49m3lDghTqCRgbB1Ae-aVdNaCzgr32cI-VLkMAZGJqe5sESitL9PFiLt-sHlIP2/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
@@ -159,7 +158,6 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error(err);
     });
   });
-
 });
 </script>
 
