@@ -1,4 +1,4 @@
-<!-- HTML 파일 (index.html + Google 로그인 포함) -->
+<!-- HTML 파일 (GitHub Pages용) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -20,6 +20,7 @@
   <div id="login-box">
     <div id="g_id_onload"
          data-client_id="YOUR_CLIENT_ID.apps.googleusercontent.com"
+         data-login_uri="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"
          data-callback="handleCredentialResponse">
     </div>
     <div class="g_id_signin" data-type="standard"></div>
@@ -52,7 +53,7 @@
 let userEmail = "";
 function handleCredentialResponse(response) {
   const token = response.credential;
-  fetch("https://script.google.com/macros/s/AKfycby8CRkiXkoz810oeabpivplBSpU28kuQsFRjtHt-y0wSF5c4Ccq1pcT-3jwDE__mHhD/exec", {
+  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token })
@@ -132,7 +133,7 @@ document.getElementById("materialForm").addEventListener("submit", function(e) {
     remarksInput.value += (remarksInput.value ? " / " : "") + "구매 요청";
   }
   formData.append("email", userEmail);
-  fetch("https://script.google.com/macros/s/AKfycby8CRkiXkoz810oeabpivplBSpU28kuQsFRjtHt-y0wSF5c4Ccq1pcT-3jwDE__mHhD/exec", {
+  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
     method: "POST",
     body: new URLSearchParams(formData)
   })
