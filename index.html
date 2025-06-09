@@ -53,7 +53,7 @@
 let userEmail = "";
 function handleCredentialResponse(response) {
   const token = response.credential;
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbxG80T2GYLXADjDEIHCIdZhFpvHuElUJGBeLD16n71YVbwUtJ1U4oEyKmFP-qLEahj-/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token })
@@ -79,7 +79,7 @@ const msgDiv = document.getElementById("msg");
 let items = {};
 
 function loadItems() {
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec")
+  fetch("https://script.google.com/macros/s/AKfycbxG80T2GYLXADjDEIHCIdZhFpvHuElUJGBeLD16n71YVbwUtJ1U4oEyKmFP-qLEahj-/exec")
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -133,7 +133,7 @@ document.getElementById("materialForm").addEventListener("submit", function(e) {
     remarksInput.value += (remarksInput.value ? " / " : "") + "구매 요청";
   }
   formData.append("email", userEmail);
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbxG80T2GYLXADjDEIHCIdZhFpvHuElUJGBeLD16n71YVbwUtJ1U4oEyKmFP-qLEahj-/exec", {
     method: "POST",
     body: new URLSearchParams(formData)
   })
