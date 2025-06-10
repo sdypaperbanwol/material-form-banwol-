@@ -233,7 +233,7 @@ if (requestedQty > currentStock) {
     quantityInput.value = currentStock;
   } else {
     alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-    quantityInput.value = 0; // ✅ 여기서 0을 허용
+    quantityInput.value = 1; // ✅ 여기서 0을 허용
   }
 
   remarksInput.value = remarksText.length > 0
