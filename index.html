@@ -220,22 +220,30 @@ document.addEventListener("DOMContentLoaded", function () {
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
 
-    const stock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-    const quantity = parseInt(quantityInput.value || "0", 10);
-    let remarksText = remarksInput.value.trim();
+    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+const requestedQty = parseInt(quantityInput.value, 10);
+const remarksInput = document.getElementById("remarks");
+let remarksText = remarksInput.value.trim();
 
-    if (quantity > stock) {
-      const 부족 = quantity - stock;
-      const reqText = `${부족}개 구매 요청`;
+if (requestedQty > currentStock) {
+  const diff = requestedQty - currentStock;
 
-      if (!remarksText.includes(reqText)) {
-        remarksText = remarksText ? `${remarksText} / ${reqText}` : reqText;
-      }
-      remarksInput.value = remarksText;
+  if (currentStock > 0) {
+    alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+    quantityInput.value = currentStock; // 자동으로 수량 수정
+  } else {
+    alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+    quantityInput.value = 0;
+  }
 
-      alert(`⚠️ 재고(${stock})보다 많이 신청하셨습니다.\n${reqText}으로 접수됩니다.`);
-      return;
-    }
+  if (remarksText.length > 0) {
+    remarksText += ` / ${diff}개 구매 요청`;
+  } else {
+    remarksText = `${diff}개 구매 요청`;
+  }
+  remarksInput.value = remarksText;
+}
+
 
     const formData = new URLSearchParams({
       category: categorySelect.value,
