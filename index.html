@@ -3,51 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>자재창고 물품 관리(반월)</title>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <title>자재 신청</title>
   <style>
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-width: 320px;
-      margin: 20px auto;
-      font-family: Arial, sans-serif;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+    form { display: flex; flex-direction: column; gap: 12px; }
     label { font-weight: bold; }
-    select, input, textarea {
-      padding: 6px 8px;
-      font-size: 14px;
-      font-family: Arial, sans-serif;
+    select, input, textarea, button {
+      padding: 8px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc;
     }
-    textarea { resize: vertical; min-height: 60px; }
-    button {
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .message {
-      margin-top: 10px;
-      font-weight: bold;
-      color: green;
-    }
-    #login-box { text-align: center; margin-bottom: 20px; }
+    button { background-color: #4CAF50; color: white; font-weight: bold; cursor: pointer; }
+    .message { margin-top: 10px; font-weight: bold; color: green; }
   </style>
 </head>
 <body>
 
-  <!-- ✅ Google 로그인 박스 -->
-  <div id="login-box">
-    <div id="g_id_onload"
-      data-client_id="218331500412-955g18hign0vbat5ps36nb84vo10n43v.apps.googleusercontent.com"
-      data-callback="handleCredentialResponse"
-      data-auto_prompt="true">
-    </div>
-    <div class="g_id_signin" data-type="standard"></div>
-  </div>
+  <h2>자재 신청 폼</h2>
 
-  <!-- ✅ 신청 폼 -->
   <form id="materialForm">
+    <label for="empid">사번</label>
+    <input type="text" id="empid" name="empid" placeholder="사번을 입력하세요" required />
+
+    <label for="username">이름</label>
+    <input type="text" id="username" name="username" placeholder="이름을 입력하세요" required />
+
     <label for="category">물품 종류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
@@ -63,24 +41,11 @@
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="name">이메일</label>
-    <input type="text" id="name" name="name" placeholder="로그인 후 자동 입력" required readonly />
-    
-    <label for="username">이름</label>
-    <input type="text" id="username" name="username" placeholder="이름을 입력하세요" required />
-
     <label for="quantity">수량</label>
     <input type="number" id="quantity" name="quantity" placeholder="수량을 입력하세요" min="1" required />
 
     <label for="remarks">비고</label>
-    <small style="line-height: 1.4; font-size: 12px; color: #666; margin-top: -8px;">
-     - ex)준비요청 → X월 X일 정비로 인해 장화 270 1개 사전 준비 요청<br>
-     - ex)수령일정 → 오늘/내일 X시경 수령 희망<br>
-     - ex)교환요청 → 작업복 사이즈 X → XL 교환 요청 등<br>
-     - 24시간 신청 가능하며, 지급은 담당자의 평일 근무일에 진행됩니다.<br>
-     - 물품 부족 또는 과다 요청 시 제한될 수 있으니 양해 부탁드립니다.
-    </small>
-    <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)" rows="4"></textarea>
+    <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요 (없으면 생략)" rows="3"></textarea>
 
     <button type="submit">신청</button>
     <div class="message" id="msg"></div>
@@ -93,33 +58,24 @@ document.addEventListener("DOMContentLoaded", function () {
   const sizeSelect = document.getElementById("size");
   const msgDiv = document.getElementById("msg");
 
+  const empidInput = document.getElementById("empid");
+  const usernameInput = document.getElementById("username");
+
+  // ✅ 사번+이름 자동 입력
+  const savedEmpid = localStorage.getItem("empid");
+  const savedUsername = localStorage.getItem("username");
+
+  if (savedEmpid && savedUsername) {
+    empidInput.value = savedEmpid;
+    usernameInput.value = savedUsername;
+    empidInput.readOnly = true;
+    usernameInput.readOnly = true;
+  }
+
   let items = {};
 
-  // ✅ 저장된 이메일 있으면 자동 채워넣기
-  const savedEmail = localStorage.getItem("userEmail");
-  if (savedEmail) {
-    document.getElementById("name").value = savedEmail;
-    document.getElementById("name").readOnly = true;
-  }
-
-  // ✅ 구글 로그인 콜백
-  window.handleCredentialResponse = function (response) {
-    const data = parseJwt(response.credential);
-    localStorage.setItem("userEmail", data.email);
-    document.getElementById("name").value = data.email;
-    document.getElementById("name").readOnly = true;
-  }
-
-  function parseJwt(token) {
-    const base64Url = token.split('.')[1];
-    const base64 = decodeURIComponent(atob(base64Url).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(base64);
-  }
-
-  // 1) 물품 리스트 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbzob_GXF9CwjxHT7KDyBHwFMW3LsRycoJWOOCZmFnQdnIYgbO3_Ltk_sI2Ym0-5OloS/exec")
+  // 물품 리스트 불러오기
+  fetch("https://script.google.com/macros/s/AKfycbxzm6NrQIKCexMn0RZYCDt2I7As3PPnYVW6EM_aw55n0kRJGiFCW4fVQdOtS6q93bdh/exec")
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -142,8 +98,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const category = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    msgDiv.textContent = "";
-
     if (items[category]) {
       items[category].types.forEach(type => {
         subSelect.innerHTML += `<option value="${type}">${type}</option>`;
@@ -155,11 +109,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const category = categorySelect.value;
     const selectedType = subSelect.value;
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    msgDiv.textContent = "";
-
     if (items[category]) {
       const stockMap = items[category].stockMap;
-
       Object.entries(stockMap).forEach(([key, stock]) => {
         const [type, size] = key.split("__");
         if (type === selectedType) {
@@ -173,55 +124,49 @@ document.addEventListener("DOMContentLoaded", function () {
   sizeSelect.addEventListener("change", () => {
     const selectedOption = sizeSelect.selectedOptions[0];
     const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
-
     if (currentStock === 0) {
-      msgDiv.textContent = "⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.";
-      msgDiv.style.color = "#d17d00";
       alert("⚠️ 현재 재고가 없습니다.\n신청 시 구매 요청으로 접수됩니다.");
-    } else {
-      msgDiv.textContent = "";
     }
   });
 
-  // 2) 폼 제출
-  document.getElementById("materialForm").addEventListener("submit", function(e) {
+  // ✅ 폼 제출
+  document.getElementById("materialForm").addEventListener("submit", function (e) {
     e.preventDefault();
+    const formData = new FormData(this);
+    const selectedSizeOption = document.getElementById("size").selectedOptions[0];
+    const currentStock = parseInt(selectedSizeOption?.dataset.stock || "0", 10);
 
-    const selectedOption = sizeSelect.selectedOptions[0];
-    const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
-    const remarksInput = document.getElementById("remarks");
-    let remarksText = remarksInput.value.trim();
-
-    if (currentStock === 0) {
-      remarksText = remarksText ? `${remarksText} / 구매 요청` : "구매 요청";
-      remarksInput.value = remarksText;
+    let remarks = formData.get("remarks")?.trim() || "";
+    if (currentStock === 0 && !remarks.includes("구매 요청")) {
+      remarks += remarks ? " / 구매 요청" : "구매 요청";
+      formData.set("remarks", remarks);
     }
 
-    const formData = new FormData(this);
+    // ✅ 사번/이름 저장 (최초 1회만)
+    if (!savedEmpid) localStorage.setItem("empid", empidInput.value);
+    if (!savedUsername) localStorage.setItem("username", usernameInput.value);
 
-    fetch("https://script.google.com/macros/s/AKfycbzob_GXF9CwjxHT7KDyBHwFMW3LsRycoJWOOCZmFnQdnIYgbO3_Ltk_sI2Ym0-5OloS/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbxzm6NrQIKCexMn0RZYCDt2I7As3PPnYVW6EM_aw55n0kRJGiFCW4fVQdOtS6q93bdh/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
     .then(res => res.json())
     .then(data => {
       if (data.result === "success") {
-        msgDiv.textContent = "신청이 저장되었습니다!";
+        msgDiv.textContent = "✅ 신청이 완료되었습니다!";
         msgDiv.style.color = "green";
-        alert("✅ 신청이 저장되었습니다!");
         this.reset();
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        document.getElementById("name").value = localStorage.getItem("userEmail") || "";
       } else {
-        throw new Error("서버 오류");
+        msgDiv.textContent = "❌ " + (data.message || "신청에 실패했습니다.");
+        msgDiv.style.color = "red";
       }
     })
     .catch(err => {
-      msgDiv.textContent = "저장 중 오류가 발생했습니다.";
-      msgDiv.style.color = "red";
-      alert("❌ 저장 중 오류가 발생했습니다. 다시 시도해주세요!");
       console.error(err);
+      msgDiv.textContent = "❌ 서버 오류가 발생했습니다.";
+      msgDiv.style.color = "red";
     });
   });
 });
