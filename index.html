@@ -163,6 +163,77 @@
         loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
       });
     }
+    // 🔽 물품 데이터 로드 및 폼 구성
+document.addEventListener("DOMContentLoaded", function () {
+  const categorySelect = document.getElementById("category");
+  const subSelect = document.getElementById("subcategory");
+  const sizeSelect = document.getElementById("size");
+  const msgDiv = document.getElementById("msg");
+  let items = {};
+
+  fetch("https://script.google.com/macros/s/AKfycbxtGSQZm-xP5bJB1Hy_57uafyKA67yPNzYiXMGEGyOmvAEEr5x5xmsCaSmP49Rka84S/exec")
+    .then(res => res.json())
+    .then(data => {
+      items = data;
+      populateCategory();
+    })
+    .catch(err => {
+      console.error("[물품 데이터 로드 실패]", err);
+      msgDiv.textContent = "물품 데이터 로드 실패!";
+      msgDiv.style.color = "red";
+    });
+
+  function populateCategory() {
+    categorySelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
+    Object.keys(items).forEach(cat => {
+      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+  }
+
+  categorySelect.addEventListener("change", () => {
+    const category = categorySelect.value;
+    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    msgDiv.textContent = "";
+
+    if (items[category]) {
+      items[category].types.forEach(type => {
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+      });
+    }
+  });
+
+  subSelect.addEventListener("change", () => {
+    const category = categorySelect.value;
+    const selectedType = subSelect.value;
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    msgDiv.textContent = "";
+
+    if (items[category]) {
+      const stockMap = items[category].stockMap;
+      Object.entries(stockMap).forEach(([key, stock]) => {
+        const [type, size] = key.split("__");
+        if (type === selectedType) {
+          const label = `${size} (재고: ${stock === 0 ? "X" : stock})`;
+          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${label}</option>`;
+        }
+      });
+    }
+  });
+
+  sizeSelect.addEventListener("change", () => {
+    const selectedOption = sizeSelect.selectedOptions[0];
+    const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
+    if (currentStock === 0) {
+      msgDiv.textContent = "⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.";
+      msgDiv.style.color = "#d17d00";
+      alert("⚠️ 현재 재고가 없습니다.\n신청 시 구매 요청으로 접수됩니다.");
+    } else {
+      msgDiv.textContent = "";
+    }
+  });
+});
+
   </script>
 </body>
 </html>
