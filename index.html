@@ -62,16 +62,9 @@
     <input type="number" id="quantity" name="quantity" placeholder="수량을 입력하세요" min="1" required />
 
     <label for="remarks">비고</label>
-    <small style="line-height: 1.4; font-size: 12px; color: #666; margin-top: -8px;">
-     - ex)준비요청 → X월 X일 정비로 인해 장화 270 1개 사전 준비 요청<br>
-     - ex)수령일정 → 오늘/내일 X시경 수령 희망<br>
-     - ex)교환요청 → 작업복 사이즈 X → XL 교환 요청 등<br>
-     - 24시간 신청 가능하며, 지급은 담당자의 평일 근무일에 진행됩니다.<br>
-     - 물품 부족 또는 과다 요청 시 제한될 수 있으니 양해 부탁드립니다.
-    </small>
-    <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)" rows="4"></textarea>
+    <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요" rows="3"></textarea>
 
-    <button type="submit">신청</button>
+    <button type="submit">저장</button>
     <div class="message" id="msg"></div>
   </form>
 
@@ -81,12 +74,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const subSelect = document.getElementById("subcategory");
   const sizeSelect = document.getElementById("size");
   const msgDiv = document.getElementById("msg");
-  const remarksInput = document.getElementById("remarks");
-
   let items = {};
 
   // 1) 물품 리스트 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbx4FAofTaH-qioznHdKrjy8Ko4w3UDGF6dJjM5ZE-amY090qDGHigLv8FuNJFRV1kQA/exec")
+  fetch("https://script.google.com/macros/s/AKfycbw8ZkKTFUuCn-64RTIqeFfn9YtAD1fqQ0Yi8nHi7DpEqimtrJkqtTnfeROXTfK2EpMg/exec")  // ← 배포된 스크립트 주소로 교체
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -105,11 +96,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // 대분류 → 세부종류
   categorySelect.addEventListener("change", () => {
     const category = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    msgDiv.textContent = "";
 
     if (items[category]) {
       items[category].types.forEach(type => {
@@ -118,11 +109,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // 세부종류 → 사이즈(재고 표시)
   subSelect.addEventListener("change", () => {
     const category = categorySelect.value;
     const selectedType = subSelect.value;
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    msgDiv.textContent = "";
 
     if (items[category]) {
       const stockMap = items[category].stockMap;
@@ -130,47 +121,21 @@ document.addEventListener("DOMContentLoaded", function () {
       Object.entries(stockMap).forEach(([key, stock]) => {
         const [type, size] = key.split("__");
         if (type === selectedType) {
-          const label = `${size} (재고: ${stock === 0 ? "X" : stock})`;
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${label}</option>`;
+          const label = `${size} (재고: ${stock})`;
+          sizeSelect.innerHTML += `<option value="${size}">${label}</option>`;
         }
       });
-    }
-  });
-
-  sizeSelect.addEventListener("change", () => {
-    const selectedOption = sizeSelect.selectedOptions[0];
-    const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
-
-    if (currentStock === 0) {
-      msgDiv.textContent = "⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.";
-      msgDiv.style.color = "#d17d00";
-      alert("⚠️ 현재 재고가 없습니다.\n신청 시 구매 요청으로 접수됩니다.");
-    } else {
-      msgDiv.textContent = "";
-      msgDiv.style.color = "green";
     }
   });
 
   // 2) 폼 제출
   document.getElementById("materialForm").addEventListener("submit", function(e) {
     e.preventDefault();
-
-    const selectedOption = sizeSelect.selectedOptions[0];
-    const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
-    let remarksText = remarksInput.value.trim();
-
-    if (currentStock === 0) {
-      if (remarksText.length > 0) {
-        remarksText += " / 구매 요청";
-      } else {
-        remarksText = "구매 요청";
-      }
-      remarksInput.value = remarksText;
-    }
+    msgDiv.textContent = "";
+    msgDiv.style.color = "green";
 
     const formData = new FormData(this);
-
-    fetch("https://script.google.com/macros/s/AKfycbx4FAofTaH-qioznHdKrjy8Ko4w3UDGF6dJjM5ZE-amY090qDGHigLv8FuNJFRV1kQA/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbw8ZkKTFUuCn-64RTIqeFfn9YtAD1fqQ0Yi8nHi7DpEqimtrJkqtTnfeROXTfK2EpMg/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
@@ -178,8 +143,6 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(data => {
       if(data.result === "success") {
         msgDiv.textContent = "신청이 저장되었습니다!";
-        msgDiv.style.color = "green";
-        alert("✅ 신청이 저장되었습니다!");
         this.reset();
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
@@ -190,7 +153,6 @@ document.addEventListener("DOMContentLoaded", function () {
     .catch(err => {
       msgDiv.textContent = "저장 중 오류가 발생했습니다.";
       msgDiv.style.color = "red";
-      alert("❌ 저장 중 오류가 발생했습니다. 다시 시도해주세요!");
       console.error(err);
     });
   });
