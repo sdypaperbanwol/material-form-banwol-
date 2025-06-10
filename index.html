@@ -230,19 +230,18 @@ if (requestedQty > currentStock) {
 
   if (currentStock > 0) {
     alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-    quantityInput.value = currentStock; // 자동으로 수량 수정
+    quantityInput.value = currentStock;
   } else {
     alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-    quantityInput.value = 0;
-// 수량 검증 및 자동 보정
-if (requestedQty > currentStock) {
-  // 수량 초과 → 자동 조정
-  const diff = requestedQty - currentStock;
-  alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-  quantityInput.value = currentStock;  // 자동 조정
-  remarksInput.value += (remarksText ? " / " : "") + `${diff}개 구매 요청`;
-} else if (requestedQty <= 0) {
-  // 수량 0 → 최소 1로 조정
+    quantityInput.value = 0; // ✅ 여기서 0을 허용
+  }
+
+  remarksInput.value = remarksText.length > 0
+    ? `${remarksText} / ${diff}개 구매 요청`
+    : `${diff}개 구매 요청`;
+
+} else if (requestedQty <= 0 && currentStock > 0) {
+  // ✅ 재고가 있을 땐 0 금지
   alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
   quantityInput.value = 1;
 }
