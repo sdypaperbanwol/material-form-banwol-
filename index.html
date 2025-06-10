@@ -164,7 +164,6 @@ function verifyUser() {
   });
 }
 
-// 자재 선택 로딩 및 제출 로직
 document.addEventListener("DOMContentLoaded", function () {
   const categorySelect = document.getElementById("category");
   const subSelect = document.getElementById("subcategory");
@@ -221,50 +220,43 @@ document.addEventListener("DOMContentLoaded", function () {
     e.preventDefault();
 
     const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-const requestedQty = parseInt(quantityInput.value, 10);
-const remarksInput = document.getElementById("remarks");
-let remarksText = remarksInput.value.trim();
+    const requestedQty = parseInt(quantityInput.value, 10);
+    let remarksText = remarksInput.value.trim();
 
-if (requestedQty > currentStock) {
-  const diff = requestedQty - currentStock;
+    let autoAdjusted = false;
+    let diff = 0;
 
-  if (currentStock > 0) {
-    alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-    quantityInput.value = currentStock;
-  } else {
-    alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-    quantityInput.value = 1; // ✅ 여기서 0을 허용
-  }
+    if (requestedQty > currentStock) {
+      diff = requestedQty - currentStock;
 
-  remarksInput.value = remarksText.length > 0
-    ? `${remarksText} / ${diff}개 구매 요청`
-    : `${diff}개 구매 요청`;
+      if (currentStock > 0) {
+        alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+        quantityInput.value = currentStock;
+      } else {
+        alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+        quantityInput.value = 1;
+      }
 
-} else if (requestedQty <= 0 && currentStock > 0) {
-  // ✅ 재고가 있을 땐 0 금지
-  alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-  quantityInput.value = 1;
-}
+      autoAdjusted = true;
+    } else if (requestedQty <= 0) {
+      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+      quantityInput.value = 1;
+      return;
+    }
 
-
-
-
-  if (remarksText.length > 0) {
-    remarksText += ` / ${diff}개 구매 요청`;
-  } else {
-    remarksText = `${diff}개 구매 요청`;
-  }
-  remarksInput.value = remarksText;
-}
-
+    if (autoAdjusted && diff > 0) {
+      remarksInput.value = remarksText.length > 0
+        ? `${remarksText} / ${diff}개 구매 요청`
+        : `${diff}개 구매 요청`;
+    }
 
     const formData = new URLSearchParams({
       category: categorySelect.value,
       subcategory: subSelect.value,
       size: sizeSelect.value,
       name: nameInput.value,
-      quantity: quantityInput.value,  // ✅ 이렇게 수정
-      remarks: remarksText
+      quantity: quantityInput.value,
+      remarks: remarksInput.value
     });
 
     fetch(API_URL, {
@@ -296,4 +288,3 @@ if (requestedQty > currentStock) {
 
 </body>
 </html>
-
