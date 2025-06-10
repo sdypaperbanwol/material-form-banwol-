@@ -218,78 +218,87 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  let isSubmitting = false;
-  materialForm.addEventListener("submit", function(e) {
-    e.preventDefault();
-    if (isSubmitting) return;
+let isSubmitting = false;
+let alertShown = false; // ✅ alert가 한번 떴는지 기억
 
-    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-    const requestedQty = parseInt(quantityInput.value, 10);
-    let remarksText = remarksInput.value.trim();
+materialForm.addEventListener("submit", function(e) {
+  e.preventDefault();
+  if (isSubmitting) return;
 
-    if (requestedQty <= 0) {
-      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-      quantityInput.value = 1;
-      return;
+  const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+  const requestedQty = parseInt(quantityInput.value, 10);
+  let remarksText = remarksInput.value.trim();
+
+  if (requestedQty <= 0) {
+    alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+    quantityInput.value = 1;
+    return;
+  }
+
+  const diff = requestedQty - currentStock;
+
+  if (diff > 0 && !alertShown) {
+    if (currentStock > 0) {
+      alert(`⚠️ 현재 ${currentStock}개 지급 가능 예정이며, 재고 부족분 ${diff}개는 구매 요청으로 접수되어 추후 지급될 수 있습니다.`);
+      quantityInput.value = currentStock;
+    } else {
+      alert(`⚠️ 현재 지급 가능한 재고가 없어 ${diff}개 전량 구매 요청으로 접수됩니다.`);
+      // 수량 그대로 유지
     }
 
-    if (requestedQty > currentStock) {
-      const diff = requestedQty - currentStock;
-
-      if (currentStock > 0) {
-        alert(`⚠️ 현재 ${currentStock}개 지급 가능 예정이며, 재고 부족분 ${diff}개는 구매 요청으로 접수되어 추후 지급될 수 있습니다.`);
-        quantityInput.value = currentStock;
-      } else {
-        alert(`⚠️ 현재 지급 가능한 재고가 없어 ${diff}개 전량 구매 요청으로 접수됩니다.`);
-      }
-
-      if (remarksText.length > 0) {
-        remarksInput.value = `${remarksText} / ${diff}개 구매 요청`;
-      } else {
-        remarksInput.value = `${diff}개 구매 요청`;
-      }
-
-      return; // ✅ 첫 클릭만 방지
+    // ✅ remarks에 중복되지 않도록
+    if (!remarksText.includes("구매 요청")) {
+      remarksInput.value = remarksText.length > 0
+        ? `${remarksText} / ${diff}개 구매 요청`
+        : `${diff}개 구매 요청`;
     }
 
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: quantityInput.value,
-      remarks: remarksInput.value
-    });
+    alertShown = true; // ✅ 이제 다시는 alert 안 뜨게 함
+    return; // ✅ 이 한 번만 막음
+  }
 
-    isSubmitting = true;
-
-    fetch(API_URL, {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      isSubmitting = false;
-      if (data.result === "success") {
-        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-        msgDiv.style.color = "green";
-        alert("✅ 신청이 저장되었습니다!");
-        materialForm.reset();
-        subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        document.getElementById("name").value = localStorage.getItem("userInfo") || "";
-      } else {
-        msgDiv.textContent = "❌ 신청 실패";
-        msgDiv.style.color = "red";
-      }
-    })
-    .catch(err => {
-      console.error("에러:", err);
-      msgDiv.textContent = "❌ 서버 오류";
-      msgDiv.style.color = "red";
-      isSubmitting = false;
-    });
+  // ✅ 이후부터는 정상 제출
+  const formData = new URLSearchParams({
+    category: categorySelect.value,
+    subcategory: subSelect.value,
+    size: sizeSelect.value,
+    name: nameInput.value,
+    quantity: quantityInput.value,
+    remarks: remarksInput.value
   });
+
+  isSubmitting = true;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    isSubmitting = false;
+    alertShown = false; // ✅ 초기화
+    if (data.result === "success") {
+      msgDiv.textContent = "✅ 신청이 저장되었습니다!";
+      msgDiv.style.color = "green";
+      alert("✅ 신청이 저장되었습니다!");
+      materialForm.reset();
+      subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      document.getElementById("name").value = localStorage.getItem("userInfo") || "";
+    } else {
+      msgDiv.textContent = "❌ 신청 실패";
+      msgDiv.style.color = "red";
+    }
+  })
+  .catch(err => {
+    console.error("에러:", err);
+    msgDiv.textContent = "❌ 서버 오류";
+    msgDiv.style.color = "red";
+    isSubmitting = false;
+    alertShown = false;
+  });
+});
+
 });
 </script>
 </body>
