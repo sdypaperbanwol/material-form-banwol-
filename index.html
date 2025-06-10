@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let items = {};
 
-  fetch("https://script.google.com/macros/s/AKfycbxDlm4bywLgb3zFxwRsR4Fr14atd9vA3o2sq3FeHzZcWmJ02QxdXGKRYoMVY5nKXzl-/exec")
+  fetch("https://script.google.com/macros/s/AKfycby8yWvLhFeH8WJ4d281Anrc9INi9LgaQ248yeWtaT4a4_NGxLuesYdFQaehr1raV_47/exec")
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!savedEmpid) localStorage.setItem("empid", empidInput.value);
     if (!savedUsername) localStorage.setItem("username", usernameInput.value);
 
-    fetch("https://script.google.com/macros/s/AKfycbxDlm4bywLgb3zFxwRsR4Fr14atd9vA3o2sq3FeHzZcWmJ02QxdXGKRYoMVY5nKXzl-/exec", {
+    fetch("https://script.google.com/macros/s/AKfycby8yWvLhFeH8WJ4d281Anrc9INi9LgaQ248yeWtaT4a4_NGxLuesYdFQaehr1raV_47/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
