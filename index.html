@@ -230,7 +230,7 @@ document.addEventListener("DOMContentLoaded", function () {
       diff = requestedQty - currentStock;
 
       if (currentStock > 0) {
-        alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+        alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수되며 추후 지급될 수 있습니다.`);
         quantityInput.value = currentStock;
       } else {
         alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
