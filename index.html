@@ -125,7 +125,7 @@
         return;
       }
 
-      fetch("https://script.google.com/macros/s/AKfycbwiUgFXKZ4ykZfB612hpDWQ7pf88F-BndZxU5T-Y6HphgC5qhnXbg7TAi0TAeG3kejt/exec", {
+      fetch("https://script.google.com/macros/s/AKfycbxtGSQZm-xP5bJB1Hy_57uafyKA67yPNzYiXMGEGyOmvAEEr5x5xmsCaSmP49Rka84S/exec", {
         method: "POST",
         body: new URLSearchParams({ empId, empName })
       })
@@ -158,7 +158,7 @@
       const msgDiv = document.getElementById("msg");
       let items = {};
 
-      fetch("https://script.google.com/macros/s/AKfycbwiUgFXKZ4ykZfB612hpDWQ7pf88F-BndZxU5T-Y6HphgC5qhnXbg7TAi0TAeG3kejt/exec")
+      fetch("https://script.google.com/macros/s/AKfycbxtGSQZm-xP5bJB1Hy_57uafyKA67yPNzYiXMGEGyOmvAEEr5x5xmsCaSmP49Rka84S/exec")
         .then(res => res.json())
         .then(data => {
           items = data;
@@ -234,7 +234,7 @@
 
         const formData = new FormData(this);
 
-        fetch("https://script.google.com/macros/s/AKfycbwiUgFXKZ4ykZfB612hpDWQ7pf88F-BndZxU5T-Y6HphgC5qhnXbg7TAi0TAeG3kejt/exec", {
+        fetch("https://script.google.com/macros/s/AKfycbxtGSQZm-xP5bJB1Hy_57uafyKA67yPNzYiXMGEGyOmvAEEr5x5xmsCaSmP49Rka84S/exec", {
           method: "POST",
           body: new URLSearchParams(formData)
         })
