@@ -109,12 +109,26 @@
     const materialForm = document.getElementById("materialForm");
     const nameInput = document.getElementById("name");
     const loginMsg = document.getElementById("loginMsg");
-    const saved = localStorage.getItem("userInfo");
 
+    const saved = localStorage.getItem("userInfo");
     if (saved) {
-      nameInput.value = saved;
-      loginSection.style.display = "none";
-      materialForm.style.display = "flex";
+      const [empId, empName] = saved.split(" ");
+      fetch("https://script.google.com/macros/s/AKfycbxtGSQZm-xP5bJB1Hy_57uafyKA67yPNzYiXMGEGyOmvAEEr5x5xmsCaSmP49Rka84S/exec", {
+        method: "POST",
+        body: new URLSearchParams({ empId, empName })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "success") {
+          nameInput.value = saved;
+          loginSection.style.display = "none";
+          materialForm.style.display = "flex";
+        } else {
+          localStorage.removeItem("userInfo");
+          alert("승인이 해제되어 자동 로그아웃됩니다.");
+          location.reload();
+        }
+      });
     }
 
     function verifyUser() {
@@ -131,138 +145,24 @@
       })
       .then(res => res.json())
       .then(data => {
-        console.log("[로그인 응답]", data);
         if (data.result === "success") {
-  const fullName = `${empId} ${empName}`;
-  localStorage.setItem("userInfo", fullName);
-  nameInput.value = fullName;
-  loginSection.style.display = "none";
-  materialForm.style.display = "flex";
-} else if (data.result === "disabled") {
-  loginMsg.textContent = "⛔ 해당 계정은 비활성화되어 있습니다. 관리자에게 문의하세요.";
-} else {
-  loginMsg.textContent = "일치하는 정보가 없습니다.";
-}
-
+          const fullName = `${empId} ${empName}`;
+          localStorage.setItem("userInfo", fullName);
+          nameInput.value = fullName;
+          loginSection.style.display = "none";
+          materialForm.style.display = "flex";
+        } else if (data.result === "disabled") {
+          localStorage.removeItem("userInfo");
+          loginMsg.textContent = "승인이 해제된 계정입니다.";
+        } else {
+          loginMsg.textContent = "일치하는 정보가 없습니다.";
+        }
       })
       .catch(err => {
         console.error("[로그인 오류]", err);
         loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
       });
     }
-
-    document.addEventListener("DOMContentLoaded", function () {
-      const categorySelect = document.getElementById("category");
-      const subSelect = document.getElementById("subcategory");
-      const sizeSelect = document.getElementById("size");
-      const msgDiv = document.getElementById("msg");
-      let items = {};
-
-      fetch("https://script.google.com/macros/s/AKfycbxtGSQZm-xP5bJB1Hy_57uafyKA67yPNzYiXMGEGyOmvAEEr5x5xmsCaSmP49Rka84S/exec")
-        .then(res => res.json())
-        .then(data => {
-          items = data;
-          populateCategory();
-        })
-        .catch(err => {
-          console.error("[물품 데이터 로드 실패]", err);
-          msgDiv.textContent = "물품 데이터 로드 실패!";
-          msgDiv.style.color = "red";
-        });
-
-      function populateCategory() {
-        categorySelect.innerHTML = '<option value="">-- 선택하세요 --</option>';
-        Object.keys(items).forEach(cat => {
-          categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-        });
-      }
-
-      categorySelect.addEventListener("change", () => {
-        const category = categorySelect.value;
-        subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        msgDiv.textContent = "";
-
-        if (items[category]) {
-          items[category].types.forEach(type => {
-            subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-          });
-        }
-      });
-
-      subSelect.addEventListener("change", () => {
-        const category = categorySelect.value;
-        const selectedType = subSelect.value;
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        msgDiv.textContent = "";
-
-        if (items[category]) {
-          const stockMap = items[category].stockMap;
-          Object.entries(stockMap).forEach(([key, stock]) => {
-            const [type, size] = key.split("__");
-            if (type === selectedType) {
-              const label = `${size} (재고: ${stock === 0 ? "X" : stock})`;
-              sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${label}</option>`;
-            }
-          });
-        }
-      });
-
-      sizeSelect.addEventListener("change", () => {
-        const selectedOption = sizeSelect.selectedOptions[0];
-        const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
-        if (currentStock === 0) {
-          msgDiv.textContent = "⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.";
-          msgDiv.style.color = "#d17d00";
-          alert("⚠️ 현재 재고가 없습니다.\n신청 시 구매 요청으로 접수됩니다.");
-        } else {
-          msgDiv.textContent = "";
-        }
-      });
-
-      document.getElementById("materialForm").addEventListener("submit", function(e) {
-        e.preventDefault();
-        const selectedOption = sizeSelect.selectedOptions[0];
-        const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
-        const remarksInput = document.getElementById("remarks");
-        let remarksText = remarksInput.value.trim();
-
-        if (currentStock === 0) {
-          remarksText = remarksText ? `${remarksText} / 구매 요청` : "구매 요청";
-          remarksInput.value = remarksText;
-        }
-
-        const formData = new FormData(this);
-
-        fetch("https://script.google.com/macros/s/AKfycbxtGSQZm-xP5bJB1Hy_57uafyKA67yPNzYiXMGEGyOmvAEEr5x5xmsCaSmP49Rka84S/exec", {
-          method: "POST",
-          body: new URLSearchParams(formData)
-        })
-        .then(res => res.json())
-        .then(data => {
-          console.log("[신청 응답]", data);
-          if (data.result === "success") {
-            msgDiv.textContent = "신청이 저장되었습니다!";
-            msgDiv.style.color = "green";
-            alert("✅ 신청이 저장되었습니다!");
-            this.reset();
-            subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-            sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-            nameInput.value = localStorage.getItem("userInfo") || "";
-          } else {
-            msgDiv.textContent = data.message || "서버 오류";
-            msgDiv.style.color = "red";
-            alert("❌ " + (data.message || "서버 오류"));
-          }
-        })
-        .catch(err => {
-          msgDiv.textContent = "저장 중 오류가 발생했습니다.";
-          msgDiv.style.color = "red";
-          alert("❌ 저장 중 오류가 발생했습니다. 다시 시도해주세요!");
-          console.error("[신청 오류]", err);
-        });
-      });
-    });
   </script>
 </body>
 </html>
