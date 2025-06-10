@@ -109,7 +109,6 @@ const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
 
-// 로그인 정보 복원
 const saved = localStorage.getItem("userInfo");
 if (saved) {
   const [empId, empName] = saved.split(" ");
@@ -167,33 +166,6 @@ function verifyUser() {
 document.addEventListener("DOMContentLoaded", function () {
   let isSubmitting = false;
 
-materialForm.addEventListener("submit", function(e) {
-  e.preventDefault();
-  if (isSubmitting) return; // 중복 방지
-
-  // ... 위의 로직 생략 ...
-
-  isSubmitting = true; // ✅ 전송 시작
-
-  fetch(API_URL, {
-    method: "POST",
-    body: formData
-  })
-  .then(res => res.json())
-  .then(data => {
-    isSubmitting = false;
-    if (data.result === "success") {
-      // 성공 로직
-    } else {
-      // 실패 로직
-    }
-  })
-  .catch(err => {
-    isSubmitting = false;
-    // 에러 로직
-  });
-});
-
   const categorySelect = document.getElementById("category");
   const subSelect = document.getElementById("subcategory");
   const sizeSelect = document.getElementById("size");
@@ -247,49 +219,39 @@ materialForm.addEventListener("submit", function(e) {
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
+    if (isSubmitting) return;
 
     const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-const requestedQty = parseInt(quantityInput.value, 10);
-let remarksText = remarksInput.value.trim();
+    const requestedQty = parseInt(quantityInput.value, 10);
+    let remarksText = remarksInput.value.trim();
 
-let autoAdjusted = false;
-let diff = 0;
+    let diff = 0;
 
-if (requestedQty > currentStock) {
-  diff = requestedQty - currentStock;
+    if (requestedQty > currentStock) {
+      diff = requestedQty - currentStock;
 
-  if (currentStock > 0) {
-    alert(`⚠️ 현재 ${currentStock}개 지급 가능 예정이며, 재고 부족분 ${diff}개는 구매 요청으로 접수되어 추후 지급될 수 있습니다.`);
-    quantityInput.value = currentStock;
-  } else {
-    alert(`⚠️ 현재 지급 가능한 재고가 없어 ${diff}개 전량 구매 요청으로 접수됩니다.`);
-    // 수량 조정 없이 그대로 둠
-  }
+      if (currentStock > 0) {
+        alert(`⚠️ 현재 ${currentStock}개 지급 가능 예정이며, 재고 부족분 ${diff}개는 구매 요청으로 접수되어 추후 지급될 수 있습니다.`);
+        quantityInput.value = currentStock;
+      } else {
+        alert(`⚠️ 현재 지급 가능한 재고가 없어 ${diff}개 전량 구매 요청으로 접수됩니다.`);
+        // 수량 그대로 둠
+      }
 
-  // ✅ remarks 자동 추가 (공통 처리)
-  if (remarksText.length > 0) {
-    remarksInput.value = `${remarksText} / ${diff}개 구매 요청`;
-  } else {
-    remarksInput.value = `${diff}개 구매 요청`;
-  }
+      if (remarksText.length > 0) {
+        remarksInput.value = `${remarksText} / ${diff}개 구매 요청`;
+      } else {
+        remarksInput.value = `${diff}개 구매 요청`;
+      }
 
-  // ✅ 자동 전송 방지
-  return;
-}
+      return; // 자동 전송 방지
+    }
 
-  autoAdjusted = true;
-} else if (requestedQty <= 0) {
-  alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-  quantityInput.value = 1;
-  return;
-}
-
-if (autoAdjusted && diff > 0) {
-  remarksInput.value = remarksText.length > 0
-    ? `${remarksText} / ${diff}개 구매 요청`
-    : `${diff}개 구매 요청`;
-}
-
+    if (requestedQty <= 0) {
+      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+      quantityInput.value = 1;
+      return;
+    }
 
     const formData = new URLSearchParams({
       category: categorySelect.value,
@@ -300,17 +262,20 @@ if (autoAdjusted && diff > 0) {
       remarks: remarksInput.value
     });
 
+    isSubmitting = true;
+
     fetch(API_URL, {
       method: "POST",
       body: formData
     })
     .then(res => res.json())
     .then(data => {
+      isSubmitting = false;
       if (data.result === "success") {
         msgDiv.textContent = "✅ 신청이 저장되었습니다!";
         msgDiv.style.color = "green";
         alert("✅ 신청이 저장되었습니다!");
-        this.reset();
+        materialForm.reset();
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       } else {
@@ -319,6 +284,7 @@ if (autoAdjusted && diff > 0) {
       }
     })
     .catch(err => {
+      isSubmitting = false;
       console.error("에러:", err);
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
