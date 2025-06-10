@@ -27,7 +27,6 @@
     select, input, textarea {
       padding: 6px 8px;
       font-size: 14px;
-      font-family: Arial, sans-serif;
       border: 1px solid #ccc;
       border-radius: 4px;
     }
@@ -122,8 +121,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let items = {};
+  const GET_URL = "https://script.google.com/macros/s/AKfycbxCvVIPwJSoRkWzepJsliOvaE1bYQqq7go1v3VFuJnfsK9aB2anQB50Sdq6It0WsxQE/exec";
+  const POST_URL = GET_URL;
 
-  fetch("https://script.google.com/macros/s/AKfycbwMROHEVBpiBNUysQc9xqZm2imcB27SzvF-owkuiTvNqwZmOH97MPpKiD0HscgZmIox/exec")
+  fetch(GET_URL)
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -198,28 +199,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!savedEmpid) localStorage.setItem("empid", empidInput.value);
     if (!savedUsername) localStorage.setItem("username", usernameInput.value);
 
-    .then(res => res.json())
-.then(data => {
-  console.log("서버 응답 확인:", data);  // 👈 이 줄 추가
-  if(data.result === "success") {
-    msgDiv.textContent = "신청이 저장되었습니다!";
-    msgDiv.style.color = "green";
-    alert("✅ 신청이 저장되었습니다!");
-    this.reset();
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  } else {
-    throw new Error("서버 오류: " + data.message);
-  }
-})
-
-
-    fetch("https://script.google.com/macros/s/AKfycbwMROHEVBpiBNUysQc9xqZm2imcB27SzvF-owkuiTvNqwZmOH97MPpKiD0HscgZmIox/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbxCvVIPwJSoRkWzepJsliOvaE1bYQqq7go1v3VFuJnfsK9aB2anQB50Sdq6It0WsxQE/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
     .then(res => res.json())
     .then(data => {
+      console.log("서버 응답 확인:", data);  // ✅ 로그 추가
       if(data.result === "success") {
         msgDiv.textContent = "신청이 저장되었습니다!";
         msgDiv.style.color = "green";
@@ -228,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       } else {
-        throw new Error("서버 오류");
+        throw new Error("서버 오류: " + data.message);
       }
     })
     .catch(err => {
