@@ -35,9 +35,6 @@
       font-weight: bold;
       color: green;
     }
-    #name-container {
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -58,19 +55,14 @@
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <div id="name-container">
-      <label for="name">이름</label>
-      <input type="text" id="name" name="name" />
-    </div>
-
-    <label for="username">사번</label>
-    <input type="text" id="username" name="username" pattern="\d{6}" inputmode="numeric" placeholder="6자리 사번" required />
+    <label for="name">이름</label>
+    <input type="text" id="name" name="name" placeholder="이름을 입력하세요" required />
 
     <label for="quantity">수량</label>
     <input type="number" id="quantity" name="quantity" placeholder="수량을 입력하세요" min="1" required />
 
     <label for="remarks">비고</label>
-    <small style="line-height: 1.4; font-size: 12px; color: #666;">
+    <small style="line-height: 1.4; font-size: 12px; color: #666; margin-top: -8px;">
      - ex)준비요청 → X월 X일 정비로 인해 장화 270 1개 사전 준비 요청<br>
      - ex)수령일정 → 오늘/내일 X시경 수령 희망<br>
      - ex)교환요청 → 작업복 사이즈 X → XL 교환 요청 등<br>
@@ -83,6 +75,7 @@
     <div class="message" id="msg"></div>
   </form>
 
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const categorySelect = document.getElementById("category");
@@ -91,10 +84,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const msgDiv = document.getElementById("msg");
 
   let items = {};
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaDFhu59LQrzFwgFdJexgdqj8qQW7ZW-Zlj-QwEhN3fin48WwUbkxp0IjGASf2ZQX0/exec";  // ⚠️ 이 부분에 GAS 배포 URL 넣어라
 
-  // [1] 물품 리스트 로딩
-  fetch(SCRIPT_URL)
+  // 1) 물품 리스트 가져오기
+  fetch("https://script.google.com/macros/s/AKfycbz3RdCqTKcBK_aGsZIk85-01o5ai9O1XootG6-ZubhpSDhalVVv3rRGgnKJrvp-nm59/exec")  // ← 실제 배포된 앱스크립트 URL로 교체하세요
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -113,12 +105,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // 대분류 선택 → 세부 종류
+  // 대분류 → 세부종류
   categorySelect.addEventListener("change", () => {
     const category = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     msgDiv.textContent = "";
+    msgDiv.style.color = "green";
 
     if (items[category]) {
       items[category].types.forEach(type => {
@@ -127,12 +120,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // 세부 종류 선택 → 사이즈
+  // 세부종류 → 사이즈(재고 표시 & 경고 메시지)
   subSelect.addEventListener("change", () => {
     const category = categorySelect.value;
     const selectedType = subSelect.value;
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     msgDiv.textContent = "";
+    msgDiv.style.color = "green";
 
     if (items[category]) {
       const stockMap = items[category].stockMap;
@@ -147,14 +141,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // 사이즈 선택 → 재고 알림
+  // 재고 없을 때 경고 메시지 표시 (사이즈 선택 후)
   sizeSelect.addEventListener("change", () => {
     const selectedOption = sizeSelect.selectedOptions[0];
     const currentStock = parseInt(selectedOption?.dataset.stock || "0", 10);
 
     if (currentStock === 0) {
       msgDiv.textContent = "⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.";
-      msgDiv.style.color = "#d17d00";
+      msgDiv.style.color = "#d17d00"; // 노란 주황색
       alert("⚠️ 현재 재고가 없습니다.\n신청 시 구매 요청으로 접수됩니다.");
     } else {
       msgDiv.textContent = "";
@@ -162,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // [2] 신청 전송
+  // 2) 폼 제출
   document.getElementById("materialForm").addEventListener("submit", function(e) {
     e.preventDefault();
 
@@ -173,20 +167,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const remarksInput = document.getElementById("remarks");
     let remarksText = remarksInput.value.trim();
 
-    if (currentStock === 0) {
-      remarksText += (remarksText ? " / " : "") + "구매 요청";
+    // 재고 0이면 '구매 요청' 문구 자동 추가
+    if(currentStock === 0){
+      if(remarksText.length > 0){
+        remarksText += " / 구매 요청";
+      } else {
+        remarksText = "구매 요청";
+      }
       remarksInput.value = remarksText;
     }
 
     const formData = new FormData(this);
 
-    fetch("https://script.google.com/macros/s/AKfycbwaDFhu59LQrzFwgFdJexgdqj8qQW7ZW-Zlj-QwEhN3fin48WwUbkxp0IjGASf2ZQX0/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbz3RdCqTKcBK_aGsZIk85-01o5ai9O1XootG6-ZubhpSDhalVVv3rRGgnKJrvp-nm59/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
     .then(res => res.json())
     .then(data => {
-      if (data.result === "success") {
+      if(data.result === "success") {
         msgDiv.textContent = "신청이 저장되었습니다!";
         msgDiv.style.color = "green";
         alert("✅ 신청이 저장되었습니다!");
@@ -194,9 +193,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       } else {
-        msgDiv.textContent = data.message || "서버 오류";
-        msgDiv.style.color = "red";
-        alert("❌ " + (data.message || "저장 중 오류가 발생했습니다."));
+        throw new Error("서버 오류");
       }
     })
     .catch(err => {
@@ -206,6 +203,7 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error(err);
     });
   });
+
 });
 </script>
 
