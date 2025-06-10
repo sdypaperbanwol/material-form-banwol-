@@ -58,7 +58,7 @@
     <label for="name">이름</label>
     <input type="text" id="name" name="name" placeholder="이름을 입력하세요" required />
 
-    <label for="username">이름</label>
+    <label for="username">사번</label>
     <input type="number" id="username" name="username" placeholder="사번을 입력하세요" required />
 
     <label for="quantity">수량</label>
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let items = {};
 
   // 1) 물품 리스트 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbzvVicomj9usp3zsqaLkBOkUFc-bYQvS_zZABOQ-wWpFschNTkYLuzDBozZSIWkEF9r/exec")  // ← 실제 배포된 앱스크립트 URL로 교체하세요
+  fetch("https://script.google.com/macros/s/AKfycbz4KWmw26q8aZhwzf2pzIzUYNhV4gfdzgukCQp22J6SI9mp8s9o62IPfaka9ZX0yok0/exec")  // ← 실제 배포된 앱스크립트 URL로 교체하세요
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formData = new FormData(this);
 
-    fetch("https://script.google.com/macros/s/AKfycbzvVicomj9usp3zsqaLkBOkUFc-bYQvS_zZABOQ-wWpFschNTkYLuzDBozZSIWkEF9r/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbz4KWmw26q8aZhwzf2pzIzUYNhV4gfdzgukCQp22J6SI9mp8s9o62IPfaka9ZX0yok0/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
