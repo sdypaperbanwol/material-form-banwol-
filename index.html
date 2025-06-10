@@ -224,27 +224,32 @@ document.addEventListener("DOMContentLoaded", function () {
     let remarksText = remarksInput.value.trim();
 
     let autoAdjusted = false;
-    let diff = 0;
+let diff = 0;
 
-    if (requestedQty > currentStock) {
-      diff = requestedQty - currentStock;
+if (requestedQty > currentStock) {
+  diff = requestedQty - currentStock;
 
-      if (currentStock > 0) {
-  alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-  quantityInput.value = currentStock;
-} else {
-  alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-  quantityInput.value = 1;
+  if (currentStock > 0) {
+    alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+    quantityInput.value = currentStock;
+    autoAdjusted = true;
+    return; // 다시 누르게 유도
+  } else {
+    // 재고가 0인 경우 → 단 한 번만 alert 띄우고 처리
+    if (requestedQty > 1) {
+      alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+    }
+    quantityInput.value = 1;
+
+    // remarks 자동 추가
+    remarksInput.value = remarksText.length > 0
+      ? `${remarksText} / ${diff}개 구매 요청`
+      : `${diff}개 구매 요청`;
+
+    // ❌ return 안 함 → 그대로 신청 진행
+  }
 }
 
-// remarks 자동 추가
-if (diff > 0) {
-  remarksInput.value = remarksText.length > 0
-    ? `${remarksText} / ${diff}개 구매 요청`
-    : `${diff}개 구매 요청`;
-}
-
-return; // ✅ 여기 추가! 사용자가 다시 제출하게 유도
 
 
       autoAdjusted = true;
