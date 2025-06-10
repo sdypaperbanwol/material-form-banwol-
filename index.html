@@ -109,6 +109,7 @@ const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
 
+// 로그인 복원
 const saved = localStorage.getItem("userInfo");
 if (saved) {
   const [empId, empName] = saved.split(" ");
@@ -162,10 +163,10 @@ function verifyUser() {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
+</script>
 
+<script>
 document.addEventListener("DOMContentLoaded", function () {
-  let isSubmitting = false;
-
   const categorySelect = document.getElementById("category");
   const subSelect = document.getElementById("subcategory");
   const sizeSelect = document.getElementById("size");
@@ -217,6 +218,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  let isSubmitting = false;
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
     if (isSubmitting) return;
@@ -225,17 +227,20 @@ document.addEventListener("DOMContentLoaded", function () {
     const requestedQty = parseInt(quantityInput.value, 10);
     let remarksText = remarksInput.value.trim();
 
-    let diff = 0;
+    if (requestedQty <= 0) {
+      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+      quantityInput.value = 1;
+      return;
+    }
 
     if (requestedQty > currentStock) {
-      diff = requestedQty - currentStock;
+      const diff = requestedQty - currentStock;
 
       if (currentStock > 0) {
         alert(`⚠️ 현재 ${currentStock}개 지급 가능 예정이며, 재고 부족분 ${diff}개는 구매 요청으로 접수되어 추후 지급될 수 있습니다.`);
         quantityInput.value = currentStock;
       } else {
         alert(`⚠️ 현재 지급 가능한 재고가 없어 ${diff}개 전량 구매 요청으로 접수됩니다.`);
-        // 수량 그대로 둠
       }
 
       if (remarksText.length > 0) {
@@ -244,13 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
         remarksInput.value = `${diff}개 구매 요청`;
       }
 
-      return; // 자동 전송 방지
-    }
-
-    if (requestedQty <= 0) {
-      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-      quantityInput.value = 1;
-      return;
+      return; // ✅ 첫 클릭만 방지
     }
 
     const formData = new URLSearchParams({
@@ -278,20 +277,21 @@ document.addEventListener("DOMContentLoaded", function () {
         materialForm.reset();
         subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
         sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        document.getElementById("name").value = localStorage.getItem("userInfo") || "";
       } else {
         msgDiv.textContent = "❌ 신청 실패";
         msgDiv.style.color = "red";
       }
     })
     .catch(err => {
-      isSubmitting = false;
       console.error("에러:", err);
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
+      isSubmitting = false;
     });
   });
 });
 </script>
-
 </body>
 </html>
+
