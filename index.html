@@ -221,32 +221,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
     const requestedQty = parseInt(quantityInput.value, 10);
- let remarksText = remarksInput.value?.trim() || ""; // ✅ 안전하게 초기화
+    let remarksText = remarksInput.value.trim();
 
-if (requestedQty > currentStock) {
-  diff = requestedQty - currentStock;
+    let autoAdjusted = false;
+    let diff = 0;
 
-  if (currentStock > 0) {
-    alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-    quantityInput.value = currentStock;
-    return;
-  } else {
-    if (requestedQty > 1) {
-      alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-    }
+    if (requestedQty > currentStock) {
+      diff = requestedQty - currentStock;
 
-    quantityInput.value = 1;
-
-    // ✅ 에러 방지: remarksText가 없더라도 안전
-    remarksInput.value = remarksText.length > 0
-      ? `${remarksText} / ${diff}개 구매 요청`
-      : `${diff}개 구매 요청`;
-    // ❗ return 없이 그대로 제출 진행
-  }
-}
-
-
-
+      if (currentStock > 0) {
+        alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+        quantityInput.value = currentStock;
+      } else {
+        alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+        quantityInput.value = 1;
+      }
 
       autoAdjusted = true;
     } else if (requestedQty <= 0) {
