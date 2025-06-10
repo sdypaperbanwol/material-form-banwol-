@@ -224,25 +224,30 @@ document.addEventListener("DOMContentLoaded", function () {
     let remarksText = remarksInput.value.trim();
 
     let autoAdjusted = false;
-    let diff = 0;
+let diff = 0;
 
-    if (requestedQty > currentStock) {
-      diff = requestedQty - currentStock;
+if (requestedQty > currentStock) {
+  diff = requestedQty - currentStock;
 
-      if (currentStock > 0) {
-        alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-        quantityInput.value = currentStock;
-      } else {
-        alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
-        quantityInput.value = 1;
-      }
+  if (currentStock > 0) {
+    alert(`⚠️ 재고(${currentStock})보다 많이 신청하셨습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+    quantityInput.value = currentStock;
+  } else {
+    alert(`⚠️ 재고가 없습니다. ${diff}개 구매 요청으로 접수됩니다.`);
+    quantityInput.value = 1;
+  }
 
-      autoAdjusted = true;
-    } else if (requestedQty <= 0) {
-      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-      quantityInput.value = 1;
-      return;
-    }
+  // 비고 자동 추가는 여기서 처리
+  remarksInput.value = remarksText.length > 0
+    ? `${remarksText} / ${diff}개 구매 요청`
+    : `${diff}개 구매 요청`;
+
+  // 🚫 저장 중단! 사용자가 확인하고 다시 신청해야 저장됨
+  msgDiv.textContent = "⚠️ 수량이 자동 조정되었습니다. 비고를 확인 후 다시 신청하세요.";
+  msgDiv.style.color = "orange";
+  return;
+}
+
 
     if (autoAdjusted && diff > 0) {
       remarksInput.value = remarksText.length > 0
