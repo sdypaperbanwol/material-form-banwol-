@@ -260,11 +260,22 @@ if (requestedQty > currentStock) {
 
   if (currentStock > 0) {
     alert(`⚠️ 현재 ${currentStock}개 지급 가능 예정이며, 재고 부족분 ${diff}개는 구매 요청으로 접수되어 추후 지급될 수 있습니다.`);
-    quantityInput.value = currentStock;  // ✅ 재고가 있을 땐 수량 조정
+    quantityInput.value = currentStock;
   } else {
     alert(`⚠️ 현재 지급 가능한 재고가 없어 ${diff}개 전량 구매 요청으로 접수됩니다.`);
-    // ✅ 재고가 0이면 수량 그대로 유지 (조정 X)
+    // 수량 조정 없이 그대로 둠
   }
+
+  // ✅ remarks 자동 추가 (공통 처리)
+  if (remarksText.length > 0) {
+    remarksInput.value = `${remarksText} / ${diff}개 구매 요청`;
+  } else {
+    remarksInput.value = `${diff}개 구매 요청`;
+  }
+
+  // ✅ 자동 전송 방지
+  return;
+}
 
   autoAdjusted = true;
 } else if (requestedQty <= 0) {
