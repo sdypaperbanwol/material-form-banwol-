@@ -180,9 +180,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const formData = new FormData(this);
 
     fetch("https://script.google.com/macros/s/AKfycbz9Jh8NHH8KaOx04VSQoPG_FM_eZpXG94ApfWM1UPheaMCmp-c1XC1te3LF7ljy_Yjd/exec", {
-      method: "POST",
-      body: new URLSearchParams(formData)
-    })
+  method: "POST",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded"
+  },
+  body: new URLSearchParams(formData)
+})
+
     .then(res => res.json())
     .then(data => {
       if(data.result === "success") {
