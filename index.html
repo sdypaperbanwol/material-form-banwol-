@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let items = {};
 
   // 1) 물품 리스트 가져오기
-  fetch("https://script.google.com/macros/s/AKfycbyjKHB9NnisdiNg5XOXwE9PCQ_hxcPDwqUGMAAJPgth_ifhRt2vi-1zJJme7-ALms6q/exec")  // ← 실제 배포된 앱스크립트 URL로 교체하세요
+  fetch("https://script.google.com/macros/s/AKfycbzwDc2xR9TzWjZZpE37HmbBAdDpfZv7Hn46CM6rRs-ecJAtBw7pKVNA-B6kfnCvpwK-/exec")  // ← 실제 배포된 앱스크립트 URL로 교체하세요
     .then(res => res.json())
     .then(data => {
       items = data;
@@ -179,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formData = new FormData(this);
 
-    fetch("https://script.google.com/macros/s/AKfycbyjKHB9NnisdiNg5XOXwE9PCQ_hxcPDwqUGMAAJPgth_ifhRt2vi-1zJJme7-ALms6q/exec", {
+    fetch("https://script.google.com/macros/s/AKfycbzwDc2xR9TzWjZZpE37HmbBAdDpfZv7Hn46CM6rRs-ecJAtBw7pKVNA-B6kfnCvpwK-/exec", {
       method: "POST",
       body: new URLSearchParams(formData)
     })
