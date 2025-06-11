@@ -67,19 +67,13 @@
 
   <form id="materialForm" style="display: none;">
     <label for="category">물품 종류</label>
-    <select id="category" name="category" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+    <select id="category" name="category" required></select>
 
     <label for="subcategory">세부 종류</label>
-    <select id="subcategory" name="subcategory" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+    <select id="subcategory" name="subcategory" required></select>
 
     <label for="size">사이즈</label>
-    <select id="size" name="size" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+    <select id="size" name="size" required></select>
 
     <label for="name">신청자</label>
     <input type="text" id="name" name="name" readonly />
@@ -109,7 +103,6 @@ const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
 
-// 로그인 복원
 const saved = localStorage.getItem("userInfo");
 if (saved) {
   const [empId, empName] = saved.split(" ");
@@ -250,21 +243,28 @@ document.addEventListener("DOMContentLoaded", function () {
           alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
         }
 
-        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0
-            ? `${remarksText} / ${추가문구}`
-            : `${추가문구}`;
-        }
+        remarksText = remarksText
+          .split("/")
+          .map(part => part.trim())
+          .filter(part => !/지급|구매 요청/.test(part))
+          .join(" / ");
+
+        remarksInput.value = remarksText.length > 0
+          ? `${remarksText} / ${추가문구}`
+          : `${추가문구}`;
 
         alertShown = true;
         return;
       } else {
-        // 재고 충분한 경우에도 지급 문구 추가
-        if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0
-            ? `${remarksText} / ${지급문구}`
-            : `${지급문구}`;
-        }
+        remarksText = remarksText
+          .split("/")
+          .map(part => part.trim())
+          .filter(part => !/지급|구매 요청/.test(part))
+          .join(" / ");
+
+        remarksInput.value = remarksText.length > 0
+          ? `${remarksText} / ${지급문구}`
+          : `${지급문구}`;
       }
     }
 
@@ -308,10 +308,8 @@ document.addEventListener("DOMContentLoaded", function () {
       alertShown = false;
     });
   });
-
 });
 </script>
 
 </body>
 </html>
-
