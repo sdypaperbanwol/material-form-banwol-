@@ -103,14 +103,17 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbz-LfFz3MCOL0bSGIZk_KwxibZkEmZ-817LvmkoWgIVf47r1BC9CUSQqes-11i-_tRA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwshrmZKfS1D5ENwZZsPUaJd2cg7_-B0IS4ca27TaDJ2ARzCyKs7SygUbSoeM18eTfz/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
 
-// 로그인 복원
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 const saved = localStorage.getItem("userInfo");
 if (saved) {
   const [empId, empName] = saved.split(" ");
@@ -121,6 +124,11 @@ if (saved) {
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
+      if (data.active === "Y" && !isMobileDevice()) {
+        alert("⚠️ 이 계정은 모바일에서만 접근할 수 있습니다.");
+        localStorage.removeItem("userInfo");
+        return;
+      }
       nameInput.value = saved;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
@@ -148,11 +156,16 @@ function verifyUser() {
   .then(data => {
     if (data.result === "success") {
       const fullName = `${empId} ${empName}`;
+      if (data.active === "Y" && !isMobileDevice()) {
+        loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
+        return;
+      }
+
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
-    } else if (data.result === "disabled") {
+    } else if (data.result === "disabled" || data.active === "N") {
       localStorage.removeItem("userInfo");
       loginMsg.textContent = "승인이 해제된 계정입니다.";
     } else {
@@ -182,17 +195,13 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
     isSubmitting = false;
-
     materialForm.reset();
-
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-
     categorySelect.disabled = false;
     subSelect.disabled = false;
     sizeSelect.disabled = false;
     quantityInput.disabled = false;
-
     nameInput.value = localStorage.getItem("userInfo") || "";
     msgDiv.textContent = "";
   });
@@ -326,12 +335,10 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("에러:", err);
       isSubmitting = false;
       alertShown = false;
-
       categorySelect.disabled = false;
       subSelect.disabled = false;
       sizeSelect.disabled = false;
       quantityInput.disabled = false;
-
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
     });
