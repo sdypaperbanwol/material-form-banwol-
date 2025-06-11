@@ -96,7 +96,8 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwpNfl0T78JQM98y-5iMA7lnPwjY8AwJFPC2SSw7EiClG3vTsHBU-m3BB8koMJtD-z0/exec";
+const POST_URL = "https://script.google.com/macros/s/AKfycbwpNfl0T78JQM98y-5iMA7lnPwjY8AwJFPC2SSw7EiClG3vTsHBU-m3BB8koMJtD-z0/exec";
+const GET_URL = POST_URL;
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -106,7 +107,7 @@ const loginMsg = document.getElementById("loginMsg");
 const saved = localStorage.getItem("userInfo");
 if (saved) {
   const [empId, empName] = saved.split(" ");
-  fetch(API_URL, {
+  fetch(POST_URL, {
     method: "POST",
     body: new URLSearchParams({ empId, empName })
   })
@@ -142,7 +143,7 @@ function verifyUser() {
     return;
   }
 
-  fetch(API_URL, {
+  fetch(POST_URL, {
     method: "POST",
     body: new URLSearchParams({ empId, empName })
   })
@@ -180,7 +181,7 @@ function verifyUser() {
 }
 
 function loadMaterialList() {
-  fetch(API_URL)
+  fetch(GET_URL)
     .then(res => res.json())
     .then(data => {
       const categorySelect = document.getElementById("category");
