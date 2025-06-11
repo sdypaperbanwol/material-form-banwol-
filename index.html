@@ -263,10 +263,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!alertShown) {
       if (구매요청수량 > 0) {
         if (currentStock > 0) {
-          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
           quantityInput.value = currentStock;
         } else {
-          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
         }
 
         if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
