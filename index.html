@@ -52,6 +52,17 @@
       color: #666;
       line-height: 1.4;
     }
+     @media (max-width: 600px) {
+    #photoModal > div {
+      padding: 10px !important;
+      max-width: 100% !important;
+      border-radius: 0 !important;
+    }
+    #photoModal img {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+  }
   </style>
 </head>
 <body>
@@ -88,6 +99,7 @@
   box-sizing: border-box;
   overflow-x: hidden;
   margin: auto;
+
 ">
     <h2>📋 비품 예시 사진</h2>
     <button onclick="document.getElementById('photoModal').style.display='none'"
