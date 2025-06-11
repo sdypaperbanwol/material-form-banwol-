@@ -125,8 +125,7 @@ if (saved) {
         return;
       }
       nameInput.value = saved;
-      loginSection.style.display = "none";
-      materialForm.style.display = "flex";
+      showForm();
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -166,8 +165,7 @@ function verifyUser() {
         return;
       }
 
-      loginSection.style.display = "none";
-      materialForm.style.display = "flex";
+      showForm();
     } else if (data.result === "disabled") {
       localStorage.removeItem("userInfo");
       loginMsg.textContent = "승인이 해제된 계정입니다.";
@@ -179,6 +177,61 @@ function verifyUser() {
     console.error("[로그인 오류]", err);
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
+}
+
+function loadMaterialList() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      const categorySelect = document.getElementById("category");
+      const subcategorySelect = document.getElementById("subcategory");
+      const sizeSelect = document.getElementById("size");
+
+      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      Object.keys(data).forEach(category => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
+      });
+
+      categorySelect.onchange = function () {
+        const selected = data[this.value];
+        subcategorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        if (!selected) return;
+
+        selected.types.forEach(type => {
+          const option = document.createElement("option");
+          option.value = type;
+          option.textContent = type;
+          subcategorySelect.appendChild(option);
+        });
+      };
+
+      subcategorySelect.onchange = function () {
+        const selected = data[categorySelect.value];
+        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        if (!selected) return;
+
+        const sizeMap = selected.stockMap;
+        Object.keys(sizeMap)
+          .filter(k => k.startsWith(subcategorySelect.value + "__"))
+          .forEach(key => {
+            const size = key.split("__")[1];
+            const option = document.createElement("option");
+            option.value = size;
+            option.textContent = `${size} (${sizeMap[key]}개)`;
+            sizeSelect.appendChild(option);
+          });
+      };
+    });
+}
+
+function showForm() {
+  materialForm.style.display = "flex";
+  loginSection.style.display = "none";
+  loadMaterialList();
 }
 </script>
 
