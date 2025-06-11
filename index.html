@@ -86,6 +86,10 @@
 
     <label for="quantity">수량</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
+    <!-- ✅ 여기 이미지 태그 추가 -->
+<img id="itemImage" src="" alt="선택한 비품 이미지"
+     style="display:none; max-width:100%; margin:10px 0; border:1px solid #ccc; border-radius:6px;" />
+
 
     <label for="remarks">비고</label>
     <small>
@@ -103,7 +107,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwshrmZKfS1D5ENwZZsPUaJd2cg7_-B0IS4ca27TaDJ2ARzCyKs7SygUbSoeM18eTfz/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz0Kf7fzYH_GmCUbNA9R_coZYWJlgMAMhNn1iJhUr196tc6GdeXCImGfjKcpoRSFVM/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -227,27 +231,52 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   subSelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    const type = subSelect.value;
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      const stockMap = items[cat].stockMap;
-      for (const [key, stock] of Object.entries(stockMap)) {
+  const cat = categorySelect.value;
+  const type = subSelect.value;
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  
+  if (items[cat]) {
+    const stockMap = items[cat].stockMap;
+
+    for (const [key, stock] of Object.entries(stockMap)) {
+      if (!key.includes("__img")) { // 이미지 정보는 생략
         const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+          const fullKey = `${t}__${size}`;
+          const imageUrl = stockMap[`${fullKey}__img`] || "";
+
+          sizeSelect.innerHTML += `
+            <option value="${size}" data-stock="${stock}" data-image="${imageUrl}">
+              ${size} (재고: ${stock || "X"})
+            </option>`;
         }
       }
     }
-  });
+  }
+});
+
 
   sizeSelect.addEventListener("change", () => {
-    const opt = sizeSelect.selectedOptions[0];
-    const stock = parseInt(opt?.dataset.stock || "0", 10);
-    if (stock === 0) {
-      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
-    }
-  });
+  const opt = sizeSelect.selectedOptions[0];
+  const stock = parseInt(opt?.dataset.stock || "0", 10);
+  const imageUrl = opt?.dataset.image || "";
+
+  // 재고 알림
+  if (stock === 0) {
+    alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
+  }
+
+  // 이미지 표시
+  const img = document.getElementById("itemImage");
+  if (imageUrl) {
+    img.src = imageUrl;
+    img.style.display = "block";
+  } else {
+    img.src = "";
+    img.style.display = "none";
+  }
+});
+
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
