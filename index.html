@@ -1,138 +1,158 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자재창고 물품 관리(반월)</title>
   <style>
-    body {
-      background-color: #f7f7f7;
-      font-family: 'Arial', sans-serif;
-      padding: 20px;
-    }
+    body { background: #f7f7f7; font-family: Arial, sans-serif; padding:20px; }
     form, #login-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-width: 400px;
-      margin: 20px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display:flex; flex-direction:column; gap:12px;
+      max-width:400px; margin:20px auto; background:#fff;
+      padding:20px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);
     }
-    label {
-      font-weight: bold;
-    }
+    label { font-weight:bold; }
     select, input, textarea {
-      padding: 10px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      padding:10px; font-size:14px;
+      border-radius:6px; border:1px solid #ccc;
     }
-    textarea {
-      resize: vertical;
-      min-height: 60px;
-    }
-    button {
-      padding: 12px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .message {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    small {
-      font-size: 12px;
-      color: #666;
-      line-height: 1.4;
-    }
+    textarea { resize:vertical; min-height:60px; }
+    button { padding:12px; font-size:16px; background:#4CAF50; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    .message { margin-top:10px; font-weight:bold; }
+    small { font-size:12px; color:#666; line-height:1.4; }
 
-    #photoModal > div {
-      max-height: 90vh;
-      overflow-y: auto;
+    /* 모달 기본 */
+    #photoModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; overflow:auto; padding:10px; box-sizing:border-box; }
+    #photoModal .modal-content {
+      background:#fff; padding:20px; border-radius:10px; width:100%; max-width:800px; margin:auto; box-sizing:border-box;
+      max-height:90vh; overflow-y:auto;
     }
+    #photoModal img { width:100%; height:auto; display:block; margin:10px auto; }
 
-    @media (max-width: 600px) {
-      #photoModal > div {
-        padding: 10px !important;
-        max-width: 100% !important;
-        max-height: 90vh !important;
-        overflow-y: auto !important;
-        border-radius: 0 !important;
+    /* 모바일 대응 */
+    @media (max-width:600px) {
+      #photoModal .modal-content {
+        padding:10px !important; max-width:100% !important; border-radius:0 !important;
       }
-      #photoModal img {
-        max-width: 100% !important;
-        height: auto !important;
-      }
+    }
+    /* 닫기 버튼 고정 위치 */
+    #closeModalBtn {
+      position:fixed; top:10px; right:10px; z-index:10000;
+      background:#f44336; color:#fff; padding:8px 12px;
+      border:none; border-radius:4px; font-weight:bold; cursor:pointer;
     }
   </style>
 </head>
 <body>
 
+  <!-- 로그인 섹션 -->
   <div id="login-section">
     <h3>로그인</h3>
     <p>사번과 이름을 입력하세요</p>
-    <input type="text" id="empId" placeholder="사번 입력" />
-    <input type="text" id="empName" placeholder="이름 입력" />
+    <input type="text" id="empId" placeholder="사번 입력">
+    <input type="text" id="empName" placeholder="이름 입력">
     <button onclick="verifyUser()">확인</button>
-    <p id="loginMsg" style="color: red; font-weight: bold;"></p>
+    <p id="loginMsg" style="color:red;font-weight:bold;"></p>
   </div>
 
-  <form id="materialForm" style="display: none;">
+  <!-- 신청 폼 -->
+  <form id="materialForm" style="display:none;">
     <label for="category">물품 종류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <!-- ✅ 비품 예시 버튼 -->
-    <button type="button" onclick="document.getElementById('photoModal').style.display='block'"
-            style="background-color: #2196F3; color: white; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer;">
+    <button type="button" onclick="openModal()" style="background:#2196F3;">
       📸 비품 예시 사진 보기
     </button>
 
-    <!-- ✅ 모달창 -->
-    <div id="photoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; overflow:auto; padding:10px; box-sizing: border-box;">
-      <div style="background:#fff; padding:20px; border-radius:10px; width: 100%; max-width: 800px; box-sizing: border-box; overflow-x: hidden; margin: auto; max-height: 90vh; overflow-y: auto;">
-        <h2>📋 비품 예시 사진</h2>
-        <button onclick="document.getElementById('photoModal').style.display='none'"
-                style="float:right; background-color:#f44336; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">
-          닫기 ✖
-        </button>
-        <hr>
-        <h3>1. 안전화</h3>
-        <p>RF-41</p>
-        <img src="https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg" />
-        <p>RF-46</p>
-        <img src="https://sdypaperbanwol.github.io/material-form-banwol-/RF-46.jpeg" />
-        <p>RF-60</p>
-        <img src="https://sdypaperbanwol.github.io/material-form-banwol-/RF-60.jpeg" />
-        <p>YAK-66</p>
-        <img src="https://sdypaperbanwol.github.io/material-form-banwol-/YAK-66.jpeg" />
+    <label for="subcategory">세부 종류</label>
+    <select id="subcategory" name="subcategory" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-        <h3>2. 장화</h3>
-        <p>패션장화</p>
-        <img src="https://sdypaperbanwol.github.io/material-form-banwol-/장화.jpeg" />
+    <label for="size">사이즈</label>
+    <select id="size" name="size" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-        <h3>3. 가슴장화</h3>
-        <p>기본</p>
-        <img src="https://sdypaperbanwol.github.io/material-form-banwol-/가슴장화.jpeg" />
+    <label for="name">신청자</label>
+    <input type="text" id="name" name="name" readonly>
 
-        <h3>4. 우의</h3>
-        <p>기본</p>
-        <img src="https://sdypaperbanwol.github.io/material-form-banwol-/우의.jpeg" />
-      </div>
-    </div>
+    <label for="quantity">수량</label>
+    <input type="number" id="quantity" name="quantity" min="1" required>
 
-    <!-- 🔻 여기에 나머지 폼 입력 항목 이어서 넣으면 됨 -->
-    <!-- ... 예: 세부종류, 사이즈, 신청자, 수량, 비고, 신청 버튼 등 ... -->
+    <label for="remarks">비고</label>
+    <small>‑ 24시간 신청 가능… (이하 생략)</small>
+    <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요"></textarea>
 
+    <button type="submit">신청</button>
+    <button type="button" id="resetBtn" style="background:#999;">처음으로</button>
+    <div class="message" id="msg"></div>
   </form>
 
+  <!-- 이미지 모달 -->
+  <div id="photoModal">
+    <div class="modal-content">
+      <h2>📋 비품 예시 사진</h2>
+      <button id="closeModalBtn" onclick="closeModal()">닫기 ✖</button>
+      <hr>
+      <h3>1. 안전화</h3>
+      <p>RF‑41</p>
+      <img src="https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg">
+      <p>RF‑46</p>
+      <img src="https://sdypaperbanwol.github.io/material-form-banwol-/RF-46.jpeg">
+      <p>RF‑60</p>
+      <img src="https://sdypaperbanwol.github.io/material-form-banwol-/RF-60.jpeg">
+      <p>YAK‑66</p>
+      <img src="https://sdypaperbanwol.github.io/material-form-banwol-/YAK-66.jpeg">
+
+      <h3>2. 장화</h3>
+      <p>패션장화</p>
+      <img src="https://sdypaperbanwol.github.io/material-form-banwol-/장화.jpeg">
+
+      <h3>3. 가슴장화</h3>
+      <p>기본</p>
+      <img src="https://sdypaperbanwol.github.io/material-form-banwol-/가슴장화.jpeg">
+
+      <h3>4. 우의</h3>
+      <p>기본</p>
+      <img src="https://sdypaperbanwol.github.io/material-form-banwol-/우의.jpeg">
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/…/exec";
+    const loginSection = document.getElementById("login-section");
+    const materialForm = document.getElementById("materialForm");
+    const nameInput = document.getElementById("name");
+    const loginMsg = document.getElementById("loginMsg");
+
+    function isMobileDevice() {
+      return /Android|iPhone|Mobile/i.test(navigator.userAgent);
+    }
+
+    function verifyUser() {
+      /* 로그인 axios 대체 fetch + 로직 (생략) */
+      // 성공 시:
+      loginSection.style.display = "none";
+      materialForm.style.display = "flex";
+      nameInput.value = document.getElementById("empId").value + " " + document.getElementById("empName").value;
+    }
+
+    document.getElementById("resetBtn").onclick = () => location.reload();
+
+    document.getElementById("category").onchange = function(){
+      // sub/category 로직 (이하 생략)
+    };
+
+    // 모달 관련 함수
+    function openModal() {
+      document.getElementById("photoModal").style.display = "block";
+    }
+    function closeModal() {
+      document.getElementById("photoModal").style.display = "none";
+    }
+  </script>
 </body>
 </html>
