@@ -67,13 +67,19 @@
 
   <form id="materialForm" style="display: none;">
     <label for="category">물품 종류</label>
-    <select id="category" name="category" required></select>
+    <select id="category" name="category" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
     <label for="subcategory">세부 종류</label>
-    <select id="subcategory" name="subcategory" required></select>
+    <select id="subcategory" name="subcategory" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
     <label for="size">사이즈</label>
-    <select id="size" name="size" required></select>
+    <select id="size" name="size" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
     <label for="name">신청자</label>
     <input type="text" id="name" name="name" readonly />
@@ -83,50 +89,41 @@
 
     <label for="remarks">비고</label>
     <small>
-      - 24시간 신청 가능하며 지급은 담당자의 평일 근무일에 진행됩니다.<br>
-      - 재고 부족 시 보유 수량만 지급되고 부족분은 구매 요청됩니다.<br>
-      - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.<br>
-      - 예)수령 일정: 오늘·내일 X시경 수령 희망<br>
-      - 예)작업복 X사이즈 → XL 교환 요청
+      - 24시간 신청 가능하며 담당자의 평일 근무일에 지급됩니다.<br>
+      - 비대면 수령도 가능(사무실 1층 복도 무인사물함 설치 예정)<br>
+      - 예시: 오늘·내일(X월X일) X시 수령/교환 또는 비대면 요청<br>
+      - 재고 부족 시 보유 수량만 지급, 부족분은 구매 요청됩니다.<br>
+      - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
     <button type="submit">신청</button>
+    <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
   </form>
 
 <script>
-const POST_URL = "https://script.google.com/macros/s/AKfycbwpNfl0T78JQM98y-5iMA7lnPwjY8AwJFPC2SSw7EiClG3vTsHBU-m3BB8koMJtD-z0/exec";
-const GET_URL = POST_URL;
+const API_URL = "https://script.google.com/macros/s/AKfycbzEk9kX5-fPNnIG5T8mqa48OnYg5UKjX5Kh1bWksh2koeiVQwi4WCBVX-ygZ3Wh7WPo/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
 
+// 로그인 복원
 const saved = localStorage.getItem("userInfo");
 if (saved) {
   const [empId, empName] = saved.split(" ");
-  fetch(POST_URL, {
+  fetch(API_URL, {
     method: "POST",
     body: new URLSearchParams({ empId, empName })
   })
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      const level = data.level || "N";
-      const accessGranted = (
-        (level === "Z") ||
-        (level === "Y" && isMobile)
-      );
-      if (!accessGranted) {
-        alert("⚠️ 해당 기기에서는 접속이 허용되지 않습니다.");
-        location.href = "about:blank";
-        return;
-      }
       nameInput.value = saved;
-      showForm();
+      loginSection.style.display = "none";
+      materialForm.style.display = "flex";
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -143,7 +140,7 @@ function verifyUser() {
     return;
   }
 
-  fetch(POST_URL, {
+  fetch(API_URL, {
     method: "POST",
     body: new URLSearchParams({ empId, empName })
   })
@@ -153,20 +150,8 @@ function verifyUser() {
       const fullName = `${empId} ${empName}`;
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
-
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      const level = data.level || "N";
-      const accessGranted = (
-        (level === "Z") ||
-        (level === "Y" && isMobile)
-      );
-      if (!accessGranted) {
-        alert("⚠️ 해당 기기에서는 접속이 허용되지 않습니다.");
-        location.href = "about:blank";
-        return;
-      }
-
-      showForm();
+      loginSection.style.display = "none";
+      materialForm.style.display = "flex";
     } else if (data.result === "disabled") {
       localStorage.removeItem("userInfo");
       loginMsg.textContent = "승인이 해제된 계정입니다.";
@@ -179,61 +164,179 @@ function verifyUser() {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
+</script>
 
-function loadMaterialList() {
-  fetch(GET_URL)
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const categorySelect = document.getElementById("category");
+  const subSelect = document.getElementById("subcategory");
+  const sizeSelect = document.getElementById("size");
+  const quantityInput = document.getElementById("quantity");
+  const remarksInput = document.getElementById("remarks");
+  const msgDiv = document.getElementById("msg");
+
+  let items = {};
+  let isSubmitting = false;
+  let alertShown = false;
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    alertShown = false;
+    isSubmitting = false;
+
+    materialForm.reset();
+
+    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+
+    categorySelect.disabled = false;
+    subSelect.disabled = false;
+    sizeSelect.disabled = false;
+    quantityInput.disabled = false;
+
+    nameInput.value = localStorage.getItem("userInfo") || "";
+    msgDiv.textContent = "";
+  });
+
+  fetch(API_URL)
     .then(res => res.json())
     .then(data => {
-      const categorySelect = document.getElementById("category");
-      const subcategorySelect = document.getElementById("subcategory");
-      const sizeSelect = document.getElementById("size");
-
-      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-      Object.keys(data).forEach(category => {
-        const option = document.createElement("option");
-        option.value = category;
-        option.textContent = category;
-        categorySelect.appendChild(option);
+      items = data;
+      Object.keys(items).forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
-
-      categorySelect.onchange = function () {
-        const selected = data[this.value];
-        subcategorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        if (!selected) return;
-
-        selected.types.forEach(type => {
-          const option = document.createElement("option");
-          option.value = type;
-          option.textContent = type;
-          subcategorySelect.appendChild(option);
-        });
-      };
-
-      subcategorySelect.onchange = function () {
-        const selected = data[categorySelect.value];
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        if (!selected) return;
-
-        const sizeMap = selected.stockMap;
-        Object.keys(sizeMap)
-          .filter(k => k.startsWith(subcategorySelect.value + "__"))
-          .forEach(key => {
-            const size = key.split("__")[1];
-            const option = document.createElement("option");
-            option.value = size;
-            option.textContent = `${size} (${sizeMap[key]}개)`;
-            sizeSelect.appendChild(option);
-          });
-      };
     });
-}
 
-function showForm() {
-  materialForm.style.display = "flex";
-  loginSection.style.display = "none";
-  loadMaterialList();
-}
+  categorySelect.addEventListener("change", () => {
+    const cat = categorySelect.value;
+    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    if (items[cat]) {
+      items[cat].types.forEach(type => {
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+      });
+    }
+  });
+
+  subSelect.addEventListener("change", () => {
+    const cat = categorySelect.value;
+    const type = subSelect.value;
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    if (items[cat]) {
+      const stockMap = items[cat].stockMap;
+      for (const [key, stock] of Object.entries(stockMap)) {
+        const [t, size] = key.split("__");
+        if (t === type) {
+          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+        }
+      }
+    }
+  });
+
+  sizeSelect.addEventListener("change", () => {
+    const opt = sizeSelect.selectedOptions[0];
+    const stock = parseInt(opt?.dataset.stock || "0", 10);
+    if (stock === 0) {
+      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
+    }
+  });
+
+  materialForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+    const requestedQty = parseInt(quantityInput.value, 10);
+    let remarksText = remarksInput.value.trim();
+
+    if (requestedQty <= 0) {
+      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+      quantityInput.value = 1;
+      return;
+    }
+
+    const 지급수량 = Math.min(requestedQty, currentStock);
+    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+
+    if (!alertShown) {
+      if (구매요청수량 > 0) {
+        if (currentStock > 0) {
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+          quantityInput.value = currentStock;
+        } else {
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+        }
+
+        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+        }
+
+        categorySelect.disabled = true;
+        subSelect.disabled = true;
+        sizeSelect.disabled = true;
+        quantityInput.disabled = true;
+
+        alertShown = true;
+        return;
+      } else {
+        if (!remarksText.includes("지급")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
+        }
+      }
+    }
+
+    const formData = new URLSearchParams({
+      category: categorySelect.value,
+      subcategory: subSelect.value,
+      size: sizeSelect.value,
+      name: nameInput.value,
+      quantity: quantityInput.value,
+      remarks: remarksInput.value
+    });
+
+    isSubmitting = true;
+
+    fetch(API_URL, {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      isSubmitting = false;
+      alertShown = false;
+
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
+
+      if (data.result === "success") {
+        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
+        msgDiv.style.color = "green";
+        alert("✅ 신청이 저장되었습니다!");
+        location.reload();
+      } else {
+        msgDiv.textContent = "❌ 신청 실패";
+        msgDiv.style.color = "red";
+      }
+    })
+    .catch(err => {
+      console.error("에러:", err);
+      isSubmitting = false;
+      alertShown = false;
+
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
+
+      msgDiv.textContent = "❌ 서버 오류";
+      msgDiv.style.color = "red";
+    });
+  });
+});
 </script>
 
 </body>
