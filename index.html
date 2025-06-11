@@ -304,6 +304,7 @@ materialForm.addEventListener("submit", function(e) {
       msgDiv.textContent = "✅ 신청이 저장되었습니다!";
       msgDiv.style.color = "green";
       alert("✅ 신청이 저장되었습니다!");
+      location.reload(); // ✅ 여기 추가! 페이지 새로고침
       materialForm.reset();
       subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
