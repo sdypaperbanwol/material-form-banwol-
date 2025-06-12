@@ -77,6 +77,14 @@
     </select>
 
 
+<!-- 모달 -->
+<div id="photoModal" style="display:none;position:fixed;z-index:999;background:rgba(0,0,0,0.5);top:0;left:0;width:100vw;height:100vh;justify-content:center;align-items:center;">
+  <div style="background:white;padding:20px;border-radius:8px;position:relative;max-width:90%;max-height:90%;overflow:auto;">
+    <span id="closeModal" style="position:absolute;top:10px;right:15px;cursor:pointer;font-weight:bold;">✖</span>
+    <img id="modalImage" src="" alt="비품 이미지" style="max-width:100%;max-height:80vh;" />
+  </div>
+</div>
+
     <label for="size">사이즈</label>
     <select id="size" name="size" required>
       <option value="">-- 선택하세요 --</option>
@@ -106,7 +114,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyImAySLLtVs5hymxS3vjQ0D_TIXtllhiEddrAUJ7o7kXgo3rwPvu-2iW8D3DpgNRxa/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx43bVjfO-6V5nRt_we5Qk6XwqUTdKhtHprP6vNJh-K4ori_bzg8gQ_a4axhTXA8DSO/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -208,32 +216,21 @@ closeModal.addEventListener("click", () => {
 });
 
 photoBtn.addEventListener("click", () => {
-  const category = categorySelect.value.trim();
-  const type = subSelect.value.trim();
-  const key = `${category} ${type}`.replace(/\s+/g, " ");
+  const category = categorySelect.value;
+  const type = subSelect.value;
+  const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
 
-  if (!key || !photoMap[key] || photoMap[key].length === 0) {
+  console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
+  console.log("📸 photoMap keys:", Object.keys(photoMap));
+
+  if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
-  // 기존 이미지 제거
-  const modalContent = document.querySelector("#photoModal div");
-  modalContent.querySelectorAll("img").forEach(el => el.remove());  // 기존 이미지 제거
-
-  // 이미지 여러 개 추가
-  photoMap[key].forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.style.maxWidth = "100%";
-    img.style.maxHeight = "80vh";
-    img.style.marginBottom = "12px";
-    modalContent.appendChild(img);
-  });
-
+  modalImage.src = photoMap[key];
   photoModal.style.display = "flex";
 });
-
 
 
 
