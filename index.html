@@ -220,6 +220,9 @@ photoBtn.addEventListener("click", () => {
   const type = subSelect.value;
   const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
 
+  console.log("📸 photoMap[key]:", photoMap[key], typeof photoMap[key]);
+
+  
   if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
