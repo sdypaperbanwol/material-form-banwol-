@@ -236,7 +236,46 @@ function loadItems() {
     });
 }
 
-// 📸 이미지 목록 보기
+// 신청 처리
+materialForm.addEventListener("submit", function (e) {
+  e.preventDefault();
+  const category = document.getElementById("category").value;
+  const subcategory = document.getElementById("subcategory").value;
+  const size = document.getElementById("size").value;
+  const name = document.getElementById("name").value;
+  const quantity = parseInt(document.getElementById("quantity").value);
+  const remarksInput = document.getElementById("remarks");
+  const remarksText = remarksInput.value.trim();
+  const stock = parseInt(document.getElementById("size").selectedOptions[0]?.dataset.stock || "0");
+  const 지급수량 = Math.min(quantity, stock);
+  const 구매요청수량 = Math.max(0, quantity - stock);
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+  const 비고최종 = remarksText.includes("지급") || remarksText.includes("구매 요청") ? remarksText : (remarksText ? `${remarksText} / ${추가문구}` : 추가문구);
+
+  fetch(API_URL, {
+    method: "POST",
+    body: new URLSearchParams({ category, subcategory, size, name, quantity, remarks: 비고최종 })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.result === "success") {
+        alert("✅ 신청이 저장되었습니다!");
+        materialForm.reset();
+        document.getElementById("msg").textContent = "✅ 신청 완료";
+        document.getElementById("msg").style.color = "green";
+      } else {
+        alert("❌ 신청 실패");
+      }
+    })
+    .catch(err => {
+      console.error("신청 오류", err);
+      alert("❌ 서버 오류");
+    });
+});
+
+// 이미지 버튼
   document.getElementById("viewImageBtn").addEventListener("click", () => {
     const container = document.getElementById("imageContainer");
     container.innerHTML = "";
