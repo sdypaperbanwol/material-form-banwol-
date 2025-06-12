@@ -114,7 +114,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzjDmqyA8zbkPLC-wwgJVpnQ9sWbBWQE6wSYQBVusZv9qfwUdnHbmfUGogXK91-UL07/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwJM_1rG9FBS__jWw_FdVK5VWJLQ_JSo8GqcNuSfO1cwg-DbCAxY0-xFltN7mzg676g/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -208,7 +208,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // 이미지 버튼 및 모달 동작
 const photoBtn = document.getElementById("photoBtn");
 const photoModal = document.getElementById("photoModal");
-const modalImage = document.getElementById("modalImage");
+const photoContainer = document.createElement("div");     // ✅ 새로 생성
 const closeModal = document.getElementById("closeModal");
 
 closeModal.addEventListener("click", () => {
@@ -220,17 +220,36 @@ photoBtn.addEventListener("click", () => {
   const type = subSelect.value;
   const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
 
-  console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
-  console.log("📸 photoMap keys:", Object.keys(photoMap));
-
   if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
-  modalImage.src = photoMap[key];
+  const urls = photoMap[key];
+  if (!Array.isArray(urls)) {
+    alert("⚠️ 이미지 데이터 오류");
+    return;
+  }
+
+  const modalContent = photoModal.querySelector("div");
+  const existing = document.getElementById("modalImagesContainer");
+  if (existing) existing.remove(); // 기존 이미지 제거
+
+  const newContainer = photoContainer.cloneNode(); // 새 컨테이너
+
+  urls.forEach(url => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.style.maxWidth = "150px";
+    img.style.maxHeight = "150px";
+    img.style.border = "1px solid #ccc";
+    newContainer.appendChild(img);
+  });
+
+  modalContent.appendChild(newContainer);
   photoModal.style.display = "flex";
 });
+
 
 
 
