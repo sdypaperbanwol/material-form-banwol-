@@ -294,6 +294,9 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("해당 사진이 존재하지 않습니다.");
     }
   });
+  // 💡 "사이즈" 라벨 바로 위에 삽입
+const sizeLabel = document.querySelector('label[for="size"]');
+materialForm.insertBefore(photoBtn, sizeLabel);
 
   materialForm.insertBefore(photoBtn, document.getElementById("msg"));
 
