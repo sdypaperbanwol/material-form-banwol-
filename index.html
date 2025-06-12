@@ -102,15 +102,6 @@
     <div class="message" id="msg"></div>
   </form>
 
-  <!-- 비품 사진 모달 -->
-  <div id="photoModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div style="background:#fff; padding:20px; border-radius:10px; max-width:90%; max-height:90%; overflow:auto; position:relative;">
-      <span onclick="document.getElementById('photoModal').style.display='none'" style="position:absolute; top:10px; right:15px; cursor:pointer; font-weight:bold;">✖</span>
-      <h3 id="photoTitle"></h3>
-      <img id="photoImage" src="" alt="사진" style="max-width:100%; border:1px solid #ccc; margin-top:10px;" />
-    </div>
-  </div>
-
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbx3TrWTd7JsjfafB7BRfJGMdgbMyTCN9O2-efS0KmTIDgdrDh0s0oSrhuBgwKRUZTIW/exec";
 
@@ -164,7 +155,7 @@ function verifyUser() {
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
-      const fullName = ${empId} ${empName};
+      const fullName = `${empId} ${empName}`;
       if (data.active === "Y" && !isMobileDevice()) {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
@@ -186,7 +177,9 @@ function verifyUser() {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
+</script>
 
+<script>
 document.addEventListener("DOMContentLoaded", function () {
   const categorySelect = document.getElementById("category");
   const subSelect = document.getElementById("subcategory");
@@ -218,7 +211,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(data => {
       items = data;
       Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += <option value="${cat}">${cat}</option>;
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
     });
 
@@ -228,7 +221,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     if (items[cat]) {
       items[cat].types.forEach(type => {
-        subSelect.innerHTML += <option value="${type}">${type}</option>;
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
       });
     }
   });
@@ -242,7 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
       for (const [key, stock] of Object.entries(stockMap)) {
         const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += <option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>;
+          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
         }
       }
     }
@@ -255,48 +248,6 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
     }
   });
-
-  // 비품 사진 보기 버튼 추가
-  const photoBtn = document.createElement("button");
-  photoBtn.type = "button";
-  photoBtn.textContent = "비품 사진 보기";
-  photoBtn.style.backgroundColor = "#007BFF";
-  photoBtn.style.color = "white";
-  photoBtn.style.border = "none";
-  photoBtn.style.padding = "10px";
-  photoBtn.style.borderRadius = "6px";
-  photoBtn.style.cursor = "pointer";
-  photoBtn.addEventListener("click", () => {
-    const keyword = [categorySelect.value, subSelect.value, sizeSelect.value]
-      .join(" ")
-      .match(/RF-\d+|YAK-\d+|가슴장화|제비표우의|패션장화/i)?.[0];
-    
-    if (!keyword) {
-      alert("해당 항목에 대한 사진이 없습니다.");
-      return;
-    }
-
-    const imageUrl = {
-      "RF-41": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/RF-41.jpeg",
-      "RF-46": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/RF-46.jpeg",
-      "RF-60": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/RF-60.jpeg",
-      "YAK-66": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/YAK-66.jpeg",
-      "가슴장화": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/가슴장화.jpg",
-      "제비표우의": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/제비표우의.jpeg",
-      "패션장화": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/패션장화.jpeg"
-    }[keyword];
-
-    if (imageUrl) {
-      document.getElementById("photoTitle").textContent = keyword + " 사진";
-      document.getElementById("photoImage").src = imageUrl;
-      document.getElementById("photoModal").style.display = "flex";
-    } else {
-      alert("해당 사진이 존재하지 않습니다.");
-    }
-  });
-  // 💡 "사이즈" 라벨 바로 위에 삽입
-const sizeLabel = document.querySelector('label[for="size"]');
-materialForm.insertBefore(photoBtn, sizeLabel);
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
@@ -314,21 +265,21 @@ materialForm.insertBefore(photoBtn, sizeLabel);
 
     const 지급수량 = Math.min(requestedQty, currentStock);
     const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
-    const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
     const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
     if (!alertShown) {
       if (구매요청수량 > 0) {
         if (currentStock > 0) {
-          alert(⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
           quantityInput.value = currentStock;
         } else {
-          alert(⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
         }
 
         if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
         }
 
         categorySelect.disabled = true;
@@ -340,7 +291,7 @@ materialForm.insertBefore(photoBtn, sizeLabel);
         return;
       } else {
         if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${지급문구} : ${지급문구};
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
         }
       }
     }
