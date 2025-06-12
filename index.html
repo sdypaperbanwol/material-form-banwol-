@@ -112,85 +112,13 @@
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwshrmZKfS1D5ENwZZsPUaJd2cg7_-B0IS4ca27TaDJ2ARzCyKs7SygUbSoeM18eTfz/exec";
 
+const loginSection = document.getElementById("login-section");
+const materialForm = document.getElementById("materialForm");
+const nameInput = document.getElementById("name");
+const loginMsg = document.getElementById("loginMsg");
+
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
-function verifyUser() {
-  const empId = document.getElementById("empId").value.trim();
-  const empName = document.getElementById("empName").value.trim();
-  const loginMsg = document.getElementById("loginMsg");
-
-  if (!empId || !empName) {
-    loginMsg.textContent = "사번과 이름을 모두 입력하세요.";
-    return;
-  }
-
-  fetch(API_URL, {
-    method: "POST",
-    body: new URLSearchParams({ empId, empName })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === "success") {
-        if (data.active === "Y" && !isMobileDevice()) {
-          loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
-          return;
-        }
-        localStorage.setItem("userInfo", `${empId} ${empName}`);
-        document.getElementById("name").value = `${empId} ${empName}`;
-        document.getElementById("login-section").style.display = "none";
-        document.getElementById("materialForm").style.display = "flex";
-        loadItems();
-      } else {
-        loginMsg.textContent = "일치하는 정보가 없습니다.";
-      }
-    })
-    .catch(err => {
-      console.error("[로그인 오류]", err);
-      loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
-    });
-}
-
-function loadItems() {
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      const categorySelect = document.getElementById("category");
-      const subSelect = document.getElementById("subcategory");
-      const sizeSelect = document.getElementById("size");
-
-      const items = data;
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-
-      categorySelect.addEventListener("change", () => {
-        const cat = categorySelect.value;
-        subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        if (items[cat]) {
-          items[cat].types.forEach(type => {
-            subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-          });
-        }
-      });
-
-      subSelect.addEventListener("change", () => {
-        const cat = categorySelect.value;
-        const type = subSelect.value;
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        if (items[cat]) {
-          const stockMap = items[cat].stockMap;
-          for (const [key, stock] of Object.entries(stockMap)) {
-            const [t, size] = key.split("__");
-            if (t === type) {
-              sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
-            }
-          }
-        }
-      });
-    });
 }
 
 const saved = localStorage.getItem("userInfo");
@@ -200,102 +128,109 @@ if (saved) {
     method: "POST",
     body: new URLSearchParams({ empId, empName })
   })
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === "success") {
-        if (data.active === "Y" && !isMobileDevice()) {
-          alert("⚠️ 이 계정은 모바일에서만 접근할 수 있습니다.");
-          localStorage.removeItem("userInfo");
-          return;
-        }
-        document.getElementById("name").value = saved;
-        document.getElementById("login-section").style.display = "none";
-        document.getElementById("materialForm").style.display = "flex";
-        loadItems();
-      } else {
+  .then(res => res.json())
+  .then(data => {
+    if (data.result === "success") {
+      if (data.active === "Y" && !isMobileDevice()) {
+        alert("⚠️ 이 계정은 모바일에서만 접근할 수 있습니다.");
         localStorage.removeItem("userInfo");
-        alert("승인이 해제되어 자동 로그아웃됩니다.");
-        location.reload();
+        return;
       }
-    });
+      nameInput.value = saved;
+      loginSection.style.display = "none";
+      materialForm.style.display = "flex";
+    } else {
+      localStorage.removeItem("userInfo");
+      alert("승인이 해제되어 자동 로그아웃됩니다.");
+      location.reload();
+    }
+  });
 }
 
-document.getElementById("materialForm").addEventListener("submit", function(e) {
-  e.preventDefault();
-
-  const formData = new URLSearchParams({
-    category: document.getElementById("category").value,
-    subcategory: document.getElementById("subcategory").value,
-    size: document.getElementById("size").value,
-    name: document.getElementById("name").value,
-    quantity: document.getElementById("quantity").value,
-    remarks: document.getElementById("remarks").value
-  });
+function verifyUser() {
+  const empId = document.getElementById("empId").value.trim();
+  const empName = document.getElementById("empName").value.trim();
+  if (!empId || !empName) {
+    loginMsg.textContent = "사번과 이름을 모두 입력하세요.";
+    return;
+  }
 
   fetch(API_URL, {
     method: "POST",
-    body: formData
+    body: new URLSearchParams({ empId, empName })
   })
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
-      alert("✅ 신청이 저장되었습니다!");
-      location.reload();
+      const fullName = `${empId} ${empName}`;
+      if (data.active === "Y" && !isMobileDevice()) {
+        loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
+        return;
+      }
+
+      localStorage.setItem("userInfo", fullName);
+      nameInput.value = fullName;
+      loginSection.style.display = "none";
+      materialForm.style.display = "flex";
+    } else if (data.result === "disabled" || data.active === "N") {
+      localStorage.removeItem("userInfo");
+      loginMsg.textContent = "승인이 해제된 계정입니다.";
     } else {
-      alert("❌ 신청 실패");
+      loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
   })
   .catch(err => {
-    console.error("에러:", err);
-    alert("❌ 서버 오류");
+    console.error("[로그인 오류]", err);
+    loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
-});
+}
 
-document.getElementById("viewImageBtn").addEventListener("click", () => {
-  const container = document.getElementById("imageContainer");
-  container.innerHTML = "";
-  container.style.display = "block";
+// 📸 이미지 목록 보기
+  document.getElementById("viewImageBtn").addEventListener("click", () => {
+    const container = document.getElementById("imageContainer");
+    container.innerHTML = "";
+    container.style.display = "block";
 
-  const items = [
-    {
-      title: "RF-41",
-      desc: "충격흡수, 통풍, 쿠셔닝, 절연 토캡, 방탄 적용",
-      src: "https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg"
-    },
-    {
-      title: "RF-46",
-      desc: "KCs 인증, 반사 패널, 에어쿠션, 충격흡수, 통풍, 쿠셔닝, 방탄",
-      src: "https://sdypaperbanwol.github.io/material-form-banwol-/RF-46.jpeg"
-    },
-    {
-      title: "RF-60",
-      desc: "지퍼 장착, 충격흡수, 쿠셔닝, 스틸 토캡 포함",
-      src: "https://sdypaperbanwol.github.io/material-form-banwol-/RF-60.jpeg"
-    },
-    {
-      title: "YAK-66",
-      desc: "지퍼 장착, 뒤틀림 방지, 충격 흡수, 통풍, 토캡 포함",
-      src: "https://sdypaperbanwol.github.io/material-form-banwol-/YAK-66.jpeg"
-    }
-  ];
+    const items = [
+      {
+        title: "RF-41",
+        desc: "충격흡수, 통풍, 쿠셔닝, 절연 토캡, 방탄 적용",
+        src: "https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg"
+      },
+      {
+        title: "RF-46",
+        desc: "KCs 인증, 반사 패널, 에어쿠션, 충격흡수, 통풍, 쿠셔닝, 방탄",
+        src: "https://sdypaperbanwol.github.io/material-form-banwol-/RF-46.jpeg"
+      },
+      {
+        title: "RF-60",
+        desc: "지퍼 장착, 충격흡수, 쿠셔닝, 스틸 토캡 포함",
+        src: "https://sdypaperbanwol.github.io/material-form-banwol-/RF-60.jpeg"
+      },
+      {
+        title: "YAK-66",
+        desc: "지퍼 장착, 뒤틀림 방지, 충격 흡수, 통풍, 토캡 포함",
+        src: "https://sdypaperbanwol.github.io/material-form-banwol-/YAK-66.jpeg"
+      }
+    ];
 
-  items.forEach(item => {
-    const box = document.createElement("div");
-    box.style.marginBottom = "30px";
-    box.style.padding = "10px";
-    box.style.background = "#fff";
-    box.style.border = "1px solid #ddd";
-    box.style.borderRadius = "10px";
+    items.forEach(item => {
+      const box = document.createElement("div");
+      box.style.marginBottom = "30px";
+      box.style.padding = "10px";
+      box.style.background = "#fff";
+      box.style.border = "1px solid #ddd";
+      box.style.borderRadius = "10px";
 
-    box.innerHTML = `
-      <h3>${item.title}</h3>
-      <p>${item.desc}</p>
-      <img src="${item.src}" alt="${item.title}" style="max-width:100%; border-radius:8px; border:1px solid #ccc;" />
-    `;
+      box.innerHTML = `
+        <h3>${item.title}</h3>
+        <p>${item.desc}</p>
+        <img src="${item.src}" alt="${item.title}" style="max-width:100%; border-radius:8px; border:1px solid #ccc;" />
+      `;
 
-    container.appendChild(box);
+      container.appendChild(box);
+    });
   });
-});
 </script>
 
 </body>
