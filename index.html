@@ -78,13 +78,12 @@
 
 
 <!-- 모달 -->
-<div id="photoModal" style="display:none; position:fixed; z-index:999; background:rgba(0,0,0,0.5); top:0; left:0; width:100vw; height:100vh; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; border-radius:8px; position:relative; max-width:90%; max-height:90%; overflow:auto;">
-    <span id="closeModal" style="position:absolute; top:10px; right:15px; cursor:pointer; font-weight:bold;">✖</span>
-    <div id="modalImage" style="max-width:100%; max-height:80vh; overflow:auto;"></div>
+<div id="photoModal" style="display:none;position:fixed;z-index:999;background:rgba(0,0,0,0.5);top:0;left:0;width:100vw;height:100vh;justify-content:center;align-items:center;">
+  <div style="background:white;padding:20px;border-radius:8px;position:relative;max-width:90%;max-height:90%;overflow:auto;">
+    <span id="closeModal" style="position:absolute;top:10px;right:15px;cursor:pointer;font-weight:bold;">✖</span>
+    <img id="modalImage" src="" alt="비품 이미지" style="max-width:100%;max-height:80vh;" />
   </div>
 </div>
-
 
     <label for="size">사이즈</label>
     <select id="size" name="size" required>
@@ -224,26 +223,14 @@ photoBtn.addEventListener("click", () => {
   console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
   console.log("📸 photoMap keys:", Object.keys(photoMap));
 
-  if (!key || !photoMap[key] || photoMap[key].length === 0) {
+  if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
-  // ✅ 여러 이미지 띄우기 (모달 내부를 모두 지우고 새로 추가)
-  const modalImageDiv = document.getElementById("modalImage");
-  modalImageDiv.innerHTML = "";
-
-  photoMap[key].forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.style.maxWidth = "100%";
-    img.style.marginBottom = "12px";
-    modalImageDiv.appendChild(img);
-  });
-
+  modalImage.src = photoMap[key];
   photoModal.style.display = "flex";
 });
-
 
 
 
