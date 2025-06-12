@@ -193,6 +193,22 @@ document.addEventListener("DOMContentLoaded", function () {
   let isSubmitting = false;
   let alertShown = false;
 
+   document.getElementById("viewImageBtn").addEventListener("click", () => {
+    const modal = document.getElementById("imageModal");
+    const imgTag = document.getElementById("modalImage");
+
+    imgTag.onerror = () => {
+      modal.style.display = "none";
+      alert("📛 이미지를 불러올 수 없습니다. 경로를 확인하세요.");
+    };
+
+    imgTag.src = "https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg";
+    modal.style.display = "flex";
+  });
+
+  document.getElementById("imageModal").addEventListener("click", () => {
+    document.getElementById("imageModal").style.display = "none";
+  });
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
     isSubmitting = false;
@@ -205,6 +221,7 @@ document.addEventListener("DOMContentLoaded", function () {
     quantityInput.disabled = false;
     nameInput.value = localStorage.getItem("userInfo") || "";
     msgDiv.textContent = "";
+    
   });
 
   fetch(API_URL)
@@ -343,37 +360,7 @@ document.addEventListener("DOMContentLoaded", function () {
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
     });
-    // 이미지 보기 버튼 클릭 시
-// 이미지 보기 버튼 클릭 시
-document.getElementById("viewImageBtn").addEventListener("click", () => {
-  const cat = categorySelect.value;
-  const type = subSelect.value;
-  const size = sizeSelect.value;
 
-  if (!cat || !type || !size) {
-    alert("📌 물품 종류, 세부 종류, 사이즈를 모두 선택해주세요.");
-    return;
-  }
-
-  const imgName = `${cat}_${type}_${size}`.replace(/ /g, "").replace(/\//g, "-");
-  const imgUrl = `https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg`;
-
-  const modal = document.getElementById("imageModal");
-  const imgTag = document.getElementById("modalImage");
-
-  imgTag.onerror = () => {
-    modal.style.display = "none";
-    alert("📛 이미지를 불러올 수 없습니다. 경로를 확인하세요.");
-  };
-
-  imgTag.src = imgUrl;
-  modal.style.display = "flex";
-});
-
-// 모달 클릭 시 닫기
-document.getElementById("imageModal").addEventListener("click", () => {
-  document.getElementById("imageModal").style.display = "none";
-});
 
 
   });
