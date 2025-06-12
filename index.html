@@ -243,8 +243,10 @@ subSelect.addEventListener("change", () => {
 
         let groupRaw = size.substring(0, lastDash);
         groupRaw = groupRaw.replace(/[_\s]/g, "-").replace(/[^A-Za-z0-9-]/g, "");
-        const sizeNum = size.substring(lastDash + 1);
 
+        if (!groupRaw) continue;
+
+        const sizeNum = size.substring(lastDash + 1);
         const group = groupRaw;
 
         if (!groupMap[group]) groupMap[group] = [];
@@ -266,7 +268,7 @@ subSelect.addEventListener("change", () => {
   }
 });
 
-
+   
 
   sizeSelect.addEventListener("change", () => {
     const opt = sizeSelect.selectedOptions[0];
