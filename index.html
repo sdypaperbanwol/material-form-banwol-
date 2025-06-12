@@ -258,7 +258,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    fetch("https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec")  // 백엔드 URL로 교체
+    fetch("https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec?mode=photo")  // 백엔드 URL로 교체
       .then(res => res.json())
       .then(photoMap => {
         const urls = photoMap[category];
