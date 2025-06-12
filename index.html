@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
- subSelect.addEventListener("change", () => {
+subSelect.addEventListener("change", () => {
   const cat = categorySelect.value;
   const type = subSelect.value;
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
@@ -241,32 +241,35 @@ document.addEventListener("DOMContentLoaded", function () {
         const lastDash = size.lastIndexOf("-");
         if (lastDash === -1) continue;
 
-        // 앞부분 추출 후 통일
         let groupRaw = size.substring(0, lastDash);
-        groupRaw = groupRaw.replace(/[_\s]/g, "-").replace(/[^A-Za-z0-9-]/g, "");  // RF_41 → RF-41
-        const sizeNum = size.substring(lastDash + 1);  // 245
+        groupRaw = groupRaw
+          .replace(/([A-Za-z]+)(\d+)/, "$1-$2") // RF41 → RF-41
+          .replace(/[_\s]/g, "-")
+          .replace(/[^A-Za-z0-9가-힣-]/g, "");
 
-        const group = groupRaw;  // 통일된 그룹명
+        const sizeNum = size.substring(lastDash + 1);
 
-        if (!groupMap[group]) groupMap[group] = [];
-        groupMap[group].push({
+        if (!groupMap[groupRaw]) groupMap[groupRaw] = [];
+        groupMap[groupRaw].push({
           value: size,
           label: `${sizeNum} (재고: ${stock || "X"})`,
-          stock
+          stock,
+          sortKey: parseInt(sizeNum, 10)
         });
+
       }
     }
 
     // 정렬 후 출력
-    Object.keys(groupMap).sort().forEach(group => {
-      const options = groupMap[group]
-        .sort((a, b) => parseInt(a.value.split("-").pop()) - parseInt(b.value.split("-").pop()))
-        .map(opt => `<option value="${opt.value}" data-stock="${opt.stock}">${opt.label}</option>`)
-        .join("");
-      sizeSelect.innerHTML += `<optgroup label="${group}">${options}</optgroup>`;
-    });
-  }
+  Object.keys(groupMap).sort().forEach(group => {
+  const options = groupMap[group]
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map(opt => `<option value="${opt.value}" data-stock="${opt.stock}">${opt.label}</option>`)
+    .join("");
+  const count = groupMap[group].length;
+  sizeSelect.innerHTML += `<optgroup label="${group} (총 ${count}개)">${options}</optgroup>`;
 });
+
 
 
   sizeSelect.addEventListener("change", () => {
