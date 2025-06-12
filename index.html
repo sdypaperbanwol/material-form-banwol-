@@ -114,7 +114,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxYFPdBVG0v6rklb4ssxNenbfWr_NXRSD2dgUUTfDOaDs7q7-TssRyLIgeRZAj2W9Ce/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxRTgm5hz_-BTs0HTkq0pK1lCtLKsuDc7-xciZRK0UW5x_Ux45jj-0b0OJkn2kT6RWI/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -220,21 +220,17 @@ photoBtn.addEventListener("click", () => {
   const type = subSelect.value;
   const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
 
-  console.log("📸 photoMap[key]:", photoMap[key], typeof photoMap[key]); // 확인 로그
-
-  if (!key || !photoMap[key]) {
-    alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
-    return;
-  }
-
   const raw = photoMap[key];
-  const urls = Array.isArray(raw) ? raw : [raw];  // ✅ 배열 아닌 경우 강제 변환
 
-  if (!urls || urls.length === 0 || !urls[0]) {
+  // ✅ 문자열인 경우 강제로 배열화
+  const urls = Array.isArray(raw) ? raw : typeof raw === "string" ? [raw] : [];
+
+  if (urls.length === 0 || !urls[0]) {
     alert("⚠️ 이미지 데이터 오류 또는 없음");
     return;
   }
 
+  // 아래는 동일
   const modalContent = photoModal.querySelector("div");
   const existing = document.getElementById("modalImagesContainer");
   if (existing) existing.remove();
@@ -257,6 +253,7 @@ photoBtn.addEventListener("click", () => {
   modalContent.appendChild(newContainer);
   photoModal.style.display = "flex";
 });
+
 
 
 
