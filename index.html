@@ -115,7 +115,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbww4EN4taFOaUvab0wM9PtHP8kKQJl5-m920T70BriJZy6pCwCdE8tZeN6P2CEM-Erv/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx0FhPSilINlxExdjJnQC3gZJw_P3ZpSJfKOnh7PODV6iLlMpsoWHk50Bfz6XjyjXSB/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -207,9 +207,9 @@ document.addEventListener("DOMContentLoaded", function () {
   let photoMap = {}; // 이미지 URL 저장용
 
 // 이미지 버튼 및 모달 동작
+// 이미지 버튼 및 모달 동작
 const photoBtn = document.getElementById("photoBtn");
 const photoModal = document.getElementById("photoModal");
-const modalImage = document.getElementById("modalImage");
 const closeModal = document.getElementById("closeModal");
 
 closeModal.addEventListener("click", () => {
@@ -219,27 +219,32 @@ closeModal.addEventListener("click", () => {
 photoBtn.addEventListener("click", () => {
   const category = categorySelect.value;
   const type = subSelect.value;
-  const key = ${category} ${type}.trim().replace(/\s+/g, " ");
+  const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
 
-  console.log("🧪 현재 찾는 key:", "${key}", "길이:", key.length);
+  console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
   console.log("📸 photoMap keys:", Object.keys(photoMap));
 
-  if (!key || !photoMap[key]) {
+  const urls = photoMap[key];
+  if (!urls || urls.length === 0) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
- const urls = photoMap[key];
-const container = document.getElementById("modalImagesContainer");
-container.innerHTML = ""; // 기존 이미지 제거
+  const container = document.getElementById("modalImagesContainer");
+  container.innerHTML = ""; // 기존 이미지 제거
 
-urls.forEach(url => {
-  const img = document.createElement("img");
-  img.src = url;
-  img.style.maxWidth = "100%";
-  img.style.maxHeight = "80vh";
-  container.appendChild(img);
+  urls.forEach(url => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.style.maxWidth = "100%";
+    img.style.maxHeight = "80vh";
+    img.style.marginBottom = "10px";
+    container.appendChild(img);
+  });
+
+  photoModal.style.display = "flex";
 });
+
 
 photoModal.style.display = "flex";
 
