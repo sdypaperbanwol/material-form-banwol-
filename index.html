@@ -97,6 +97,7 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
+    <button type="button" id="viewImageBtn" style="background-color:#2196F3;">사진 보기</button>
     <button type="submit">신청</button>
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
@@ -342,9 +343,41 @@ document.addEventListener("DOMContentLoaded", function () {
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
     });
+    // 이미지 보기 버튼 클릭 시
+// 이미지 보기 버튼 클릭 시
+document.getElementById("viewImageBtn").addEventListener("click", () => {
+  const cat = categorySelect.value;
+  const type = subSelect.value;
+  const size = sizeSelect.value;
+
+  if (!cat || !type || !size) {
+    alert("📌 물품 종류, 세부 종류, 사이즈를 모두 선택해주세요.");
+    return;
+  }
+
+  const imgName = `${cat}_${type}_${size}`.replace(/ /g, "").replace(/\//g, "-");
+  const imgUrl = `https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg`;  // ← 실제 경로로 바꾸기
+
+  const modal = document.getElementById("imageModal");
+  const imgTag = document.getElementById("modalImage");
+
+  imgTag.src = imgUrl;
+  modal.style.display = "flex";
+});
+
+// 모달 클릭 시 닫기
+document.getElementById("imageModal").addEventListener("click", () => {
+  document.getElementById("imageModal").style.display = "none";
+});
+
+
   });
 });
 </script>
+<!-- 📸 이미지 모달 -->
+<div id="imageModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
+  <img id="modalImage" src="" alt="물품 이미지" style="max-width:90%; max-height:90%; border: 4px solid white; border-radius: 12px;" />
+</div>
 
 </body>
 </html>
