@@ -215,14 +215,18 @@ closeModal.addEventListener("click", () => {
 
 photoBtn.addEventListener("click", () => {
   const category = categorySelect.value;
-  if (!category || !photoMap[category]) {
+  const type = subSelect.value;
+
+  const key = `${category} ${type}`.trim();
+  if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
-  modalImage.src = photoMap[category];
+  modalImage.src = photoMap[key];
   photoModal.style.display = "flex";
 });
+
 
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
