@@ -112,7 +112,7 @@
   </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwshrmZKfS1D5ENwZZsPUaJd2cg7_-B0IS4ca27TaDJ2ARzCyKs7SygUbSoeM18eTfz/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzOHqSMjy7Trt_SKDqwqzvcYb3AWWAQgyw79VTVJkfcG3i6Tw9nW9DD-Fug01jyB2A/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -276,24 +276,36 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const imageUrl = {
-      "RF-41": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/RF-41.jpeg",
-      "RF-46": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/RF-46.jpeg",
-      "RF-60": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/RF-60.jpeg",
-      "YAK-66": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/YAK-66.jpeg",
-      "가슴장화": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/가슴장화.jpg",
-      "제비표우의": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/제비표우의.jpeg",
-      "패션장화": "https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/패션장화.jpeg"
-    }[keyword];
-
-    if (imageUrl) {
-      document.getElementById("photoTitle").textContent = keyword + " 사진";
-      document.getElementById("photoImage").src = imageUrl;
-      document.getElementById("photoModal").style.display = "flex";
-    } else {
-      alert("해당 사진이 존재하지 않습니다.");
-    }
+    let imageMap = {};
+fetch(API_URL + "?mode=imageMap")
+  .then(res => res.json())
+  .then(data => {
+    imageMap = data;
   });
+
+
+// 비품 사진 보기 버튼 클릭 시 동작
+photoBtn.addEventListener("click", () => {
+  const keyword = [categorySelect.value, subSelect.value, sizeSelect.value]
+    .join(" ")
+    .match(/RF-\d+|YAK-\d+|가슴장화|제비표우의|패션장화/i)?.[0];
+
+  if (!keyword) {
+    alert("해당 항목에 대한 사진이 없습니다.");
+    return;
+  }
+
+  const imageUrl = imageMap[keyword];
+
+  if (imageUrl) {
+    document.getElementById("photoTitle").textContent = keyword + " 사진";
+    document.getElementById("photoImage").src = imageUrl;
+    document.getElementById("photoModal").style.display = "flex";
+  } else {
+    alert("해당 사진이 존재하지 않습니다.");
+  }
+});
+
   // 💡 "사이즈" 라벨 바로 위에 삽입
 const sizeLabel = document.querySelector('label[for="size"]');
 materialForm.insertBefore(photoBtn, sizeLabel);
