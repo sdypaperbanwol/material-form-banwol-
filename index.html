@@ -219,18 +219,54 @@ photoBtn.addEventListener("click", () => {
   const category = categorySelect.value;
   const type = subSelect.value;
   const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
+  console.log("🧪 현재 찾는 key:", `"${key}"`);
 
-  console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
-  console.log("📸 photoMap keys:", Object.keys(photoMap));
+  const images = photoMap[key];
 
-  if (!key || !photoMap[key]) {
+  if (!images || images.length === 0) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
-  modalImage.src = photoMap[key];
+  let index = 0;
+  modalImage.src = images[index];
   photoModal.style.display = "flex";
+
+  // 기존 버튼 있으면 삭제
+  document.querySelectorAll("#prevBtn, #nextBtn").forEach(btn => btn.remove());
+
+  // 이전/다음 버튼 추가
+  const prevBtn = document.createElement("button");
+  prevBtn.id = "prevBtn";
+  prevBtn.textContent = "←";
+  prevBtn.style.position = "absolute";
+  prevBtn.style.left = "10px";
+  prevBtn.style.top = "50%";
+  prevBtn.style.transform = "translateY(-50%)";
+
+  const nextBtn = document.createElement("button");
+  nextBtn.id = "nextBtn";
+  nextBtn.textContent = "→";
+  nextBtn.style.position = "absolute";
+  nextBtn.style.right = "10px";
+  nextBtn.style.top = "50%";
+  nextBtn.style.transform = "translateY(-50%)";
+
+  prevBtn.onclick = () => {
+    index = (index - 1 + images.length) % images.length;
+    modalImage.src = images[index];
+  };
+
+  nextBtn.onclick = () => {
+    index = (index + 1) % images.length;
+    modalImage.src = images[index];
+  };
+
+  const modalBox = modalImage.parentNode;
+  modalBox.appendChild(prevBtn);
+  modalBox.appendChild(nextBtn);
 });
+
 
 
 
