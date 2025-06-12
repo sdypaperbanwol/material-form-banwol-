@@ -356,10 +356,15 @@ document.getElementById("viewImageBtn").addEventListener("click", () => {
   }
 
   const imgName = `${cat}_${type}_${size}`.replace(/ /g, "").replace(/\//g, "-");
-  const imgUrl = `https://sdypaperbanwol.github.io/material-form-banwol-/RF-41.jpeg`;  // ← 실제 경로로 바꾸기
+  const imgUrl = `https://sdypaperbanwol.github.io/material-form-banwol-/${imgName}.jpeg`;
 
   const modal = document.getElementById("imageModal");
   const imgTag = document.getElementById("modalImage");
+
+  imgTag.onerror = () => {
+    modal.style.display = "none";
+    alert("📛 이미지를 불러올 수 없습니다. 경로를 확인하세요.");
+  };
 
   imgTag.src = imgUrl;
   modal.style.display = "flex";
