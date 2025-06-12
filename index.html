@@ -139,6 +139,7 @@ if (saved) {
       nameInput.value = saved;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
+      loadItems();
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -167,11 +168,11 @@ function verifyUser() {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
       }
-
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
+      loadItems();
     } else if (data.result === "disabled" || data.active === "N") {
       localStorage.removeItem("userInfo");
       loginMsg.textContent = "승인이 해제된 계정입니다.";
@@ -183,6 +184,56 @@ function verifyUser() {
     console.error("[로그인 오류]", err);
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
+}
+
+function loadItems() {
+  const categorySelect = document.getElementById("category");
+  const subSelect = document.getElementById("subcategory");
+  const sizeSelect = document.getElementById("size");
+
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      Object.keys(data).forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        categorySelect.appendChild(option);
+      });
+
+      categorySelect.addEventListener("change", () => {
+        const cat = categorySelect.value;
+        subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        if (data[cat]) {
+          data[cat].types.forEach(type => {
+            const subOption = document.createElement("option");
+            subOption.value = type;
+            subOption.textContent = type;
+            subSelect.appendChild(subOption);
+          });
+        }
+      });
+
+      subSelect.addEventListener("change", () => {
+        const cat = categorySelect.value;
+        const type = subSelect.value;
+        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        if (data[cat]) {
+          const stockMap = data[cat].stockMap;
+          for (const [key, stock] of Object.entries(stockMap)) {
+            const [t, size] = key.split("__");
+            if (t === type) {
+              const sizeOption = document.createElement("option");
+              sizeOption.value = size;
+              sizeOption.textContent = `${size} (재고: ${stock || "X"})`;
+              sizeOption.dataset.stock = stock;
+              sizeSelect.appendChild(sizeOption);
+            }
+          }
+        }
+      });
+    });
 }
 
 // 📸 이미지 목록 보기
