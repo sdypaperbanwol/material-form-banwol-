@@ -298,8 +298,6 @@ document.addEventListener("DOMContentLoaded", function () {
 const sizeLabel = document.querySelector('label[for="size"]');
 materialForm.insertBefore(photoBtn, sizeLabel);
 
-  materialForm.insertBefore(photoBtn, document.getElementById("msg"));
-
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
     if (isSubmitting) return;
