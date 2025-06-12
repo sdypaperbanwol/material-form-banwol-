@@ -114,7 +114,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbybgOpgJH3aFJW0kBlhFyoIhWitUakRTemung3b_jfU_nUDvCLY9efXH4M5PwFPdDdw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx1sFXEaR9VR4vzKU4b_3iNpGHX_eeJ1DOFX0Lx2pfZau9JZil7FVJNPu97vdkplwE/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -220,45 +220,17 @@ photoBtn.addEventListener("click", () => {
   const type = subSelect.value;
   const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
 
-  const images = photoMap[key];
-  if (!images || images.length === 0) {
+  console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
+  console.log("📸 photoMap keys:", Object.keys(photoMap));
+
+  if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
-  // 기존 이미지 초기화
-  const modalBox = modalImage.parentNode;
-  modalBox.innerHTML = '<span id="closeModal" style="position:absolute;top:10px;right:15px;cursor:pointer;font-weight:bold;">✖</span>';
-  
-  const gallery = document.createElement("div");
-  gallery.style.display = "flex";
-  gallery.style.gap = "12px";
-  gallery.style.overflowX = "auto";
-  gallery.style.paddingTop = "30px";
-  gallery.style.maxWidth = "90vw";
-
-  images.forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.style.maxHeight = "300px";
-    img.style.borderRadius = "8px";
-    img.style.cursor = "pointer";
-    img.onclick = () => {
-      window.open(url, "_blank");
-    };
-    gallery.appendChild(img);
-  });
-
-  modalBox.appendChild(gallery);
+  modalImage.src = photoMap[key];
   photoModal.style.display = "flex";
-
-  // 닫기 버튼 재설정
-  document.getElementById("closeModal").onclick = () => {
-    photoModal.style.display = "none";
-  };
 });
-
-
 
 
 
