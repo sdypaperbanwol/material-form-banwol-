@@ -201,6 +201,10 @@ document.addEventListener("DOMContentLoaded", function () {
       modal.style.display = "none";
       alert("📛 이미지를 불러올 수 없습니다. 경로를 확인하세요.");
     };
+
+     const titleTag = document.getElementById("modalTitle");
+const descTag = document.getElementById("modalDesc");
+
   titleTag.textContent = "RF-41";
   descTag.textContent = "충격흡수, 통풍, 쿠셔닝, 절연 토캡, 방탄 적용";
      
@@ -369,9 +373,12 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <!-- 📸 이미지 모달 -->
-<div id="imageModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
-  <img id="modalImage" src="" alt="물품 이미지" style="max-width:90%; max-height:90%; border: 4px solid white; border-radius: 12px;" />
+<div id="imageModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); align-items:center; justify-content:center; flex-direction:column; text-align:center; color:white;">
+  <h2 id="modalTitle" style="margin-bottom: 10px;"></h2>
+  <p id="modalDesc" style="margin-bottom: 20px;"></p>
+  <img id="modalImage" src="" alt="물품 이미지" style="max-width:90%; max-height:70%; border: 4px solid white; border-radius: 12px;" />
 </div>
+
 
 </body>
 </html>
