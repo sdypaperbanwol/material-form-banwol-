@@ -228,29 +228,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  subSelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    const type = subSelect.value;
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      const stockMap = items[cat].stockMap;
-      const groupMap = {};
+ subSelect.addEventListener("change", () => {
+  const cat = categorySelect.value;
+  const type = subSelect.value;
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
 
-      for (const [key, stock] of Object.entries(stockMap)) {
-        const [t, size] = key.split("__");
-        if (t === type) {
-          const group = size.split("-").slice(0, 2).join("-");
-          if (!groupMap[group]) groupMap[group] = "";
-          groupMap[group] += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
-        }
-      }
+  if (items[cat]) {
+    const stockMap = items[cat].stockMap;
 
-      for (const group in groupMap) {
-        sizeSelect.innerHTML += `<optgroup label="${group}">${groupMap[group]}</optgroup>`;
+    for (const [key, stock] of Object.entries(stockMap)) {
+      const [t, size] = key.split("__");
+      if (t === type) {
+        sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
       }
     }
-  });
+  }
 });
+
    document.getElementById("viewPhotos").addEventListener("click", () => {
     const category = document.getElementById("category").value.trim(); // ex: 보호구(안전화류)
     if (!category) {
