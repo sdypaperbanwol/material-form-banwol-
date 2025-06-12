@@ -216,8 +216,10 @@ closeModal.addEventListener("click", () => {
 photoBtn.addEventListener("click", () => {
   const category = categorySelect.value;
   const type = subSelect.value;
+  const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
 
-  const key = `${category} ${type}`.trim();
+  console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
+  console.log("📸 photoMap keys:", Object.keys(photoMap));
 
   if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
@@ -227,6 +229,7 @@ photoBtn.addEventListener("click", () => {
   modalImage.src = photoMap[key];
   photoModal.style.display = "flex";
 });
+
 
 
   document.getElementById("resetBtn").addEventListener("click", () => {
