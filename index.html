@@ -81,8 +81,7 @@
 <div id="photoModal" style="display:none;position:fixed;z-index:999;background:rgba(0,0,0,0.5);top:0;left:0;width:100vw;height:100vh;justify-content:center;align-items:center;">
   <div style="background:white;padding:20px;border-radius:8px;position:relative;max-width:90%;max-height:90%;overflow:auto;">
     <span id="closeModal" style="position:absolute;top:10px;right:15px;cursor:pointer;font-weight:bold;">✖</span>
-   <div id="modalImagesContainer" style="display:flex;flex-direction:column;gap:10px;align-items:center;"></div>
-
+    <img id="modalImage" src="" alt="비품 이미지" style="max-width:100%;max-height:80vh;" />
   </div>
 </div>
 
@@ -115,7 +114,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbx0FhPSilINlxExdjJnQC3gZJw_P3ZpSJfKOnh7PODV6iLlMpsoWHk50Bfz6XjyjXSB/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx43bVjfO-6V5nRt_we5Qk6XwqUTdKhtHprP6vNJh-K4ori_bzg8gQ_a4axhTXA8DSO/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -167,7 +166,7 @@ function verifyUser() {
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
-      const fullName = ${empId} ${empName};
+      const fullName = `${empId} ${empName}`;
       if (data.active === "Y" && !isMobileDevice()) {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
@@ -207,9 +206,9 @@ document.addEventListener("DOMContentLoaded", function () {
   let photoMap = {}; // 이미지 URL 저장용
 
 // 이미지 버튼 및 모달 동작
-// 이미지 버튼 및 모달 동작
 const photoBtn = document.getElementById("photoBtn");
 const photoModal = document.getElementById("photoModal");
+const modalImage = document.getElementById("modalImage");
 const closeModal = document.getElementById("closeModal");
 
 closeModal.addEventListener("click", () => {
@@ -224,30 +223,14 @@ photoBtn.addEventListener("click", () => {
   console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
   console.log("📸 photoMap keys:", Object.keys(photoMap));
 
-  const urls = photoMap[key];
-  if (!urls || urls.length === 0) {
+  if (!key || !photoMap[key]) {
     alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
     return;
   }
 
-  const container = document.getElementById("modalImagesContainer");
-  container.innerHTML = ""; // 기존 이미지 제거
-
-  urls.forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.style.maxWidth = "100%";
-    img.style.maxHeight = "80vh";
-    img.style.marginBottom = "10px";
-    container.appendChild(img);
-  });
-
+  modalImage.src = photoMap[key];
   photoModal.style.display = "flex";
 });
-
-
-photoModal.style.display = "flex";
-
 
 
 
@@ -272,7 +255,7 @@ photoModal.style.display = "flex";
     photoMap = data.photos || {};
 
     Object.keys(items).forEach(cat => {
-      categorySelect.innerHTML += <option value="${cat}">${cat}</option>;
+      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
     });
   });
 
@@ -283,7 +266,7 @@ photoModal.style.display = "flex";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     if (items[cat]) {
       items[cat].types.forEach(type => {
-        subSelect.innerHTML += <option value="${type}">${type}</option>;
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
       });
     }
   });
@@ -297,7 +280,7 @@ photoModal.style.display = "flex";
       for (const [key, stock] of Object.entries(stockMap)) {
         const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += <option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>;
+          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
         }
       }
     }
@@ -327,21 +310,21 @@ photoModal.style.display = "flex";
 
     const 지급수량 = Math.min(requestedQty, currentStock);
     const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
-    const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
     const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
     if (!alertShown) {
       if (구매요청수량 > 0) {
         if (currentStock > 0) {
-          alert(⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
           quantityInput.value = currentStock;
         } else {
-          alert(⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
         }
 
         if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
         }
 
         categorySelect.disabled = true;
@@ -353,7 +336,7 @@ photoModal.style.display = "flex";
         return;
       } else {
         if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${지급문구} : ${지급문구};
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
         }
       }
     }
