@@ -75,6 +75,15 @@
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
+<button type="button" id="photoBtn" style="background-color:#0066cc;">비품 사진 보기</button>
+
+<!-- 모달 -->
+<div id="photoModal" style="display:none;position:fixed;z-index:999;background:rgba(0,0,0,0.5);top:0;left:0;width:100vw;height:100vh;justify-content:center;align-items:center;">
+  <div style="background:white;padding:20px;border-radius:8px;position:relative;max-width:90%;max-height:90%;overflow:auto;">
+    <span id="closeModal" style="position:absolute;top:10px;right:15px;cursor:pointer;font-weight:bold;">✖</span>
+    <img id="modalImage" src="" alt="비품 이미지" style="max-width:100%;max-height:80vh;" />
+  </div>
+</div>
 
     <label for="size">사이즈</label>
     <select id="size" name="size" required>
@@ -103,7 +112,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbx3TrWTd7JsjfafB7BRfJGMdgbMyTCN9O2-efS0KmTIDgdrDh0s0oSrhuBgwKRUZTIW/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzvO299aAJIEdmRI-nctq8atXNhor0L9qvh7dtdBoBoHvJa0FVqmJFVXpvJMDpLxI9G/exec";
 
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -192,6 +201,29 @@ document.addEventListener("DOMContentLoaded", function () {
   let isSubmitting = false;
   let alertShown = false;
 
+  let photoMap = {}; // 이미지 URL 저장용
+
+// 이미지 버튼 및 모달 동작
+const photoBtn = document.getElementById("photoBtn");
+const photoModal = document.getElementById("photoModal");
+const modalImage = document.getElementById("modalImage");
+const closeModal = document.getElementById("closeModal");
+
+closeModal.addEventListener("click", () => {
+  photoModal.style.display = "none";
+});
+
+photoBtn.addEventListener("click", () => {
+  const category = categorySelect.value;
+  if (!category || !photoMap[category]) {
+    alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
+    return;
+  }
+
+  modalImage.src = photoMap[category];
+  photoModal.style.display = "flex";
+});
+
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
     isSubmitting = false;
@@ -207,13 +239,16 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
+  .then(res => res.json())
+  .then(data => {
+    items = data.items;
+    photoMap = data.photos || {};
+
+    Object.keys(items).forEach(cat => {
+      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
     });
+  });
+
 
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
