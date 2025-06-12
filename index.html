@@ -55,7 +55,6 @@
   </style>
 </head>
 <body>
-
   <div id="login-section">
     <h3>로그인</h3>
     <p>사번과 이름을 입력하세요</p>
@@ -75,13 +74,14 @@
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
-
+    <!-- 버튼 -->
+<button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">비품 사진 보기</button>
 
 <!-- 모달 -->
-<div id="photoModal" style="display:none;position:fixed;z-index:999;background:rgba(0,0,0,0.5);top:0;left:0;width:100vw;height:100vh;justify-content:center;align-items:center;">
-  <div style="background:white;padding:20px;border-radius:8px;position:relative;max-width:90%;max-height:90%;overflow:auto;">
-    <span id="closeModal" style="position:absolute;top:10px;right:15px;cursor:pointer;font-weight:bold;">✖</span>
-    <img id="modalImage" src="" alt="비품 이미지" style="max-width:100%;max-height:80vh;" />
+<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+    <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
+    <div id="photoContent"></div>
   </div>
 </div>
 
@@ -89,9 +89,7 @@
     <select id="size" name="size" required>
       <option value="">-- 선택하세요 --</option>
     </select>
-    
-<button type="button" id="photoBtn" style="background-color:#0066cc;">비품 사진 보기</button>
-    
+
     <label for="name">신청자</label>
     <input type="text" id="name" name="name" readonly />
 
@@ -114,8 +112,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbx43bVjfO-6V5nRt_we5Qk6XwqUTdKhtHprP6vNJh-K4ori_bzg8gQ_a4axhTXA8DSO/exec";
-
+const API_URL = "https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -158,7 +155,6 @@ function verifyUser() {
     loginMsg.textContent = "사번과 이름을 모두 입력하세요.";
     return;
   }
-
   fetch(API_URL, {
     method: "POST",
     body: new URLSearchParams({ empId, empName })
@@ -171,20 +167,15 @@ function verifyUser() {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
       }
-
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
-    } else if (data.result === "disabled" || data.active === "N") {
-      localStorage.removeItem("userInfo");
-      loginMsg.textContent = "승인이 해제된 계정입니다.";
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
   })
-  .catch(err => {
-    console.error("[로그인 오류]", err);
+  .catch(() => {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
@@ -203,37 +194,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let isSubmitting = false;
   let alertShown = false;
 
-  let photoMap = {}; // 이미지 URL 저장용
-
-// 이미지 버튼 및 모달 동작
-const photoBtn = document.getElementById("photoBtn");
-const photoModal = document.getElementById("photoModal");
-const modalImage = document.getElementById("modalImage");
-const closeModal = document.getElementById("closeModal");
-
-closeModal.addEventListener("click", () => {
-  photoModal.style.display = "none";
-});
-
-photoBtn.addEventListener("click", () => {
-  const category = categorySelect.value;
-  const type = subSelect.value;
-  const key = `${category} ${type}`.trim().replace(/\s+/g, " ");
-
-  console.log("🧪 현재 찾는 key:", `"${key}"`, "길이:", key.length);
-  console.log("📸 photoMap keys:", Object.keys(photoMap));
-
-  if (!key || !photoMap[key]) {
-    alert("⚠️ 해당 물품에 대한 사진이 없습니다.");
-    return;
-  }
-
-  modalImage.src = photoMap[key];
-  photoModal.style.display = "flex";
-});
-
-
-
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
     isSubmitting = false;
@@ -249,16 +209,13 @@ photoBtn.addEventListener("click", () => {
   });
 
   fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
-    items = data.items;
-    photoMap = data.photos || {};
-
-    Object.keys(items).forEach(cat => {
-      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+    .then(res => res.json())
+    .then(data => {
+      items = data;
+      Object.keys(items).forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
     });
-  });
-
 
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -277,119 +234,59 @@ photoBtn.addEventListener("click", () => {
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     if (items[cat]) {
       const stockMap = items[cat].stockMap;
+      const groupMap = {};
+
       for (const [key, stock] of Object.entries(stockMap)) {
         const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+          const group = size.split("-").slice(0, 2).join("-");
+          if (!groupMap[group]) groupMap[group] = "";
+          groupMap[group] += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
         }
+      }
+
+      for (const group in groupMap) {
+        sizeSelect.innerHTML += `<optgroup label="${group}">${groupMap[group]}</optgroup>`;
       }
     }
   });
-
-  sizeSelect.addEventListener("change", () => {
-    const opt = sizeSelect.selectedOptions[0];
-    const stock = parseInt(opt?.dataset.stock || "0", 10);
-    if (stock === 0) {
-      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
-    }
-  });
-
-  materialForm.addEventListener("submit", function(e) {
-    e.preventDefault();
-    if (isSubmitting) return;
-
-    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-    const requestedQty = parseInt(quantityInput.value, 10);
-    let remarksText = remarksInput.value.trim();
-
-    if (requestedQty <= 0) {
-      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-      quantityInput.value = 1;
+});
+   document.getElementById("viewPhotos").addEventListener("click", () => {
+    const category = document.getElementById("category").value.trim(); // ex: 보호구(안전화류)
+    if (!category) {
+      alert("물품 종류를 먼저 선택해주세요.");
       return;
     }
 
-    const 지급수량 = Math.min(requestedQty, currentStock);
-    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+    fetch("https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec")  // 백엔드 URL로 교체
+      .then(res => res.json())
+      .then(photoMap => {
+        const urls = photoMap[category];
+        const container = document.getElementById("photoContent");
+        container.innerHTML = "";
 
-    if (!alertShown) {
-      if (구매요청수량 > 0) {
-        if (currentStock > 0) {
-          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-          quantityInput.value = currentStock;
+        if (!urls || urls.length === 0) {
+          container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
         } else {
-          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+          urls.forEach(url => {
+            const fileName = url.split("/").pop().split(".")[0]; // RF-41
+            const wrapper = document.createElement("div");
+            wrapper.style.marginBottom = "20px";
+            wrapper.innerHTML = `
+              <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+              <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+            `;
+            container.appendChild(wrapper);
+          });
         }
 
-        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-        }
-
-        categorySelect.disabled = true;
-        subSelect.disabled = true;
-        sizeSelect.disabled = true;
-        quantityInput.disabled = true;
-
-        alertShown = true;
-        return;
-      } else {
-        if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
-        }
-      }
-    }
-
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: quantityInput.value,
-      remarks: remarksInput.value
-    });
-
-    isSubmitting = true;
-
-    fetch(API_URL, {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      isSubmitting = false;
-      alertShown = false;
-
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
-
-      if (data.result === "success") {
-        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-        msgDiv.style.color = "green";
-        alert("✅ 신청이 저장되었습니다!");
-        location.reload();
-      } else {
-        msgDiv.textContent = "❌ 신청 실패";
-        msgDiv.style.color = "red";
-      }
-    })
-    .catch(err => {
-      console.error("에러:", err);
-      isSubmitting = false;
-      alertShown = false;
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
-      msgDiv.textContent = "❌ 서버 오류";
-      msgDiv.style.color = "red";
-    });
+        document.getElementById("photoModal").style.display = "block";
+      });
   });
-});
-</script>
 
+  document.getElementById("closeModal").addEventListener("click", () => {
+    document.getElementById("photoModal").style.display = "none";
+  });
+</script>
 </body>
 </html>
