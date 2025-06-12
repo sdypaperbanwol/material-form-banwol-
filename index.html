@@ -5,58 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자재창고 물품 관리(반월)</title>
   <style>
-    body { background: #f7f7f7; font-family: Arial, sans-serif; padding:20px; }
+    body {
+      background-color: #f7f7f7;
+      font-family: 'Arial', sans-serif;
+      padding: 20px;
+    }
     form, #login-section {
-      display:flex; flex-direction:column; gap:12px;
-      max-width:400px; margin:20px auto; background:#fff;
-      padding:20px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 400px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    label { font-weight:bold; }
+    label { font-weight: bold; }
     select, input, textarea {
-      padding:10px; font-size:14px;
-      border-radius:6px; border:1px solid #ccc;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
-    textarea { resize:vertical; min-height:60px; }
-    button { padding:12px; font-size:16px; background:#4CAF50; color:#fff; border:none; border-radius:6px; cursor:pointer; }
-    .message { margin-top:10px; font-weight:bold; }
-    small { font-size:12px; color:#666; line-height:1.4; }
+    textarea { resize: vertical; min-height: 60px; }
+    button {
+      padding: 12px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .message { margin-top: 10px; font-weight: bold; }
+    small { font-size: 12px; color: #666; line-height: 1.4; }
 
-    /* 모달 기본 */
-    #photoModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; overflow:auto; padding:10px; box-sizing:border-box; }
+    #photoModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 9999;
+      overflow: auto;
+      padding: 10px;
+      box-sizing: border-box;
+    }
     #photoModal .modal-content {
-      background:#fff; padding:20px; border-radius:10px; width:100%; max-width:800px; margin:auto; box-sizing:border-box;
-      max-height:90vh; overflow-y:auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 800px;
+      margin: auto;
+      box-sizing: border-box;
+      max-height: 90vh;
+      overflow-y: auto;
     }
-    #photoModal img { width:100%; height:auto; display:block; margin:10px auto; }
-
-    /* 모바일 대응 */
-    @media (max-width:600px) {
-      #photoModal .modal-content {
-        padding:10px !important; max-width:100% !important; border-radius:0 !important;
-      }
+    #photoModal img {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 10px auto;
     }
-    /* 닫기 버튼 고정 위치 */
     #closeModalBtn {
-      position:fixed; top:10px; right:10px; z-index:10000;
-      background:#f44336; color:#fff; padding:8px 12px;
-      border:none; border-radius:4px; font-weight:bold; cursor:pointer;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 10000;
+      background: #f44336;
+      color: #fff;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <!-- 로그인 섹션 -->
   <div id="login-section">
     <h3>로그인</h3>
     <p>사번과 이름을 입력하세요</p>
-    <input type="text" id="empId" placeholder="사번 입력">
-    <input type="text" id="empName" placeholder="이름 입력">
+    <input type="text" id="empId" placeholder="사번 입력" />
+    <input type="text" id="empName" placeholder="이름 입력" />
     <button onclick="verifyUser()">확인</button>
-    <p id="loginMsg" style="color:red;font-weight:bold;"></p>
+    <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
 
-  <!-- 신청 폼 -->
-  <form id="materialForm" style="display:none;">
+  <form id="materialForm" style="display: none;">
     <button type="button" onclick="openModal()" style="background:#2196F3;">
       📸 비품 예시 사진 보기
     </button>
@@ -76,27 +117,26 @@
     </select>
 
     <label for="name">신청자</label>
-    <input type="text" id="name" name="name" readonly>
+    <input type="text" id="name" name="name" readonly />
 
     <label for="quantity">수량</label>
-    <input type="number" id="quantity" name="quantity" min="1" required>
+    <input type="number" id="quantity" name="quantity" min="1" required />
 
     <label for="remarks">비고</label>
-     <small>
+    <small>
       - 24시간 신청 가능하며 담당자의 평일 근무일에 지급됩니다.<br>
       - 비대면 수령도 가능(사무실 1층 복도 무인사물함 설치 예정)<br>
       - 예시: 오늘·내일(X월X일) X시 수령/교환 또는 비대면 요청<br>
       - 재고 부족 시 보유 수량만 지급, 부족분은 구매 요청됩니다.<br>
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
-    <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요"></textarea>
+    <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
     <button type="submit">신청</button>
-    <button type="button" id="resetBtn" style="background:#999;">처음으로</button>
+    <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
   </form>
 
-  <!-- 이미지 모달 -->
   <div id="photoModal">
     <div class="modal-content">
       <h2>📋 비품 예시 사진</h2>
@@ -127,37 +167,98 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/…/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwshrmZKfS1D5ENwZZsPUaJd2cg7_-B0IS4ca27TaDJ2ARzCyKs7SygUbSoeM18eTfz/exec";
     const loginSection = document.getElementById("login-section");
     const materialForm = document.getElementById("materialForm");
     const nameInput = document.getElementById("name");
     const loginMsg = document.getElementById("loginMsg");
 
-    function isMobileDevice() {
-      return /Android|iPhone|Mobile/i.test(navigator.userAgent);
-    }
-
-    function verifyUser() {
-      /* 로그인 axios 대체 fetch + 로직 (생략) */
-      // 성공 시:
-      loginSection.style.display = "none";
-      materialForm.style.display = "flex";
-      nameInput.value = document.getElementById("empId").value + " " + document.getElementById("empName").value;
-    }
-
-    document.getElementById("resetBtn").onclick = () => location.reload();
-
-    document.getElementById("category").onchange = function(){
-      // sub/category 로직 (이하 생략)
-    };
-
-    // 모달 관련 함수
     function openModal() {
       document.getElementById("photoModal").style.display = "block";
     }
     function closeModal() {
       document.getElementById("photoModal").style.display = "none";
     }
+
+    function verifyUser() {
+      const empId = document.getElementById("empId").value.trim();
+      const empName = document.getElementById("empName").value.trim();
+      if (!empId || !empName) {
+        loginMsg.textContent = "사번과 이름을 모두 입력하세요.";
+        return;
+      }
+      fetch(API_URL, {
+        method: "POST",
+        body: new URLSearchParams({ empId, empName })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.result === "success") {
+            nameInput.value = `${empId} ${empName}`;
+            loginSection.style.display = "none";
+            materialForm.style.display = "flex";
+          } else {
+            loginMsg.textContent = "인증 실패 또는 승인되지 않은 사용자입니다.";
+          }
+        })
+        .catch(err => {
+          console.error("로그인 오류:", err);
+          loginMsg.textContent = "서버 오류 발생";
+        });
+    }
+
+    // ✅ 물품 데이터 로딩 및 선택 처리
+    const categorySelect = document.getElementById("category");
+    const subcategorySelect = document.getElementById("subcategory");
+    const sizeSelect = document.getElementById("size");
+    let materialData = {};
+
+    window.onload = function () {
+      fetch(API_URL)
+        .then(res => res.json())
+        .then(data => {
+          materialData = data;
+          Object.keys(data).forEach(category => {
+            const opt = document.createElement("option");
+            opt.value = category;
+            opt.textContent = category;
+            categorySelect.appendChild(opt);
+          });
+        })
+        .catch(err => console.error("물품 데이터 불러오기 실패:", err));
+    };
+
+    categorySelect.onchange = function () {
+      const selected = this.value;
+      subcategorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      if (materialData[selected]) {
+        materialData[selected].types.forEach(type => {
+          const opt = document.createElement("option");
+          opt.value = type;
+          opt.textContent = type;
+          subcategorySelect.appendChild(opt);
+        });
+      }
+    };
+
+    subcategorySelect.onchange = function () {
+      const cat = categorySelect.value;
+      const type = this.value;
+      sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      const stockMap = materialData[cat]?.stockMap || {};
+      for (const [key, val] of Object.entries(stockMap)) {
+        if (key.includes("__img")) continue;
+        const [t, size] = key.split("__");
+        if (t === type) {
+          const opt = document.createElement("option");
+          opt.value = size;
+          opt.textContent = `${size} (재고: ${val})`;
+          opt.dataset.stock = val;
+          sizeSelect.appendChild(opt);
+        }
+      }
+    };
   </script>
 </body>
 </html>
