@@ -328,40 +328,41 @@ for (let i = 0; i < photoFiles.length; i++) {
 
 isSubmitting = true;
 
-fetch(API_URL, {
-  method: "POST",
-  body: formData
-})
-.then(res => res.json())
-.then(data => {
-  isSubmitting = false;
-  alertShown = false;
+ // ✅ fetch → XHR로 교체
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", API_URL, true);
+  xhr.onload = function () {
+    isSubmitting = false;
+    alertShown = false;
 
-  categorySelect.disabled = false;
-  subSelect.disabled = false;
-  sizeSelect.disabled = false;
-  quantityInput.disabled = false;
+    categorySelect.disabled = false;
+    subSelect.disabled = false;
+    sizeSelect.disabled = false;
+    quantityInput.disabled = false;
 
-  if (data.result === "success") {
-    msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-    msgDiv.style.color = "green";
-    alert("✅ 신청이 저장되었습니다!");
-    location.reload();
-  } else {
-    msgDiv.textContent = "❌ 신청 실패";
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      if (data.result === "success") {
+        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
+        msgDiv.style.color = "green";
+        alert("✅ 신청이 저장되었습니다!");
+        location.reload();
+      } else {
+        msgDiv.textContent = "❌ 신청 실패";
+        msgDiv.style.color = "red";
+      }
+    } else {
+      msgDiv.textContent = "❌ 전송 실패";
+      msgDiv.style.color = "red";
+    }
+  };
+  xhr.onerror = function () {
+    isSubmitting = false;
+    alertShown = false;
+    msgDiv.textContent = "❌ 서버 오류";
     msgDiv.style.color = "red";
-  }
-})
-.catch(err => {
-  console.error("에러:", err);
-  isSubmitting = false;
-  alertShown = false;
-  categorySelect.disabled = false;
-  subSelect.disabled = false;
-  sizeSelect.disabled = false;
-  quantityInput.disabled = false;
-  msgDiv.textContent = "❌ 서버 오류";
-  msgDiv.style.color = "red";
+  };
+  xhr.send(formData);
 });
 
   });
