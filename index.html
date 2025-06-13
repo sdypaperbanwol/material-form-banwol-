@@ -106,13 +106,18 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
+    <label for="photoUpload">사진 업로드 (최대 3장)</label>
+    <input type="file" id="photoUpload" name="photos" accept="image/*" multiple />
+    <small>※ 최대 3장까지 업로드 가능. JPG/PNG 권장</small>
+
+    
     <button type="submit">신청</button>
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxN315tlnD5oE9IlfsC5wxRyYFH7Q4qKPI10xnJIu4MU4lz0d2bo5HuO2tkt83XV7cM/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw8Y5ypxN-rAuzyymEQdb1sJlKsQPBs_UYDkVE-aDDKVaJ8I-lrb5eyXyCnYe5q33Qz/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -301,52 +306,64 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: quantityInput.value,
-      remarks: remarksInput.value
-    });
+  const photoFiles = document.getElementById("photoUpload").files;
+if (photoFiles.length > 3) {
+  alert("⚠️ 사진은 최대 3장까지만 업로드 가능합니다.");
+  return;
+}
 
-    isSubmitting = true;
+// ✅ 이미지 포함 FormData 구성
+const formData = new FormData();
+formData.append("category", categorySelect.value);
+formData.append("subcategory", subSelect.value);
+formData.append("size", sizeSelect.value);
+formData.append("name", nameInput.value);
+formData.append("quantity", quantityInput.value);
+formData.append("remarks", remarksInput.value);
+formData.append("upload", "true");  // 업로드 요청임을 표시
 
-    fetch(API_URL, {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      isSubmitting = false;
-      alertShown = false;
+for (let i = 0; i < photoFiles.length; i++) {
+  formData.append(`photo${i + 1}`, photoFiles[i]);
+}
 
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
+isSubmitting = true;
 
-      if (data.result === "success") {
-        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-        msgDiv.style.color = "green";
-        alert("✅ 신청이 저장되었습니다!");
-        location.reload();
-      } else {
-        msgDiv.textContent = "❌ 신청 실패";
-        msgDiv.style.color = "red";
-      }
-    })
-    .catch(err => {
-      console.error("에러:", err);
-      isSubmitting = false;
-      alertShown = false;
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
-      msgDiv.textContent = "❌ 서버 오류";
-      msgDiv.style.color = "red";
-    });
+fetch(API_URL, {
+  method: "POST",
+  body: formData
+})
+.then(res => res.json())
+.then(data => {
+  isSubmitting = false;
+  alertShown = false;
+
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+
+  if (data.result === "success") {
+    msgDiv.textContent = "✅ 신청이 저장되었습니다!";
+    msgDiv.style.color = "green";
+    alert("✅ 신청이 저장되었습니다!");
+    location.reload();
+  } else {
+    msgDiv.textContent = "❌ 신청 실패";
+    msgDiv.style.color = "red";
+  }
+})
+.catch(err => {
+  console.error("에러:", err);
+  isSubmitting = false;
+  alertShown = false;
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+  msgDiv.textContent = "❌ 서버 오류";
+  msgDiv.style.color = "red";
+});
+
   });
 });
 </script>
@@ -359,7 +376,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbxN315tlnD5oE9IlfsC5wxRyYFH7Q4qKPI10xnJIu4MU4lz0d2bo5HuO2tkt83XV7cM/exec?mode=photo")
+  fetch(`${API_URL}?mode=photo`)
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -381,7 +398,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
         });
       }
 
-      document.getElementById("photoModal").style.display = "block"
+      document.getElementById("photoModal").style.display = "block";
     });
 });
 
