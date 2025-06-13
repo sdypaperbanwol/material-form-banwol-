@@ -74,16 +74,15 @@
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
-    <!-- 버튼 -->
-<button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">비품 사진 보기</button>
 
-<!-- 모달 -->
-<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
-  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-    <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
-    <div id="photoContent"></div>
-  </div>
-</div>
+    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">비품 사진 보기</button>
+
+    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+        <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
+        <div id="photoContent"></div>
+      </div>
+    </div>
 
     <label for="size">사이즈</label>
     <select id="size" name="size" required>
@@ -113,10 +112,18 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec";
+
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
+
+const categorySelect = document.getElementById("category");
+const subSelect = document.getElementById("subcategory");
+const sizeSelect = document.getElementById("size");
+const quantityInput = document.getElementById("quantity");
+const remarksInput = document.getElementById("remarks");
+const msgDiv = document.getElementById("msg");
 
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -137,7 +144,7 @@ if (saved) {
         localStorage.removeItem("userInfo");
         return;
       }
-      nameInput.value = saved;
+      nameInput.value = empName;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
     } else {
@@ -168,7 +175,7 @@ function verifyUser() {
         return;
       }
       localStorage.setItem("userInfo", fullName);
-      nameInput.value = fullName;
+      nameInput.value = empName;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
     } else {
@@ -179,63 +186,137 @@ function verifyUser() {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
-</script>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const categorySelect = document.getElementById("category");
-  const subSelect = document.getElementById("subcategory");
-  const sizeSelect = document.getElementById("size");
-  const quantityInput = document.getElementById("quantity");
-  const remarksInput = document.getElementById("remarks");
-  const msgDiv = document.getElementById("msg");
+let items = {};
+let isSubmitting = false;
+let alertShown = false;
 
-  let items = {};
-  let isSubmitting = false;
-  let alertShown = false;
+document.getElementById("resetBtn").addEventListener("click", () => {
+  alertShown = false;
+  isSubmitting = false;
+  materialForm.reset();
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+  nameInput.value = localStorage.getItem("userInfo")?.split(" ")[1] || "";
+  msgDiv.textContent = "";
+});
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    alertShown = false;
+materialForm.addEventListener("submit", function(e) {
+  e.preventDefault();
+  if (isSubmitting) return;
+
+  const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+  const requestedQty = parseInt(quantityInput.value, 10);
+  let remarksText = remarksInput.value.trim();
+
+  if (requestedQty <= 0) {
+    alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 1개로 자동 설정되었습니다. 다시 신청 버튼을 눌러주세요.");
+    quantityInput.value = 1;
+    return;
+  }
+
+  const 지급수량 = Math.min(requestedQty, currentStock);
+  const 구매요청수량 = Math.max(0, requestedQty - currentStock);
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+
+  if (!alertShown && 구매요청수량 > 0) {
+    alert(currentStock > 0
+      ? `⚠️ 현재 ${currentStock}개 지급 가능, 나머지 ${구매요청수량}개는 구매 요청됩니다.\n[주의] 한 번 더 버튼을 눌러야 신청됩니다.`
+      : `⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청됩니다.\n[주의] 한 번 더 버튼을 눌러야 신청됩니다.`);
+    if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+      remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+    }
+    categorySelect.disabled = true;
+    subSelect.disabled = true;
+    sizeSelect.disabled = true;
+    quantityInput.disabled = true;
+    alertShown = true;
+    return;
+  } else if (!remarksText.includes("지급")) {
+    remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : 지급문구;
+  }
+
+  const formData = new URLSearchParams({
+    category: categorySelect.value,
+    subcategory: subSelect.value,
+    size: sizeSelect.value,
+    name: nameInput.value,
+    quantity: quantityInput.value,
+    remarks: remarksInput.value
+  });
+
+  isSubmitting = true;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
     isSubmitting = false;
-    materialForm.reset();
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    alertShown = false;
     categorySelect.disabled = false;
     subSelect.disabled = false;
     sizeSelect.disabled = false;
     quantityInput.disabled = false;
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    msgDiv.textContent = "";
-  });
-
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-    });
-
-  categorySelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      items[cat].types.forEach(type => {
-        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-      });
+    if (data.result === "success") {
+      msgDiv.textContent = "✅ 신청이 저장되었습니다!";
+      msgDiv.style.color = "green";
+      alert("✅ 신청이 저장되었습니다!");
+      location.reload();
+    } else {
+      msgDiv.textContent = "❌ 신청 실패";
+      msgDiv.style.color = "red";
     }
+  })
+  .catch(err => {
+    isSubmitting = false;
+    alertShown = false;
+    categorySelect.disabled = false;
+    subSelect.disabled = false;
+    sizeSelect.disabled = false;
+    quantityInput.disabled = false;
+    msgDiv.textContent = "❌ 서버 오류";
+    msgDiv.style.color = "red";
+  });
+});
+
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    items = data;
+    Object.keys(items).forEach(cat => {
+      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+  })
+  .catch(err => {
+    alert("⚠️ 서버에서 항목 데이터를 불러오지 못했습니다.");
+    console.error("항목 로딩 실패:", err);
   });
 
- subSelect.addEventListener("change", () => {
+categorySelect.addEventListener("change", () => {
+  const cat = categorySelect.value;
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  if (items[cat]) {
+    items[cat].types.forEach(type => {
+      subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+    });
+  }
+});
+
+subSelect.addEventListener("change", () => {
   const cat = categorySelect.value;
   const type = subSelect.value;
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-
   if (items[cat]) {
     const stockMap = items[cat].stockMap;
-
     for (const [key, stock] of Object.entries(stockMap)) {
       const [t, size] = key.split("__");
       if (t === type) {
@@ -244,43 +325,41 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 });
-   document.getElementById("viewPhotos").addEventListener("click", () => {
-    const category = document.getElementById("category").value.trim(); // ex: 보호구(안전화류)
-    if (!category) {
-      alert("물품 종류를 먼저 선택해주세요.");
-      return;
-    }
 
-    fetch("https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec?mode=photo")  // 백엔드 URL로 교체
-      .then(res => res.json())
-      .then(photoMap => {
-        const urls = photoMap[category];
-        const container = document.getElementById("photoContent");
-        container.innerHTML = "";
+document.getElementById("viewPhotos").addEventListener("click", () => {
+  const category = categorySelect.value.trim();
+  if (!category) {
+    alert("물품 종류를 먼저 선택해주세요.");
+    return;
+  }
+  const cleanedKey = category.replace(/\s+/g, " ").trim();
+  fetch(API_URL + "?mode=photo")
+    .then(res => res.json())
+    .then(photoMap => {
+      const urls = photoMap[cleanedKey];
+      const container = document.getElementById("photoContent");
+      container.innerHTML = "";
+      if (!urls || urls.length === 0) {
+        container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
+      } else {
+        urls.forEach(url => {
+          const fileName = url.split("/").pop().split(".")[0];
+          const wrapper = document.createElement("div");
+          wrapper.style.marginBottom = "20px";
+          wrapper.innerHTML = `
+            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+          `;
+          container.appendChild(wrapper);
+        });
+      }
+      document.getElementById("photoModal").style.display = "block";
+    });
+});
 
-        if (!urls || urls.length === 0) {
-          container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
-        } else {
-          urls.forEach(url => {
-            const fileName = url.split("/").pop().split(".")[0]; // RF-41
-            const wrapper = document.createElement("div");
-            wrapper.style.marginBottom = "20px";
-            wrapper.innerHTML = `
-              <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
-              <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-            `;
-            container.appendChild(wrapper);
-          });
-        }
-
-        document.getElementById("photoModal").style.display = "block";
-      });
-  });
-
-  document.getElementById("closeModal").addEventListener("click", () => {
-    document.getElementById("photoModal").style.display = "none";
-  }); //
-  });
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("photoModal").style.display = "none";
+});
 </script>
 </body>
 </html>
