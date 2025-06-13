@@ -106,18 +106,13 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
-    <label for="photoUpload">사진 업로드 (최대 3장)</label>
-    <input type="file" id="photoUpload" name="photos" accept="image/*" multiple />
-    <small>※ 최대 3장까지 업로드 가능. JPG/PNG 권장</small>
-
-    
     <button type="submit">신청</button>
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxDjWjDEiVjfXMd8bhavenCoIkDIsv-rBtdl7X1Tpol-EYBDMBHTs1WzQZYsyHwPGTS/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzEXwD9lLMtc9Jle5q4F8I1eX7G9kpVCkFOKgQ_oGsbBuNxUSYrkQY4xXuD8Lc3omub/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -306,44 +301,31 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-  const photoFiles = document.getElementById("photoUpload").files;
-if (photoFiles.length > 3) {
-  alert("⚠️ 사진은 최대 3장까지만 업로드 가능합니다.");
-  return;
-}
+    const formData = new URLSearchParams({
+      category: categorySelect.value,
+      subcategory: subSelect.value,
+      size: sizeSelect.value,
+      name: nameInput.value,
+      quantity: quantityInput.value,
+      remarks: remarksInput.value
+    });
 
-// ✅ 이미지 포함 FormData 구성
-const formData = new FormData();
-formData.append("category", categorySelect.value);
-formData.append("subcategory", subSelect.value);
-formData.append("size", sizeSelect.value);
-formData.append("name", nameInput.value);
-formData.append("quantity", quantityInput.value);
-formData.append("remarks", remarksInput.value);
-formData.append("upload", "true");  // 업로드 요청임을 표시
+    isSubmitting = true;
 
-for (let i = 0; i < photoFiles.length; i++) {
-  formData.append("photos", photoFiles[i]);  // 🔥 키 이름을 photos로 통일
-}
+    fetch(API_URL, {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      isSubmitting = false;
+      alertShown = false;
 
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
 
-
-isSubmitting = true;
-
- // ✅ fetch → XHR로 교체
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", API_URL, true);
-  xhr.onload = function () {
-    isSubmitting = false;
-    alertShown = false;
-
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
-    quantityInput.disabled = false;
-
-    if (xhr.status === 200) {
-      const data = JSON.parse(xhr.responseText);
       if (data.result === "success") {
         msgDiv.textContent = "✅ 신청이 저장되었습니다!";
         msgDiv.style.color = "green";
@@ -353,20 +335,19 @@ isSubmitting = true;
         msgDiv.textContent = "❌ 신청 실패";
         msgDiv.style.color = "red";
       }
-    } else {
-      msgDiv.textContent = "❌ 전송 실패";
+    })
+    .catch(err => {
+      console.error("에러:", err);
+      isSubmitting = false;
+      alertShown = false;
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
+      msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
-    }
-  };
-  xhr.onerror = function () {
-    isSubmitting = false;
-    alertShown = false;
-    msgDiv.textContent = "❌ 서버 오류";
-    msgDiv.style.color = "red";
-  };
-  xhr.send(formData);
-});
-
+    });
+  });
 });
 </script>
 
@@ -378,7 +359,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch(`${API_URL}?mode=photo`)
+  fetch("https://script.google.com/macros/s/AKfycbzEXwD9lLMtc9Jle5q4F8I1eX7G9kpVCkFOKgQ_oGsbBuNxUSYrkQY4xXuD8Lc3omub/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -400,7 +381,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
         });
       }
 
-      document.getElementById("photoModal").style.display = "block";
+      document.getElementById("photoModal").style.display = "block"
     });
 });
 
