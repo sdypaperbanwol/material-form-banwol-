@@ -74,14 +74,16 @@
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
-    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">비품 사진 보기</button>
+    <!-- 버튼 -->
+<button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">비품 사진 보기</button>
 
-    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
-      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-        <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">&#x2716;</span>
-        <div id="photoContent"></div>
-      </div>
-    </div>
+<!-- 모달 -->
+<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+    <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
+    <div id="photoContent"></div>
+  </div>
+</div>
 
     <label for="size">사이즈</label>
     <select id="size" name="size" required>
@@ -99,7 +101,7 @@
       - 24시간 신청 가능하며 담당자의 평일 근무일에 지급됩니다.<br>
       - 비대면 수령도 가능(사무실 1층 복도 무인사물함 설치 예정)<br>
       - 예시: 오늘·내일(X월X일) X시 수령/교환 또는 비대면 요청<br>
-      - 재고 부족 시 보유 수량만 지급, 부족부는 구매 요청됩니다.<br>
+      - 재고 부족 시 보유 수량만 지급, 부족분은 구매 요청됩니다.<br>
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
@@ -110,7 +112,6 @@
   </form>
 
 <script>
-// --- JS 통합 ---
 const API_URL = "https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -178,7 +179,9 @@ function verifyUser() {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
+</script>
 
+<script>
 document.addEventListener("DOMContentLoaded", function () {
   const categorySelect = document.getElementById("category");
   const subSelect = document.getElementById("subcategory");
@@ -186,6 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const quantityInput = document.getElementById("quantity");
   const remarksInput = document.getElementById("remarks");
   const msgDiv = document.getElementById("msg");
+
   let items = {};
   let isSubmitting = false;
   let alertShown = false;
@@ -202,98 +206,6 @@ document.addEventListener("DOMContentLoaded", function () {
     quantityInput.disabled = false;
     nameInput.value = localStorage.getItem("userInfo") || "";
     msgDiv.textContent = "";
-  });
-
-  materialForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    if (isSubmitting) return;
-
-    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-    const requestedQty = parseInt(quantityInput.value, 10);
-    let remarksText = remarksInput.value.trim();
-
-    if (requestedQty <= 0) {
-      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-      quantityInput.value = 1;
-      return;
-    }
-
-    const 지급수량 = Math.min(requestedQty, currentStock);
-    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
-
-    if (!alertShown) {
-      if (구매요청수량 > 0) {
-        if (currentStock > 0) {
-          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-          quantityInput.value = currentStock;
-        } else {
-          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-        }
-
-        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-        }
-
-        categorySelect.disabled = true;
-        subSelect.disabled = true;
-        sizeSelect.disabled = true;
-        quantityInput.disabled = true;
-        alertShown = true;
-        return;
-      } else {
-        if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
-        }
-      }
-    }
-
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: quantityInput.value,
-      remarks: remarksInput.value
-    });
-
-    isSubmitting = true;
-    fetch(API_URL, {
-      method: "POST",
-      body: formData
-    })
-      .then(res => res.json())
-      .then(data => {
-        isSubmitting = false;
-        alertShown = false;
-        categorySelect.disabled = false;
-        subSelect.disabled = false;
-        sizeSelect.disabled = false;
-        quantityInput.disabled = false;
-
-        if (data.result === "success") {
-          msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-          msgDiv.style.color = "green";
-          alert("✅ 신청이 저장되었습니다!");
-          location.reload();
-        } else {
-          msgDiv.textContent = "❌ 신청 실패";
-          msgDiv.style.color = "red";
-        }
-      })
-      .catch(err => {
-        console.error("에러:", err);
-        isSubmitting = false;
-        alertShown = false;
-        categorySelect.disabled = false;
-        subSelect.disabled = false;
-        sizeSelect.disabled = false;
-        quantityInput.disabled = false;
-        msgDiv.textContent = "❌ 서버 오류";
-        msgDiv.style.color = "red";
-      });
   });
 
   fetch(API_URL)
@@ -322,37 +234,42 @@ document.addEventListener("DOMContentLoaded", function () {
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     if (items[cat]) {
       const stockMap = items[cat].stockMap;
+      const groupMap = {};
+
       for (const [key, stock] of Object.entries(stockMap)) {
-              const [t, size] = key.split("__");
+        const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+          const group = size.split("-").slice(0, 2).join("-");
+          if (!groupMap[group]) groupMap[group] = "";
+          groupMap[group] += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
         }
+      }
+
+      for (const group in groupMap) {
+        sizeSelect.innerHTML += `<optgroup label="${group}">${groupMap[group]}</optgroup>`;
       }
     }
   });
-
-  // 비품 사진 보기 버튼 이벤트
-  document.getElementById("viewPhotos").addEventListener("click", () => {
-    const cat = categorySelect.value.trim();
-    const type = subSelect.value.trim();
-    if (!cat || !type) {
-      alert("물품 종류와 세부 종류를 먼저 선택해주세요.");
+});
+   document.getElementById("viewPhotos").addEventListener("click", () => {
+    const category = document.getElementById("category").value.trim(); // ex: 보호구(안전화류)
+    if (!category) {
+      alert("물품 종류를 먼저 선택해주세요.");
       return;
     }
 
-    fetch(API_URL + "?photos=true")
+    fetch("https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec?mode=photo")  // 백엔드 URL로 교체
       .then(res => res.json())
       .then(photoMap => {
+        const urls = photoMap[category];
         const container = document.getElementById("photoContent");
         container.innerHTML = "";
-        const key = `${cat} ${type}`;
-        const urls = photoMap[key];
 
         if (!urls || urls.length === 0) {
           container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
         } else {
           urls.forEach(url => {
-            const fileName = url.split("/").pop().split(".")[0];
+            const fileName = url.split("/").pop().split(".")[0]; // RF-41
             const wrapper = document.createElement("div");
             wrapper.style.marginBottom = "20px";
             wrapper.innerHTML = `
@@ -370,8 +287,162 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("closeModal").addEventListener("click", () => {
     document.getElementById("photoModal").style.display = "none";
   });
-});
 </script>
 </body>
 </html>
+
+ㅡㅡㅡㅡㅡ
+
+function doPost(e) {
+  const empId = e.parameter.empId;
+  const empName = e.parameter.empName;
+  const category = e.parameter.category;
+
+  const isLoginRequest = empId && empName && !category;
+
+  if (isLoginRequest) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("이름사번메일");
+    const data = sheet.getRange("C5:E" + sheet.getLastRow()).getValues();
+
+    const matched = data.find(([id, name, active]) =>
+      String(id).trim() === empId && String(name).trim() === empName
+    );
+
+    if (matched) {
+      const active = String(matched[2] || "").trim();
+      if (active === "Y" || active === "Z") {
+        return ContentService.createTextOutput(JSON.stringify({ result: "success", active }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify({ result: "disabled", active: "N" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    } else {
+      return ContentService.createTextOutput(JSON.stringify({ result: "fail" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ✅ 물품 신청 처리
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 지급(통합)");
+  const date = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss.SSS");
+  const name = e.parameter.name?.trim() || "Unknown";
+  const subcategory = e.parameter.subcategory || "";
+  const size = e.parameter.size || "";
+  const quantity = parseInt(e.parameter.quantity, 10) || 0;
+  const remarks = e.parameter.remarks || "";
+
+  if (!name || !category || !subcategory || !size || quantity <= 0) {
+    return ContentService.createTextOutput(JSON.stringify({ result: "error", message: "필수 값 누락" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const [empIdPart, empNamePart] = name.split(" ");
+
+  let 지급수량 = 0;
+  let 구매요청수량 = 0;
+  const 지급Match = remarks.match(/(\d+)개 지급/);
+  const 구매Match = remarks.match(/(\d+)개 구매 요청/);
+  if (지급Match) 지급수량 = parseInt(지급Match[1], 10);
+  if (구매Match) 구매요청수량 = parseInt(구매Match[1], 10);
+
+  try {
+    sheet.appendRow([date, empIdPart, empNamePart, category, subcategory, size, 지급수량, 구매요청수량, remarks]);
+    sendTelegramAlert({ date, empId: empIdPart, empName: empNamePart, category, subcategory, size, quantity, 지급수량, 구매요청수량, remarks });
+
+    return ContentService.createTextOutput(JSON.stringify({ result: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      result: "error",
+      message: "시트 저장 실패: " + error.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function sendTelegramAlert(data) {
+  const token = "7984153021:AAFeJqyiWga05mnqEJv0mvYb_44rGu-TmzA";
+  const chatId = "7717030762";
+  const message = `
+📦 <b>새 자재 신청이 접수되었습니다!</b>
+👤 이름: ${data.empId} ${data.empName}
+📁 분류: ${data.category} > ${data.subcategory}
+📐 사이즈: ${data.size}
+🔢 수량: 지급 ${data.지급수량} / 요청 ${data.구매요청수량}
+📝 비고: ${data.remarks}
+🕒 신청 시각: ${data.date}
+  `.trim();
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  const payload = {
+    method: 'post',
+    payload: {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'HTML'
+    }
+  };
+
+  try {
+    UrlFetchApp.fetch(url, payload);
+  } catch (error) {
+    Logger.log("🔴 Telegram 전송 실패: " + error.message);
+  }
+}
+
+function doGet(e) {
+  const mode = e?.parameter?.mode || "";
+
+  if (mode === "photo") {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 리스트 관리");
+    const values = sheet.getRange("B2:G300").getValues();
+
+    const photoMap = {};
+
+    values.forEach(row => {
+      const category = String(row[0] || "").trim();  // B열
+      const url = String(row[5] || "").trim();       // G열
+
+      if (!category || !url) return;
+
+      if (!photoMap[category]) {
+        photoMap[category] = [];
+      }
+
+      photoMap[category].push(url);
+    });
+
+    return ContentService.createTextOutput(JSON.stringify(photoMap))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 기본 물품 리스트 로딩
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 리스트 관리");
+  const values = sheet.getDataRange().getValues();
+  const data = values.slice(1);
+
+  const result = {};
+
+  data.forEach(row => {
+    const [, category, type, size, active, stock] = row;
+
+    if (active !== "Y" || !category || !type || !size) return;
+
+    if (!result[category]) {
+      result[category] = { types: [], stockMap: {} };
+    }
+
+    if (!result[category].types.includes(type)) {
+      result[category].types.push(type);
+    }
+
+    result[category].stockMap[`${type}__${size}`] = parseInt(stock, 10) || 0;
+  });
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
 
