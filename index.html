@@ -117,7 +117,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxksfr8C0nsmQk4B23Z2z62jOMH_i22GkbAeCUHVvft8Y3BtUygTNyyb4e5sp1y83BG/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwfpavgfLuZFNrKzD0WVWoPwz7PTY--_Qe1WYTqdTJe9YmrNwZzN8FOUpfs-GkMeB7W/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -323,8 +323,9 @@ formData.append("remarks", remarksInput.value);
 formData.append("upload", "true");  // 업로드 요청임을 표시
 
 for (let i = 0; i < photoFiles.length; i++) {
-  formData.append(`photo${i + 1}`, photoFiles[i]);
+  formData.append("file", photoFiles[i]);  // ✅ 모든 이미지에 동일 키 사용
 }
+
 
 isSubmitting = true;
 
