@@ -109,10 +109,15 @@
     <button type="submit">신청</button>
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
+
+    <label for="photoUpload">사진 업로드 (최대 3장)</label>
+<input type="file" id="photoUpload" name="photoUpload" accept="image/*" multiple />
+<small style="color:#666">※ 최대 3장까지 선택 가능. 용량 10MB 이하 권장</small>
+
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwWGF-AWrXxWNonIOUEC3UX5Ij3DqoFqWIUSSGsgR-GUmDfAeMU5hqeJ0RbzPuUg07d/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -301,16 +306,27 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: quantityInput.value,
-      remarks: remarksInput.value
-    });
+
 
     isSubmitting = true;
+
+    const files = document.getElementById("photoUpload").files;
+if (files.length > 3) {
+  alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
+  return;
+}
+
+const formData = new FormData();
+formData.append("category", categorySelect.value);
+formData.append("subcategory", subSelect.value);
+formData.append("size", sizeSelect.value);
+formData.append("name", nameInput.value);
+formData.append("quantity", quantityInput.value);
+formData.append("remarks", remarksInput.value);
+for (let i = 0; i < files.length; i++) {
+  formData.append("photos", files[i]);  // 동일 키로 여러 파일 전송
+}
+
 
     fetch(API_URL, {
       method: "POST",
@@ -359,7 +375,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbzGYESCNTE3tBmxGOov4sxs0eyj3_yxMpvbY1snNtz9N6oToNwyEk0XMIMztWRyWTZ7/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbwWGF-AWrXxWNonIOUEC3UX5Ij3DqoFqWIUSSGsgR-GUmDfAeMU5hqeJ0RbzPuUg07d/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
