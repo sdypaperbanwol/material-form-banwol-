@@ -106,19 +106,13 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
-    <!-- ✅ 신청 버튼 위에 추가 -->
-<label for="photos">사진 업로드 (최대 3장)</label>
-<input type="file" id="photos" name="photos" accept="image/*" multiple style="padding:10px;border:1px solid #ccc;border-radius:6px;" />
-<small>최대 3장까지 업로드할 수 있습니다.</small>
-
-    
     <button type="submit">신청</button>
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyl_uGKwxh1XVw1T4Do0RGlLDaYcbN24Ca_qxu7Ae-0TwUzTMq2Gxsh_hHbcYox30Q9/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbywzUUWRfjtRIt5SsRyAAvbYS5XLCR_9phCf21Rf9dfVYT0C97ROciyA-1edOxXzeAK/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -261,108 +255,100 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   materialForm.addEventListener("submit", function(e) {
-  e.preventDefault();
-  if (isSubmitting) return;
+    e.preventDefault();
+    if (isSubmitting) return;
 
-  const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-  const requestedQty = parseInt(quantityInput.value, 10);
-  let remarksText = remarksInput.value.trim();
+    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+    const requestedQty = parseInt(quantityInput.value, 10);
+    let remarksText = remarksInput.value.trim();
 
-  if (requestedQty <= 0) {
-    alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-    quantityInput.value = 1;
-    return;
-  }
-
-  const 지급수량 = Math.min(requestedQty, currentStock);
-  const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
-
-  if (!alertShown) {
-    if (구매요청수량 > 0) {
-      if (currentStock > 0) {
-        alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-        quantityInput.value = currentStock;
-      } else {
-        alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-      }
-
-      if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-        remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-      }
-
-      categorySelect.disabled = true;
-      subSelect.disabled = true;
-      sizeSelect.disabled = true;
-      quantityInput.disabled = true;
-
-      alertShown = true;
+    if (requestedQty <= 0) {
+      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+      quantityInput.value = 1;
       return;
-    } else {
-      if (!remarksText.includes("지급")) {
-        remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
+    }
+
+    const 지급수량 = Math.min(requestedQty, currentStock);
+    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+
+    if (!alertShown) {
+      if (구매요청수량 > 0) {
+        if (currentStock > 0) {
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+          quantityInput.value = currentStock;
+        } else {
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+        }
+
+        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+        }
+
+        categorySelect.disabled = true;
+        subSelect.disabled = true;
+        sizeSelect.disabled = true;
+        quantityInput.disabled = true;
+
+        alertShown = true;
+        return;
+      } else {
+        if (!remarksText.includes("지급")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
+        }
       }
     }
-  }
 
-  const formData = new FormData();
-  formData.append("category", categorySelect.value);
-  formData.append("subcategory", subSelect.value);
-  formData.append("size", sizeSelect.value);
-  formData.append("name", nameInput.value);
-  formData.append("quantity", quantityInput.value);
-  formData.append("remarks", remarksInput.value);
+    const formData = new URLSearchParams({
+      category: categorySelect.value,
+      subcategory: subSelect.value,
+      size: sizeSelect.value,
+      name: nameInput.value,
+      quantity: quantityInput.value,
+      remarks: remarksInput.value
+    });
 
-  const files = document.getElementById("photos").files;
-  if (files.length > 3) {
-    alert("사진은 최대 3장까지만 업로드할 수 있습니다.");
-    return;
-  }
-  for (let i = 0; i < files.length; i++) {
-    formData.append("photos", files[i]);
-  }
+    isSubmitting = true;
 
-  isSubmitting = true;
+    fetch(API_URL, {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      isSubmitting = false;
+      alertShown = false;
 
-  fetch(API_URL, {
-    method: "POST",
-    body: formData
-  })
-  .then(res => res.json())
-  .then(data => {
-    isSubmitting = false;
-    alertShown = false;
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
 
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
-    quantityInput.disabled = false;
-
-    if (data.result === "success") {
-      msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-      msgDiv.style.color = "green";
-      alert("✅ 신청이 저장되었습니다!");
-      location.reload();
-    } else {
-      msgDiv.textContent = "❌ 신청 실패";
+      if (data.result === "success") {
+        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
+        msgDiv.style.color = "green";
+        alert("✅ 신청이 저장되었습니다!");
+        location.reload();
+      } else {
+        msgDiv.textContent = "❌ 신청 실패";
+        msgDiv.style.color = "red";
+      }
+    })
+    .catch(err => {
+      console.error("에러:", err);
+      isSubmitting = false;
+      alertShown = false;
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
+      msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
-    }
-  })
-  .catch(err => {
-    console.error("에러:", err);
-    isSubmitting = false;
-    alertShown = false;
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
-    quantityInput.disabled = false;
-    msgDiv.textContent = "❌ 서버 오류";
-    msgDiv.style.color = "red";
+    });
   });
 });
-
 </script>
 
 <script>
@@ -373,7 +359,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbyl_uGKwxh1XVw1T4Do0RGlLDaYcbN24Ca_qxu7Ae-0TwUzTMq2Gxsh_hHbcYox30Q9/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbywzUUWRfjtRIt5SsRyAAvbYS5XLCR_9phCf21Rf9dfVYT0C97ROciyA-1edOxXzeAK/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -406,3 +392,160 @@ document.getElementById("closeModal").addEventListener("click", () => {
 
 </body>
 </html>
+
+
+ㅡㅡㅡ
+
+
+function doPost(e) {
+  const empId = e.parameter.empId;
+  const empName = e.parameter.empName;
+  const category = e.parameter.category;
+
+  const isLoginRequest = empId && empName && !category;
+
+  if (isLoginRequest) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("이름사번메일");
+    const data = sheet.getRange("C5:E" + sheet.getLastRow()).getValues();
+
+    const matched = data.find(([id, name, active]) =>
+      String(id).trim() === empId && String(name).trim() === empName
+    );
+
+    if (matched) {
+      const active = String(matched[2] || "").trim();
+      if (active === "Y" || active === "Z") {
+        return ContentService.createTextOutput(JSON.stringify({ result: "success", active }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify({ result: "disabled", active: "N" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    } else {
+      return ContentService.createTextOutput(JSON.stringify({ result: "fail" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ✅ 물품 신청 처리
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 지급(통합)");
+  const date = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss.SSS");
+  const name = e.parameter.name?.trim() || "Unknown";
+  const subcategory = e.parameter.subcategory || "";
+  const size = e.parameter.size || "";
+  const quantity = parseInt(e.parameter.quantity, 10) || 0;
+  const remarks = e.parameter.remarks || "";
+
+  if (!name || !category || !subcategory || !size || quantity <= 0) {
+    return ContentService.createTextOutput(JSON.stringify({ result: "error", message: "필수 값 누락" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const [empIdPart, empNamePart] = name.split(" ");
+
+  let 지급수량 = 0;
+  let 구매요청수량 = 0;
+  const 지급Match = remarks.match(/(\d+)개 지급/);
+  const 구매Match = remarks.match(/(\d+)개 구매 요청/);
+  if (지급Match) 지급수량 = parseInt(지급Match[1], 10);
+  if (구매Match) 구매요청수량 = parseInt(구매Match[1], 10);
+
+  try {
+    sheet.appendRow([date, empIdPart, empNamePart, category, subcategory, size, 지급수량, 구매요청수량, remarks]);
+    sendTelegramAlert({ date, empId: empIdPart, empName: empNamePart, category, subcategory, size, quantity, 지급수량, 구매요청수량, remarks });
+
+    return ContentService.createTextOutput(JSON.stringify({ result: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      result: "error",
+      message: "시트 저장 실패: " + error.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function sendTelegramAlert(data) {
+  const token = "7984153021:AAFeJqyiWga05mnqEJv0mvYb_44rGu-TmzA";
+  const chatId = "7717030762";
+  const message = `
+📦 <b>새 자재 신청이 접수되었습니다!</b>
+👤 이름: ${data.empId} ${data.empName}
+📁 분류: ${data.category} > ${data.subcategory}
+📐 사이즈: ${data.size}
+🔢 수량: 지급 ${data.지급수량} / 요청 ${data.구매요청수량}
+📝 비고: ${data.remarks}
+🕒 신청 시각: ${data.date}
+  `.trim();
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  const payload = {
+    method: 'post',
+    payload: {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'HTML'
+    }
+  };
+
+  try {
+    UrlFetchApp.fetch(url, payload);
+  } catch (error) {
+    Logger.log("🔴 Telegram 전송 실패: " + error.message);
+  }
+}
+
+function doGet(e) {
+  const mode = e?.parameter?.mode || "";
+
+  if (mode === "photo") {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 리스트 관리");
+    const values = sheet.getRange("B2:G300").getValues();
+
+    const photoMap = {};
+
+    values.forEach(row => {
+      const category = String(row[0] || "").trim();  // B열
+      const url = String(row[5] || "").trim();       // G열
+
+      if (!category || !url) return;
+
+      if (!photoMap[category]) {
+        photoMap[category] = [];
+      }
+
+      photoMap[category].push(url);
+    });
+
+    return ContentService.createTextOutput(JSON.stringify(photoMap))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 기본 물품 리스트 로딩
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 리스트 관리");
+  const values = sheet.getDataRange().getValues();
+  const data = values.slice(1);
+
+  const result = {};
+
+  data.forEach(row => {
+    const [, category, type, size, active, stock] = row;
+
+    if (active !== "Y" || !category || !type || !size) return;
+
+    if (!result[category]) {
+      result[category] = { types: [], stockMap: {} };
+    }
+
+    if (!result[category].types.includes(type)) {
+      result[category].types.push(type);
+    }
+
+    result[category].stockMap[`${type}__${size}`] = parseInt(stock, 10) || 0;
+  });
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
