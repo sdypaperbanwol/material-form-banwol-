@@ -112,7 +112,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzEXwD9lLMtc9Jle5q4F8I1eX7G9kpVCkFOKgQ_oGsbBuNxUSYrkQY4xXuD8Lc3omub/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxeHsglxsEJssDPx1GIw3B_oyfHZ-bfDdcxZ_d1BD-9QSldjedQqg1qZmf7ar7cflQi/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -359,7 +359,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbzEXwD9lLMtc9Jle5q4F8I1eX7G9kpVCkFOKgQ_oGsbBuNxUSYrkQY4xXuD8Lc3omub/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbxeHsglxsEJssDPx1GIw3B_oyfHZ-bfDdcxZ_d1BD-9QSldjedQqg1qZmf7ar7cflQi/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
