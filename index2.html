@@ -107,7 +107,40 @@
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
+<!-- ✅ 여기 아래에 넣어라 (이게 기준선이다) -->
 
+<!-- ✅ 사진 업로드 폼 (iframe 방식) -->
+<form id="photoForm" action="https://script.google.com/macros/s/AKfycbx6RZeR8Toad9qe8WXxEGhjkMWmVuYsYrLQuuBAN9pf1yyEKESUOUyEs8stfazXnnU8/exec" method="POST" enctype="multipart/form-data" target="uploadFrame">
+  <label for="photos">사진 업로드 (최대 3장)</label>
+  <input type="file" name="photos" id="photos" accept="image/*" multiple required />
+  <input type="hidden" name="upload" value="true" />
+  <button type="submit">사진 업로드</button>
+  <div id="uploadStatus" class="message"></div>
+</form>
+
+<iframe name="uploadFrame" id="uploadFrame" style="display:none;"></iframe>
+
+<!-- ✅ 응답 처리 -->
+<script>
+  document.getElementById("photoForm").addEventListener("submit", () => {
+    document.getElementById("uploadStatus").textContent = "업로드 중...";
+  });
+
+  window.addEventListener("message", function(event) {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.result === "success") {
+        document.getElementById("uploadStatus").textContent = "✅ 업로드 성공";
+      } else {
+        document.getElementById("uploadStatus").textContent = "❌ 업로드 실패";
+      }
+    } catch (e) {
+      document.getElementById("uploadStatus").textContent = "⚠️ 처리 오류";
+    }
+  });
+</script>
+
+    
 <label for="photos">사진 업로드 (최대 3장)</label>
 <input type="file" id="photos" name="photos" accept="image/*" multiple style="padding:6px;" />
 <small>※ 총 3장까지 업로드 가능. 사진은 Drive에 저장되며, 링크는 시트에 기록됩니다.</small>
@@ -119,7 +152,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxE-PXUY7hYGMCz9DCFA-KzGxwniBwbr-4an8U9n4REgcUgwSMobieT6PUXDWboIKVR/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx6RZeR8Toad9qe8WXxEGhjkMWmVuYsYrLQuuBAN9pf1yyEKESUOUyEs8stfazXnnU8/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -371,7 +404,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbxE-PXUY7hYGMCz9DCFA-KzGxwniBwbr-4an8U9n4REgcUgwSMobieT6PUXDWboIKVR/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbx6RZeR8Toad9qe8WXxEGhjkMWmVuYsYrLQuuBAN9pf1yyEKESUOUyEs8stfazXnnU8/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
