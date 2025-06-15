@@ -119,7 +119,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbz_LKqzPOY2zFfAnTRfX_flngbNbmaitpDUmZJByLYEeAgPy4_IL9Pl9dWvGFdYd_Yo/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwppe4tiZ1ujSsLzJ60GMDc0_DfXAX2Y6H5UX_ipB6CxE27jrr5EYpUAyTqNmWHcqH6/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", function () {
   formData.append("remarks", remarksInput.value);
 
   if (photoFiles.length > 0) {
-    formData.append("upload", "true");
+    formData.append("upload", photoFiles.length > 0 ? "true" : "false");
     for (let i = 0; i < photoFiles.length; i++) {
       formData.append("photos", photoFiles[i]);
     }
@@ -371,7 +371,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbz_LKqzPOY2zFfAnTRfX_flngbNbmaitpDUmZJByLYEeAgPy4_IL9Pl9dWvGFdYd_Yo/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbwppe4tiZ1ujSsLzJ60GMDc0_DfXAX2Y6H5UX_ipB6CxE27jrr5EYpUAyTqNmWHcqH6/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
