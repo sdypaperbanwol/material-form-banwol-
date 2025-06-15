@@ -108,13 +108,18 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
+<label for="photos">사진 업로드 (최대 3장)</label>
+<input type="file" id="photos" name="photos" accept="image/*" multiple style="padding:6px;" />
+<small>※ 총 3장까지 업로드 가능. 사진은 Drive에 저장되며, 링크는 시트에 기록됩니다.</small>
+
+
     <button type="submit">신청</button>
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxeHsglxsEJssDPx1GIw3B_oyfHZ-bfDdcxZ_d1BD-9QSldjedQqg1qZmf7ar7cflQi/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyUJkkrUGUxklSbr1n3Ghn42ALf5kNk3_OdW_GfNUGfg6wVh0_SVimp_koi9YxcpqQY/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -257,100 +262,105 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   materialForm.addEventListener("submit", function(e) {
-    e.preventDefault();
-    if (isSubmitting) return;
+  e.preventDefault();
+  if (isSubmitting) return;
 
-    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-    const requestedQty = parseInt(quantityInput.value, 10);
-    let remarksText = remarksInput.value.trim();
+  const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+  const requestedQty = parseInt(quantityInput.value, 10);
+  let remarksText = remarksInput.value.trim();
 
-    if (requestedQty <= 0) {
-      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-      quantityInput.value = 1;
+  if (requestedQty <= 0) {
+    alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+    quantityInput.value = 1;
+    return;
+  }
+
+  const 지급수량 = Math.min(requestedQty, currentStock);
+  const 구매요청수량 = Math.max(0, requestedQty - currentStock);
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+
+  if (!alertShown) {
+    if (구매요청수량 > 0) {
+      if (currentStock > 0) {
+        alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+        quantityInput.value = currentStock;
+      } else {
+        alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+      }
+
+      if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+        remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+      }
+
+      categorySelect.disabled = true;
+      subSelect.disabled = true;
+      sizeSelect.disabled = true;
+      quantityInput.disabled = true;
+
+      alertShown = true;
       return;
-    }
-
-    const 지급수량 = Math.min(requestedQty, currentStock);
-    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
-
-    if (!alertShown) {
-      if (구매요청수량 > 0) {
-        if (currentStock > 0) {
-          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-          quantityInput.value = currentStock;
-        } else {
-          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-        }
-
-        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-        }
-
-        categorySelect.disabled = true;
-        subSelect.disabled = true;
-        sizeSelect.disabled = true;
-        quantityInput.disabled = true;
-
-        alertShown = true;
-        return;
-      } else {
-        if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
-        }
+    } else {
+      if (!remarksText.includes("지급")) {
+        remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
       }
     }
+  }
 
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: quantityInput.value,
-      remarks: remarksInput.value
-    });
+  const photoFiles = document.getElementById("photos").files;
+  if (photoFiles.length > 3) {
+    alert("⚠️ 사진은 최대 3장까지만 업로드 가능합니다.");
+    return;
+  }
 
-    isSubmitting = true;
+  const formData = photoFiles.length > 0 ? new FormData() : new URLSearchParams();
 
-    fetch(API_URL, {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      isSubmitting = false;
-      alertShown = false;
+  formData.append("category", categorySelect.value);
+  formData.append("subcategory", subSelect.value);
+  formData.append("size", sizeSelect.value);
+  formData.append("name", nameInput.value);
+  formData.append("quantity", quantityInput.value);
+  formData.append("remarks", remarksInput.value);
 
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
+  if (photoFiles.length > 0) {
+    formData.append("upload", "true");
+    for (let i = 0; i < photoFiles.length; i++) {
+      formData.append("photos", photoFiles[i]);
+    }
+  }
 
-      if (data.result === "success") {
-        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-        msgDiv.style.color = "green";
-        alert("✅ 신청이 저장되었습니다!");
-        location.reload();
-      } else {
-        msgDiv.textContent = "❌ 신청 실패";
-        msgDiv.style.color = "red";
-      }
-    })
-    .catch(err => {
-      console.error("에러:", err);
-      isSubmitting = false;
-      alertShown = false;
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
-      msgDiv.textContent = "❌ 서버 오류";
+  isSubmitting = true;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: formData,
+  })
+  .then(res => res.json())
+  .then(data => {
+    isSubmitting = false;
+    alertShown = false;
+
+    if (data.result === "success") {
+      alert(photoFiles.length > 0 ? "✅ 신청 및 사진 업로드가 완료되었습니다." : "✅ 신청이 저장되었습니다!");
+      location.reload();
+    } else {
+      msgDiv.textContent = "❌ 신청 실패";
       msgDiv.style.color = "red";
-    });
+    }
+  })
+  .catch(err => {
+    console.error("에러:", err);
+    isSubmitting = false;
+    alertShown = false;
+    msgDiv.textContent = "❌ 서버 오류";
+    msgDiv.style.color = "red";
   });
 });
+
+
+
+   
 </script>
 
 <script>
@@ -361,7 +371,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbxeHsglxsEJssDPx1GIw3B_oyfHZ-bfDdcxZ_d1BD-9QSldjedQqg1qZmf7ar7cflQi/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbyUJkkrUGUxklSbr1n3Ghn42ALf5kNk3_OdW_GfNUGfg6wVh0_SVimp_koi9YxcpqQY/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
