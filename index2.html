@@ -224,6 +224,7 @@ const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
+  
 
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -476,6 +477,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 
     itemList = [];  // 추가된 항목 초기화
   document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
+     document.getElementById("myRecordsSection").style.display = "none";
   });
 
   materialForm.addEventListener("submit", function(e) {
