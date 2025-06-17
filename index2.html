@@ -244,6 +244,7 @@
   </form>
 
 <script>
+  document.addEventListener("DOMContentLoaded", () => {
 const API_URL = "https://script.google.com/macros/s/AKfycbx8LomJU4S7JiorMJOPoxtW3_6D2SN7r0IcwqQpLmnQ5Hyj-0De-_HMc3hDXOTg1S9A/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -492,9 +493,7 @@ let items = {};
   });
 
 });
-</script>
 
-<script>
 document.getElementById("viewPhotos").addEventListener("click", () => {
   const category = document.getElementById("category").value.trim();
   if (!category) {
@@ -531,9 +530,9 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
 document.getElementById("closeModal").addEventListener("click", () => {
   document.getElementById("photoModal").style.display = "none";
 });
-</script>
 
-<script>
+
+
 let itemList = [];
 document.getElementById("addItemBtn").addEventListener("click", () => {
   const category = categorySelect.value;
@@ -754,6 +753,6 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
-
+</script>
 </body>
 </html>
