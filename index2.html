@@ -127,18 +127,7 @@
     <button id="verifyBtn">확인</button>
     <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
-<!-- ✅ 로그인 섹션 전체 -->
-<div id="login-section">...</div>
 
-<!-- ✅ 로그인 후 폼 유형 버튼 -->
-<div id="formTypeButtons" style="display: none; text-align:center;">
-  <h3>폼 유형을 선택하세요</h3>
-  <button class="form-type-btn" data-type="물품신청">📦 물품 신청</button>
-  <button class="form-type-btn" data-type="건의사항">💬 건의사항</button>
-  <button class="form-type-btn" data-type="복지설문">📝 복지 설문</button>
-</div>
-
-  
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
 
 
@@ -259,7 +248,7 @@ if (saved) {
       }
       nameInput.value = saved;
       loginSection.style.display = "none";
-      document.getElementById("formTypeButtons").style.display = "block";
+      materialForm.style.display = "flex";
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -290,7 +279,7 @@ function verifyUser() {
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
-      document.getElementById("formTypeButtons").style.display = "block";
+      materialForm.style.display = "flex";
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
@@ -386,22 +375,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   materialForm.addEventListener("submit", function(e) {
-document.querySelectorAll(".form-type-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const selected = btn.dataset.type;
-    document.getElementById("formTypeButtons").style.display = "none";
-
-    if (selected === "물품신청") {
-      document.getElementById("materialForm").style.display = "flex";
-    } else if (selected === "건의사항") {
-      document.getElementById("suggestionForm").style.display = "flex";
-    } else if (selected === "복지설문") {
-      document.getElementById("surveyForm").style.display = "flex";
-    }
-  });
-});
-
-    
     e.preventDefault();
     if (isSubmitting) return;
 
@@ -409,8 +382,6 @@ document.querySelectorAll(".form-type-btn").forEach(btn => {
     const requestedQty = parseInt(quantityInput.value, 10);
     let remarksText = remarksInput.value.trim();
 
-
-    
     if (requestedQty <= 0) {
       alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
       quantityInput.value = 1;
