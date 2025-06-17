@@ -242,13 +242,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  sizeSelect.addEventListener("change", () => {
-    const opt = sizeSelect.selectedOptions[0];
-    const stock = parseInt(opt?.dataset.stock || "0", 10);
-    if (stock === 0) {
-      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
-    }
-  });
+//  sizeSelect.addEventListener("change", () => {
+//    const opt = sizeSelect.selectedOptions[0];
+//    const stock = parseInt(opt?.dataset.stock || "0", 10);
+//    if (stock === 0) {
+//      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
+//    }
+//  });
+  
 
   fetch(API_URL)
     .then(res => res.json())
