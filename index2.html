@@ -118,6 +118,13 @@
     </div>
   </div>
 
+<div id="noticeBanner" style="display:none; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 12px; text-align: center; position: relative; margin-bottom: 10px; border-radius: 6px; max-width: 600px; margin: 0 auto 20px auto;">
+  <div id="noticeText" style="margin-bottom:8px;"></div>
+  <button id="hideTodayBtn" style="font-size:13px; padding:6px 10px; background:#856404; color:white; border:none; border-radius:4px; cursor:pointer;">오늘 하루 보지 않기</button>
+  <span id="closeNotice" style="position: absolute; right: 10px; top: 5px; cursor: pointer; font-weight: bold;">✖</span>
+</div>
+
+  
   <!-- ✅ 로그인 섹션 전체 -->
   <div id="login-section">
     <h3>로그인</h3>
@@ -206,7 +213,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwUZ6c4GoOwe6UE971vtRo6i0RWEsHClylqb8_F3RMa2yC8gHDiRwNEAeWd9v0lqE9r/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz23ads0NQ82LAIgoqkIrFAqNrM3Np2BkMEKvbNF5QkPuqHCJlWK_I7WT218ny1QW78/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -665,6 +672,34 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 
 
 </script>
+document.addEventListener("DOMContentLoaded", () => {
+  fetch(API_URL + "?mode=notice")
+    .then(res => res.json())
+    .then(data => {
+      const notice = (data.notice || "").trim();
+      const expireDate = data.expire; // "2025-06-18"
+      if (!notice || !expireDate) return;
+
+      const today = new Date().toISOString().slice(0, 10); // "2025-06-17"
+      const hideKey = `hideNotice_${today}`;
+
+      if (today > expireDate) return; // 날짜 지났으면 표시 안함
+      if (localStorage.getItem(hideKey)) return; // 오늘 하루 보지 않기 눌렀으면 표시 안함
+
+      document.getElementById("noticeText").innerText = notice;
+      document.getElementById("noticeBanner").style.display = "block";
+
+      document.getElementById("closeNotice").onclick = () => {
+        document.getElementById("noticeBanner").style.display = "none";
+      };
+
+      document.getElementById("hideTodayBtn").onclick = () => {
+        localStorage.setItem(hideKey, "true");
+        document.getElementById("noticeBanner").style.display = "none";
+      };
+    });
+});
+
   
 </body>
 </html>
