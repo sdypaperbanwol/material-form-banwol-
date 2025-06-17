@@ -551,17 +551,15 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
 
       console.log("Sending formData:", formData.toString());
 
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: formData,
-      });
+     const res = await fetch(API_URL, {
+  method: "POST",
+  body: formData,
+});
+if (!res.ok) {
+  throw new Error(`HTTP error: ${res.status}`);
+}
+const data = await res.json();
 
-      const data = await res.json();
-      console.log("Server response:", data);
-      if (data.result !== "success") {
-        alert("❌ 신청 실패: " + (data.message || "알 수 없음"));
-        return;
-      }
 
       let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
       if (지급수량 > 0 && 구매요청수량 > 0) {
