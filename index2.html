@@ -226,7 +226,18 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   categorySelect.addEventListener("change", updateSubcategory);
-  categorySelect.addEventListener("click", updateSubcategory);
+
+categorySelect.addEventListener("mousedown", (e) => {
+  const currentValue = categorySelect.value;
+  setTimeout(() => {
+    if (categorySelect.value === currentValue) {
+      const event = new Event('change', { bubbles: true });
+      categorySelect.dispatchEvent(event);
+    }
+  }, 0);
+});
+
+
 
   // ...
 });
