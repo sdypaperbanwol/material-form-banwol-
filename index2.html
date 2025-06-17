@@ -413,61 +413,46 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const subcategory = subSelect.value;
   const size = sizeSelect.value;
   const name = nameInput.value;
-  const quantity = quantityInput.value;
-  const remarks = remarksInput.value.trim();
+  const quantity = parseInt(quantityInput.value, 10);
+  let remarksText = remarksInput.value.trim();
 
   if (!category || !subcategory || !size || !quantity || quantity <= 0) {
     alert("⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.");
     return;
   }
 
-  const item = { category, subcategory, size, name, quantity, remarks };
+  // 재고 정보 가져오기
+  const selectedSizeOption = sizeSelect.selectedOptions[0];
+  const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
+
+  const 지급수량 = Math.min(quantity, currentStock);
+  const 구매요청수량 = Math.max(0, quantity - currentStock);
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+
+  // 기존 remarks가 구매요청/지급 문구 포함 안하면 추가
+  if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+    remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+  }
+
+  // 새로운 아이템 remarks에 반영
+  const item = { category, subcategory, size, name, quantity, remarks: remarksText };
   itemList.push(item);
 
-  // 리스트 UI에 표시
+  // UI 표시
   const display = document.getElementById("itemListDisplay");
   const li = document.createElement("li");
-  li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개`;
+  li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개 [${remarksText}]`;
   display.appendChild(li);
 
-  // reset
+  // 초기화 (remarks는 비워도 무방)
   subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   materialForm.reset();
   nameInput.value = localStorage.getItem("userInfo") || "";
 });
 
-document.getElementById("submitAllBtn").addEventListener("click", async () => {
-  if (itemList.length === 0) {
-    alert("신청할 항목이 없습니다.");
-    return;
-  }
-
-  try {
-    for (const item of itemList) {
-      const formData = new URLSearchParams(item);
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      console.log("응답 결과:", data);
-
-      if (data.result !== "success") {
-        alert("❌ 신청 실패: " + (data.message || "알 수 없음"));
-        return;
-      }
-    }
-
-    alert("✅ 모든 신청이 저장되었습니다!");
-    itemList = [];
-    document.getElementById("itemListDisplay").innerHTML = "";
-    location.reload();
-  } catch (err) {
-    console.error("에러:", err);
-    alert("❌ 네트워크 오류 또는 서버 응답 실패");
-  }
-});
 
 
 </script>
