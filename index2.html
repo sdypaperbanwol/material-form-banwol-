@@ -133,13 +133,16 @@
 
   
   <form id="materialForm" style="display: none;">
-    <label for="formType">폼 유형 선택</label>
-<select id="formType" name="formType" required>
-  <option value="">-- 선택하세요 --</option>
-  <option value="물품신청">물품신청</option>
-  <option value="건의사항">건의사항</option>
-  <option value="복지설문">복지설문</option>
-</select>
+  <!-- 폼 유형 버튼 -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+  <button type="button" class="form-type-btn" data-type="물품신청" style="flex:1; background:#4CAF50;">📦 물품신청</button>
+  <button type="button" class="form-type-btn" data-type="건의사항" style="flex:1; background:#ffc107;">📝 건의사항</button>
+  <button type="button" class="form-type-btn" data-type="복지설문" style="flex:1; background:#17a2b8;">💬 복지설문</button>
+</div>
+
+<!-- 실제 선택 값 저장용 -->
+<input type="hidden" id="formType" name="formType" value="물품신청" />
+
     
     <label for="category">물품 종류</label>
     <select id="category" name="category" required>
@@ -680,6 +683,43 @@ formData.append("remarks", item.remarks);
 
 
 </script>
-  
+  <script>
+  // 📌 여기에 넣으라는 의미
+  document.querySelectorAll(".form-type-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.type;
+      document.getElementById("formType").value = type;
+
+      const fieldsToToggle = [
+        document.getElementById("category"),
+        document.getElementById("subcategory"),
+        document.getElementById("size"),
+        document.getElementById("quantity"),
+        document.getElementById("viewPhotos"),
+        document.getElementById("addItemBtn"),
+        document.getElementById("submitAllBtn"),
+        document.querySelector("label[for='category']"),
+        document.querySelector("label[for='subcategory']"),
+        document.querySelector("label[for='size']"),
+        document.querySelector("label[for='quantity']"),
+        document.querySelector("h4"), // "📝 추가된 항목"
+        document.getElementById("itemListDisplay")
+      ];
+
+      if (type === "물품신청") {
+        fieldsToToggle.forEach(el => el?.style && (el.style.display = ""));
+      } else {
+        fieldsToToggle.forEach(el => el?.style && (el.style.display = "none"));
+      }
+
+      document.getElementById("remarks").style.display = "";
+      document.querySelector("label[for='remarks']").style.display = "";
+      document.querySelector("small").style.display = "";
+
+      document.getElementById("name").style.display = "";
+      document.querySelector("label[for='name']").style.display = "";
+    });
+  });
+</script>
 </body>
 </html>
