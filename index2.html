@@ -332,12 +332,68 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  document.getElementById("myRecordsBtn").addEventListener("click", () => {
+function formatDate(raw) {
+  const d = new Date(raw);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+}
+
+document.getElementById("myRecordsBtn").addEventListener("click", () => {
   const fullName = localStorage.getItem("userInfo");
   if (!fullName) {
     alert("로그인 후 이용 가능합니다.");
     return;
   }
+
+  const empId = fullName.split(" ")[0];
+
+  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result !== "success") {
+        alert("❌ 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      const desiredIndexes = [0, 1, 2, 4, 5, 6, 7, 8, 9]; // 날짜~처리완료
+      const headerNames = desiredIndexes.map(i => data.header[i]);
+
+      thead.innerHTML = "<tr>" + headerNames.map(h =>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
+      ).join("") + "</tr>";
+
+      tbody.innerHTML = "";
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        desiredIndexes.forEach((colIndex, idx) => {
+          const td = document.createElement("td");
+          const cell = row[colIndex];
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          td.style.whiteSpace = "nowrap";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsSection").style.display = "block";
+    })
+    .catch(err => {
+      console.error("신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
 
   const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
 
