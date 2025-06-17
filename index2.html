@@ -192,6 +192,7 @@ function isMobileDevice() {
 
 const saved = localStorage.getItem("userInfo");
 if (saved) {
+    document.getElementById("loadingOverlay").style.display = "none";
   const [empId, empName] = saved.split(" ");
   fetch(API_URL, {
     method: "POST",
