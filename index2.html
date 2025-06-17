@@ -513,20 +513,25 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
     alert("신청할 항목이 없습니다.");
     return;
   }
+  console.log("submitAllBtn clicked");
+  console.log("itemList:", itemList);
+  console.log("items:", items);
 
   try {
     const 완료메시지목록 = [];
 
     for (const item of itemList) {
-      // 실제 재고 조회
       const stockMap = items[item.category]?.stockMap || {};
       const key = `${item.subcategory}__${item.size}`;
       const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
 
+      console.log("Processing item:", item);
+      console.log("stockMap:", stockMap);
+      console.log("key:", key, "currentStock:", currentStock);
+
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
-      // 서버 전송
       const formData = new URLSearchParams({
         category: item.category,
         subcategory: item.subcategory,
@@ -536,18 +541,20 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
         remarks: item.remarks
       });
 
+      console.log("Sending formData:", formData.toString());
+
       const res = await fetch(API_URL, {
         method: "POST",
         body: formData,
       });
 
       const data = await res.json();
+      console.log("Server response:", data);
       if (data.result !== "success") {
         alert("❌ 신청 실패: " + (data.message || "알 수 없음"));
         return;
       }
 
-      // 메시지 작성
       let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
       if (지급수량 > 0 && 구매요청수량 > 0) {
         msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
@@ -568,6 +575,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
+
 
 
 
