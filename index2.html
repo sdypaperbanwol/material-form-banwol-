@@ -320,6 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
     const requestedQty = parseInt(quantityInput.value, 10);
     let remarksText = remarksInput.value.trim();
+    let remarksText = remarksTextInput; // ✅ 선언 추가
 
     if (requestedQty <= 0) {
       alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
@@ -462,17 +463,6 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const name = nameInput.value;
   const quantity = parseInt(quantityInput.value, 10);
   
-
-  const selectedSizeOption = sizeSelect.selectedOptions[0];
-const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
-
-let remarksText = remarksInput.value.trim();
-
-const 지급수량 = Math.min(quantity, currentStock);
-const 구매요청수량 = Math.max(0, quantity - currentStock);
-const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
 // remarksText에 자동 추가
 if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
