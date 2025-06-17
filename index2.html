@@ -243,14 +243,20 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // 초기 재고, 카테고리 데이터 불러오기
-  fetch(API_URL)
+   fetch(API_URL)
     .then(res => res.json())
     .then(data => {
       items = data;
+      // 초기화 꼭 먼저 해주고 옵션 추가
+      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       Object.keys(items).forEach(cat => {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
       nameInput.value = localStorage.getItem("userInfo") || "";
+      console.log("items:", items); // 데이터 확인용
+    })
+    .catch(err => {
+      console.error("API 로드 에러:", err);
     });
 
   // 리셋 버튼
