@@ -91,6 +91,20 @@
   font-size: 13px;
 }
 
+      #closeModal {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    background-color: rgba(0,0,0,0.6);
+    padding: 5px 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+  }
+
   </style>
 </head>
 <body>
@@ -113,7 +127,7 @@
 
     <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
       <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-        <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
+        <span id="closeModal">✖</span>
         <div id="photoContent"></div>
       </div>
     </div>
