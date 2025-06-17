@@ -493,18 +493,21 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   itemList.push(item);
 
  // UI 표시
-const display = document.getElementById("itemListDisplay");
-const li = document.createElement("li");  // 이 부분이 꼭 있어야 함
-
 const userRemarks = remarksText
   .replace(/(\d+개 지급)/g, "")
   .replace(/(\d+개 구매 요청)/g, "")
   .replace(/\//g, "")
   .trim();
 
+const 지급문구 = [];
+if (remarksText.includes("지급")) 지급문구.push(remarksText.match(/\d+개 지급/)?.[0]);
+if (remarksText.includes("구매 요청")) 지급문구.push(remarksText.match(/\d+개 구매 요청/)?.[0]);
+
+const 지급요청문구 = 지급문구.length > 0 ? ` ${지급문구.join(" / ")}` : "";
+
 li.innerHTML = `
-  <span class="item-text">${subcategory} (${size})</span><br/>
-  ${userRemarks ? `<small style="color:#555; margin-left:4px;">${userRemarks}</small>` : ""}
+  <span class="item-text">${subcategory} (${size})${지급요청문구}</span><br/>
+  ${userRemarks ? `<small style="color:#555;">${userRemarks}</small>` : ""}
   <button class="remove-btn">삭제</button>
 `;
 
