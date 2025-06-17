@@ -129,21 +129,7 @@
   </div>
 
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
-
-
-  
   <form id="materialForm" style="display: none;">
-  <!-- 폼 유형 버튼 -->
-<div style="display: flex; gap: 10px; margin-bottom: 20px;">
-  <button type="button" class="form-type-btn" data-type="물품신청" style="flex:1; background:#4CAF50;">📦 물품신청</button>
-  <button type="button" class="form-type-btn" data-type="건의사항" style="flex:1; background:#ffc107;">📝 건의사항</button>
-  <button type="button" class="form-type-btn" data-type="복지설문" style="flex:1; background:#17a2b8;">💬 복지설문</button>
-</div>
-
-<!-- 실제 선택 값 저장용 -->
-<input type="hidden" id="formType" name="formType" value="물품신청" />
-
-    
     <label for="category">물품 종류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
@@ -157,9 +143,6 @@
         <div id="photoContent"></div>
       </div>
     </div>
-
-  
-
     
     <label for="subcategory">세부 종류</label>
     <select id="subcategory" name="subcategory" required>
@@ -186,9 +169,6 @@
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
-
-    <button type="button" id="submitSimpleBtn" style="flex:1; min-width:100px; background:#007bff; display: none;">✅ 제출</button>
-
 
 <div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
   <h4>📝 추가된 항목</h4>
@@ -429,15 +409,14 @@ document.addEventListener("DOMContentLoaded", function () {
       alertShown = false;
     }
 
-   const formData = new URLSearchParams();
-formData.append("formType", document.getElementById("formType").value || "물품신청");
-formData.append("category", categorySelect.value);
-formData.append("subcategory", subSelect.value);
-formData.append("size", sizeSelect.value);
-formData.append("name", nameInput.value);
-formData.append("quantity", String(quantityInput.value));
-formData.append("remarks", remarksInput.value);
-
+    const formData = new URLSearchParams({
+      category: categorySelect.value,
+      subcategory: subSelect.value,
+      size: sizeSelect.value,
+      name: nameInput.value,
+      quantity: String(quantityInput.value),
+      remarks: remarksInput.value
+    });
 
     isSubmitting = true;
 
@@ -639,14 +618,14 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
-     const formData = new URLSearchParams();
-formData.append("formType", document.getElementById("formType").value || "물품신청");
-formData.append("category", item.category);
-formData.append("subcategory", item.subcategory);
-formData.append("size", item.size);
-formData.append("name", item.name);
-formData.append("quantity", String(item.quantity));
-formData.append("remarks", item.remarks);
+      const formData = new URLSearchParams({
+        category: item.category,
+        subcategory: item.subcategory,
+        size: item.size,
+        name: item.name,
+        quantity: String(item.quantity),
+        remarks: item.remarks
+      });
 
       const res = await fetch(API_URL, {
         method: "POST",
@@ -686,84 +665,6 @@ formData.append("remarks", item.remarks);
 
 
 </script>
-  <script>
-  // 📌 여기에 넣으라는 의미
-  document.querySelectorAll(".form-type-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const type = btn.dataset.type;
-      document.getElementById("formType").value = type;
-
-      const fieldsToToggle = [
-        document.getElementById("category"),
-        document.getElementById("subcategory"),
-        document.getElementById("size"),
-        document.getElementById("quantity"),
-        document.getElementById("viewPhotos"),
-        document.getElementById("addItemBtn"),
-        document.getElementById("submitAllBtn"),
-        document.querySelector("label[for='category']"),
-        document.querySelector("label[for='subcategory']"),
-        document.querySelector("label[for='size']"),
-        document.querySelector("label[for='quantity']"),
-        document.querySelector("h4"), // "📝 추가된 항목"
-        document.getElementById("itemListDisplay")
-      ];
-
-  const isMaterial = (type === "물품신청");
-fieldsToToggle.forEach(el => el?.style && (el.style.display = isMaterial ? "" : "none"));
-document.getElementById("submitSimpleBtn").style.display = isMaterial ? "none" : "";
-
-
-      document.getElementById("remarks").style.display = "";
-      document.querySelector("label[for='remarks']").style.display = "";
-      document.querySelector("small").style.display = "";
-
-      document.getElementById("name").style.display = "";
-      document.querySelector("label[for='name']").style.display = "";
-    });
-  });
-</script>
-<script>
-document.getElementById("submitSimpleBtn").addEventListener("click", async () => {
-  const remarks = document.getElementById("remarks").value.trim();
-  const name = document.getElementById("name").value.trim();
-  const formType = document.getElementById("formType").value;
-
-  if (!remarks) {
-    alert("내용을 입력해주세요.");
-    return;
-  }
-
-  const formData = new URLSearchParams();
-  formData.append("formType", formType);
-  formData.append("name", name);
-  formData.append("remarks", remarks);
-
-  document.getElementById("loadingOverlay").style.display = "flex";
-
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-    document.getElementById("loadingOverlay").style.display = "none";
-
-    if (data.result === "success") {
-      alert("✅ 제출되었습니다!");
-      location.reload();
-    } else {
-      alert("❌ 제출 실패");
-    }
-  } catch (err) {
-    console.error("에러:", err);
-    document.getElementById("loadingOverlay").style.display = "none";
-    alert("❌ 네트워크 오류");
-  }
-});
-</script>
-
+  
 </body>
 </html>
-
