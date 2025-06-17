@@ -493,9 +493,17 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   itemList.push(item);
 
  // UI 표시
-const display = document.getElementById("itemListDisplay");
-const li = document.createElement("li");
-li.innerHTML = `<span class="item-text">${subcategory} (${size}) - [${remarksText}]</span><button class="remove-btn">삭제</button>`;
+const userRemarks = remarksText
+  .replace(/(\d+개 지급)/g, "")
+  .replace(/(\d+개 구매 요청)/g, "")
+  .replace(/\//g, "")
+  .trim();
+
+li.innerHTML = `
+  <span class="item-text">${subcategory} (${size})</span><br/>
+  ${userRemarks ? `<small style="color:#555; margin-left:4px;">${userRemarks}</small>` : ""}
+  <button class="remove-btn">삭제</button>
+`;
 
 
 
