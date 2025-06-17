@@ -181,7 +181,7 @@ function verifyUser() {
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
-      const fullName = ${empId} ${empName};
+      const fullName = `${empId} ${empName}`;
       if (data.active === "Y" && !isMobileDevice()) {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
@@ -214,29 +214,16 @@ document.addEventListener("DOMContentLoaded", function () {
   let isSubmitting = false;
   let alertShown = false;
 
-  function updateSubcategory() {
+  categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     if (items[cat]) {
       items[cat].types.forEach(type => {
-        subSelect.innerHTML += <option value="${type}">${type}</option>;
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
       });
     }
-  }
-
-  categorySelect.addEventListener("change", updateSubcategory);
-
-categorySelect.addEventListener("mousedown", (e) => {
-  const currentValue = categorySelect.value;
-  setTimeout(() => {
-    if (categorySelect.value === currentValue) {
-      const event = new Event('change', { bubbles: true });
-      categorySelect.dispatchEvent(event);
-    }
-  }, 0);
-});
-
+  });
 
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -249,7 +236,7 @@ categorySelect.addEventListener("mousedown", (e) => {
       for (const [key, stock] of Object.entries(stockMap)) {
         const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += <option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>;
+          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
         }
       }
     }
@@ -269,7 +256,7 @@ categorySelect.addEventListener("mousedown", (e) => {
       items = data;
       categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += <option value="${cat}">${cat}</option>;
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
       nameInput.value = localStorage.getItem("userInfo") || "";
       console.log("items:", items);
@@ -308,21 +295,21 @@ categorySelect.addEventListener("mousedown", (e) => {
 
     const 지급수량 = Math.min(requestedQty, currentStock);
     const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
-    const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
     const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
     if (!alertShown) {
       if (구매요청수량 > 0) {
         if (currentStock > 0) {
-          alert(⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
           quantityInput.value = currentStock;
         } else {
-          alert(⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
         }
 
         if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
         }
 
         categorySelect.disabled = true;
@@ -334,7 +321,7 @@ categorySelect.addEventListener("mousedown", (e) => {
         return; // 제출 중단
       } else {
         if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${지급문구} : ${지급문구};
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
         }
       }
     } else {
@@ -414,10 +401,10 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
           const fileName = url.split("/").pop().split(".")[0];
           const wrapper = document.createElement("div");
           wrapper.style.marginBottom = "20px";
-          wrapper.innerHTML = 
+          wrapper.innerHTML = `
             <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
             <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-          ;
+          `;
           container.appendChild(wrapper);
         });
       }
@@ -452,12 +439,12 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
 
   const 지급수량 = Math.min(quantity, currentStock);
   const 구매요청수량 = Math.max(0, quantity - currentStock);
-  const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
-  const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
   if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-    remarksText = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
+    remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
   }
 
     const item = { category, subcategory, size, name, quantity, remarks: remarksText };
@@ -466,7 +453,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   // UI 표시
   const display = document.getElementById("itemListDisplay");
   const li = document.createElement("li");
-  li.textContent = ${category} > ${subcategory} (${size}) - ${quantity}개 [${remarksText}];
+  li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개 [${remarksText}]`;
 
   // 삭제 버튼 생성
   const removeBtn = document.createElement("button");
@@ -513,7 +500,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
 
     for (const item of itemList) {
       const stockMap = items[item.category]?.stockMap || {};
-      const key = ${item.subcategory}__${item.size};
+      const key = `${item.subcategory}__${item.size}`;
       const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
 
       const 지급수량 = Math.min(item.quantity, currentStock);
@@ -533,17 +520,17 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
         body: formData,
       });
       if (!res.ok) {
-        throw new Error(HTTP error: ${res.status});
+        throw new Error(`HTTP error: ${res.status}`);
       }
       const data = await res.json();
 
-      let msg = ${item.category} > ${item.subcategory} (${item.size}): ;
+      let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
       if (지급수량 > 0 && 구매요청수량 > 0) {
-        msg += ${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료;
+        msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
       } else if (지급수량 > 0) {
-        msg += ${지급수량}개 신청 완료;
+        msg += `${지급수량}개 신청 완료`;
       } else if (구매요청수량 > 0) {
-        msg += ${구매요청수량}개 구매 요청 완료;
+        msg += `${구매요청수량}개 구매 요청 완료`;
       }
       완료메시지목록.push(msg);
     }
