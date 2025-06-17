@@ -143,6 +143,15 @@
         <div id="photoContent"></div>
       </div>
     </div>
+
+    <label for="formType">폼 유형 선택</label>
+<select id="formType" name="formType" required>
+  <option value="">-- 선택하세요 --</option>
+  <option value="물품신청">물품신청</option>
+  <option value="건의사항">건의사항</option>
+  <option value="복지설문">복지설문</option>
+</select>
+
     
     <label for="subcategory">세부 종류</label>
     <select id="subcategory" name="subcategory" required>
@@ -206,7 +215,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwUZ6c4GoOwe6UE971vtRo6i0RWEsHClylqb8_F3RMa2yC8gHDiRwNEAeWd9v0lqE9r/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzaMuVZ7zeU4janP7dWs6j15r8n5UwNkwBEKGrnTySGrgjcHbg1aNw6XuW7L9Y_ky0I/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -409,14 +418,15 @@ document.addEventListener("DOMContentLoaded", function () {
       alertShown = false;
     }
 
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: String(quantityInput.value),
-      remarks: remarksInput.value
-    });
+   const formData = new URLSearchParams();
+formData.append("formType", document.getElementById("formType").value || "물품신청");
+formData.append("category", categorySelect.value);
+formData.append("subcategory", subSelect.value);
+formData.append("size", sizeSelect.value);
+formData.append("name", nameInput.value);
+formData.append("quantity", String(quantityInput.value));
+formData.append("remarks", remarksInput.value);
+
 
     isSubmitting = true;
 
@@ -618,14 +628,14 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
-      const formData = new URLSearchParams({
-        category: item.category,
-        subcategory: item.subcategory,
-        size: item.size,
-        name: item.name,
-        quantity: String(item.quantity),
-        remarks: item.remarks
-      });
+     const formData = new URLSearchParams();
+formData.append("formType", document.getElementById("formType").value || "물품신청");
+formData.append("category", item.category);
+formData.append("subcategory", item.subcategory);
+formData.append("size", item.size);
+formData.append("name", item.name);
+formData.append("quantity", String(item.quantity));
+formData.append("remarks", item.remarks);
 
       const res = await fetch(API_URL, {
         method: "POST",
