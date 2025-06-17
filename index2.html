@@ -213,12 +213,16 @@ const quantityInput = document.getElementById("quantity");
 const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
 
+   // ① 전역에서 딱 한 번 선언
+let items = {};
+
 document.addEventListener("DOMContentLoaded", function () {
-  let items = {};
+  // ② 여기서는 items 선언 NO, 그냥 사용만
+
   let isSubmitting = false;
   let alertShown = false;
 
-  // 카테고리, 세부종류, 사이즈 관련 이벤트 리스너 통합
+  // 이벤트 리스너 등 사용
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
@@ -229,6 +233,10 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   });
+
+  // ... 이하 생략 ...
+});
+
 
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
