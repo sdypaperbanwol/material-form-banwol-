@@ -567,14 +567,20 @@ nameInput.value = localStorage.getItem("userInfo") || "";
 }); // ←❗❗❗ 이거 빠졌었음!! 추가 버튼 함수 닫는 괄호!!
 
 
-document.getElementById("submitAllBtn").addEventListener("click", async () => {
+document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
+  // ✅ 사용자가 수동 클릭한 경우에만 실행되도록
+  if (!e.isTrusted) return;
+
   if (itemList.length === 0) {
     alert("신청할 항목이 없습니다.");
     return;
   }
 
-  // 🔛 로딩 시작
   document.getElementById("loadingOverlay").style.display = "flex";
+
+  // 이하 생략 (코드 동일)
+});
+
 
   try {
     const 완료메시지목록 = [];
