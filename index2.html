@@ -55,7 +55,6 @@
   </style>
 </head>
 <body>
-
   <div id="login-section">
     <h3>로그인</h3>
     <p>사번과 이름을 입력하세요</p>
@@ -65,16 +64,28 @@
     <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
 
-  <form id="materialForm" style="display: none;" enctype="multipart/form-data">
+  <form id="materialForm" style="display: none;">
     <label for="category">물품 종류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
+    <!-- 버튼 -->
+<button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">물품 사진 보기</button>
+
+<!-- 모달 -->
+<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+    <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
+    <div id="photoContent"></div>
+  </div>
+</div>
+    
     <label for="subcategory">세부 종류</label>
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
+
 
     <label for="size">사이즈</label>
     <select id="size" name="size" required>
@@ -89,31 +100,31 @@
 
     <label for="remarks">비고</label>
     <small>
-      - 24시간 신청 가능하며 담당자의 평일 근무일에 지급됩니다.<br>
-      - 비대면 수령도 가능(사무실 1층 복도 무인사물함 설치 예정)<br>
-      - 예시: 오늘·내일(X월X일) X시 수령/교환 또는 비대면 요청<br>
+      - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
+      - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
+      - 날짜 선택 가능(비고에 오늘·내일 X시 수령/교환 요청 기재).<br>
       - 재고 부족 시 보유 수량만 지급, 부족분은 구매 요청됩니다.<br>
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
-    <label for="photos">사진 첨부 (최대 3장)</label>
-    <input type="file" id="photos" name="photos" accept="image/*" multiple />
-    <small>사진은 3장까지만 첨부 가능합니다.</small>
-
-   
-<!-- ✅ 여기에 추가 -->
-<button type="button" onclick="addItem()">+ 품목 추가</button>
-<ul id="itemList" style="margin-top:10px;"></ul>
-<button type="button" onclick="submitAll()">✅ 전체 신청</button>
-<button type="button" id="resetBtn" style="background-color: gray;">🔁 초기화</button>
+<div style="display:flex; gap:10px;">
+  <button type="button" id="addItemBtn" style="flex:1;background:#28a745;">➕ 추가</button>
+  <button type="button" id="submitAllBtn" style="flex:1;background:#007bff;">✅ 신청</button>
+</div>
+<div>
+  <h4>📝 추가된 항목</h4>
+  <ul id="itemListDisplay" style="padding-left:20px;"></ul>
+</div>
 
     
+    
+    <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
+    <div class="message" id="msg"></div>
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzLvxae9uFnZdXWyBKhATU1S6WBenpsG1Y0Y8ARNTInJ0h1Rt791a_4roWz-TzQwfP2/exec";
-
+const API_URL = "https://script.google.com/macros/s/AKfycbxeHsglxsEJssDPx1GIw3B_oyfHZ-bfDdcxZ_d1BD-9QSldjedQqg1qZmf7ar7cflQi/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -149,15 +160,6 @@ if (saved) {
   });
 }
 
-// ✅ 전역 변수 선언 (addItem, submitAll, DOMContentLoaded에서 공통 사용)
-const categorySelect = document.getElementById("category");
-const subSelect = document.getElementById("subcategory");
-const sizeSelect = document.getElementById("size");
-const quantityInput = document.getElementById("quantity");
-const remarksInput = document.getElementById("remarks");
-const photoInput = document.getElementById("photos");
-const msgDiv = document.getElementById("msg");
-  
 function verifyUser() {
   const empId = document.getElementById("empId").value.trim();
   const empName = document.getElementById("empName").value.trim();
@@ -165,10 +167,6 @@ function verifyUser() {
     loginMsg.textContent = "사번과 이름을 모두 입력하세요.";
     return;
   }
-  
-
-
-
   fetch(API_URL, {
     method: "POST",
     body: new URLSearchParams({ empId, empName })
@@ -181,91 +179,28 @@ function verifyUser() {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
       }
-
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
-    } else if (data.result === "disabled" || data.active === "N") {
-      localStorage.removeItem("userInfo");
-      loginMsg.textContent = "승인이 해제된 계정입니다.";
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
   })
-  .catch(err => {
-    console.error("[로그인 오류]", err);
+  .catch(() => {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
-
-  
-  let addedItems = [];
-
-function addItem() {
-  const category = categorySelect.value;
-  const subcategory = subSelect.value;
-  const size = sizeSelect.value;
-  const quantity = parseInt(quantityInput.value, 10);
-  const remarks = remarksInput.value.trim();
-  const name = nameInput.value;
-
-  if (!category || !subcategory || !size || !quantity || quantity <= 0) {
-    alert("모든 항목을 정확히 입력하세요.");
-    return;
-  }
-
-  addedItems.push({ category, subcategory, size, quantity, remarks, name });
-
-  const li = document.createElement("li");
-  li.textContent = `[${category} > ${subcategory}] ${size} / ${quantity}개${remarks ? ` / ${remarks}` : ""}`;
-  document.getElementById("itemList").appendChild(li);
-
-  quantityInput.value = "";
-  remarksInput.value = "";
-  sizeSelect.selectedIndex = 0;
-}
- function submitAll() {
-  if (addedItems.length === 0) {
-    alert("추가된 품목이 없습니다.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("items", JSON.stringify(addedItems));
-
-  // ✅ 사진 첨부 최대 3장
-  const photoFiles = photoInput.files;
-  for (let i = 0; i < Math.min(photoFiles.length, 3); i++) {
-    formData.append("photos", photoFiles[i]);
-  }
-
-  fetch(API_URL, {
-    method: "POST",
-    body: formData,
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.result === "success") {
-        alert("✅ 신청이 저장되었습니다!");
-        location.reload();
-      } else {
-        alert("❌ 신청 실패: " + (data.message || ""));
-      }
-    })
-    .catch((err) => {
-      console.error("에러:", err);
-      alert("서버 오류가 발생했습니다.");
-    });
-}
-
-
-  
-
 </script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const categorySelect = document.getElementById("category");
+  const subSelect = document.getElementById("subcategory");
+  const sizeSelect = document.getElementById("size");
+  const quantityInput = document.getElementById("quantity");
+  const remarksInput = document.getElementById("remarks");
+  const msgDiv = document.getElementById("msg");
 
   let items = {};
   let isSubmitting = false;
@@ -306,19 +241,22 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   subSelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    const type = subSelect.value;
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      const stockMap = items[cat].stockMap;
-      for (const [key, stock] of Object.entries(stockMap)) {
-        const [t, size] = key.split("__");
-        if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
-        }
+  const cat = categorySelect.value;
+  const type = subSelect.value;
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+
+  if (items[cat]) {
+    const stockMap = items[cat].stockMap;
+
+    for (const [key, stock] of Object.entries(stockMap)) {
+      const [t, size] = key.split("__");
+      if (t === type) {
+        sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
       }
     }
-  });
+  }
+});
+
 
   sizeSelect.addEventListener("change", () => {
     const opt = sizeSelect.selectedOptions[0];
@@ -328,8 +266,197 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  materialForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+    const requestedQty = parseInt(quantityInput.value, 10);
+    let remarksText = remarksInput.value.trim();
+
+    if (requestedQty <= 0) {
+      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+      quantityInput.value = 1;
+      return;
+    }
+
+    const 지급수량 = Math.min(requestedQty, currentStock);
+    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+
+    if (!alertShown) {
+      if (구매요청수량 > 0) {
+        if (currentStock > 0) {
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+          quantityInput.value = currentStock;
+        } else {
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+        }
+
+        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+        }
+
+        categorySelect.disabled = true;
+        subSelect.disabled = true;
+        sizeSelect.disabled = true;
+        quantityInput.disabled = true;
+
+        alertShown = true;
+        return;
+      } else {
+        if (!remarksText.includes("지급")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
+        }
+      }
+    }
+
+    const formData = new URLSearchParams({
+      category: categorySelect.value,
+      subcategory: subSelect.value,
+      size: sizeSelect.value,
+      name: nameInput.value,
+      quantity: quantityInput.value,
+      remarks: remarksInput.value
+    });
+
+    isSubmitting = true;
+
+    fetch(API_URL, {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      isSubmitting = false;
+      alertShown = false;
+
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
+
+      if (data.result === "success") {
+        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
+        msgDiv.style.color = "green";
+        alert("✅ 신청이 저장되었습니다!");
+        location.reload();
+      } else {
+        msgDiv.textContent = "❌ 신청 실패";
+        msgDiv.style.color = "red";
+      }
+    })
+    .catch(err => {
+      console.error("에러:", err);
+      isSubmitting = false;
+      alertShown = false;
+      categorySelect.disabled = false;
+      subSelect.disabled = false;
+      sizeSelect.disabled = false;
+      quantityInput.disabled = false;
+      msgDiv.textContent = "❌ 서버 오류";
+      msgDiv.style.color = "red";
+    });
+  });
 });
 </script>
 
+<script>
+document.getElementById("viewPhotos").addEventListener("click", () => {
+  const category = document.getElementById("category").value.trim();
+  if (!category) {
+    alert("물품 종류를 먼저 선택해주세요.");
+    return;
+  }
+
+  fetch("https://script.google.com/macros/s/AKfycbxeHsglxsEJssDPx1GIw3B_oyfHZ-bfDdcxZ_d1BD-9QSldjedQqg1qZmf7ar7cflQi/exec?mode=photo")
+    .then(res => res.json())
+    .then(photoMap => {
+      const urls = photoMap[category];
+      const container = document.getElementById("photoContent");
+      container.innerHTML = "";
+
+      if (!urls || urls.length === 0) {
+        container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
+      } else {
+        urls.forEach(url => {
+          const fileName = url.split("/").pop().split(".")[0];
+          const wrapper = document.createElement("div");
+          wrapper.style.marginBottom = "20px";
+          wrapper.innerHTML = `
+            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+          `;
+          container.appendChild(wrapper);
+        });
+      }
+
+      document.getElementById("photoModal").style.display = "block"
+    });
+});
+
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("photoModal").style.display = "none";
+});
+</script>
+<script>
+let itemList = [];
+
+document.getElementById("addItemBtn").addEventListener("click", () => {
+  const category = categorySelect.value;
+  const subcategory = subSelect.value;
+  const size = sizeSelect.value;
+  const name = nameInput.value;
+  const quantity = quantityInput.value;
+  const remarks = remarksInput.value.trim();
+
+  if (!category || !subcategory || !size || !quantity || quantity <= 0) {
+    alert("⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.");
+    return;
+  }
+
+  const item = { category, subcategory, size, name, quantity, remarks };
+  itemList.push(item);
+
+  // 리스트 UI에 표시
+  const display = document.getElementById("itemListDisplay");
+  const li = document.createElement("li");
+  li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개`;
+  display.appendChild(li);
+
+  // reset
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  materialForm.reset();
+  nameInput.value = localStorage.getItem("userInfo") || "";
+});
+
+document.getElementById("submitAllBtn").addEventListener("click", async () => {
+  if (itemList.length === 0) {
+    alert("신청할 항목이 없습니다.");
+    return;
+  }
+
+  for (const item of itemList) {
+    const formData = new URLSearchParams(item);
+    await fetch(API_URL, {
+      method: "POST",
+      body: formData
+    }).then(res => res.json()).then(data => {
+      if (data.result !== "success") throw new Error("실패");
+    }).catch(err => {
+      alert("❌ 일부 신청 실패: " + err.message);
+    });
+  }
+
+  alert("✅ 모든 신청이 저장되었습니다!");
+  itemList = [];
+  document.getElementById("itemListDisplay").innerHTML = "";
+  location.reload();
+});
+</script>
+  
 </body>
 </html>
