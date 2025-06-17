@@ -130,7 +130,7 @@
 
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
-    <label for="category">항목 분류</label>
+    <label for="category">물품 종류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
     </select>
@@ -144,23 +144,23 @@
       </div>
     </div>
     
-    <label for="subcategory">세부 항목</label>
+    <label for="subcategory">세부 종류</label>
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="size">상세 옵션</label>
+    <label for="size">사이즈</label>
     <select id="size" name="size" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="name">작성자</label>
+    <label for="name">신청자</label>
     <input type="text" id="name" name="name" readonly />
 
-    <label for="quantity">수량(수치)</label>
+    <label for="quantity">수량</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
-    <label for="remarks">추가 내용</label>
+    <label for="remarks">비고</label>
     <small>
       - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
       - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
@@ -206,7 +206,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycby3ZfzsXKvyy20U4vS_iewaKvOY0NaoX4QB0TJs3fKvPz0ogPBMZA8Yei6u3ouolkg7/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwUZ6c4GoOwe6UE971vtRo6i0RWEsHClylqb8_F3RMa2yC8gHDiRwNEAeWd9v0lqE9r/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -328,37 +328,20 @@ document.addEventListener("DOMContentLoaded", function () {
 //  });
   
 
-fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
-    const allItems = data;
-
-    const categoryType = "item";  // 예: item, survey, suggestion, welfare 중 선택
-    const typeMap = {
-      item: "Y",
-      survey: "A",
-      suggestion: "B",
-      welfare: "C"
-    };
-    const filteredItems = {};
-
-    // 🔽 allItems에서 해당 유형(type)만 필터링
-    for (const [key, value] of Object.entries(allItems)) {
-      if (value.type === typeMap[categoryType]) {
-        filteredItems[key] = value;
-      }
-    }
-
-    items = filteredItems; // 기존 items에 필터링된 것만 넣음
-
-    categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    Object.keys(items).forEach(cat => {
-      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      items = data;
+      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      Object.keys(items).forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+      nameInput.value = localStorage.getItem("userInfo") || "";
+      console.log("items:", items);
+    })
+    .catch(err => {
+      console.error("API 로드 에러:", err);
     });
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    console.log("items:", items);
-  })
-
 
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
