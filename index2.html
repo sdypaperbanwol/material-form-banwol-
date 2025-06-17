@@ -492,28 +492,33 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   }
 
   const item = { category, subcategory, size, name, quantity, remarks: remarksText };
-  itemList.push(item);
+itemList.push(item);
 
- // UI 표시
-const displayText = [지급수량 > 0 ? ${지급수량}개 지급 : "", 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : ""].filter(Boolean).join(" / ");
+// ✅ li 요소 만들기
+const li = document.createElement("li");
 
-// remarksText에서 displayText 부분 제거
-const cleanedRemarks = remarksText.replace(displayText, "").replace(/^ *\/+ */, "").trim();
+// ✅ 표시 텍스트 분리 및 중복 제거
+const displayText = [
+  지급수량 > 0 ? `${지급수량}개 지급` : "",
+  구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : ""
+].filter(Boolean).join(" / ");
 
-li.innerHTML = 
+// ✅ remarksText에서 displayText 제거
+const cleanedRemarks = remarksText
+  .replace(displayText, "")
+  .replace(/^ *\/+ */, "")
+  .trim();
+
+// ✅ HTML 텍스트 구성 (백틱 사용!!)
+li.innerHTML = `
   <div class="item-text">
     ${subcategory} (${size}) - [${displayText}]
-    ${cleanedRemarks ? <br/>${cleanedRemarks} : ""}
+    ${cleanedRemarks ? `<br/>${cleanedRemarks}` : ""}
   </div>
   <button class="remove-btn">삭제</button>
-;
+`;
 
-
-
-
-
-
-
+// ✅ 삭제 버튼 동작
 const removeBtn = li.querySelector(".remove-btn");
 removeBtn.onclick = () => {
   const index = itemList.findIndex(i =>
@@ -530,17 +535,17 @@ removeBtn.onclick = () => {
   li.remove();
 };
 
-display.appendChild(li);
+// ✅ 리스트에 추가
+document.getElementById("itemListDisplay").appendChild(li);
 
+// ✅ 입력 초기화
+categorySelect.value = "";
+subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+quantityInput.value = "";
+remarksInput.value = "";
+nameInput.value = localStorage.getItem("userInfo") || "";
 
-  // 폼 초기화 (맨 마지막에)
-  categorySelect.value = "";
-  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  quantityInput.value = "";
-  remarksInput.value = "";
-  nameInput.value = localStorage.getItem("userInfo") || "";
-});
 
 
 document.getElementById("submitAllBtn").addEventListener("click", async () => {
