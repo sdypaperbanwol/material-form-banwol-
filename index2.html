@@ -214,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let isSubmitting = false;
   let alertShown = false;
 
-  function updateSubcategory() {
+  categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
@@ -223,20 +223,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subSelect.innerHTML += `<option value="${type}">${type}</option>`;
       });
     }
-  }
-
-  categorySelect.addEventListener("change", updateSubcategory);
-
-categorySelect.addEventListener("mousedown", (e) => {
-  const currentValue = categorySelect.value;
-  setTimeout(() => {
-    if (categorySelect.value === currentValue) {
-      const event = new Event('change', { bubbles: true });
-      categorySelect.dispatchEvent(event);
-    }
-  }, 0);
-});
-
+  });
 
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
