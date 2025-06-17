@@ -730,34 +730,5 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 });
 
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  fetch(API_URL + "?mode=notice")
-    .then(res => res.json())
-    .then(data => {
-      const notice = (data.notice || "").trim();
-      const expireDate = data.expire;
-      if (!notice || !expireDate) return;
-
-      const today = new Date().toISOString().slice(0, 10);
-      const hideKey = `hideNotice_${today}`;
-
-      if (today > expireDate) return;
-      if (localStorage.getItem(hideKey)) return;
-
-      document.getElementById("noticeText").innerText = notice;
-      document.getElementById("noticeBanner").style.display = "block";
-
-      document.getElementById("closeNotice").onclick = () => {
-        document.getElementById("noticeBanner").style.display = "none";
-      };
-
-      document.getElementById("hideTodayBtn").onclick = () => {
-        localStorage.setItem(hideKey, "true");
-        document.getElementById("noticeBanner").style.display = "none";
-      };
-    });
-});
-</script>
 </body>
 </html>
