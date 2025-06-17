@@ -447,6 +447,14 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
+  categorySelect.value = "";
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  quantityInput.value = "";
+  remarksInput.value = "";
+  nameInput.value = localStorage.getItem("userInfo") || "";
+});
+  
   if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
     remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
   }
@@ -492,12 +500,12 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   li.appendChild(removeBtn);
   display.appendChild(li);
 
-  // 입력 폼 초기화 (remarks는 비워도 무방)
+   // 폼 초기화 (맨 마지막에)
+  categorySelect.value = "";
   subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   quantityInput.value = "";
   remarksInput.value = "";
-  // 사번+이름 유지
   nameInput.value = localStorage.getItem("userInfo") || "";
 });
 
