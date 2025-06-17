@@ -505,9 +505,11 @@ const displayText = [
 
 // ✅ remarksText에서 displayText 제거
 const cleanedRemarks = remarksText
-  .replace(displayText, "")
-  .replace(/^ *\/+ */, "")
+  .replace(displayText, "")                 // displayText 제거
+  .replace(/^ *\/+ */, "")                  // 앞쪽 슬래시 제거
+  .replace(/ *\/+ *$/, "")                  // ✅ 뒤쪽 슬래시 제거 추가!
   .trim();
+
 
 // ✅ HTML 텍스트 구성 (백틱 사용!!)
 li.innerHTML = `
