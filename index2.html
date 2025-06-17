@@ -518,13 +518,15 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
     const 완료메시지목록 = [];
 
     for (const item of itemList) {
-      // 재고 확인용 (items 객체나 서버에서 재고 가져오는 로직 필요)
-      // 여기서는 예시로 item 내에 재고 정보가 없으면 0으로 가정
-      const currentStock = item.stock || 0; // 필요 시 실제 재고 값 넣기
+      // 실제 재고 조회
+      const stockMap = items[item.category]?.stockMap || {};
+      const key = `${item.subcategory}__${item.size}`;
+      const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
+
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
-      // 서버에 전송
+      // 서버 전송
       const formData = new URLSearchParams({
         category: item.category,
         subcategory: item.subcategory,
@@ -545,7 +547,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
         return;
       }
 
-      // 완료 메시지 작성
+      // 메시지 작성
       let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
       if (지급수량 > 0 && 구매요청수량 > 0) {
         msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
@@ -566,6 +568,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
+
 
 
 
