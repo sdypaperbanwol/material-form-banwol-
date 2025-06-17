@@ -118,13 +118,6 @@
     </div>
   </div>
 
-<div id="noticeBanner" style="display:none; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 12px; text-align: center; position: relative; margin-bottom: 10px; border-radius: 6px; max-width: 600px; margin: 0 auto 20px auto;">
-  <div id="noticeText" style="margin-bottom:8px;"></div>
-  <button id="hideTodayBtn" style="font-size:13px; padding:6px 10px; background:#856404; color:white; border:none; border-radius:4px; cursor:pointer;">오늘 하루 보지 않기</button>
-  <span id="closeNotice" style="position: absolute; right: 10px; top: 5px; cursor: pointer; font-weight: bold;">✖</span>
-</div>
-
-  
   <!-- ✅ 로그인 섹션 전체 -->
   <div id="login-section">
     <h3>로그인</h3>
@@ -213,7 +206,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbx8LomJU4S7JiorMJOPoxtW3_6D2SN7r0IcwqQpLmnQ5Hyj-0De-_HMc3hDXOTg1S9A/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwUZ6c4GoOwe6UE971vtRo6i0RWEsHClylqb8_F3RMa2yC8gHDiRwNEAeWd9v0lqE9r/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -297,35 +290,6 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
   let isSubmitting = false;
   let alertShown = false;
-   
-  // 📌 공지사항 띄우기
-  fetch(API_URL + "?mode=notice")
-    .then(res => res.json())
-    .then(data => {
-      const notice = (data.notice || "").trim();
-      const expireDate = data.expire;
-      if (!notice || !expireDate) return;
-
-      const today = new Date().toISOString().slice(0, 10);
-      const hideKey = `hideNotice_${today}`;
-
-
-      if (today > expireDate) return;
-      if (localStorage.getItem(hideKey)) return;
-
-      document.getElementById("noticeText").innerText = notice;
-      document.getElementById("noticeBanner").style.display = "block";
-
-      document.getElementById("closeNotice").onclick = () => {
-        document.getElementById("noticeBanner").style.display = "none";
-      };
-
-      document.getElementById("hideTodayBtn").onclick = () => {
-        localStorage.setItem(hideKey, "true");
-        document.getElementById("noticeBanner").style.display = "none";
-      };
-    });
-
 
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -371,7 +335,6 @@ document.addEventListener("DOMContentLoaded", function () {
       categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       Object.keys(items).forEach(cat => {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-        
       });
       nameInput.value = localStorage.getItem("userInfo") || "";
       console.log("items:", items);
@@ -413,15 +376,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const 지급수량 = Math.min(requestedQty, currentStock);
     const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
-    const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
     const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
     if (!alertShown) {
       if (구매요청수량 > 0) {
         if (currentStock > 0) {
           alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-
           quantityInput.value = currentStock;
         } else {
           alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
@@ -441,7 +403,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         if (!remarksText.includes("지급")) {
           remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
-
         }
       }
     } else {
@@ -522,9 +483,9 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
           const wrapper = document.createElement("div");
           wrapper.style.marginBottom = "20px";
           wrapper.innerHTML = `
-  <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
-  <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-`;
+            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+          `;
           container.appendChild(wrapper);
         });
       }
@@ -559,8 +520,8 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
 
   const 지급수량 = Math.min(quantity, currentStock);
   const 구매요청수량 = Math.max(0, quantity - currentStock);
-  const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
-  const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
   if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
@@ -571,7 +532,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
     if (currentStock > 0) {
       alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
     } else {
-      alert(⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.);
+      alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
     }
   }
 
@@ -603,6 +564,7 @@ li.innerHTML = `
   </div>
   <button class="remove-btn">삭제</button>
 `;
+
 // ✅ 삭제 버튼 동작
 const removeBtn = li.querySelector(".remove-btn");
 removeBtn.onclick = () => {
@@ -702,6 +664,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 });
 
 
-
+</script>
+  
 </body>
 </html>
