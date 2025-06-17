@@ -53,18 +53,16 @@
       color: #666;
       line-height: 1.4;
     }
-  #itemListDisplay li {
-  font-size: 13px;
-}
-
-#itemListDisplay li button {
-  font-size: 12px;      /* 약간 작게 */
-  padding: 2px 6px;     /* 작게 조절 */
-  margin-left: 10px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
+    #itemListDisplay li {
+      font-size: 13px;
+    }
+    #itemListDisplay li button {
+      font-size: 12px;
+      padding: 2px 6px;
+      margin-left: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -73,7 +71,7 @@
     <p>사번과 이름을 입력하세요</p>
     <input type="text" id="empId" placeholder="사번 입력" />
     <input type="text" id="empName" placeholder="이름 입력" />
-    <button onclick="verifyUser()">확인</button>
+    <button id="verifyBtn">확인</button>
     <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
 
@@ -83,22 +81,19 @@
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <!-- 버튼 -->
-<button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">물품 사진 보기</button>
+    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">물품 사진 보기</button>
 
-<!-- 모달 -->
-<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
-  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-    <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
-    <div id="photoContent"></div>
-  </div>
-</div>
+    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+        <span id="closeModal" style="float:right;cursor:pointer;font-size:20px;font-weight:bold;">✖</span>
+        <div id="photoContent"></div>
+      </div>
+    </div>
     
     <label for="subcategory">세부 종류</label>
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
-
 
     <label for="size">사이즈</label>
     <select id="size" name="size" required>
@@ -121,18 +116,16 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
-<div style="display:flex; gap:10px; width:100%; flex-wrap:nowrap;">
-  <button type="button" id="addItemBtn" style="flex:1 1 50%; min-width:0; background:#28a745;">➕ 추가</button>
-  <button type="button" id="submitAllBtn" style="flex:1 1 50%; min-width:0; background:#007bff;">✅ 신청</button>
-</div>
+    <div style="display:flex; gap:10px; width:100%; flex-wrap:nowrap;">
+      <button type="button" id="addItemBtn" style="flex:1 1 50%; min-width:0; background:#28a745;">➕ 추가</button>
+      <button type="button" id="submitAllBtn" style="flex:1 1 50%; min-width:0; background:#007bff;">✅ 신청</button>
+    </div>
 
-<div>
-  <h4>📝 추가된 항목</h4>
-  <ul id="itemListDisplay" style="padding-left:20px;"></ul>
-</div>
+    <div>
+      <h4>📝 추가된 항목</h4>
+      <ul id="itemListDisplay" style="padding-left:20px;"></ul>
+    </div>
 
-    
-    
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
   </form>
@@ -206,6 +199,8 @@ function verifyUser() {
   });
 }
 
+document.getElementById("verifyBtn").addEventListener("click", verifyUser);
+
 const categorySelect = document.getElementById("category");
 const subSelect = document.getElementById("subcategory");
 const sizeSelect = document.getElementById("size");
@@ -213,16 +208,12 @@ const quantityInput = document.getElementById("quantity");
 const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
 
-   // ① 전역에서 딱 한 번 선언
 let items = {};
 
 document.addEventListener("DOMContentLoaded", function () {
-  // ② 여기서는 items 선언 NO, 그냥 사용만
-
   let isSubmitting = false;
   let alertShown = false;
 
-  // 이벤트 리스너 등 사용
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
     subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
@@ -233,10 +224,6 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   });
-
-  // ... 이하 생략 ...
-});
-
 
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -263,24 +250,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // 초기 재고, 카테고리 데이터 불러오기
-   fetch(API_URL)
+  fetch(API_URL)
     .then(res => res.json())
     .then(data => {
       items = data;
-      // 초기화 꼭 먼저 해주고 옵션 추가
       categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       Object.keys(items).forEach(cat => {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
       nameInput.value = localStorage.getItem("userInfo") || "";
-      console.log("items:", items); // 데이터 확인용
+      console.log("items:", items);
     })
     .catch(err => {
       console.error("API 로드 에러:", err);
     });
 
-  // 리셋 버튼
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
     isSubmitting = false;
@@ -295,65 +279,61 @@ document.addEventListener("DOMContentLoaded", function () {
     msgDiv.textContent = "";
   });
 
-  // 폼 제출 처리
-materialForm.addEventListener("submit", function(e) {
-  e.preventDefault();
-  if (isSubmitting) return;
+  materialForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    if (isSubmitting) return;
 
-  const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-  const requestedQty = parseInt(quantityInput.value, 10);
-  let remarksText = remarksInput.value.trim();
+    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+    const requestedQty = parseInt(quantityInput.value, 10);
+    let remarksText = remarksInput.value.trim();
 
-  if (requestedQty <= 0) {
-    alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-    quantityInput.value = 1;
-    return;
-  }
+    if (requestedQty <= 0) {
+      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
+      quantityInput.value = 1;
+      return;
+    }
 
-  const 지급수량 = Math.min(requestedQty, currentStock);
-  const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+    const 지급수량 = Math.min(requestedQty, currentStock);
+    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
- if (!alertShown) {
-  if (구매요청수량 > 0) {
-    if (currentStock > 0) {
-      alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-      quantityInput.value = currentStock;
+    if (!alertShown) {
+      if (구매요청수량 > 0) {
+        if (currentStock > 0) {
+          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+          quantityInput.value = currentStock;
+        } else {
+          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+        }
+
+        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+        }
+
+        categorySelect.disabled = true;
+        subSelect.disabled = true;
+        sizeSelect.disabled = true;
+        quantityInput.disabled = true;
+
+        alertShown = true;
+        return; // 제출 중단
+      } else {
+        if (!remarksText.includes("지급")) {
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
+        }
+      }
     } else {
-      alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+      alertShown = false;
     }
-
-    if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-      remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-    }
-
-    categorySelect.disabled = true;
-    subSelect.disabled = true;
-    sizeSelect.disabled = true;
-    quantityInput.disabled = true;
-
-    alertShown = true;
-    return; // 반드시 return으로 제출 중단 처리
-  } else {
-    if (!remarksText.includes("지급")) {
-      remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
-    }
-  }
-} else {
-  // alertShown이 true인데도 submit 눌렀으면
-  // 즉, 두 번째 제출 시, alertShown 초기화하고 폼 동작 재개
-  alertShown = false;
-}
-
 
     const formData = new URLSearchParams({
       category: categorySelect.value,
       subcategory: subSelect.value,
       size: sizeSelect.value,
       name: nameInput.value,
-      quantity: String(item.quantity),
+      quantity: String(quantityInput.value),
       remarks: remarksInput.value
     });
 
@@ -407,7 +387,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbwUZ6c4GoOwe6UE971vtRo6i0RWEsHClylqb8_F3RMa2yC8gHDiRwNEAeWd9v0lqE9r/exec?mode=photo")
+  fetch(API_URL + "?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -429,7 +409,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
         });
       }
 
-      document.getElementById("photoModal").style.display = "block"
+      document.getElementById("photoModal").style.display = "block";
     });
 });
 
@@ -437,6 +417,7 @@ document.getElementById("closeModal").addEventListener("click", () => {
   document.getElementById("photoModal").style.display = "none";
 });
 </script>
+
 <script>
 let itemList = [];
 
@@ -453,7 +434,6 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
     return;
   }
 
-  // 재고 정보 가져오기
   const selectedSizeOption = sizeSelect.selectedOptions[0];
   const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
 
@@ -463,56 +443,49 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
-  // 기존 remarks가 구매요청/지급 문구 포함 안하면 추가
   if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
     remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
   }
 
-  // 새로운 아이템 remarks에 반영
-  const item = { category, subcategory, size, name, quantity, remarks: remarksText };
+    const item = { category, subcategory, size, name, quantity, remarks: remarksText };
   itemList.push(item);
 
   // UI 표시
-  // UI 표시
-const display = document.getElementById("itemListDisplay");
-const li = document.createElement("li");
-li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개 [${remarksText}]`;
+  const display = document.getElementById("itemListDisplay");
+  const li = document.createElement("li");
+  li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개 [${remarksText}]`;
 
-// 삭제 버튼 생성
-const removeBtn = document.createElement("button");
-removeBtn.textContent = "삭제";
-removeBtn.style.marginLeft = "10px";
-removeBtn.style.cursor = "pointer";
-removeBtn.onclick = () => {
-  // itemList에서 해당 아이템 삭제
-  const index = itemList.findIndex(i =>
-    i.category === category &&
-    i.subcategory === subcategory &&
-    i.size === size &&
-    i.name === name &&
-    i.quantity === quantity &&
-    i.remarks === remarksText
-  );
-  if (index > -1) {
-    itemList.splice(index, 1);
-  }
-  // UI에서 해당 li 제거
-  li.remove();
-};
+  // 삭제 버튼 생성
+  const removeBtn = document.createElement("button");
+  removeBtn.textContent = "삭제";
+  removeBtn.style.marginLeft = "10px";
+  removeBtn.style.cursor = "pointer";
+  removeBtn.onclick = () => {
+    // itemList에서 해당 아이템 삭제
+    const index = itemList.findIndex(i =>
+      i.category === category &&
+      i.subcategory === subcategory &&
+      i.size === size &&
+      i.name === name &&
+      i.quantity === quantity &&
+      i.remarks === remarksText
+    );
+    if (index > -1) {
+      itemList.splice(index, 1);
+    }
+    // UI에서 해당 li 제거
+    li.remove();
+  };
 
-li.appendChild(removeBtn);
-display.appendChild(li);
+  li.appendChild(removeBtn);
+  display.appendChild(li);
 
-// 초기화 (remarks는 비워도 무방)
-subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-materialForm.reset();
-nameInput.value = localStorage.getItem("userInfo") || "";
-
-  // 초기화 (remarks는 비워도 무방)
+  // 입력 폼 초기화 (remarks는 비워도 무방)
   subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  materialForm.reset();
+  quantityInput.value = "";
+  remarksInput.value = "";
+  // 사번+이름 유지
   nameInput.value = localStorage.getItem("userInfo") || "";
 });
 
@@ -521,9 +494,6 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
     alert("신청할 항목이 없습니다.");
     return;
   }
-  console.log("submitAllBtn clicked");
-  console.log("itemList:", itemList);
-  console.log("items:", items);
 
   try {
     const 완료메시지목록 = [];
@@ -532,10 +502,6 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
       const stockMap = items[item.category]?.stockMap || {};
       const key = `${item.subcategory}__${item.size}`;
       const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
-
-      console.log("Processing item:", item);
-      console.log("stockMap:", stockMap);
-      console.log("key:", key, "currentStock:", currentStock);
 
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
@@ -549,17 +515,14 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
         remarks: item.remarks
       });
 
-      console.log("Sending formData:", formData.toString());
-
-     const res = await fetch(API_URL, {
-  method: "POST",
-  body: formData,
-});
-if (!res.ok) {
-  throw new Error(`HTTP error: ${res.status}`);
-}
-const data = await res.json();
-
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error: ${res.status}`);
+      }
+      const data = await res.json();
 
       let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
       if (지급수량 > 0 && 구매요청수량 > 0) {
@@ -576,15 +539,12 @@ const data = await res.json();
     itemList = [];
     document.getElementById("itemListDisplay").innerHTML = "";
     location.reload();
+
   } catch (err) {
     console.error("에러:", err);
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
-
-
-
-
 
 </script>
   
