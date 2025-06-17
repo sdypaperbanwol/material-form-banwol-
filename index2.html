@@ -441,10 +441,41 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   itemList.push(item);
 
   // UI 표시
-  const display = document.getElementById("itemListDisplay");
-  const li = document.createElement("li");
-  li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개 [${remarksText}]`;
-  display.appendChild(li);
+  // UI 표시
+const display = document.getElementById("itemListDisplay");
+const li = document.createElement("li");
+li.textContent = `${category} > ${subcategory} (${size}) - ${quantity}개 [${remarksText}]`;
+
+// 삭제 버튼 생성
+const removeBtn = document.createElement("button");
+removeBtn.textContent = "삭제";
+removeBtn.style.marginLeft = "10px";
+removeBtn.style.cursor = "pointer";
+removeBtn.onclick = () => {
+  // itemList에서 해당 아이템 삭제
+  const index = itemList.findIndex(i =>
+    i.category === category &&
+    i.subcategory === subcategory &&
+    i.size === size &&
+    i.name === name &&
+    i.quantity === quantity &&
+    i.remarks === remarksText
+  );
+  if (index > -1) {
+    itemList.splice(index, 1);
+  }
+  // UI에서 해당 li 제거
+  li.remove();
+};
+
+li.appendChild(removeBtn);
+display.appendChild(li);
+
+// 초기화 (remarks는 비워도 무방)
+subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+materialForm.reset();
+nameInput.value = localStorage.getItem("userInfo") || "";
 
   // 초기화 (remarks는 비워도 무방)
   subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
