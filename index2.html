@@ -324,38 +324,6 @@ const msgDiv = document.getElementById("msg");
 
 let items = {};
 
-document.addEventListener("DOMContentLoaded", function () {
-  document.getElementById("loadingOverlay").style.display = "none";
-  let isSubmitting = false;
-  let alertShown = false;
-   
-  // 📌 공지사항 띄우기
-  fetch(API_URL + "?mode=notice")
-    .then(res => res.json())
-    .then(data => {
-      const notice = (data.notice || "").trim();
-      const expireDate = data.expire;
-      if (!notice || !expireDate) return;
-
-      const today = new Date().toISOString().slice(0, 10);
-      const hideKey = `hideNotice_${today}`;
-
-      if (today > expireDate) return;
-      if (localStorage.getItem(hideKey)) return;
-
-      document.getElementById("noticeText").innerText = notice;
-      document.getElementById("noticeBanner").style.display = "block";
-
-      document.getElementById("closeNotice").onclick = () => {
-        document.getElementById("noticeBanner").style.display = "none";
-      };
-
-      document.getElementById("hideTodayBtn").onclick = () => {
-        localStorage.setItem(hideKey, "true");
-        document.getElementById("noticeBanner").style.display = "none";
-      };
-    });
-
 
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -567,7 +535,6 @@ document.getElementById("closeModal").addEventListener("click", () => {
 
 <script>
 let itemList = [];
-
 document.getElementById("addItemBtn").addEventListener("click", () => {
   const category = categorySelect.value;
   const subcategory = subSelect.value;
@@ -580,6 +547,65 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
     alert("⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.");
     return;
   }
+
+  const selectedSizeOption = sizeSelect.selectedOptions[0];
+  const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
+
+  const 지급수량 = Math.min(quantity, currentStock);
+  const 구매요청수량 = Math.max(0, quantity - currentStock);
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+
+  if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
+    remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+  }
+
+  if (구매요청수량 > 0) {
+    if (currentStock > 0) {
+      alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
+    } else {
+      alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
+    }
+  }
+
+  const item = { category, subcategory, size, name, quantity, remarks: remarksText };
+  itemList.push(item);
+
+  const li = document.createElement("li");
+  const displayText = [지급수량 > 0 ? `${지급수량}개 지급` : "", 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : ""].filter(Boolean).join(" / ");
+  const cleanedRemarks = remarksText.replace(displayText, "").replace(/^ *\/+ */, "").replace(/ *\/+ *$/, "").trim();
+
+  li.innerHTML = `
+    <div class="item-text">
+      ${subcategory} (${size}) - [${displayText}]
+      ${cleanedRemarks ? `<br/>${cleanedRemarks}` : ""}
+    </div>
+    <button class="remove-btn">삭제</button>
+  `;
+
+  li.querySelector(".remove-btn").onclick = () => {
+    const index = itemList.findIndex(i =>
+      i.category === category &&
+      i.subcategory === subcategory &&
+      i.size === size &&
+      i.name === name &&
+      i.quantity === quantity &&
+      i.remarks === remarksText
+    );
+    if (index > -1) itemList.splice(index, 1);
+    li.remove();
+  };
+
+  document.getElementById("itemListDisplay").appendChild(li);
+
+  categorySelect.value = "";
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  quantityInput.value = "";
+  remarksInput.value = "";
+  nameInput.value = localStorage.getItem("userInfo") || "";
+});
 
   const selectedSizeOption = sizeSelect.selectedOptions[0];
   const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
@@ -728,7 +754,6 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
-
 
 </body>
 </html>
