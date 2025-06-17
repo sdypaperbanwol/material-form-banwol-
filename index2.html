@@ -75,7 +75,9 @@
   text-align: left;
   word-break: break-word;
   font-size: 14px;
+  line-height: 1.4;
 }
+
 
 #itemListDisplay li .remove-btn {
   background-color: #dc3545;
@@ -495,7 +497,15 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
  // UI 표시
 const display = document.getElementById("itemListDisplay");
 const li = document.createElement("li");
-li.innerHTML = `<span class="item-text">${subcategory} (${size}) - [${remarksText}]</span><button class="remove-btn">삭제</button>`;
+li.innerHTML = `
+  <div class="item-text">
+    ${subcategory} (${size}) - [${지급수량 > 0 ? 지급수량 + "개 지급" : ""}${(지급수량 > 0 && 구매요청수량 > 0) ? " / " : ""}${구매요청수량 > 0 ? 구매요청수량 + "개 구매 요청" : ""}]
+    <br/>
+    ${remarksText}
+  </div>
+  <button class="remove-btn">삭제</button>
+`;
+
 
 
 
