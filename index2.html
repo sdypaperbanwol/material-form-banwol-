@@ -493,45 +493,29 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   itemList.push(item);
 
  // UI 표시
-  const display = document.getElementById("itemListDisplay");
+  // UI 표시
+const display = document.getElementById("itemListDisplay");
 const li = document.createElement("li");
 
+// remarksText는 위에서 수정한 값을 그대로 사용
 const userRemarks = remarksText
   .replace(/(\d+개 지급)/g, "")
   .replace(/(\d+개 구매 요청)/g, "")
   .replace(/\//g, "")
   .trim();
 
-const 지급문구 = [];
-if (remarksText.includes("지급")) 지급문구.push(remarksText.match(/\d+개 지급/)?.[0]);
-if (remarksText.includes("구매 요청")) 지급문구.push(remarksText.match(/\d+개 구매 요청/)?.[0]);
-const 지급요청문구 = 지급문구.length > 0 ? ` ${지급문구.join(" / ")}` : "";
+// 화면 표시용 문구 추출 (비고에서 따로 추출)
+const 지급문구 = remarksText.match(/\d+개 지급/)?.[0] || "";
+const 구매요청문구 = remarksText.match(/\d+개 구매 요청/)?.[0] || "";
+const 지급요청문구 = [지급문구, 구매요청문구].filter(Boolean).join(" / ");
 
 li.innerHTML = `
   <div style="flex: 1;">
-    <span class="item-text">${subcategory} (${size})${지급요청문구}</span><br/>
+    <span class="item-text">${subcategory} (${size})${지급요청문구 ? ' ' + 지급요청문구 : ''}</span><br/>
     ${userRemarks ? `<small style="color:#555;">${userRemarks}</small>` : ""}
   </div>
   <button class="remove-btn">삭제</button>
 `;
-
-const removeBtn = li.querySelector(".remove-btn");
-removeBtn.onclick = () => {
-  const index = itemList.findIndex(i =>
-    i.category === category &&
-    i.subcategory === subcategory &&
-    i.size === size &&
-    i.name === name &&
-    i.quantity === quantity &&
-    i.remarks === remarksText
-  );
-  if (index > -1) {
-    itemList.splice(index, 1);
-  }
-  li.remove();
-};
-
-display.appendChild(li);
 
 
   // 폼 초기화 (맨 마지막에)
