@@ -440,23 +440,32 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
     return;
   }
 
-  for (const item of itemList) {
-    const formData = new URLSearchParams(item);
-    await fetch(API_URL, {
-      method: "POST",
-      body: formData
-    }).then(res => res.json()).then(data => {
-      if (data.result !== "success") throw new Error("실패");
-    }).catch(err => {
-      alert("❌ 일부 신청 실패: " + err.message);
-    });
-  }
+  try {
+    for (const item of itemList) {
+      const formData = new URLSearchParams(item);
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      console.log("응답 결과:", data);
 
-  alert("✅ 모든 신청이 저장되었습니다!");
-  itemList = [];
-  document.getElementById("itemListDisplay").innerHTML = "";
-  location.reload();
+      if (data.result !== "success") {
+        alert("❌ 신청 실패: " + (data.message || "알 수 없음"));
+        return;
+      }
+    }
+
+    alert("✅ 모든 신청이 저장되었습니다!");
+    itemList = [];
+    document.getElementById("itemListDisplay").innerHTML = "";
+    location.reload();
+  } catch (err) {
+    console.error("에러:", err);
+    alert("❌ 네트워크 오류 또는 서버 응답 실패");
+  }
 });
+
 </script>
   
 </body>
