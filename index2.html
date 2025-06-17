@@ -461,8 +461,14 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const size = sizeSelect.value;
   const name = nameInput.value;
   const quantity = parseInt(quantityInput.value, 10);
+  
   let remarksText = remarksInput.value.trim();
-  const 지급수량 = Math.min(quantity, currentStock);
+  const selectedSizeOption = sizeSelect.selectedOptions[0];
+const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
+
+let remarksText = remarksInput.value.trim();
+
+const 지급수량 = Math.min(quantity, currentStock);
 const 구매요청수량 = Math.max(0, quantity - currentStock);
 const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
 const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
