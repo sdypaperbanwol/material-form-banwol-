@@ -450,6 +450,14 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
     remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
   }
 
+  if (구매요청수량 > 0) {
+    if (currentStock > 0) {
+      alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
+    } else {
+      alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
+    }
+  }
+
     const item = { category, subcategory, size, name, quantity, remarks: remarksText };
   itemList.push(item);
 
