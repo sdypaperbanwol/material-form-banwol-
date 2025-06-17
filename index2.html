@@ -495,7 +495,12 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
  // UI 표시
 const display = document.getElementById("itemListDisplay");
 const li = document.createElement("li");
-li.innerHTML = `<span class="item-text">${subcategory} (${size}) - [${remarksText}]</span><button class="remove-btn">삭제</button>`;
+li.innerHTML = `
+  <span class="stock-info">${지급수량}개 지급${구매요청수량 > 0 ? ' / ' + 구매요청수량 + '개 구매 요청' : ''}</span><br/>
+  <span class="user-text">${사용자비고 || ''}</span>
+  <button class="remove-btn">삭제</button>
+`;
+
 
 const removeBtn = li.querySelector(".remove-btn");
 removeBtn.onclick = () => {
