@@ -671,20 +671,20 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 });
 
 
-</script>
+<script>
 document.addEventListener("DOMContentLoaded", () => {
   fetch(API_URL + "?mode=notice")
     .then(res => res.json())
     .then(data => {
       const notice = (data.notice || "").trim();
-      const expireDate = data.expire; // "2025-06-18"
+      const expireDate = data.expire;
       if (!notice || !expireDate) return;
 
-      const today = new Date().toISOString().slice(0, 10); // "2025-06-17"
+      const today = new Date().toISOString().slice(0, 10);
       const hideKey = `hideNotice_${today}`;
 
-      if (today > expireDate) return; // 날짜 지났으면 표시 안함
-      if (localStorage.getItem(hideKey)) return; // 오늘 하루 보지 않기 눌렀으면 표시 안함
+      if (today > expireDate) return;
+      if (localStorage.getItem(hideKey)) return;
 
       document.getElementById("noticeText").innerText = notice;
       document.getElementById("noticeBanner").style.display = "block";
@@ -700,6 +700,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 </script>
-  
 </body>
 </html>
