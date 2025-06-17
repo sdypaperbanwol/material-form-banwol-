@@ -206,7 +206,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyOUihcvn6LMeWmlGk4ArTQdIL7zrR2kxhEbuDu43ZubXU21wMTM-vPDtTq-WILMTzh/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby3ZfzsXKvyy20U4vS_iewaKvOY0NaoX4QB0TJs3fKvPz0ogPBMZA8Yei6u3ouolkg7/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -328,20 +328,37 @@ document.addEventListener("DOMContentLoaded", function () {
 //  });
   
 
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-      nameInput.value = localStorage.getItem("userInfo") || "";
-      console.log("items:", items);
-    })
-    .catch(err => {
-      console.error("API 로드 에러:", err);
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    const allItems = data;
+
+    const categoryType = "item";  // 예: item, survey, suggestion, welfare 중 선택
+    const typeMap = {
+      item: "Y",
+      survey: "A",
+      suggestion: "B",
+      welfare: "C"
+    };
+    const filteredItems = {};
+
+    // 🔽 allItems에서 해당 유형(type)만 필터링
+    for (const [key, value] of Object.entries(allItems)) {
+      if (value.type === typeMap[categoryType]) {
+        filteredItems[key] = value;
+      }
+    }
+
+    items = filteredItems; // 기존 items에 필터링된 것만 넣음
+
+    categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    Object.keys(items).forEach(cat => {
+      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
     });
+    nameInput.value = localStorage.getItem("userInfo") || "";
+    console.log("items:", items);
+  })
+
 
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
