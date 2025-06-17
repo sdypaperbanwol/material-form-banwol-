@@ -206,9 +206,10 @@
 
     <button type="button" id="myRecordsBtn" style="background-color: #6c757d;">📄 내 신청 내역 보기</button>
 
-<div id="myRecordsSection" style="display: none; margin-top: 20px;">
+<div id="myRecordsSection" style="display: none; margin-top: 20px; overflow-x: auto;">
   <h4>📋 최근 신청 내역</h4>
-  <table id="myRecordsTable" style="width: 100%; font-size: 14px; border-collapse: collapse;">
+  <table id="myRecordsTable" style="min-width: 600px; width: 100%; font-size: 14px; border-collapse: collapse;">
+
     <thead><tr></tr></thead>
     <tbody></tbody>
   </table>
@@ -353,8 +354,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const tbody = table.querySelector("tbody");
 
       // 헤더 생성
-      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h => `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px;">${h}</th>`).join("") + "</tr>";
-      tbody.innerHTML = "";
+      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
+  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
+).join("") + "</tr>";
+
 
       // 본문 행 생성
       data.records.forEach(row => {
