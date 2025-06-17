@@ -187,6 +187,9 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="비고를 입력하세요(없을 경우 생략)"></textarea>
 
+    <button type="button" id="submitSimpleBtn" style="flex:1; min-width:100px; background:#007bff; display: none;">✅ 제출</button>
+
+
 <div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
   <h4>📝 추가된 항목</h4>
   <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
@@ -706,11 +709,10 @@ formData.append("remarks", item.remarks);
         document.getElementById("itemListDisplay")
       ];
 
-      if (type === "물품신청") {
-        fieldsToToggle.forEach(el => el?.style && (el.style.display = ""));
-      } else {
-        fieldsToToggle.forEach(el => el?.style && (el.style.display = "none"));
-      }
+  const isMaterial = (type === "물품신청");
+fieldsToToggle.forEach(el => el?.style && (el.style.display = isMaterial ? "" : "none"));
+document.getElementById("submitSimpleBtn").style.display = isMaterial ? "none" : "";
+
 
       document.getElementById("remarks").style.display = "";
       document.querySelector("label[for='remarks']").style.display = "";
@@ -721,5 +723,47 @@ formData.append("remarks", item.remarks);
     });
   });
 </script>
+<script>
+document.getElementById("submitSimpleBtn").addEventListener("click", async () => {
+  const remarks = document.getElementById("remarks").value.trim();
+  const name = document.getElementById("name").value.trim();
+  const formType = document.getElementById("formType").value;
+
+  if (!remarks) {
+    alert("내용을 입력해주세요.");
+    return;
+  }
+
+  const formData = new URLSearchParams();
+  formData.append("formType", formType);
+  formData.append("name", name);
+  formData.append("remarks", remarks);
+
+  document.getElementById("loadingOverlay").style.display = "flex";
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    document.getElementById("loadingOverlay").style.display = "none";
+
+    if (data.result === "success") {
+      alert("✅ 제출되었습니다!");
+      location.reload();
+    } else {
+      alert("❌ 제출 실패");
+    }
+  } catch (err) {
+    console.error("에러:", err);
+    document.getElementById("loadingOverlay").style.display = "none";
+    alert("❌ 네트워크 오류");
+  }
+});
+</script>
+
 </body>
 </html>
+
