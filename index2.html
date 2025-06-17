@@ -203,10 +203,22 @@
 
     <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
     <div class="message" id="msg"></div>
+
+    <button type="button" id="myRecordsBtn" style="background-color: #6c757d;">📄 내 신청 내역 보기</button>
+
+<div id="myRecordsSection" style="display: none; margin-top: 20px;">
+  <h4>📋 최근 신청 내역</h4>
+  <table id="myRecordsTable" style="width: 100%; font-size: 14px; border-collapse: collapse;">
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+    
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzeMfE-n9p7kYWH6huv8X1zq7bjdTTpl54LsMg1y4OAelbnAu7AknVoTB1N8CFUhIwY/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbydpjFRORjaty6X1Hx87RdXwYf_5YlBEyucVa_D0U7lLFkFlFzxEqo_rhWqxLwkzi-F/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -318,6 +330,53 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   });
+
+  document.getElementById("myRecordsBtn").addEventListener("click", () => {
+  const fullName = localStorage.getItem("userInfo");
+  if (!fullName) {
+    alert("로그인 후 이용 가능합니다.");
+    return;
+  }
+
+  const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
+
+  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result !== "success") {
+        alert("❌ 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      // 헤더 생성
+      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h => `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px;">${h}</th>`).join("") + "</tr>";
+      tbody.innerHTML = "";
+
+      // 본문 행 생성
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        row.slice(0, 10).forEach(cell => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsSection").style.display = "block";
+    })
+    .catch(err => {
+      console.error("신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
 
 //  sizeSelect.addEventListener("change", () => {
 //    const opt = sizeSelect.selectedOptions[0];
