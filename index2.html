@@ -206,7 +206,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwUZ6c4GoOwe6UE971vtRo6i0RWEsHClylqb8_F3RMa2yC8gHDiRwNEAeWd9v0lqE9r/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyU-FFK6wuRoyDdBHT4ELlEOrrv-7LJZ2DCdKkTUBSd1e8kFI-YTTnvLrxQSyaNsAwi/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -665,6 +665,31 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 
 
 </script>
-  
+
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  fetch(API_URL + "?mode=notice")
+    .then(res => res.json())
+    .then(data => {
+      const notice = data.notice?.trim();
+      if (notice) {
+        document.getElementById("noticeContent").textContent = notice;
+        document.getElementById("noticeModal").style.display = "flex";
+      }
+    });
+
+  document.getElementById("closeNotice").addEventListener("click", () => {
+    document.getElementById("noticeModal").style.display = "none";
+  });
+});
+</script>
+  <!-- ✅ 공지사항 모달 -->
+<div id="noticeModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:white; padding:20px; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 10px rgba(0,0,0,0.3); position:relative;">
+    <span id="closeNotice" style="position:absolute; top:10px; right:15px; font-weight:bold; cursor:pointer; font-size:18px;">✖</span>
+    <div id="noticeContent" style="white-space:pre-wrap; font-size:15px; color:#333;"></div>
+  </div>
+</div>
+
 </body>
 </html>
