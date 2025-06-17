@@ -192,17 +192,18 @@ function verifyUser() {
     loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
   });
 }
-</script>
-
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const categorySelect = document.getElementById("category");
-  const subSelect = document.getElementById("subcategory");
-  const sizeSelect = document.getElementById("size");
-  const quantityInput = document.getElementById("quantity");
-  const remarksInput = document.getElementById("remarks");
-  const msgDiv = document.getElementById("msg");
+// ✅ DOMContentLoaded 함수 바깥에 변수 선언
+const categorySelect = document.getElementById("category");
+const subSelect = document.getElementById("subcategory");
+const sizeSelect = document.getElementById("size");
+const quantityInput = document.getElementById("quantity");
+const remarksInput = document.getElementById("remarks");
+const nameInput = document.getElementById("name");
+const materialForm = document.getElementById("materialForm");
+const msgDiv = document.getElementById("msg");
 
+document.addEventListener("DOMContentLoaded", function () {
   let items = {};
   let isSubmitting = false;
   let alertShown = false;
@@ -229,6 +230,9 @@ document.addEventListener("DOMContentLoaded", function () {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
     });
+});
+</script>
+
 
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -465,6 +469,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async () => {
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
+
 
 </script>
   
