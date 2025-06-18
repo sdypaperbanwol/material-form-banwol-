@@ -104,24 +104,6 @@
     cursor: pointer;
     z-index: 10000;
   }
-.button-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.button-group button {
-  padding: 10px 16px;
-  font-size: 14px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.button-group button.selected {
-  background-color: #28a745;
-}
 
   </style>
 </head>
@@ -148,63 +130,47 @@
 
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
-  <!-- ✅ 단계별 항목 선택 구조 -->
-<div id="step-container" style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
-  
-  <!-- Step 1: 항목 분류 -->
-<div id="step1" style="text-align:center;">
-  <h3>항목 분류를 선택하세요</h3>
-  <div id="category-buttons" class="button-group" style="justify-content: center; flex-wrap: wrap;"></div>
-  
-  <button type="button" id="viewPhotos" style="margin-top: 10px; background:#007bff; color:white;">
-    항목 사진 보기
-  </button>
-  
-  <button type="button" id="myRecordsBtn" style="margin-top: 20px; background-color: #6c757d;">
-    📄 내 신청 내역 보기
-  </button>
-</div>
+  <!-- ✅ 항목 분류 버튼 목록 -->
+<div id="category-buttons" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 16px;"></div>
+
+<!-- ✅ 기존 select는 숨겨둠 (기능은 그대로 유지하기 위해) -->
+<select id="category" name="category" style="display: none;" required></select>
 
 
-  <!-- Step 2: 세부 항목 -->
-  <div id="step2" style="display:none; text-align:center;">
-    <h3>세부 항목 선택</h3>
-    <div id="subcategory-buttons" class="button-group"></div>
-    <button type="button" class="backBtn">← 뒤로</button>
-  </div>
+    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
 
-  <!-- Step 3: 상세 옵션 -->
-  <div id="step3" style="display:none; text-align:center;">
-    <h3>상세 옵션 선택</h3>
-    <div id="size-buttons" class="button-group"></div>
-    <button type="button" class="backBtn">← 뒤로</button>
-  </div>
+    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+        <span id="closeModal">✖</span>
+        <div id="photoContent"></div>
+      </div>
+    </div>
+    
+    <label for="subcategory">세부 항목</label>
+    <select id="subcategory" name="subcategory" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
- <div id="step4" style="display:none; width: 100%; max-width: 400px;">
+    <label for="size">상세 옵션</label>
+    <select id="size" name="size" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-  <!-- ✅ 여기 추가 -->
-  <label for="name">작성자</label>
-  <input type="text" id="name" name="name" readonly />
+    <label for="name">작성자</label>
+    <input type="text" id="name" name="name" readonly />
 
-  <label for="quantity">수량(수치)</label>
-  <input type="number" id="quantity" name="quantity" min="1" required />
+    <label for="quantity">수량(수치)</label>
+    <input type="number" id="quantity" name="quantity" min="1" required />
 
-  <label for="remarks">추가 내용</label>
-  <small style="line-height:1.5; display:block; margin-bottom:8px;">
-    - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
-    - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
-    - 날짜 선택 가능(추가 내용에 오늘·내일 X시 수령/교환 기재).<br>
-    - 재고 부족 시 보유 수량만 지급, 부족분은 구매 요청됩니다.<br>
-    - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
-  </small>
-
-  <textarea id="remarks" name="remarks" placeholder="추가 내용을 입력하세요(없을 경우 생략)"></textarea>
-
-  <button type="button" id="addItemBtn" style="margin-top:10px; background-color: #28a745;">➕ 추가</button>
-  <button type="button" class="backBtn">← 뒤로</button>
-</div>
-
-
+    <label for="remarks">추가 내용</label>
+    <small>
+      - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
+      - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
+      - 날짜 선택 가능(추가 내용에 오늘·내일 X시 수령/교환 기재).<br>
+      - 재고 부족 시 보유 수량만 지급, 부족분은 구매 요청됩니다.<br>
+      - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
+    </small>
+    <textarea id="remarks" name="remarks" placeholder="추가 내용을 입력하세요(없을 경우 생략)"></textarea>
 
 <div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
   <h4>📝 추가된 항목</h4>
@@ -213,7 +179,8 @@
 
     
 <div style="display:flex; gap:10px; width:100%;">
-    <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#007bff;">✅ 신청(제출)</button>
+  <button type="button" id="addItemBtn" style="flex:1; min-width:100px; background:#28a745;">➕ 추가</button>
+  <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#007bff;">✅ 신청(제출)</button>
 </div>
 
 <div id="loadingOverlay" style="
@@ -282,9 +249,7 @@ if (saved) {
         localStorage.removeItem("userInfo");
         return;
       }
-      if (nameInput) {
-  nameInput.value = saved;
-}
+      nameInput.value = saved;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
     } else {
@@ -327,132 +292,11 @@ function verifyUser() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const verifyBtn = document.getElementById("verifyBtn");
-  if (verifyBtn) {
-    verifyBtn.addEventListener("click", verifyUser);
-  }
-});
+document.getElementById("verifyBtn").addEventListener("click", verifyUser);
 
 const categorySelect = document.getElementById("category");
 const subSelect = document.getElementById("subcategory");
-  let selected = {
-  category: "",
-  subcategory: "",
-  size: ""
-};
-
 const sizeSelect = document.getElementById("size");
-  // ✅ 여기에 붙여넣으세요!
-function renderSubcategories(cat) {
-  const subWrap = document.getElementById("subcategory-buttons");
-  subWrap.innerHTML = "";
-  selected.subcategory = "";
-  selected.size = "";
-
-  // 세부 항목 리스트 로드
-  const subList = items[cat]?.types || [];
-
-  subList.forEach(type => {
-    const btn = document.createElement("button");
-    btn.textContent = type;
-    btn.dataset.value = type;
-
-    btn.addEventListener("click", () => {
-      selected.subcategory = type;
-
-      // 선택 효과
-      document.querySelectorAll("#subcategory-buttons button").forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-
-      // ✅ 세부 항목 버튼 숨기고 상세 옵션 보여주기
-      subWrap.style.display = "none";
-      document.getElementById("size-buttons").style.display = "flex";
-
-      renderSizes(cat, type);
-    });
-
-    subWrap.appendChild(btn);
-  });
-}
-  function renderSizes(cat, type) {
-  const sizeWrap = document.getElementById("size-buttons");
-  sizeWrap.innerHTML = "";
-  selected.size = "";
-
-  const stockMap = items[cat]?.stockMap || {};
-
-  for (const key in stockMap) {
-    const [t, size] = key.split("__");
-    if (t === type) {
-      const stock = stockMap[key] || "X";
-      const btn = document.createElement("button");
-      btn.textContent = `${size} (재고: ${stock})`;
-      btn.dataset.value = size;
-
-      btn.addEventListener("click", () => {
-        selected.size = size;
-
-        // 선택 효과
-        document.querySelectorAll("#size-buttons button").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-
-        // 수량/비고 입력창 보이기
-        document.getElementById("inputFields").style.display = "block";
-      });
-
-      sizeWrap.appendChild(btn);
-    }
-  }
-}
-const itemList = [];
-
-document.getElementById("addItemBtn").addEventListener("click", () => {
-  const qty = document.getElementById("quantity").value.trim();
-  const remarks = document.getElementById("remarks").value.trim();
-
-  if (!qty || isNaN(qty) || parseInt(qty) <= 0) {
-    alert("수량을 정확히 입력해주세요.");
-    return;
-  }
-
-  const item = {
-    category: selected.category,
-    subcategory: selected.subcategory,
-    size: selected.size,
-    qty: parseInt(qty),
-    remarks
-  };
-
-  itemList.push(item);
-  updatePreview();
-
-  // 다음 항목 입력 준비
-  selected.category = "";
-  selected.subcategory = "";
-  selected.size = "";
-  document.getElementById("category-buttons").style.display = "flex";
-  document.getElementById("subcategory-buttons").style.display = "none";
-  document.getElementById("size-buttons").style.display = "none";
-  document.getElementById("inputFields").style.display = "none";
-
-  document.getElementById("quantity").value = "";
-  document.getElementById("remarks").value = "";
-});
-
-function updatePreview() {
-  const list = document.getElementById("itemListDisplay");
-  list.innerHTML = "";
-
-  itemList.forEach((item, index) => {
-    const li = document.createElement("li");
-    li.style.listStyle = "none";
-    li.style.padding = "4px 0";
-    li.textContent = `${index + 1}. ${item.category} > ${item.subcategory} > ${item.size} / ${item.qty}개 / ${item.remarks}`;
-    list.appendChild(li);
-  });
-}
-
 const quantityInput = document.getElementById("quantity");
 const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
@@ -460,54 +304,47 @@ const msgDiv = document.getElementById("msg");
 let items = {};
 
 document.addEventListener("DOMContentLoaded", function () {
-  // ✅ 단계별 화면 제어
-function showOnlyStep(stepId) {
-  ["step1", "step2", "step3", "step4"].forEach(id => {
-    const stepDiv = document.getElementById(id);
-    if (stepDiv) stepDiv.style.display = (id === stepId ? "block" : "none");
-  });
-}
-
-function renderStep1() {
-  showOnlyStep("step1");
-}
-function renderStep2() {
-  showOnlyStep("step2");
-}
-function renderStep3() {
-  showOnlyStep("step3");
-}
-function renderStep4() {
-  showOnlyStep("step4");
-}
-
-// ✅ 뒤로가기 버튼들 동작
-document.querySelectorAll(".backBtn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    if (document.getElementById("step4").style.display === "block") {
-      renderStep3();
-    } else if (document.getElementById("step3").style.display === "block") {
-      renderStep2();
-    } else if (document.getElementById("step2").style.display === "block") {
-      renderStep1();
-    }
-  });
-});
-
   document.getElementById("loadingOverlay").style.display = "none";
   let isSubmitting = false;
   let alertShown = false;
 
-  categorySelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      items[cat].types.forEach(type => {
-        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-      });
-    }
+  // 1️⃣ 이건 유지
+categorySelect.addEventListener("change", () => {
+  const cat = categorySelect.value;
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  if (items[cat]) {
+    items[cat].types.forEach(type => {
+      subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+    });
+  }
+});
+
+// 2️⃣ 이건 추가
+const categoryButtonsWrap = document.getElementById("category-buttons");
+
+function renderCategoryButtons() {
+  categoryButtonsWrap.innerHTML = "";
+
+  Object.keys(items).forEach(cat => {
+    const btn = document.createElement("button");
+    btn.textContent = cat;
+    btn.type = "button";
+    btn.style.padding = "10px 14px";
+    btn.style.border = "none";
+    btn.style.borderRadius = "6px";
+    btn.style.background = "#4CAF50";
+    btn.style.color = "white";
+    btn.style.cursor = "pointer";
+
+    btn.addEventListener("click", () => {
+      categorySelect.value = cat;
+      categorySelect.dispatchEvent(new Event("change")); // 기존 핸들러 실행됨
+    });
+
+    categoryButtonsWrap.appendChild(btn);
   });
+}
 
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -646,31 +483,10 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       items = data;
-     const categoryButtons = document.getElementById("category-buttons");
-categoryButtons.innerHTML = "";
-Object.keys(items).forEach(cat => {
-  const btn = document.createElement("button");
-  btn.textContent = cat;
-  btn.dataset.value = cat;
-btn.addEventListener("click", () => {
-  selected.category = cat;
-
-  // 선택 상태 표시
-  document.querySelectorAll("#category-buttons button").forEach(b => b.classList.remove("selected"));
-  btn.classList.add("selected");
-
-  // ✅ 항목 분류 버튼 숨기기
-  document.getElementById("category-buttons").style.display = "none";
-
-  // ✅ 세부 항목 버튼 보여주기 (혹시 숨겨져 있을 경우 대비)
-  document.getElementById("subcategory-buttons").style.display = "flex";
-
-  renderSubcategories(cat);
-});
-
-  categoryButtons.appendChild(btn);
-});
-
+      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      Object.keys(items).forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
       nameInput.value = localStorage.getItem("userInfo") || "";
       console.log("items:", items);
     })
@@ -829,18 +645,13 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     });
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  const closeModal = document.getElementById("closeModal");
-  if (closeModal) {
-    closeModal.addEventListener("click", () => {
-      document.getElementById("photoModal").style.display = "none";
-    });
-  }
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("photoModal").style.display = "none";
 });
-
 </script>
 
 <script>
+let itemList = [];
 
 document.getElementById("addItemBtn").addEventListener("click", () => {
   const category = categorySelect.value;
