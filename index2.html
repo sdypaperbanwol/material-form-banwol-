@@ -131,8 +131,6 @@
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
    <label for="category">항목 분류</label>
-<!-- 🚫 기존 select 는 숨겨 두고 -->
-<select id="category" name="category" required style="display:none;"></select>
 
 <!-- ✅ 버튼 UI 컨테이너 추가 -->
 <div id="category-buttons"
@@ -148,14 +146,10 @@
     </div>
     
    <label for="subcategory">세부 항목</label>
-<select id="subcategory" name="subcategory" required style="display: none;"></select>
 <div id="subcategory-buttons" style="display: flex; flex-direction: column; align-items: center; gap: 10px;"></div>
 
 
     <label for="size">상세 옵션</label>
-<select id="size" name="size" required style="display: none;">
-  <option value="">-- 선택하세요 --</option>
-</select>
 
 <!-- ✅ 새로 추가할 사이즈 버튼 영역 -->
 <div id="size-buttons" style="display: flex; flex-direction: column; align-items: center; gap: 10px;"></div>
@@ -753,10 +747,10 @@ for (const [key, stock] of Object.entries(stockMap)) {
       alertShown = false;
     }
 
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
+   const formData = new URLSearchParams({
+  category: selected.category,
+  subcategory: selected.subcategory,
+  size: selected.size,
       name: nameInput.value,
       quantity: String(quantityInput.value),
       remarks: remarksInput.value
@@ -846,9 +840,8 @@ document.getElementById("closeModal").addEventListener("click", () => {
 let itemList = [];
 
 document.getElementById("addItemBtn").addEventListener("click", () => {
-  const category = categorySelect.value;
-  const subcategory = subSelect.value;
-  const size = sizeSelect.value;
+const { category, subcategory, size } = selected;
+
   const name = nameInput.value;
   const quantity = parseInt(quantityInput.value, 10);
   let remarksText = remarksInput.value.trim();
