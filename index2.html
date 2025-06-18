@@ -515,21 +515,16 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 //  });
   
 
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-      nameInput.value = localStorage.getItem("userInfo") || "";
-      renderCategories();
-      console.log("items:", items);
-    })
-    .catch(err => {
-      console.error("API 로드 에러:", err);
-    });
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    items = data;
+    renderCategories();  // ✅ 버튼 렌더링
+    nameInput.value = localStorage.getItem("userInfo") || "";
+  })
+  .catch(err => {
+    console.error("API 로드 에러:", err);
+  });
 
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
