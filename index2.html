@@ -130,10 +130,14 @@
 
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
-    <label for="category">항목 분류</label>
-    <select id="category" name="category" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+   <label for="category">항목 분류</label>
+<!-- 🚫 기존 select 는 숨겨 두고 -->
+<select id="category" name="category" required style="display:none;"></select>
+
+<!-- ✅ 버튼 UI 컨테이너 추가 -->
+<div id="category-buttons"
+     style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+
 
     <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
 
@@ -221,6 +225,8 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec";
+  let selected = { category: "", subcategory: "", size: "" };
+
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -454,10 +460,55 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     .then(res => res.json())
     .then(data => {
       items = data;
-      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+     // 1) 드롭다운(숨김용) 초기화
+categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+
+// 2) 버튼 컨테이너 준비
+const catWrap = document.getElementById("category-buttons");
+catWrap.innerHTML = "";
+
+// 3) 항목별 버튼 생성
+Object.keys(items).forEach(cat => {
+  // 숨김 select에도 옵션 하나 넣어 두기 (기존 로직 호환)
+  categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+
+  // 버튼 요소
+  const btn = document.createElement("button");
+  btn.textContent = cat;
+  btn.dataset.value = cat;
+  btn.style.padding = "10px 16px";
+  btn.style.borderRadius = "6px";
+  btn.style.border = "1px solid #ccc";
+  btn.style.background = "#fff";
+  btn.style.cursor = "pointer";
+  btn.style.margin = "4px";
+
+  // 클릭 이벤트
+  btn.addEventListener("click", () => {
+    // ✅ select 값도 같이 바꿔 기존 코드 재사용
+    categorySelect.value = cat;
+    selected.category = cat;
+
+    // 버튼 하이라이트
+    document
+      .querySelectorAll("#category-buttons button")
+      .forEach(b => (b.style.background = "#fff"));
+    btn.style.background = "#d1e7dd";
+
+    // 세부·사이즈 초기화 및 세부 항목 채우기
+    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+
+    if (items[cat]) {
+      items[cat].types.forEach(type => {
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
       });
+    }
+  });
+
+  catWrap.appendChild(btn);
+});
+
       nameInput.value = localStorage.getItem("userInfo") || "";
       console.log("items:", items);
     })
