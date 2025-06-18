@@ -130,12 +130,12 @@
 
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
-    <label for="category">1️⃣ 항목 분류</label>
+    <label for="category">항목 분류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <button type="button" id="viewPhotos" style="background:#2c7be5;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
+    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
 
     <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
       <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
@@ -144,23 +144,23 @@
       </div>
     </div>
     
-    <label for="subcategory">2️⃣ 세부 항목</label>
+    <label for="subcategory">세부 항목</label>
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="size">3️⃣ 상세 옵션</label>
+    <label for="size">상세 옵션</label>
     <select id="size" name="size" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="name">4️⃣ 작성자(자동 입력)</label>
+    <label for="name">작성자</label>
     <input type="text" id="name" name="name" readonly />
 
-    <label for="quantity">5️⃣ 수량(수치)</label>
+    <label for="quantity">수량(수치)</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
-    <label for="remarks">6️⃣ 추가 내용(선택 사항)</label>
+    <label for="remarks">추가 내용</label>
     <small>
       - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
       - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
@@ -177,9 +177,8 @@
 
     
 <div style="display:flex; gap:10px; width:100%;">
-  <button type="button" id="addItemBtn" style="flex:1; min-width:100px; background:#20c997;">7️⃣ 추가</button>
-  <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#1b4965;">8️⃣ 신청(제출)</button>
-
+  <button type="button" id="addItemBtn" style="flex:1; min-width:100px; background:#28a745;">➕ 추가</button>
+  <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#007bff;">✅ 신청(제출)</button>
 </div>
 
 <div id="loadingOverlay" style="
@@ -202,9 +201,9 @@
 
 
 
-   <button type="button" id="resetBtn" style="background-color: #6c757d;">처음으로</button>
+   <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
 <div class="message" id="msg"></div>
-<button type="button" id="myRecordsBtn" style="background-color: #495057;">📄 내 신청 내역 보기</button>
+<button type="button" id="myRecordsBtn" style="background-color: #6c757d;">📄 내 신청 내역 보기</button>
 
 
 
