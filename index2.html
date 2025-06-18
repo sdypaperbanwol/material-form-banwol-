@@ -131,7 +131,9 @@
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
   <!-- 🔽 여기에 새로 추가 -->
+      <input type="hidden" id="name" />
   <div id="step-container" style="display:none;"></div>
+    
 
   <div id="mainFormSection" style="display:none;">
     <label for="category">1️⃣ 항목 분류</label>
@@ -179,7 +181,7 @@ if (saved) {
         localStorage.removeItem("userInfo");
         return;
       }
-      nameInput.value = saved;
+      document.getElementById("name").value = saved;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
     } else {
@@ -250,7 +252,8 @@ function formatDate(raw) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-document.getElementById("myRecordsBtn").addEventListener("click", () => {
+<button id="myRecordsBtn" style="display:none;">내 신청 내역 보기</button>
+
   const fullName = localStorage.getItem("userInfo");
   if (!fullName) {
     alert("로그인 후 이용 가능합니다.");
@@ -494,7 +497,8 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 </script>
 
 <script>
-document.getElementById("viewPhotos").addEventListener("click", () => {
+<button id="viewPhotos" type="button">비품 사진 보기</button>
+
   const category = document.getElementById("category").value.trim();
   if (!category) {
     alert("항목 분류를 먼저 선택해주세요.");
@@ -535,7 +539,8 @@ document.getElementById("closeModal").addEventListener("click", () => {
 <script>
 let itemList = [];
 
-document.getElementById("addItemBtn").addEventListener("click", () => {
+<button id="addItemBtn" type="button">항목 추가</button>
+
   const category = categorySelect.value;
   const subcategory = subSelect.value;
   const size = sizeSelect.value;
@@ -751,15 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 <script>
-// 단계별 UI용 전역 변수
-const stepContainer = document.getElementById("step-container");
-let currentStep = 1;
-let selected = {
-  category: "",
-  subcategory: "",
-  size: ""
-};
-
+// ✅ 1단계 선택 화면
 function renderStep1() {
   currentStep = 1;
   stepContainer.innerHTML = `
@@ -782,6 +779,7 @@ function renderStep1() {
   });
 }
 
+// ✅ 2단계
 function renderStep2() {
   currentStep = 2;
   const types = items[selected.category]?.types || [];
@@ -803,6 +801,7 @@ function renderStep2() {
   });
 }
 
+// ✅ 3단계
 function renderStep3() {
   currentStep = 3;
   const stockMap = items[selected.category]?.stockMap || {};
@@ -814,7 +813,6 @@ function renderStep3() {
       return { size, stock };
     });
 
-  // ✅ HTML만 innerHTML로 넣기
   stepContainer.innerHTML = `
     <h3>3️⃣ 상세 옵션 선택 (${selected.subcategory})</h3>
     ${sizes.map(({ size, stock }) =>
@@ -826,22 +824,30 @@ function renderStep3() {
     </div>
   `;
 
-  // ✅ 이벤트 리스너는 자바스크립트로 따로 추가
   document.querySelectorAll(".step-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
       selected.size = e.target.dataset.value;
 
-      // 값 채워주기 (submit용 hidden select)
       document.getElementById("category").value = selected.category;
       document.getElementById("subcategory").innerHTML = `<option selected>${selected.subcategory}</option>`;
       document.getElementById("size").innerHTML = `<option selected>${selected.size}</option>`;
 
-      // UI 전환
       stepContainer.style.display = "none";
       document.getElementById("mainFormSection").style.display = "block";
     });
   });
 }
+
+// ✅ 데이터를 불러오고 초기화
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    items = data;
+    stepContainer.style.display = "block";
+    document.getElementById("mainFormSection").style.display = "none";
+    renderStep1();  // ✅ 함수 정의 이후에 호출됨
+  });
+</script>
 
 
 </body>
