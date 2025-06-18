@@ -124,6 +124,11 @@
   </style>
 </head>
 <body>
+
+  <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:10000; align-items:center; justify-content:center;">
+  <div style="color:white; font-size:20px;">⏳ 처리 중입니다...</div>
+</div>
+
   <!-- ✅ 페이지 최상단 회사 로고 + 시스템 이름 -->
   <div style="text-align: center; margin-bottom: 20px;">
     <img src="https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/신대양제지반월_로고.png" 
@@ -283,7 +288,6 @@ const quantityInput = document.getElementById("quantity");
 const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
 
-let items = {};
 
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
@@ -805,85 +809,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
  let selection = { category: "", subcategory: "", size: "" };
 // ✅ 여기서부터 하단에 추가
-document.addEventListener("DOMContentLoaded", async () => {
-  const stepContainer = document.getElementById("step-container");
-  const prevBtn = document.getElementById("prevBtn");
-  const resetBtn = document.getElementById("resetBtn");
-  const myRecordsBtn = document.getElementById("myRecordsBtn");
-  const finalStepInputs = document.getElementById("finalStepInputs");
-  const materialForm = document.getElementById("materialForm");
 
-  let items = await fetch(API_URL).then(res => res.json());
-
-  let step = 1;
- 
-
-  function showFinalInputs(show) {
-    finalStepInputs.style.display = show ? "block" : "none";
-    document.getElementById("name").value = localStorage.getItem("userInfo");
-    document.getElementById("quantity").value = 1;
-    document.getElementById("remarks").value = "";
-  }
-
-  function renderStep() {
-    stepContainer.innerHTML = "";
-    showFinalInputs(false);
-
-    if (step === 1) {
-      Object.keys(items).forEach(cat => {
-        stepContainer.innerHTML += `<button class="step-btn" data-cat="${cat}">${cat}</button>`;
-      });
-    } else if (step === 2) {
-      items[selection.category].types.forEach(type => {
-        stepContainer.innerHTML += `<button class="step-btn" data-sub="${type}">${type}</button>`;
-      });
-    } else if (step === 3) {
-      const stockMap = items[selection.category].stockMap;
-      Object.entries(stockMap).forEach(([key, stock]) => {
-        const [sub, size] = key.split("__");
-        if (sub === selection.subcategory) {
-          stepContainer.innerHTML += `<button class="step-btn" data-size="${size}">${size} (재고:${stock})</button>`;
-        }
-      });
-    } else if (step === 4) {
-      showFinalInputs(true);
-    }
-  }
-
-  stepContainer.onclick = (e) => {
-    if (e.target.matches(".step-btn")) {
-      if (step === 1) {
-        selection.category = e.target.dataset.cat;
-        step++;
-      } else if (step === 2) {
-        selection.subcategory = e.target.dataset.sub;
-        step++;
-      } else if (step === 3) {
-        selection.size = e.target.dataset.size;
-        step++;
-      }
-      renderStep();
-    }
-  };
-
-  prevBtn.onclick = () => {
-    if (step > 1) step--;
-    renderStep();
-  };
-
-  resetBtn.onclick = () => {
-    step = 1;
-    selection = { category: "", subcategory: "", size: "" };
-    renderStep();
-  };
-
-  myRecordsBtn.onclick = () => {
-    document.getElementById("myRecordsSection").style.display = "block";
-    document.getElementById("myRecordsBtn").click();
-  };
-
-  renderStep();
-});
 
 </script>
 
