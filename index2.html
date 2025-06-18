@@ -517,9 +517,10 @@ fetch(API_URL)
   .then(res => res.json())
   .then(data => {
     items = data;
-    renderCategories();  // ✅ 버튼 렌더링
+    renderCategories(); // 먼저 호출
     nameInput.value = localStorage.getItem("userInfo") || "";
   })
+
   .catch(err => {
     console.error("API 로드 에러:", err);
   });
@@ -622,10 +623,7 @@ const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
       console.error("에러:", err);
       isSubmitting = false;
       alertShown = false;
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
+           quantityInput.disabled = false;
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
     });
