@@ -104,7 +104,20 @@
     cursor: pointer;
     z-index: 10000;
   }
+    
+.step-btn {
+  display: inline-block;
+  margin: 6px;
+  padding: 10px 16px;
+  font-size: 15px;
+  border: none;
+  border-radius: 6px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
 
+    
   </style>
 </head>
 <body>
@@ -307,33 +320,84 @@ document.addEventListener("DOMContentLoaded", function () {
   let isSubmitting = false;
   let alertShown = false;
 
-  categorySelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      items[cat].types.forEach(type => {
-        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+let selected = { category: "", type: "", size: "" };
+
+// ✅ Step 1: 항목 분류 버튼 렌더링
+function renderCategories() {
+  const wrap = document.getElementById("category-buttons");
+  wrap.innerHTML = "";
+
+  Object.keys(items).forEach(cat => {
+    const btn = document.createElement("button");
+    btn.textContent = cat;
+    btn.className = "step-btn";
+    btn.dataset.value = cat;
+
+    btn.addEventListener("click", () => {
+      selected.category = cat;
+      renderTypes(cat);
+      document.getElementById("step1").style.display = "none";
+      document.getElementById("step2").style.display = "block";
+    });
+
+    wrap.appendChild(btn);
+  });
+}
+
+// ✅ Step 2: 세부 항목 버튼 렌더링
+function renderTypes(cat) {
+  const wrap = document.getElementById("subcategory-buttons");
+  wrap.innerHTML = "";
+
+  items[cat].types.forEach(type => {
+    const btn = document.createElement("button");
+    btn.textContent = type;
+    btn.className = "step-btn";
+    btn.dataset.value = type;
+
+    btn.addEventListener("click", () => {
+      selected.type = type;
+      renderSizes(cat, type);
+      document.getElementById("step2").style.display = "none";
+      document.getElementById("step3").style.display = "block";
+    });
+
+    wrap.appendChild(btn);
+  });
+}
+
+// ✅ Step 3: 상세 옵션 버튼 렌더링
+function renderSizes(cat, type) {
+  const wrap = document.getElementById("size-buttons");
+  wrap.innerHTML = "";
+
+  const stockMap = items[cat]?.stockMap || {};
+
+  for (const key in stockMap) {
+    const [t, size] = key.split("__");
+    if (t === type) {
+      const stock = stockMap[key] || "X";
+      const btn = document.createElement("button");
+      btn.textContent = `${size} (재고: ${stock})`;
+      btn.className = "step-btn";
+      btn.dataset.value = size;
+      btn.dataset.stock = stock;
+
+      btn.addEventListener("click", () => {
+        selected.size = size;
+
+        document.getElementById("quantity").value = "";
+        document.getElementById("remarks").value = "";
+
+        document.getElementById("step3").style.display = "none";
+        document.getElementById("step4").style.display = "flex";
       });
+
+      wrap.appendChild(btn);
     }
-  });
+  }
+}
 
-  subSelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    const type = subSelect.value;
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-
-    if (items[cat]) {
-      const stockMap = items[cat].stockMap;
-
-      for (const [key, stock] of Object.entries(stockMap)) {
-        const [t, size] = key.split("__");
-        if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
-        }
-      }
-    }
-  });
 
 function formatDate(raw) {
   const d = new Date(raw);
@@ -626,11 +690,12 @@ document.getElementById("closeModal").addEventListener("click", () => {
 let itemList = [];
 
 document.getElementById("addItemBtn").addEventListener("click", () => {
-  const category = categorySelect.value;
-  const subcategory = subSelect.value;
-  const size = sizeSelect.value;
-  const name = nameInput.value;
-  const quantity = parseInt(quantityInput.value, 10);
+  const category = selected.category;
+  const subcategory = selected.type;
+  const size = selected.size;
+  const name = localStorage.getItem("userInfo") || "";
+  const quantity = parseInt(document.getElementById("quantity").value, 10);
+  const remarksInput = document.getElementById("remarks");
   let remarksText = remarksInput.value.trim();
 
   if (!category || !subcategory || !size || !quantity || quantity <= 0) {
@@ -638,8 +703,9 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
     return;
   }
 
-  const selectedSizeOption = sizeSelect.selectedOptions[0];
-  const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
+  const stockMap = items[category]?.stockMap || {};
+  const key = `${subcategory}__${size}`;
+  const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
 
   const 지급수량 = Math.min(quantity, currentStock);
   const 구매요청수량 = Math.max(0, quantity - currentStock);
@@ -660,62 +726,48 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   }
 
   const item = { category, subcategory, size, name, quantity, remarks: remarksText };
-itemList.push(item);
+  itemList.push(item);
 
-// ✅ li 요소 만들기
-const li = document.createElement("li");
+  // ✅ li 요소 만들기
+  const li = document.createElement("li");
 
-// ✅ 표시 텍스트 분리 및 중복 제거
-const displayText = [
-  지급수량 > 0 ? `${지급수량}개 지급` : "",
-  구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : ""
-].filter(Boolean).join(" / ");
+  const displayText = [지급문구, 구매문구].filter(Boolean).join(" / ");
+  const cleanedRemarks = remarksText
+    .replace(displayText, "")
+    .replace(/^ *\/+ */, "")
+    .replace(/ *\/+ *$/, "")
+    .trim();
 
-// ✅ remarksText에서 displayText 제거
-const cleanedRemarks = remarksText
-  .replace(displayText, "")                 // displayText 제거
-  .replace(/^ *\/+ */, "")                  // 앞쪽 슬래시 제거
-  .replace(/ *\/+ *$/, "")                  // ✅ 뒤쪽 슬래시 제거 추가!
-  .trim();
+  li.innerHTML = `
+    <div class="item-text">
+      ${subcategory} (${size}) - [${displayText}]
+      ${cleanedRemarks ? `<br/>${cleanedRemarks}` : ""}
+    </div>
+    <button class="remove-btn">삭제</button>
+  `;
 
+  li.querySelector(".remove-btn").onclick = () => {
+    const index = itemList.findIndex(i =>
+      i.category === category &&
+      i.subcategory === subcategory &&
+      i.size === size &&
+      i.name === name &&
+      i.quantity === quantity &&
+      i.remarks === remarksText
+    );
+    if (index > -1) itemList.splice(index, 1);
+    li.remove();
+  };
 
-// ✅ HTML 텍스트 구성 (백틱 사용!!)
-li.innerHTML = `
-  <div class="item-text">
-    ${subcategory} (${size}) - [${displayText}]
-    ${cleanedRemarks ? `<br/>${cleanedRemarks}` : ""}
-  </div>
-  <button class="remove-btn">삭제</button>
-`;
+  document.getElementById("itemListDisplay").appendChild(li);
 
-// ✅ 삭제 버튼 동작
-const removeBtn = li.querySelector(".remove-btn");
-removeBtn.onclick = () => {
-  const index = itemList.findIndex(i =>
-    i.category === category &&
-    i.subcategory === subcategory &&
-    i.size === size &&
-    i.name === name &&
-    i.quantity === quantity &&
-    i.remarks === remarksText
-  );
-  if (index > -1) {
-    itemList.splice(index, 1);
-  }
-  li.remove();
-};
-
-// ✅ 리스트에 추가
-document.getElementById("itemListDisplay").appendChild(li);
-
-// ✅ 입력 초기화
-categorySelect.value = "";
-subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-quantityInput.value = "";
-remarksInput.value = "";
-nameInput.value = localStorage.getItem("userInfo") || "";
-}); // ←❗❗❗ 이거 빠졌었음!! 추가 버튼 함수 닫는 괄호!!
+  // ✅ 입력 초기화 및 다시 Step 1로
+  document.getElementById("step4").style.display = "none";
+  document.getElementById("quantity").value = "";
+  document.getElementById("remarks").value = "";
+  renderCategories(); // 카테고리 다시 보여줌
+  document.getElementById("step1").style.display = "block";
+});
 
 
 document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
