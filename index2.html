@@ -187,6 +187,8 @@
     <div style="margin-top:10px;">
       <button type="button" id="addItemBtn" style="background:#28a745;">➕ 추가</button>
       <button type="button" id="submitAllBtn" style="background:#007bff;">✅ 신청(제출)</button>
+      <button id="viewPhotos" type="button" style="background-color:#555; color:white; margin-top:10px;">📷 물품 사진 보기</button>
+
     </div>
 
     <div class="message" id="msg"></div>
@@ -387,25 +389,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 });
 
 
-      // 본문 행 생성
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        row.slice(0, 10).forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("myRecordsSection").style.display = "block";
-    })
-    .catch(err => {
-      console.error("신청 내역 로딩 오류:", err);
-      alert("❌ 조회 중 오류가 발생했습니다.");
-    });
+     
 });
 
 
