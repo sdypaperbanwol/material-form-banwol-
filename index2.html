@@ -466,6 +466,60 @@ categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
 const catWrap = document.getElementById("category-buttons");
 catWrap.innerHTML = "";
 
+// ✅ 카테고리마다 버튼 생성
+Object.keys(items).forEach(cat => {
+  // 테스트 로그 찍기
+  console.log("✅ 생성될 카테고리:", cat);  // ← 이게 안 찍히면 cat 값이 비어 있는 겁니다
+
+  // button 요소 만들기
+  const btn = document.createElement("button");
+
+  btn.textContent = cat;   // ✅ 글자 실제로 넣는 부분
+
+  // ✅ 스타일 강력하게 지정
+  btn.style.display = "block";
+  btn.style.margin = "6px auto";
+  btn.style.width = "80%";
+  btn.style.height = "48px";
+  btn.style.padding = "12px 20px";
+  btn.style.borderRadius = "6px";
+  btn.style.border = "1px solid #888";
+  btn.style.backgroundColor = "#ffffff";
+  btn.style.color = "#000000";
+  btn.style.fontSize = "16px";
+  btn.style.fontWeight = "bold";
+  btn.style.fontFamily = "Arial, sans-serif";
+  btn.style.textAlign = "center";
+  btn.style.lineHeight = "normal";
+  btn.style.overflow = "visible";
+  btn.style.cursor = "pointer";
+
+  // ✅ 클릭 시 이벤트
+  btn.addEventListener("click", () => {
+    categorySelect.value = cat;
+    selected.category = cat;
+
+    // 버튼 색상 초기화 후 선택 표시
+    document.querySelectorAll("#category-buttons button").forEach(b => {
+      b.style.backgroundColor = "#ffffff";
+    });
+    btn.style.backgroundColor = "#d1e7dd";
+
+    // 하위 항목 초기화
+    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+
+    if (items[cat]) {
+      items[cat].types.forEach(type => {
+        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+      });
+    }
+  });
+
+  catWrap.appendChild(btn);
+});
+
+
 // 3) 항목별 버튼 생성
 Object.keys(items).forEach(cat => {
   // 숨김 select에도 옵션 하나 넣어 두기 (기존 로직 호환)
