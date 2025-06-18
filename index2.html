@@ -370,7 +370,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const headerNames = desiredIndexes.map(i => data.header[i]);
 
     thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
-  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap; text-align:center; ${i === 0 ? 'min-width:100px;' : ''}">${h}</th>`
+  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap; text-align:center; ${i === 0 ? 'min-width:60px;' : ''}">${h}</th>`
 ).join("") + "</tr>";
 
       tbody.innerHTML = "";
