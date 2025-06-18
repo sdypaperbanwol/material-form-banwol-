@@ -147,10 +147,10 @@
       </div>
     </div>
     
-    <label for="subcategory">세부 항목</label>
-    <select id="subcategory" name="subcategory" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+   <label for="subcategory">세부 항목</label>
+<select id="subcategory" name="subcategory" required style="display: none;"></select>
+<div id="subcategory-buttons" style="display: flex; flex-direction: column; align-items: center; gap: 10px;"></div>
+
 
     <label for="size">상세 옵션</label>
     <select id="size" name="size" required>
@@ -312,15 +312,58 @@ document.addEventListener("DOMContentLoaded", function () {
   let alertShown = false;
 
   categorySelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      items[cat].types.forEach(type => {
-        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+  const cat = categorySelect.value;
+  selected.category = cat;
+
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  document.getElementById("subcategory-buttons").innerHTML = "";  // 버튼 영역 초기화
+
+  if (items[cat]) {
+    items[cat].types.forEach(type => {
+      subSelect.innerHTML += `<option value="${type}">${type}</option>`;  // 숨김용 select
+
+      const btn = document.createElement("button");
+      btn.textContent = type;
+      btn.dataset.value = type;
+      btn.style.display = "block";
+      btn.style.width = "80%";
+      btn.style.padding = "12px";
+      btn.style.border = "1px solid #aaa";
+      btn.style.borderRadius = "6px";
+      btn.style.backgroundColor = "#fff";
+      btn.style.color = "#000";
+      btn.style.fontWeight = "bold";
+      btn.style.fontSize = "15px";
+      btn.style.cursor = "pointer";
+      btn.style.textAlign = "center";
+
+      btn.addEventListener("click", () => {
+        selected.subcategory = type;
+        subSelect.value = type;
+
+        // 버튼 하이라이트
+        document.querySelectorAll("#subcategory-buttons button").forEach(b => {
+          b.style.backgroundColor = "#fff";
+        });
+        btn.style.backgroundColor = "#d1e7dd";
+
+        // 상세 옵션 초기화
+        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        const stockMap = items[cat].stockMap;
+        for (const [key, stock] of Object.entries(stockMap)) {
+          const [t, size] = key.split("__");
+          if (t === type) {
+            sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+          }
+        }
       });
-    }
-  });
+
+      document.getElementById("subcategory-buttons").appendChild(btn);
+    });
+  }
+});
+
 
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
