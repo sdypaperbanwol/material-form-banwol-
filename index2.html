@@ -762,13 +762,13 @@ let selected = {
 
 function renderStep1() {
   currentStep = 1;
-  stepContainer.innerHTML = 
+  stepContainer.innerHTML = `
     <h3>1️⃣ 항목 분류 선택</h3>
     ${Object.keys(items).map(cat =>
-      <button class="step-btn" data-value="${cat}">${cat}</button>
+      `<button class="step-btn" data-value="${cat}">${cat}</button>`
     ).join("")}
     <button id="myRecordsBtnStep" class="sub-btn">📄 내 신청 내역 보기</button>
-  ;
+  `;
 
   document.querySelectorAll(".step-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -785,15 +785,15 @@ function renderStep1() {
 function renderStep2() {
   currentStep = 2;
   const types = items[selected.category]?.types || [];
-  stepContainer.innerHTML = 
+  stepContainer.innerHTML = `
     <h3>2️⃣ 세부 항목 선택 (${selected.category})</h3>
     ${types.map(type =>
-      <button class="step-btn" data-value="${type}">${type}</button>
+      `<button class="step-btn" data-value="${type}">${type}</button>`
     ).join("")}
     <div class="nav-buttons">
       <button onclick="renderStep1()">⬅️ 처음으로</button>
     </div>
-  ;
+  `;
 
   document.querySelectorAll(".step-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -807,23 +807,23 @@ function renderStep3() {
   currentStep = 3;
   const stockMap = items[selected.category]?.stockMap || {};
   const sizes = Object.keys(stockMap)
-    .filter(k => k.startsWith(${selected.subcategory}__))
+    .filter(k => k.startsWith(`${selected.subcategory}__`))
     .map(k => {
       const size = k.split("__")[1];
       const stock = stockMap[k];
       return { size, stock };
     });
 
-  stepContainer.innerHTML = 
+  stepContainer.innerHTML = `
     <h3>3️⃣ 상세 옵션 선택 (${selected.subcategory})</h3>
     ${sizes.map(({ size, stock }) =>
-      <button class="step-btn" data-value="${size}">${size} (재고: ${stock || "X"})</button>
+      `<button class="step-btn" data-value="${size}">${size} (재고: ${stock || "X"})</button>`
     ).join("")}
     <div class="nav-buttons">
       <button onclick="renderStep2()">⬅️ 뒤로가기</button>
       <button onclick="renderStep1()">⏮ 처음으로</button>
     </div>
-  ;
+  `;
 
   document.querySelectorAll(".step-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
@@ -831,8 +831,8 @@ function renderStep3() {
 
       // 값은 select에 대입 (submit 용도)
       document.getElementById("category").value = selected.category;
-      document.getElementById("subcategory").innerHTML = <option selected>${selected.subcategory}</option>;
-      document.getElementById("size").innerHTML = <option selected>${selected.size}</option>;
+      document.getElementById("subcategory").innerHTML = `<option selected>${selected.subcategory}</option>`;
+      document.getElementById("size").innerHTML = `<option selected>${selected.size}</option>`;
 
       // 다음 단계 진입
       stepContainer.style.display = "none";
@@ -841,5 +841,6 @@ function renderStep3() {
   });
 }
 </script>
+
 </body>
 </html>
