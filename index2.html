@@ -453,22 +453,26 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 //  });
   
 
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-          renderCategoryButtons();
-  })
-      nameInput.value = localStorage.getItem("userInfo") || "";
-      console.log("items:", items);
-    })
-    .catch(err => {
-      console.error("API 로드 에러:", err);
+ fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    items = data;
+    categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    Object.keys(items).forEach(cat => {
+      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
     });
+
+    // ✅ 여기서 버튼 렌더링 호출
+    renderCategoryButtons();
+
+    // ✅ 여기서 nameInput 값 설정
+    nameInput.value = localStorage.getItem("userInfo") || "";
+    console.log("items:", items);
+  })
+  .catch(err => {
+    console.error("API 로드 에러:", err);
+  });
+
 
   document.getElementById("resetBtn").addEventListener("click", () => {
     alertShown = false;
