@@ -814,6 +814,7 @@ function renderStep3() {
       return { size, stock };
     });
 
+  // ✅ HTML만 innerHTML로 넣기
   stepContainer.innerHTML = `
     <h3>3️⃣ 상세 옵션 선택 (${selected.subcategory})</h3>
     ${sizes.map(({ size, stock }) =>
@@ -825,22 +826,23 @@ function renderStep3() {
     </div>
   `;
 
+  // ✅ 이벤트 리스너는 자바스크립트로 따로 추가
   document.querySelectorAll(".step-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
       selected.size = e.target.dataset.value;
 
-      // 값은 select에 대입 (submit 용도)
+      // 값 채워주기 (submit용 hidden select)
       document.getElementById("category").value = selected.category;
       document.getElementById("subcategory").innerHTML = `<option selected>${selected.subcategory}</option>`;
       document.getElementById("size").innerHTML = `<option selected>${selected.size}</option>`;
 
-      // 다음 단계 진입
+      // UI 전환
       stepContainer.style.display = "none";
       document.getElementById("mainFormSection").style.display = "block";
     });
   });
 }
-</script>
+
 
 </body>
 </html>
