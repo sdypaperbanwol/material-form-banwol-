@@ -153,9 +153,13 @@
 
 
     <label for="size">상세 옵션</label>
-    <select id="size" name="size" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+<select id="size" name="size" required style="display: none;">
+  <option value="">-- 선택하세요 --</option>
+</select>
+
+<!-- ✅ 새로 추가할 사이즈 버튼 영역 -->
+<div id="size-buttons" style="display: flex; flex-direction: column; align-items: center; gap: 10px;"></div>
+
 
     <label for="name">작성자</label>
     <input type="text" id="name" name="name" readonly />
@@ -569,21 +573,57 @@ Object.keys(items).forEach(cat => {
         selected.subcategory = type;
         subSelect.value = type;
 
-        // 버튼 하이라이트
-        document.querySelectorAll("#subcategory-buttons button").forEach(b => {
-          b.style.backgroundColor = "#fff";
-        });
-        btn2.style.backgroundColor = "#d1e7dd";
+       // 버튼 하이라이트
+document.querySelectorAll("#subcategory-buttons button").forEach(b => {
+  b.style.backgroundColor = "#fff";
+});
+btn2.style.backgroundColor = "#d1e7dd";
 
-        // 사이즈 초기화
-        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-        const stockMap = items[cat].stockMap;
-        for (const [key, stock] of Object.entries(stockMap)) {
-          const [t, size] = key.split("__");
-          if (t === type) {
-            sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
-          }
-        }
+// 사이즈 초기화
+sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+document.getElementById("size-buttons").innerHTML = "";
+
+const stockMap = items[cat].stockMap;
+
+for (const [key, stock] of Object.entries(stockMap)) {
+  const [t, size] = key.split("__");
+  if (t === type) {
+    sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;  // 숨김 select
+
+    const btn3 = document.createElement("button");
+    btn3.textContent = `${size} (재고: ${stock || "X"})`;
+    btn3.dataset.value = size;
+
+    btn3.style.display = "block";
+    btn3.style.width = "80%";
+    btn3.style.padding = "12px";
+    btn3.style.border = "1px solid #aaa";
+    btn3.style.borderRadius = "6px";
+    btn3.style.backgroundColor = "#fff";
+    btn3.style.color = "#000";
+    btn3.style.fontWeight = "bold";
+    btn3.style.fontSize = "15px";
+    btn3.style.cursor = "pointer";
+    btn3.style.textAlign = "center";
+
+    btn3.addEventListener("click", () => {
+      selected.size = size;
+      sizeSelect.value = size;
+
+      // 버튼 하이라이트
+      document.querySelectorAll("#size-buttons button").forEach(b => {
+        b.style.backgroundColor = "#fff";
+      });
+      btn3.style.backgroundColor = "#d1e7dd";
+
+      // 이후 수량/비고 입력 영역 보여주기
+      document.getElementById("inputFields").style.display = "block";
+    });
+
+    document.getElementById("size-buttons").appendChild(btn3);
+  }
+}
+
       });
 
       document.getElementById("subcategory-buttons").appendChild(btn2);
