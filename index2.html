@@ -517,10 +517,20 @@ fetch(API_URL)
   .then(res => res.json())
   .then(data => {
     items = data;
-    renderCategories(); // 먼저 호출
-    nameInput.value = localStorage.getItem("userInfo") || "";
-  })
 
+    if (Object.keys(items).length === 0) {
+      console.error("❌ 불러온 items가 비어있습니다.");
+      return;
+    }
+
+    nameInput.value = localStorage.getItem("userInfo") || "";
+
+    // ✅ Step 1 화면 보이도록 강제 표시
+    document.getElementById("step1").style.display = "block";
+
+    // ✅ 항목 분류 버튼 생성
+    renderCategories();
+  })
   .catch(err => {
     console.error("API 로드 에러:", err);
   });
