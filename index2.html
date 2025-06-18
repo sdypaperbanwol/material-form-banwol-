@@ -535,42 +535,49 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 </script>
 
 <script>
-document.getElementById("viewPhotos").addEventListener("click", () => {
-  const category = document.getElementById("category").value.trim();
-  if (!category) {
-    alert("물품 종류를 먼저 선택해주세요.");
-    return;
-  }
-
-  fetch(API_URL + "?mode=photo")
-    .then(res => res.json())
-    .then(photoMap => {
-      const urls = photoMap[category];
-      const container = document.getElementById("photoContent");
-      container.innerHTML = "";
-
-      if (!urls || urls.length === 0) {
-        container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
-      } else {
-        urls.forEach(url => {
-          const fileName = url.split("/").pop().split(".")[0];
-          const wrapper = document.createElement("div");
-          wrapper.style.marginBottom = "20px";
-          wrapper.innerHTML = `
-            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
-            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-          `;
-          container.appendChild(wrapper);
-        });
+document.addEventListener("DOMContentLoaded", () => {
+  const viewPhotosBtn = document.getElementById("viewPhotos");
+  if (viewPhotosBtn) {
+    viewPhotosBtn.addEventListener("click", () => {
+      const category = document.getElementById("category").value.trim();
+      if (!category) {
+        alert("물품 종류를 먼저 선택해주세요.");
+        return;
       }
 
-      document.getElementById("photoModal").style.display = "block";
+      fetch(API_URL + "?mode=photo")
+        .then(res => res.json())
+        .then(photoMap => {
+          const urls = photoMap[category];
+          const container = document.getElementById("photoContent");
+          container.innerHTML = "";
+
+          if (!urls || urls.length === 0) {
+            container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
+          } else {
+            urls.forEach(url => {
+              const fileName = url.split("/").pop().split(".")[0];
+              const wrapper = document.createElement("div");
+              wrapper.style.marginBottom = "20px";
+              wrapper.innerHTML = `
+                <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+                <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+              `;
+              container.appendChild(wrapper);
+            });
+          }
+
+          document.getElementById("photoModal").style.display = "block";
+        });
     });
+  }
+
+  // 닫기 버튼 이벤트도 이 안에 같이 넣어도 됩니다
+  document.getElementById("closeModal").addEventListener("click", () => {
+    document.getElementById("photoModal").style.display = "none";
+  });
 });
 
-document.getElementById("closeModal").addEventListener("click", () => {
-  document.getElementById("photoModal").style.display = "none";
-});
 </script>
 
 <script>
