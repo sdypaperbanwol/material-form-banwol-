@@ -10,6 +10,22 @@
       font-family: 'Arial', sans-serif;
       padding: 20px;
     }
+
+    .step-btn {
+  display: inline-block;
+  margin: 6px;
+  padding: 10px 16px;
+  font-size: 15px;
+  border: none;
+  border-radius: 6px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.step-btn:hover {
+  background-color: #e0e0e0;
+}
+
     
     form, #login-section {
       display: flex;
@@ -593,12 +609,13 @@ document.getElementById("closeModal").addEventListener("click", () => {
 let itemList = [];
 
 document.getElementById("addItemBtn").addEventListener("click", () => {
-  const category = categorySelect.value;
-  const subcategory = subSelect.value;
-  const size = sizeSelect.value;
-  const name = nameInput.value;
-  const quantity = parseInt(quantityInput.value, 10);
-  let remarksText = remarksInput.value.trim();
+const category = selection.category;
+const subcategory = selection.subcategory;
+const size = selection.size;
+const name = nameInput.value;
+const quantity = parseInt(quantityInput.value, 10);
+let remarksText = remarksInput.value.trim();
+
 
   if (!category || !subcategory || !size || !quantity || quantity <= 0) {
     alert("⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.");
