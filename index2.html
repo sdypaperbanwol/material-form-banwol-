@@ -818,7 +818,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return; // 오늘은 안 보이게
   }
 
-  fetch(https://script.google.com/macros/s/AKfycbztIBbKPR3SGVImiXbdRE86km4wGMlKfA9Aq3knj--sYMl64j7sFYJRWniYEad_ZR0O/execmode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbztIBbKPR3SGVImiXbdRE86km4wGMlKfA9Aq3knj--sYMl64j7sFYJRWniYEad_ZR0O/exec?mode=notice")
+
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
