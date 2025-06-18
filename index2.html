@@ -524,6 +524,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
       nameInput.value = localStorage.getItem("userInfo") || "";
+      renderCategories();
       console.log("items:", items);
     })
     .catch(err => {
