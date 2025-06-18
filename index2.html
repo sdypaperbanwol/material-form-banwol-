@@ -574,12 +574,7 @@ const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
           remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
         }
 
-        categorySelect.disabled = true;
-        subSelect.disabled = true;
-        sizeSelect.disabled = true;
-        quantityInput.disabled = true;
-
-        alertShown = true;
+          alertShown = true;
         return; // 제출 중단
       } else {
         if (!remarksText.includes("지급")) {
@@ -611,9 +606,6 @@ const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
       isSubmitting = false;
       alertShown = false;
 
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
       quantityInput.disabled = false;
 
       if (data.result === "success") {
@@ -643,7 +635,8 @@ const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
 
 <script>
 document.getElementById("viewPhotos").addEventListener("click", () => {
-  const category = document.getElementById("category").value.trim();
+  const category = selected.category;
+
   if (!category) {
     alert("물품 종류를 먼저 선택해주세요.");
     return;
