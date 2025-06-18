@@ -546,13 +546,16 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       msgDiv.style.color = "red";
     });
 
-</script>
+  }); // ✅ submitAllBtn 클릭 이벤트 닫는 중괄호
+});   // ✅ document.addEventListener 닫는 중괄호
+</script> <!-- ✅ 첫 번째 <script> 블록 끝 -->
 
 <script>
 document.getElementById("viewPhotos").addEventListener("click", () => {
   const category = document.getElementById("category").value.trim();
   if (!category) {
     alert("물품 종류를 먼저 선택해주세요.");
+
     return;
   }
 
