@@ -541,7 +541,56 @@ Object.keys(items).forEach(cat => {
   btn.addEventListener("click", () => {
     categorySelect.value = cat;
     selected.category = cat;
+  // 세부 항목 초기화
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  document.getElementById("subcategory-buttons").innerHTML = "";
 
+  if (items[cat]) {
+    items[cat].types.forEach(type => {
+      subSelect.innerHTML += `<option value="${type}">${type}</option>`;  // 숨김 select
+
+      const btn2 = document.createElement("button");
+      btn2.textContent = type;
+      btn2.dataset.value = type;
+      btn2.style.display = "block";
+      btn2.style.width = "80%";
+      btn2.style.padding = "12px";
+      btn2.style.border = "1px solid #aaa";
+      btn2.style.borderRadius = "6px";
+      btn2.style.backgroundColor = "#fff";
+      btn2.style.color = "#000";
+      btn2.style.fontWeight = "bold";
+      btn2.style.fontSize = "15px";
+      btn2.style.cursor = "pointer";
+      btn2.style.textAlign = "center";
+
+      btn2.addEventListener("click", () => {
+        selected.subcategory = type;
+        subSelect.value = type;
+
+        // 버튼 하이라이트
+        document.querySelectorAll("#subcategory-buttons button").forEach(b => {
+          b.style.backgroundColor = "#fff";
+        });
+        btn2.style.backgroundColor = "#d1e7dd";
+
+        // 사이즈 초기화
+        sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+        const stockMap = items[cat].stockMap;
+        for (const [key, stock] of Object.entries(stockMap)) {
+          const [t, size] = key.split("__");
+          if (t === type) {
+            sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+          }
+        }
+      });
+
+      document.getElementById("subcategory-buttons").appendChild(btn2);
+    });
+  }
+
+    
     // 버튼 색상 초기화 후 선택 표시
     document.querySelectorAll("#category-buttons button").forEach(b => {
       b.style.backgroundColor = "#ffffff";
