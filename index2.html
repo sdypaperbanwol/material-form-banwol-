@@ -461,6 +461,8 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       Object.keys(items).forEach(cat => {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
+          renderCategoryButtons();
+  })
       nameInput.value = localStorage.getItem("userInfo") || "";
       console.log("items:", items);
     })
