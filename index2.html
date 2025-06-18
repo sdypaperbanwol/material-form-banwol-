@@ -348,6 +348,35 @@ function renderSubcategories(cat) {
     subWrap.appendChild(btn);
   });
 }
+  function renderSizes(cat, type) {
+  const sizeWrap = document.getElementById("size-buttons");
+  sizeWrap.innerHTML = "";
+  selected.size = "";
+
+  const stockMap = items[cat]?.stockMap || {};
+
+  for (const key in stockMap) {
+    const [t, size] = key.split("__");
+    if (t === type) {
+      const stock = stockMap[key] || "X";
+      const btn = document.createElement("button");
+      btn.textContent = ${size} (재고: ${stock});
+      btn.dataset.value = size;
+
+      btn.addEventListener("click", () => {
+        selected.size = size;
+
+        // 선택 효과
+        document.querySelectorAll("#size-buttons button").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+
+        // size 선택 후 다음 입력 필드로 넘어가게 할 수도 있음
+      });
+
+      sizeWrap.appendChild(btn);
+    }
+  }
+}
 const quantityInput = document.getElementById("quantity");
 const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
