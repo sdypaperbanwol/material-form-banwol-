@@ -136,8 +136,7 @@
 
 <!-- ✅ 버튼 UI 컨테이너 추가 -->
 <div id="category-buttons"
-     style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-
+     style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; justify-content: center;"></div>
 
     <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
 
@@ -474,14 +473,15 @@ Object.keys(items).forEach(cat => {
 
   // 버튼 요소
   const btn = document.createElement("button");
-  btn.textContent = cat;
-  btn.dataset.value = cat;
   btn.style.padding = "10px 16px";
-  btn.style.borderRadius = "6px";
-  btn.style.border = "1px solid #ccc";
-  btn.style.background = "#fff";
-  btn.style.cursor = "pointer";
-  btn.style.margin = "4px";
+btn.style.borderRadius = "6px";
+btn.style.border = "1px solid #888";
+btn.style.background = "#ffffff";           // 기본 배경: 흰색
+btn.style.color = "#333";                   // ✅ 글자색: 진한 회색
+btn.style.fontWeight = "bold";              // ✅ 글자 두껍게
+btn.style.cursor = "pointer";
+btn.style.margin = "4px";
+
 
   // 클릭 이벤트
   btn.addEventListener("click", () => {
