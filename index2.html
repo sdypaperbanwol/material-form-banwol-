@@ -162,16 +162,23 @@
 
 <!-- ✅ 수량 + 비고 입력 영역 (초기에는 숨김) -->
 <div id="inputFields" style="display: none; margin-top: 20px; text-align: center;">
-  <div style="margin-bottom: 10px;">
-    <label for="qty">수량</label>
-    <input type="number" id="qty" name="qty" min="1" required style="width: 80px; margin-left: 8px;" />
-  </div>
-  <div style="margin-bottom: 10px;">
-    <label for="remarks">비고</label>
-    <input type="text" id="remarks" name="remarks" style="width: 70%;" />
-  </div>
+ <!-- 수량/비고 입력 필드 -->
+<div id="inputFields" style="display: none;">
+  <label for="qty">수량</label>
+  <input type="number" id="qty" min="1" />
+
+  <label for="remarks">비고</label>
+  <textarea id="remarks" rows="2"></textarea>
+
   <button type="button" id="addItemBtn">항목 추가</button>
 </div>
+
+<!-- ✅ 추가된 항목 표시 영역 -->
+<div id="addedItems" style="margin-top: 30px;">
+  <h4>📝 선택한 항목 목록</h4>
+  <ul id="itemListUl" style="padding-left: 20px;"></ul>
+</div>
+
 
 
 
@@ -1133,25 +1140,38 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ✅ 항목 추가 버튼 이벤트
-  document.getElementById("addItemBtn").addEventListener("click", () => {
-    const qty = document.getElementById("qty").value;
-    const remarks = document.getElementById("remarks").value;
+ const itemList = [];  // ✅ 제일 위에 한 번만 선언
 
-    if (!selected.category || !selected.subcategory || !selected.size) {
-      alert("항목을 모두 선택해 주세요.");
-      return;
-    }
+document.getElementById("addItemBtn").addEventListener("click", () => {
+  const qty = document.getElementById("qty").value;
+  const remarks = document.getElementById("remarks").value;
 
-    if (!qty || qty <= 0) {
-      alert("수량을 입력해 주세요.");
-      return;
-    }
+  if (!selected.category || !selected.subcategory || !selected.size) {
+    alert("항목을 모두 선택해 주세요.");
+    return;
+  }
 
-    const itemStr = `${selected.category} > ${selected.subcategory} > ${selected.size} - ${qty}개`;
-    const remarkStr = remarks ? `비고: ${remarks}` : "";
+  if (!qty || qty <= 0) {
+    alert("수량을 입력해 주세요.");
+    return;
+  }
 
-    alert(`✅ 추가된 항목:\n${itemStr}\n${remarkStr}`);
-  });
+  const itemStr = `${selected.category} > ${selected.subcategory} > ${selected.size} - ${qty}개`;
+  const remarkStr = remarks ? `비고: ${remarks}` : "";
+  const displayText = `${itemStr}${remarkStr ? " / " + remarkStr : ""}`;
+
+  itemList.push({ ...selected, qty, remarks });
+
+  const li = document.createElement("li");
+  li.textContent = displayText;
+  document.getElementById("itemListUl").appendChild(li);
+
+  // 선택값/입력 초기화
+  document.getElementById("qty").value = "";
+  document.getElementById("remarks").value = "";
+  document.getElementById("inputFields").style.display = "none";
+});
+
 });
 
 </script>
