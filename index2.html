@@ -306,9 +306,7 @@ function verifyUser() {
 
 document.getElementById("verifyBtn").addEventListener("click", verifyUser);
 
-const categorySelect = document.getElementById("category");
-const subSelect = document.getElementById("subcategory");
-const sizeSelect = document.getElementById("size");
+
 const quantityInput = document.getElementById("quantity");
 const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
@@ -530,11 +528,7 @@ fetch(API_URL)
     alertShown = false;
     isSubmitting = false;
     materialForm.reset();
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
+    
     quantityInput.disabled = false;
     nameInput.value = localStorage.getItem("userInfo") || "";
     msgDiv.textContent = "";
@@ -548,7 +542,10 @@ fetch(API_URL)
     e.preventDefault();
     if (isSubmitting) return;
 
-    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
+    const stockMap = items[selected.category]?.stockMap || {};
+const key = `${selected.type}__${selected.size}`;
+const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
+
     const requestedQty = parseInt(quantityInput.value, 10);
     let remarksText = remarksInput.value.trim();
 
@@ -594,9 +591,10 @@ fetch(API_URL)
     }
 
     const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
+  category: selected.category,
+  subcategory: selected.type,
+  size: selected.size,
+
       name: nameInput.value,
       quantity: String(quantityInput.value),
       remarks: remarksInput.value
