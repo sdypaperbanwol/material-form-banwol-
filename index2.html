@@ -160,6 +160,20 @@
 <!-- ✅ 새로 추가할 사이즈 버튼 영역 -->
 <div id="size-buttons" style="display: flex; flex-direction: column; align-items: center; gap: 10px;"></div>
 
+<!-- ✅ 수량 + 비고 입력 영역 (초기에는 숨김) -->
+<div id="inputFields" style="display: none; margin-top: 20px; text-align: center;">
+  <div style="margin-bottom: 10px;">
+    <label for="qty">수량</label>
+    <input type="number" id="qty" name="qty" min="1" required style="width: 80px; margin-left: 8px;" />
+  </div>
+  <div style="margin-bottom: 10px;">
+    <label for="remarks">비고</label>
+    <input type="text" id="remarks" name="remarks" style="width: 70%;" />
+  </div>
+  <button type="button" id="addItemBtn">항목 추가</button>
+</div>
+
+
 
     <label for="name">작성자</label>
     <input type="text" id="name" name="name" readonly />
@@ -1007,24 +1021,21 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 </div>
   <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+  // ✅ 공지 모달 처리
+  const todayKey = new Date().toISOString().split("T")[0];
   const hiddenDay = localStorage.getItem("hideNoticeDate");
 
-  if (hiddenDay === todayKey) {
-    console.log("📢 오늘 공지사항 안 보기 설정됨.");
-    return; // 오늘은 안 보이게
+  if (hiddenDay !== todayKey) {
+    fetch("https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec?mode=notice")
+      .then(res => res.json())
+      .then(data => {
+        const notice = data.notice?.trim();
+        if (notice) {
+          document.getElementById("noticeContent").textContent = notice;
+          document.getElementById("noticeModal").style.display = "flex";
+        }
+      });
   }
-
-  fetch("https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec?mode=notice")
-
-    .then(res => res.json())
-    .then(data => {
-      const notice = data.notice?.trim();
-      if (notice) {
-        document.getElementById("noticeContent").textContent = notice;
-        document.getElementById("noticeModal").style.display = "flex";
-      }
-    });
 
   document.getElementById("closeNotice").addEventListener("click", () => {
     document.getElementById("noticeModal").style.display = "none";
@@ -1034,7 +1045,115 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("hideNoticeDate", todayKey);
     document.getElementById("noticeModal").style.display = "none";
   });
+
+  // ✅ 항목 선택 기능 처리
+  const subSelect = document.getElementById("subcategory");
+  const sizeSelect = document.getElementById("size");
+  const categoryWrap = document.getElementById("category-buttons");
+
+  let selected = { category: "", subcategory: "", size: "" };
+
+  for (const cat in items) {
+    const btn = document.createElement("button");
+    btn.textContent = cat;
+    btn.className = "step-btn";
+
+    btn.addEventListener("click", () => {
+      selected.category = cat;
+      document.querySelectorAll("#category-buttons button").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+
+      subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      document.getElementById("subcategory-buttons").innerHTML = "";
+
+      if (items[cat]) {
+        items[cat].types.forEach(type => {
+          subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+
+          const btn2 = document.createElement("button");
+          btn2.textContent = type;
+          btn2.className = "step-btn";
+
+          btn2.addEventListener("click", () => {
+            selected.subcategory = type;
+            subSelect.value = type;
+
+            document.querySelectorAll("#subcategory-buttons button").forEach(b => {
+              b.style.backgroundColor = "#fff";
+            });
+            btn2.style.backgroundColor = "#d1e7dd";
+
+            sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+            document.getElementById("size-buttons").innerHTML = "";
+
+            const stockMap = items[cat].stockMap;
+            for (const [key, stock] of Object.entries(stockMap)) {
+              const [t, size] = key.split("__");
+              if (t === type) {
+                sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+
+                const btn3 = document.createElement("button");
+                btn3.textContent = `${size} (재고: ${stock || "X"})`;
+                btn3.dataset.value = size;
+                btn3.style.display = "block";
+                btn3.style.width = "80%";
+                btn3.style.padding = "12px";
+                btn3.style.border = "1px solid #aaa";
+                btn3.style.borderRadius = "6px";
+                btn3.style.backgroundColor = "#fff";
+                btn3.style.color = "#000";
+                btn3.style.fontWeight = "bold";
+                btn3.style.fontSize = "15px";
+                btn3.style.cursor = "pointer";
+                btn3.style.textAlign = "center";
+
+                btn3.addEventListener("click", () => {
+                  selected.size = size;
+                  sizeSelect.value = size;
+
+                  document.querySelectorAll("#size-buttons button").forEach(b => {
+                    b.style.backgroundColor = "#fff";
+                  });
+                  btn3.style.backgroundColor = "#d1e7dd";
+
+                  document.getElementById("inputFields").style.display = "block";
+                });
+
+                document.getElementById("size-buttons").appendChild(btn3);
+              }
+            }
+          });
+
+          document.getElementById("subcategory-buttons").appendChild(btn2);
+        });
+      }
+    });
+
+    categoryWrap.appendChild(btn);
+  }
+
+  // ✅ 항목 추가 버튼 이벤트
+  document.getElementById("addItemBtn").addEventListener("click", () => {
+    const qty = document.getElementById("qty").value;
+    const remarks = document.getElementById("remarks").value;
+
+    if (!selected.category || !selected.subcategory || !selected.size) {
+      alert("항목을 모두 선택해 주세요.");
+      return;
+    }
+
+    if (!qty || qty <= 0) {
+      alert("수량을 입력해 주세요.");
+      return;
+    }
+
+    const itemStr = `${selected.category} > ${selected.subcategory} > ${selected.size} - ${qty}개`;
+    const remarkStr = remarks ? `비고: ${remarks}` : "";
+
+    alert(`✅ 추가된 항목:\n${itemStr}\n${remarkStr}`);
+  });
 });
+
 </script>
 
 </body>
