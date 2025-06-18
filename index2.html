@@ -473,16 +473,18 @@ Object.keys(items).forEach(cat => {
 
   // 버튼 요소
   const btn = document.createElement("button");
-btn.style.display = "block";                  // 한 줄에 하나씩
-btn.style.margin = "6px auto";                // 중앙 정렬
+btn.style.display = "block";
+btn.style.margin = "6px auto";
+btn.style.width = "80%";
 btn.style.padding = "12px 20px";
-btn.style.width = "80%";                      // 버튼 너비 고정
 btn.style.borderRadius = "6px";
 btn.style.border = "1px solid #888";
-btn.style.background = "#ffffff";
-btn.style.color = "#333";
+btn.style.backgroundColor = "#ffffff";  // 배경 흰색
+btn.style.color = "#111111";           // ✅ 글자색 진하게
+btn.style.fontSize = "16px";           // ✅ 글자 크기 키우기
 btn.style.fontWeight = "bold";
 btn.style.cursor = "pointer";
+btn.style.textAlign = "center";
 
 
   // 클릭 이벤트
