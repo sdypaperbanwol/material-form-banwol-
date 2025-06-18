@@ -369,15 +369,63 @@ function renderSubcategories(cat) {
         // 선택 효과
         document.querySelectorAll("#size-buttons button").forEach(b => b.classList.remove("selected"));
         btn.classList.add("selected");
-document.getElementById("inputFields").style.display = "block";
 
-        // size 선택 후 다음 입력 필드로 넘어가게 할 수도 있음
+        // 수량/비고 입력창 보이기
+        document.getElementById("inputFields").style.display = "block";
       });
 
       sizeWrap.appendChild(btn);
     }
   }
 }
+const itemList = [];
+
+document.getElementById("addItemBtn").addEventListener("click", () => {
+  const qty = document.getElementById("quantity").value.trim();
+  const remarks = document.getElementById("remarks").value.trim();
+
+  if (!qty || isNaN(qty) || parseInt(qty) <= 0) {
+    alert("수량을 정확히 입력해주세요.");
+    return;
+  }
+
+  const item = {
+    category: selected.category,
+    subcategory: selected.subcategory,
+    size: selected.size,
+    qty: parseInt(qty),
+    remarks
+  };
+
+  itemList.push(item);
+  updatePreview();
+
+  // 다음 항목 입력 준비
+  selected.category = "";
+  selected.subcategory = "";
+  selected.size = "";
+  document.getElementById("category-buttons").style.display = "flex";
+  document.getElementById("subcategory-buttons").style.display = "none";
+  document.getElementById("size-buttons").style.display = "none";
+  document.getElementById("inputFields").style.display = "none";
+
+  document.getElementById("quantity").value = "";
+  document.getElementById("remarks").value = "";
+});
+
+function updatePreview() {
+  const list = document.getElementById("itemListDisplay");
+  list.innerHTML = "";
+
+  itemList.forEach((item, index) => {
+    const li = document.createElement("li");
+    li.style.listStyle = "none";
+    li.style.padding = "4px 0";
+    li.textContent = `${index + 1}. ${item.category} > ${item.subcategory} > ${item.size} / ${item.qty}개 / ${item.remarks}`;
+    list.appendChild(li);
+  });
+}
+
 const quantityInput = document.getElementById("quantity");
 const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
