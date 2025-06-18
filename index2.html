@@ -360,7 +360,7 @@ function renderSubcategories(cat) {
     if (t === type) {
       const stock = stockMap[key] || "X";
       const btn = document.createElement("button");
-      btn.textContent = ${size} (재고: ${stock});
+      btn.textContent = `${size} (재고: ${stock})`;
       btn.dataset.value = size;
 
       btn.addEventListener("click", () => {
