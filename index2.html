@@ -227,7 +227,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwB-mrpCFJDhh1nCWpwm65HemGmOQjlIyuJg2PM16_OMO6DxwT-vPUmRqY6JBKR25d3/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -725,73 +725,53 @@ nameInput.value = localStorage.getItem("userInfo") || "";
 
 
 document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
-  // ✅ 사용자가 수동 클릭한 경우에만 실행되도록
   if (!e.isTrusted) return;
 
-  if (itemList.length === 0) {
-    alert("신청할 항목이 없습니다.");
+  if (itemList.length !== 1) {
+    alert("사진 업로드는 한 항목만 선택했을 때만 가능합니다.");
     return;
   }
 
   document.getElementById("loadingOverlay").style.display = "flex";
 
-
   try {
-    const 완료메시지목록 = [];
+    const item = itemList[0]; // 한 항목만 가능
+    const files = document.getElementById("photos").files;
+    const formData = new FormData();
 
-    for (const item of itemList) {
-      const stockMap = items[item.category]?.stockMap || {};
-      const key = `${item.subcategory}__${item.size}`;
-      const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
+    formData.append("category", item.category);
+    formData.append("subcategory", item.subcategory);
+    formData.append("size", item.size);
+    formData.append("name", item.name);
+    formData.append("quantity", item.quantity);
+    formData.append("remarks", item.remarks);
+    formData.append("mode", "image");
 
-      const 지급수량 = Math.min(item.quantity, currentStock);
-      const 구매요청수량 = Math.max(0, item.quantity - currentStock);
+    Array.from(files).slice(0, 3).forEach((file, i) => {
+      formData.append(`photo${i + 1}`, file);
+    });
 
-      const formData = new URLSearchParams({
-        category: item.category,
-        subcategory: item.subcategory,
-        size: item.size,
-        name: item.name,
-        quantity: String(item.quantity),
-        remarks: item.remarks
-      });
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: formData
+    });
 
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP error: ${res.status}`);
-      }
-      const data = await res.json();
+    const data = await res.json();
 
-      let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
-      if (지급수량 > 0 && 구매요청수량 > 0) {
-        msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
-      } else if (지급수량 > 0) {
-        msg += `${지급수량}개 신청 완료`;
-      } else if (구매요청수량 > 0) {
-        msg += `${구매요청수량}개 구매 요청 완료`;
-      }
-      완료메시지목록.push(msg);
-    }
-
-    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
 
-    alert("✅ 모든 신청이 저장되었습니다!\n\n" + 완료메시지목록.join("\n"));
-    itemList = [];
-    document.getElementById("itemListDisplay").innerHTML = "";
-    location.reload();
-
+    if (data.result === "success") {
+      alert("✅ 신청이 저장되었습니다!");
+      location.reload();
+    } else {
+      alert("❌ 신청 실패: " + (data.message || ""));
+    }
   } catch (err) {
     console.error("에러:", err);
-    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
-    alert("❌ 네트워크 오류 또는 서버 응답 실패");
+    alert("❌ 네트워크 오류 또는 서버 에러");
   }
 });
-
 
 </script>
 
@@ -825,7 +805,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return; // 오늘은 안 보이게
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbwB-mrpCFJDhh1nCWpwm65HemGmOQjlIyuJg2PM16_OMO6DxwT-vPUmRqY6JBKR25d3/exec?mode=notice")
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
