@@ -368,12 +368,20 @@ function checkPhotoLimit(input) {
       delBtn.style.cursor = "pointer";
       delBtn.style.fontSize = "12px";
 
-      delBtn.onclick = () => {
-        const idx = uploadedFiles.indexOf(file);
-        if (idx > -1) uploadedFiles.splice(idx, 1);  // 배열에서 제거
-        wrapper.remove(); // 썸네일 제거
-        document.getElementById("fileCount").textContent = `📷 ${uploadedFiles.length}장 업로드됨`;
-      };
+     delBtn.onclick = () => {
+  const idx = uploadedFiles.indexOf(file);
+  if (idx > -1) uploadedFiles.splice(idx, 1);
+  wrapper.remove();
+
+  // ✅ 삭제 후 업로드 개수 표시 갱신
+  const fileCount = document.getElementById("fileCount");
+  if (uploadedFiles.length > 0) {
+    fileCount.textContent = `📷 ${uploadedFiles.length}장 업로드됨`;
+  } else {
+    fileCount.textContent = "사진이 선택되지 않았습니다";
+  }
+};
+
 
       wrapper.appendChild(img);
       wrapper.appendChild(delBtn);
