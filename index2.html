@@ -310,7 +310,7 @@ function verifyUser() {
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
-      const fullName = ${empId} ${empName};
+      const fullName = `${empId} ${empName}`;
       if (data.active === "Y" && !isMobileDevice()) {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
@@ -444,7 +444,7 @@ document.addEventListener("DOMContentLoaded", function () {
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
     const type = subSelect.value;
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    subSelect.innerHTML += `<option value="${type}">${type}</option>`;
 
     if (items[cat]) {
       const stockMap = items[cat].stockMap;
@@ -452,7 +452,7 @@ document.addEventListener("DOMContentLoaded", function () {
       for (const [key, stock] of Object.entries(stockMap)) {
         const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += <option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>;
+          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
         }
       }
     }
@@ -494,7 +494,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const headerNames = desiredIndexes.map(i => data.header[i]);
 
     thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
-  <th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center; ${i === 0 ? 'min-width:40px;' : ''}">${h}</th>
+  <th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center; ${i === 0 ? 'min-width:40px;' : ''}">${h}</th>`
 ).join("") + "</tr>";
 
       tbody.innerHTML = "";
@@ -523,48 +523,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 });
 
 
-  const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
 
-  fetch(${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)})
-    .then(res => res.json())
-    .then(data => {
-      if (data.result !== "success") {
-        alert("❌ 신청 내역을 불러오지 못했습니다.");
-        return;
-      }
-
-      const table = document.getElementById("myRecordsTable");
-      const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-
-      // 헤더 생성
-      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
-  <th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>
-).join("") + "</tr>";
-
-
-      // 본문 행 생성
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        row.slice(0, 10).forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("myRecordsSection").style.display = "block";
-    })
-    .catch(err => {
-      console.error("신청 내역 로딩 오류:", err);
-      alert("❌ 조회 중 오류가 발생했습니다.");
-    });
-});
-
-  
 
   fetch(API_URL)
     .then(res => res.json())
@@ -572,7 +531,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       items = data;
       categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += <option value="${cat}">${cat}</option>;
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
       nameInput.value = localStorage.getItem("userInfo") || "";
       console.log("items:", items);
@@ -787,7 +746,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
 
   if (구매요청수량 > 0) {
     if (currentStock > 0) {
-      alert(⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.);
+      alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
     } else {
       alert(⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.);
     }
@@ -814,13 +773,14 @@ const cleanedRemarks = remarksText
 
 
 // ✅ HTML 텍스트 구성 (백틱 사용!!)
-li.innerHTML = 
+li.innerHTML = `
   <div class="item-text">
     ${subcategory} (${size}) - [${displayText}]
-    ${cleanedRemarks ? <br/>${cleanedRemarks} : ""}
+    ${cleanedRemarks ? `<br/>${cleanedRemarks}` : ""}
   </div>
   <button class="remove-btn">삭제</button>
-;
+`;
+
 
 // ✅ 삭제 버튼 동작
 const removeBtn = li.querySelector(".remove-btn");
