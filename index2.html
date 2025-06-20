@@ -325,12 +325,11 @@ function readFilesAsBase64(files) {
 
   return Promise.all(promises);
 }
-let selectedPhotos = []; // 유지될 배열
-
 function checkPhotoLimit(input) {
-  const newFiles = Array.from(input.files);
+  const preview = document.getElementById("previewArea");
+  preview.innerHTML = "";
 
-  if (selectedPhotos.length + newFiles.length > 3) {
+  if (input.files.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
     input.value = "";
     return;
@@ -340,17 +339,10 @@ function checkPhotoLimit(input) {
     alert("📷 사진을 업로드하면 한 번에 한 품목만 신청할 수 있습니다. 기존 항목을 모두 지워주세요.");
   }
 
-  const preview = document.getElementById("previewArea");
-
-  newFiles.forEach((file, fileIndex) => {
+  Array.from(input.files).forEach((file, idx) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const base64 = e.target.result.split(",")[1];
-
-      // 배열에 저장
-      selectedPhotos.push({ base64, filename: file.name });
-
-      // 썸네일 표시
+      // 썸네일 + 삭제버튼 wrapper
       const wrapper = document.createElement("div");
       wrapper.style.position = "relative";
 
@@ -361,7 +353,6 @@ function checkPhotoLimit(input) {
       img.style.objectFit = "cover";
       img.style.border = "1px solid #ccc";
       img.style.borderRadius = "6px";
-      img.style.marginRight = "5px";
 
       const delBtn = document.createElement("button");
       delBtn.textContent = "✖";
@@ -377,12 +368,9 @@ function checkPhotoLimit(input) {
       delBtn.style.height = "20px";
       delBtn.style.cursor = "pointer";
       delBtn.style.fontSize = "12px";
-
       delBtn.onclick = () => {
-        // 1. 배열에서 삭제
-        selectedPhotos = selectedPhotos.filter(p => !(p.base64 === base64 && p.filename === file.name));
-        // 2. DOM에서 삭제
-        wrapper.remove();
+        input.value = ""; // 실제 input 비움
+        preview.innerHTML = ""; // 썸네일 영역 초기화
       };
 
       wrapper.appendChild(img);
@@ -391,8 +379,6 @@ function checkPhotoLimit(input) {
     };
     reader.readAsDataURL(file);
   });
-
-  input.value = ""; // input 초기화 → 같은 파일 다시 선택 가능하게
 }
 
 document.addEventListener("DOMContentLoaded", function () {
