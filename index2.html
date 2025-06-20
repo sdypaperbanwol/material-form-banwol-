@@ -204,17 +204,32 @@
 
    
 
-<div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
+<!-- ➕ 추가 버튼 -->
+<div style="text-align: center; margin-top: 10px;">
+  <button id="addItemBtn" style="padding:10px 20px; background:#6c757d; color:#fff; border:none; border-radius:6px;">➕ 항목 추가</button>
+</div>
+
+<!-- 📃 추가된 항목 -->
+<div style="margin-top: 16px;">
   <h4>📝 추가된 항목</h4>
-  <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
+  <ul id="itemListDisplay" style="padding-left: 0;"></ul>
 </div>
 
-    
-<div style="display:flex; gap:10px; width:100%;">
-  <button type="button" id="addItemBtn" style="flex:1; min-width:100px; background:#28a745;">➕ 추가</button>
-  <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#007bff;">✅ 신청(제출)</button>
+<!-- ✅ 신청 제출 -->
+<div style="text-align: center; margin-top: 20px;">
+  <button id="submitAllBtn" style="padding:10px 24px; background:#28a745; color:#fff; border:none; border-radius:6px;">✅ 신청 제출</button>
 </div>
 
+<!-- 🔄 처음으로 / 📋 내 신청 내역 보기 -->
+<div style="display: flex; gap: 10px; margin-top: 12px;">
+  <button type="button" id="resetBtn" style="flex: 1; background-color: #999;">🔄 처음으로</button>
+  <button type="button" id="myRecordsBtn" style="flex: 1; background-color: #6c757d; color: white;">📋 내 신청 내역 보기</button>
+</div>
+
+<!-- ✅ 결과 메시지 영역 -->
+<div class="message" id="msg" style="margin-top: 10px;"></div>
+
+<!-- ⏳ 로딩 오버레이 -->
 <div id="loadingOverlay" style="
   display: none;
   position: fixed;
@@ -233,22 +248,6 @@
   ⏳ 신청 중입니다...
 </div>
 
-
-
-   <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
-<div class="message" id="msg"></div>
-<button type="button" id="myRecordsBtn" style="background-color: #6c757d;">📄 내 신청 내역 보기</button>
-
-
-
-<div id="myRecordsSection" style="display: none; margin-top: 20px; overflow-x: auto;">
-  <h4>📋 신청 내역</h4>
-  <table id="myRecordsTable" style="min-width: 600px; width: 100%; font-size: 14px; border-collapse: collapse;">
-
-    <thead><tr></tr></thead>
-    <tbody></tbody>
-  </table>
-</div>
 
     
   </form>
