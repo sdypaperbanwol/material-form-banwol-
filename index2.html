@@ -407,7 +407,7 @@ function checkPhotoLimit(input) {
   // ✅ 삭제 후 업로드 개수 표시 갱신
   const fileCount = document.getElementById("fileCount");
   if (uploadedFiles.length > 0) {
-    fileCount.textContent = 📷 ${uploadedFiles.length}장 업로드됨;
+    fileCount.textContent = `📷 ${uploadedFiles.length}장 업로드됨`;
   } else {
     fileCount.textContent = "사진이 선택되지 않았습니다";
   }
@@ -694,10 +694,10 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
           const fileName = url.split("/").pop().split(".")[0];
           const wrapper = document.createElement("div");
           wrapper.style.marginBottom = "20px";
-          wrapper.innerHTML = 
-            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
-            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-          ;
+         wrapper.innerHTML = `
+  <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+  <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+`;
           container.appendChild(wrapper);
         });
       }
@@ -736,7 +736,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
 
   const 지급수량 = Math.min(quantity, currentStock);
   const 구매요청수량 = Math.max(0, quantity - currentStock);
-  const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
   const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
