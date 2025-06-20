@@ -163,6 +163,7 @@
     <label for="photoFiles">현장 사진 업로드 (최대 3장)</label>
     <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none;padding-left:0;">
     <small>사진은 선택사항입니다. 최대 3장까지 업로드 가능하며, 신청 완료 시 함께 전송됩니다.</small>
+    <div id="previewArea" style="display:flex; gap:8px; margin-top:10px;"></div>
 
     <label for="remarks">추가 내용</label>
     <small>
@@ -324,12 +325,32 @@ function readFilesAsBase64(files) {
 
   return Promise.all(promises);
 }
-  function checkPhotoLimit(input) {
+ function checkPhotoLimit(input) {
+  const preview = document.getElementById("previewArea");
+  preview.innerHTML = ""; // 이전 미리보기 초기화
+
   if (input.files.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
-    input.value = ""; // 선택한 파일 초기화
+    input.value = "";
+    return;
   }
+
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      img.style.width = "80px";
+      img.style.height = "80px";
+      img.style.objectFit = "cover";
+      img.style.border = "1px solid #ccc";
+      img.style.borderRadius = "6px";
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
 }
+
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
   let isSubmitting = false;
