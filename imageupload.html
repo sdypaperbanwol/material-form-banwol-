@@ -37,7 +37,9 @@
           body: form
         });
 
-        const result = await response.json();
+       const raw = await response.text();
+const result = JSON.parse(raw);
+
         if (result.success) {
           status.innerHTML = `✅ 업로드 성공! <br><a href="${result.url}" target="_blank">${result.url}</a>`;
         } else {
