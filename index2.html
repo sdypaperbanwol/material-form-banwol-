@@ -169,6 +169,13 @@
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="추가 내용을 입력하세요(없을 경우 생략)"></textarea>
+   
+    <label for="photos">사진 업로드 (최대 3장)</label>
+<input type="file" id="photos" name="photos" accept="image/*" multiple style="padding: 10px;" />
+
+<!-- 미리보기 영역 -->
+<div id="photoPreview" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;"></div>
+
 
 <div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
   <h4>📝 추가된 항목</h4>
@@ -808,7 +815,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     </button>
   </div>
 </div>
-  <script>
+ <script>
 document.addEventListener("DOMContentLoaded", () => {
   const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
   const hiddenDay = localStorage.getItem("hideNoticeDate");
@@ -819,7 +826,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   fetch("https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec?mode=notice")
-
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
@@ -837,8 +843,38 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("hideNoticeDate", todayKey);
     document.getElementById("noticeModal").style.display = "none";
   });
+
+  // ✅ 사진 업로드 미리보기 처리
+  document.getElementById("photos").addEventListener("change", function () {
+    const preview = document.getElementById("photoPreview");
+    preview.innerHTML = "";
+
+    const files = this.files;
+    if (files.length > 3) {
+      alert("⚠️ 최대 3장까지만 업로드할 수 있습니다.");
+      this.value = ""; // 파일 초기화
+      return;
+    }
+
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith("image/")) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.style.maxWidth = "100px";
+        img.style.border = "1px solid #ccc";
+        img.style.borderRadius = "6px";
+        img.style.marginRight = "8px";
+        preview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  });
 });
 </script>
+
 
 </body>
 </html>
