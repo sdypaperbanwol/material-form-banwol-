@@ -105,6 +105,20 @@
     z-index: 10000;
   }
 
+  #photoFiles {
+    display: none;  /* ✅ 기본 input 숨김 */
+  }
+
+  #photoLabel {
+    display: inline-block;
+    padding: 8px 14px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+    
   </style>
 </head>
 <body>
@@ -161,7 +175,9 @@
     <input type="number" id="quantity" name="quantity" min="1" required />
 
     <label for="photoFiles">현장 사진 업로드 (최대 3장)</label>
-    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none;padding-left:0;">
+      <!-- ✅ 사진 업로드 버튼 여기에 넣으세요 -->
+  <input type="file" id="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" />
+  <label for="photoFiles" id="photoLabel">📁 사진 선택</label>
     <small>사진은 선택사항입니다. 최대 3장까지 업로드 가능하며, 신청 완료 시 함께 전송됩니다.</small>
     <div id="fileCount" style="font-size:13px; color:#555;"></div>
     <div id="previewArea" style="display:flex; gap:8px; margin-top:10px;"></div>
