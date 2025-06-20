@@ -161,6 +161,11 @@
     <input type="number" id="quantity" name="quantity" min="1" required />
 
     <label for="remarks">추가 내용</label>
+    <label>사진 업로드 (최대 3장)</label>
+<input type="file" id="fileInput" accept="image/*" multiple />
+<button type="button" onclick="uploadPhotos()">📷 업로드</button>
+<div id="uploadStatus" style="font-size: 14px; color: green; margin-top: 5px;"></div>
+
     <small>
       - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
       - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
@@ -169,14 +174,7 @@
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="추가 내용을 입력하세요(없을 경우 생략)"></textarea>
-   
-    <label for="photos">사진 업로드 (최대 3장)</label>
-<input type="file" id="photos" name="photos" accept="image/*" multiple style="padding: 10px;" />
-
-<!-- 미리보기 영역 -->
-<div id="photoPreview" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;"></div>
-
-
+    
 <div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
   <h4>📝 추가된 항목</h4>
   <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
@@ -227,8 +225,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyFxEIHB2fta3Tcoz5Czdk6com_crq4Lfk2ZhHpyBovYmt2ESBplDUfYxa2zHeB9il1/exec";
-
+const API_URL = "https://script.google.com/macros/s/AKfycbwip4CBSXLHoUwnhZyu2E0FYlplZPMYsPknyfecIuPKuu6CCNw8J7vq_fpjx49yL28f/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -726,54 +723,133 @@ nameInput.value = localStorage.getItem("userInfo") || "";
 
 
 document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
+  // ✅ 사용자가 수동 클릭한 경우에만 실행되도록
   if (!e.isTrusted) return;
 
-  if (itemList.length !== 1) {
-    alert("사진 업로드는 한 항목만 선택했을 때만 가능합니다.");
+  if (itemList.length === 0) {
+    alert("신청할 항목이 없습니다.");
     return;
   }
 
   document.getElementById("loadingOverlay").style.display = "flex";
 
+
   try {
-    const item = itemList[0]; // 한 항목만 가능
-    const files = document.getElementById("photos").files;
-    const formData = new FormData();
+    const 완료메시지목록 = [];
 
-    formData.append("category", item.category);
-    formData.append("subcategory", item.subcategory);
-    formData.append("size", item.size);
-    formData.append("name", item.name);
-    formData.append("quantity", item.quantity);
-    formData.append("remarks", item.remarks);
-    
-    formData.append("mode", "image");
+    for (const item of itemList) {
+      const stockMap = items[item.category]?.stockMap || {};
+      const key = `${item.subcategory}__${item.size}`;
+      const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
 
-    Array.from(files).slice(0, 3).forEach((file, i) => {
-      formData.append(`photo${i + 1}`, file);
-    });
+      const 지급수량 = Math.min(item.quantity, currentStock);
+      const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: formData
-    });
+      const formData = new URLSearchParams({
+        category: item.category,
+        subcategory: item.subcategory,
+        size: item.size,
+        name: item.name,
+        quantity: String(item.quantity),
+        remarks: item.remarks
+      });
 
-    const data = await res.json();
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error: ${res.status}`);
+      }
+      const data = await res.json();
 
+      let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
+      if (지급수량 > 0 && 구매요청수량 > 0) {
+        msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
+      } else if (지급수량 > 0) {
+        msg += `${지급수량}개 신청 완료`;
+      } else if (구매요청수량 > 0) {
+        msg += `${구매요청수량}개 구매 요청 완료`;
+      }
+      완료메시지목록.push(msg);
+    }
+
+    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
 
-    if (data.result === "success") {
-      alert("✅ 신청이 저장되었습니다!");
-      location.reload();
-    } else {
-      alert("❌ 신청 실패: " + (data.message || ""));
-    }
+    alert("✅ 모든 신청이 저장되었습니다!\n\n" + 완료메시지목록.join("\n"));
+    itemList = [];
+    document.getElementById("itemListDisplay").innerHTML = "";
+    location.reload();
+
   } catch (err) {
     console.error("에러:", err);
+    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
-    alert("❌ 네트워크 오류 또는 서버 에러");
+    alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
+}); // ← 이 주석 바로 아래에 붙이기
+
+async function uploadPhotos() {
+  const input = document.getElementById("fileInput");
+  const status = document.getElementById("uploadStatus");
+
+  if (!input.files.length) {
+    status.innerText = "파일을 선택하세요.";
+    return;
+  }
+
+  const uploadedUrls = [];
+
+  for (let i = 0; i < Math.min(3, input.files.length); i++) {
+    const file = input.files[i];
+    const reader = new FileReader();
+
+    const result = await new Promise((resolve, reject) => {
+      reader.onload = async (e) => {
+        const base64Data = e.target.result.split(",")[1];
+        const filename = file.name;
+
+        const form = new URLSearchParams();
+        form.append("filename", filename);
+        form.append("base64", base64Data);
+
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form
+          });
+
+          const raw = await res.text();
+          const json = JSON.parse(raw);
+          if (json.success) {
+            uploadedUrls.push(json.url);
+            resolve();
+          } else {
+            reject(json.message);
+          }
+        } catch (err) {
+          reject(err.message);
+        }
+      };
+      reader.readAsDataURL(file);
+    }).catch(msg => {
+      status.style.color = "red";
+      status.innerText = "❌ 업로드 실패: " + msg;
+    });
+  }
+
+  if (uploadedUrls.length > 0) {
+    status.style.color = "green";
+    status.innerHTML = uploadedUrls.map((url, i) => `✅ 사진 ${i + 1}: <a href="${url}" target="_blank">${url}</a>`).join("<br>");
+
+    const remarks = document.getElementById("remarks");
+    remarks.value += "\n" + uploadedUrls.join("\n");
+  }
+}
+
 
 </script>
 
@@ -797,7 +873,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     </button>
   </div>
 </div>
- <script>
+  <script>
 document.addEventListener("DOMContentLoaded", () => {
   const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
   const hiddenDay = localStorage.getItem("hideNoticeDate");
@@ -807,7 +883,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return; // 오늘은 안 보이게
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbyFxEIHB2fta3Tcoz5Czdk6com_crq4Lfk2ZhHpyBovYmt2ESBplDUfYxa2zHeB9il1/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbwip4CBSXLHoUwnhZyu2E0FYlplZPMYsPknyfecIuPKuu6CCNw8J7vq_fpjx49yL28f/exec?mode=notice")
+
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
@@ -825,38 +902,8 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("hideNoticeDate", todayKey);
     document.getElementById("noticeModal").style.display = "none";
   });
-
-  // ✅ 사진 업로드 미리보기 처리
-  document.getElementById("photos").addEventListener("change", function () {
-    const preview = document.getElementById("photoPreview");
-    preview.innerHTML = "";
-
-    const files = this.files;
-    if (files.length > 3) {
-      alert("⚠️ 최대 3장까지만 업로드할 수 있습니다.");
-      this.value = ""; // 파일 초기화
-      return;
-    }
-
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith("image/")) return;
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const img = document.createElement("img");
-        img.src = e.target.result;
-        img.style.maxWidth = "100px";
-        img.style.border = "1px solid #ccc";
-        img.style.borderRadius = "6px";
-        img.style.marginRight = "8px";
-        preview.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    });
-  });
 });
 </script>
-
 
 </body>
 </html>
