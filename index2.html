@@ -404,57 +404,6 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 });
 
 
-  const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
-
-  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result !== "success") {
-        alert("❌ 신청 내역을 불러오지 못했습니다.");
-        return;
-      }
-
-      const table = document.getElementById("myRecordsTable");
-      const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-
-      // 헤더 생성
-      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
-  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
-).join("") + "</tr>";
-
-
-      // 본문 행 생성
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        row.slice(0, 10).forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("myRecordsSection").style.display = "block";
-    })
-    .catch(err => {
-      console.error("신청 내역 로딩 오류:", err);
-      alert("❌ 조회 중 오류가 발생했습니다.");
-    });
-});
-
-
-//  sizeSelect.addEventListener("change", () => {
-//    const opt = sizeSelect.selectedOptions[0];
-//    const stock = parseInt(opt?.dataset.stock || "0", 10);
-//    if (stock === 0) {
-//      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
-//    }
-//  });
-  
-
   fetch(API_URL)
     .then(res => res.json())
     .then(data => {
@@ -788,9 +737,9 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     document.getElementById("loadingOverlay").style.display = "none";
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
-});
-}); // ← 이 주석 바로 아래에 붙이기
+}); // ✅ submitAllBtn 핸들러 닫는 괄호
 
+// ✅ 여기서부터 uploadPhotos 함수가 들어가야 함 (여전히 DOMContentLoaded 내부)
 async function uploadPhotos() {
   const input = document.getElementById("fileInput");
   const status = document.getElementById("uploadStatus");
@@ -844,12 +793,12 @@ async function uploadPhotos() {
   if (uploadedUrls.length > 0) {
     status.style.color = "green";
     status.innerHTML = uploadedUrls.map((url, i) => `✅ 사진 ${i + 1}: <a href="${url}" target="_blank">${url}</a>`).join("<br>");
-
     const remarks = document.getElementById("remarks");
     remarks.value += "\n" + uploadedUrls.join("\n");
   }
 }
 
+}); // ✅ 이제 여기서 진짜 DOMContentLoaded 닫기
 
 </script>
 
