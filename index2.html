@@ -160,12 +160,11 @@
     <label for="quantity">수량(수치)</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
-    <label for="remarks">추가 내용</label>
-    <label>사진 업로드 (최대 3장)</label>
-<input type="file" id="fileInput" accept="image/*" multiple />
-<button type="button" onclick="uploadPhotos()">📷 업로드</button>
-<div id="uploadStatus" style="font-size: 14px; color: green; margin-top: 5px;"></div>
+    <label for="photoFiles">현장 사진 업로드 (최대 3장)</label>
+    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple style="border:none;padding-left:0;">
+    <small>사진은 선택사항입니다. 최대 3장까지 업로드 가능하며, 신청 완료 시 함께 전송됩니다.</small>
 
+    <label for="remarks">추가 내용</label>
     <small>
       - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
       - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
@@ -174,7 +173,7 @@
       - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
     </small>
     <textarea id="remarks" name="remarks" placeholder="추가 내용을 입력하세요(없을 경우 생략)"></textarea>
-    
+
 <div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
   <h4>📝 추가된 항목</h4>
   <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
@@ -225,7 +224,7 @@
   </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwip4CBSXLHoUwnhZyu2E0FYlplZPMYsPknyfecIuPKuu6CCNw8J7vq_fpjx49yL28f/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec";
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -305,7 +304,26 @@ const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
 
 let items = {};
+// ✅ 이 함수는 여기에 넣으세요
+function readFilesAsBase64(files) {
+  const promises = [];
+  const limit = Math.min(files.length, 3);
 
+  for (let i = 0; i < limit; i++) {
+    const file = files[i];
+    const reader = new FileReader();
+    promises.push(new Promise((resolve, reject) => {
+      reader.onload = () => resolve({
+        base64: reader.result.split(",")[1],
+        filename: file.name
+      });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }));
+  }
+
+  return Promise.all(promises);
+}
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
   let isSubmitting = false;
@@ -403,6 +421,57 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     });
 });
 
+
+  const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
+
+  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result !== "success") {
+        alert("❌ 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      // 헤더 생성
+      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
+  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
+).join("") + "</tr>";
+
+
+      // 본문 행 생성
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        row.slice(0, 10).forEach(cell => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsSection").style.display = "block";
+    })
+    .catch(err => {
+      console.error("신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
+
+//  sizeSelect.addEventListener("change", () => {
+//    const opt = sizeSelect.selectedOptions[0];
+//    const stock = parseInt(opt?.dataset.stock || "0", 10);
+//    if (stock === 0) {
+//      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
+//    }
+//  });
+  
 
   fetch(API_URL)
     .then(res => res.json())
@@ -694,14 +763,24 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
-      const formData = new URLSearchParams({
-        category: item.category,
-        subcategory: item.subcategory,
-        size: item.size,
-        name: item.name,
-        quantity: String(item.quantity),
-        remarks: item.remarks
-      });
+      const photoInput = document.getElementById("photoFiles");
+const files = photoInput.files;
+const photoData = await readFilesAsBase64(files);
+
+const formData = new URLSearchParams({
+  category: item.category,
+  subcategory: item.subcategory,
+  size: item.size,
+  name: item.name,
+  quantity: String(item.quantity),
+  remarks: item.remarks
+});
+
+photoData.forEach((img, idx) => {
+  formData.append(`base64_${idx + 1}`, img.base64);
+  formData.append(`filename_${idx + 1}`, img.filename);
+});
+
 
       const res = await fetch(API_URL, {
         method: "POST",
@@ -737,68 +816,8 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     document.getElementById("loadingOverlay").style.display = "none";
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
-}); // ✅ submitAllBtn 핸들러 닫는 괄호
+});
 
-// ✅ 여기서부터 uploadPhotos 함수가 들어가야 함 (여전히 DOMContentLoaded 내부)
-async function uploadPhotos() {
-  const input = document.getElementById("fileInput");
-  const status = document.getElementById("uploadStatus");
-
-  if (!input.files.length) {
-    status.innerText = "파일을 선택하세요.";
-    return;
-  }
-
-  const uploadedUrls = [];
-
-  for (let i = 0; i < Math.min(3, input.files.length); i++) {
-    const file = input.files[i];
-    const reader = new FileReader();
-
-    const result = await new Promise((resolve, reject) => {
-      reader.onload = async (e) => {
-        const base64Data = e.target.result.split(",")[1];
-        const filename = file.name;
-
-        const form = new URLSearchParams();
-        form.append("filename", filename);
-        form.append("base64", base64Data);
-
-        try {
-          const res = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: form
-          });
-
-          const raw = await res.text();
-          const json = JSON.parse(raw);
-          if (json.success) {
-            uploadedUrls.push(json.url);
-            resolve();
-          } else {
-            reject(json.message);
-          }
-        } catch (err) {
-          reject(err.message);
-        }
-      };
-      reader.readAsDataURL(file);
-    }).catch(msg => {
-      status.style.color = "red";
-      status.innerText = "❌ 업로드 실패: " + msg;
-    });
-  }
-
-  if (uploadedUrls.length > 0) {
-    status.style.color = "green";
-    status.innerHTML = uploadedUrls.map((url, i) => `✅ 사진 ${i + 1}: <a href="${url}" target="_blank">${url}</a>`).join("<br>");
-    const remarks = document.getElementById("remarks");
-    remarks.value += "\n" + uploadedUrls.join("\n");
-  }
-}
-
-}); // ✅ 이제 여기서 진짜 DOMContentLoaded 닫기
 
 </script>
 
@@ -832,7 +851,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return; // 오늘은 안 보이게
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbwip4CBSXLHoUwnhZyu2E0FYlplZPMYsPknyfecIuPKuu6CCNw8J7vq_fpjx49yL28f/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
