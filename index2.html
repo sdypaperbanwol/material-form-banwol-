@@ -764,9 +764,13 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   let remarksText = remarksInput.value.trim();
 
   if (!category || !subcategory || !size || !quantity || quantity <= 0) {
-    alert("⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.");
-    return;
-  }
+  const msg = document.getElementById("msg");
+  msg.textContent = "⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.";
+  msg.style.color = "red";
+  msg.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  return;
+}
 
   const selectedSizeOption = sizeSelect.selectedOptions[0];
   const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
