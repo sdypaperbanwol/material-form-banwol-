@@ -161,7 +161,7 @@
     <input type="number" id="quantity" name="quantity" min="1" required />
 
     <label for="photoFiles">현장 사진 업로드 (최대 3장)</label>
-    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple style="border:none;padding-left:0;">
+    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none;padding-left:0;">
     <small>사진은 선택사항입니다. 최대 3장까지 업로드 가능하며, 신청 완료 시 함께 전송됩니다.</small>
 
     <label for="remarks">추가 내용</label>
@@ -323,6 +323,12 @@ function readFilesAsBase64(files) {
   }
 
   return Promise.all(promises);
+}
+  function checkPhotoLimit(input) {
+  if (input.files.length > 3) {
+    alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
+    input.value = ""; // 선택한 파일 초기화
+  }
 }
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
