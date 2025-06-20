@@ -230,7 +230,8 @@ const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
-  
+
+let uploadedFiles = [];  // ✅ 여기 넣으세요 (가장 위 변수들 사이에)
 
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -326,23 +327,20 @@ function readFilesAsBase64(files) {
   return Promise.all(promises);
 }
 function checkPhotoLimit(input) {
-  const preview = document.getElementById("previewArea");
-  preview.innerHTML = "";
+  const newFiles = Array.from(input.files);
 
-  if (input.files.length > 3) {
+  // 총합이 3장 초과 시 경고
+  if (uploadedFiles.length + newFiles.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
     input.value = "";
     return;
   }
 
-  if (itemList.length > 0) {
-    alert("📷 사진을 업로드하면 한 번에 한 품목만 신청할 수 있습니다. 기존 항목을 모두 지워주세요.");
-  }
+  newFiles.forEach(file => {
+    uploadedFiles.push(file);  // 전역 배열에 저장
 
-  Array.from(input.files).forEach((file, idx) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      // 썸네일 + 삭제버튼 wrapper
       const wrapper = document.createElement("div");
       wrapper.style.position = "relative";
 
@@ -368,18 +366,23 @@ function checkPhotoLimit(input) {
       delBtn.style.height = "20px";
       delBtn.style.cursor = "pointer";
       delBtn.style.fontSize = "12px";
+
       delBtn.onclick = () => {
-        input.value = ""; // 실제 input 비움
-        preview.innerHTML = ""; // 썸네일 영역 초기화
+        const idx = uploadedFiles.indexOf(file);
+        if (idx > -1) uploadedFiles.splice(idx, 1);  // 배열에서 제거
+        wrapper.remove(); // 썸네일 제거
       };
 
       wrapper.appendChild(img);
       wrapper.appendChild(delBtn);
-      preview.appendChild(wrapper);
+      document.getElementById("previewArea").appendChild(wrapper);
     };
     reader.readAsDataURL(file);
   });
+
+  input.value = "";  // 같은 파일 또 올릴 수 있도록 초기화
 }
+
 
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
@@ -520,14 +523,6 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     });
 });
 
-
-//  sizeSelect.addEventListener("change", () => {
-//    const opt = sizeSelect.selectedOptions[0];
-//    const stock = parseInt(opt?.dataset.stock || "0", 10);
-//    if (stock === 0) {
-//      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
-//    }
-//  });
   
 
   fetch(API_URL)
@@ -821,8 +816,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
       const photoInput = document.getElementById("photoFiles");
-const files = photoInput.files;
-const photoData = await readFilesAsBase64(files);
+const photoData = await readFilesAsBase64(uploadedFiles);
 
 const formData = new URLSearchParams({
   category: item.category,
