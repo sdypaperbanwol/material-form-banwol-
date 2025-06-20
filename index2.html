@@ -767,6 +767,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const msg = document.getElementById("msg");
   msg.textContent = "⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.";
   msg.style.color = "red";
+  msg.scrollIntoView({ behavior: "smooth", block: "center" });
 
   return;
 }
