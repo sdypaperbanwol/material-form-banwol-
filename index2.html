@@ -325,9 +325,9 @@ function readFilesAsBase64(files) {
 
   return Promise.all(promises);
 }
- function checkPhotoLimit(input) {
+function checkPhotoLimit(input) {
   const preview = document.getElementById("previewArea");
-  preview.innerHTML = ""; // 이전 미리보기 초기화
+  preview.innerHTML = "";
 
   if (input.files.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
@@ -335,9 +335,17 @@ function readFilesAsBase64(files) {
     return;
   }
 
-  Array.from(input.files).forEach(file => {
+  if (itemList.length > 0) {
+    alert("📷 사진을 업로드하면 한 번에 한 품목만 신청할 수 있습니다. 기존 항목을 모두 지워주세요.");
+  }
+
+  Array.from(input.files).forEach((file, idx) => {
     const reader = new FileReader();
     reader.onload = (e) => {
+      // 썸네일 + 삭제버튼 wrapper
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "relative";
+
       const img = document.createElement("img");
       img.src = e.target.result;
       img.style.width = "80px";
@@ -345,7 +353,29 @@ function readFilesAsBase64(files) {
       img.style.objectFit = "cover";
       img.style.border = "1px solid #ccc";
       img.style.borderRadius = "6px";
-      preview.appendChild(img);
+
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "✖";
+      delBtn.title = "사진 제거";
+      delBtn.style.position = "absolute";
+      delBtn.style.top = "-8px";
+      delBtn.style.right = "-8px";
+      delBtn.style.background = "#dc3545";
+      delBtn.style.color = "white";
+      delBtn.style.border = "none";
+      delBtn.style.borderRadius = "50%";
+      delBtn.style.width = "20px";
+      delBtn.style.height = "20px";
+      delBtn.style.cursor = "pointer";
+      delBtn.style.fontSize = "12px";
+      delBtn.onclick = () => {
+        input.value = ""; // 실제 input 비움
+        preview.innerHTML = ""; // 썸네일 영역 초기화
+      };
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(delBtn);
+      preview.appendChild(wrapper);
     };
     reader.readAsDataURL(file);
   });
