@@ -578,23 +578,38 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       console.error("API 로드 에러:", err);
     });
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    alertShown = false;
-    isSubmitting = false;
-    materialForm.reset();
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
-    quantityInput.disabled = false;
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    msgDiv.textContent = "";
+ document.getElementById("resetBtn").addEventListener("click", () => {
+  alertShown = false;
+  isSubmitting = false;
+  materialForm.reset();
 
-    itemList = [];  // 추가된 항목 초기화
-  document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
-     document.getElementById("myRecordsSection").style.display = "none";
-  });
+  // ✅ 파일 업로드 관련 초기화
+  uploadedFiles = []; // 배열 비우기
+  document.getElementById("photoFiles").value = ""; // 파일 선택 초기화
+  document.getElementById("previewArea").innerHTML = ""; // 썸네일 초기화
+  document.getElementById("fileCount").textContent = "사진이 선택되지 않았습니다";
+
+  // ✅ 선택 단계 초기화 등 기존 로직
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+  nameInput.value = localStorage.getItem("userInfo") || "";
+  msgDiv.textContent = "";
+
+  itemList = [];
+  document.getElementById("itemListDisplay").innerHTML = "";
+  document.getElementById("myRecordsSection").style.display = "none";
+
+  // ✅ 단계 초기화
+  document.getElementById("step1").style.display = "block";
+  document.getElementById("step2").style.display = "none";
+  document.getElementById("step3").style.display = "none";
+  document.getElementById("step4").style.display = "none";
+});
+
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
