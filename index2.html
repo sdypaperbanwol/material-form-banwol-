@@ -206,7 +206,7 @@
 
 <!-- ➕ 추가 버튼 -->
 <div style="margin-top: 10px;">
-  <button id="addItemBtn" type="button" style="width: 100%; padding: 12px; background: #007bff; color: #fff; border: none; border-radius: 6px; font-size: 15px;">
+  <button id="addItemBtn" style="width: 100%; padding: 12px; background: #007bff; color: #fff; border: none; border-radius: 6px; font-size: 15px;">
     ➕ 항목 추가
   </button>
 </div>
@@ -218,11 +218,10 @@
 </div>
 
 <div style="margin-top: 16px;">
-  <button id="submitAllBtn" type="button" style="width: 100%; padding: 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; font-size: 15px;">
+  <button id="submitAllBtn" style="width: 100%; padding: 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; font-size: 15px;">
     ✅ 신청 제출
   </button>
 </div>
-
 
 
 <!-- 🔄 처음으로 / 📋 내 신청 내역 보기 -->
@@ -311,7 +310,7 @@ function verifyUser() {
   .then(res => res.json())
   .then(data => {
     if (data.result === "success") {
-      const fullName = `${empId} ${empName}`;
+      const fullName = ${empId} ${empName};
       if (data.active === "Y" && !isMobileDevice()) {
         loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
         return;
@@ -408,7 +407,7 @@ function checkPhotoLimit(input) {
   // ✅ 삭제 후 업로드 개수 표시 갱신
   const fileCount = document.getElementById("fileCount");
   if (uploadedFiles.length > 0) {
-    fileCount.textContent = `📷 ${uploadedFiles.length}장 업로드됨`;
+    fileCount.textContent = 📷 ${uploadedFiles.length}장 업로드됨;
   } else {
     fileCount.textContent = "사진이 선택되지 않았습니다";
   }
@@ -437,7 +436,7 @@ document.addEventListener("DOMContentLoaded", function () {
     sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
     if (items[cat]) {
       items[cat].types.forEach(type => {
-        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+        subSelect.innerHTML += <option value="${type}">${type}</option>;
       });
     }
   });
@@ -453,7 +452,7 @@ document.addEventListener("DOMContentLoaded", function () {
       for (const [key, stock] of Object.entries(stockMap)) {
         const [t, size] = key.split("__");
         if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
+          sizeSelect.innerHTML += <option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>;
         }
       }
     }
@@ -467,7 +466,7 @@ function formatDate(raw) {
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
   const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  return ${yyyy}-${mm}-${dd};
 }
 
 document.getElementById("myRecordsBtn").addEventListener("click", () => {
@@ -564,6 +563,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
+
   
 
   fetch(API_URL)
@@ -572,7 +572,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       items = data;
       categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
       Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+        categorySelect.innerHTML += <option value="${cat}">${cat}</option>;
       });
       nameInput.value = localStorage.getItem("userInfo") || "";
       console.log("items:", items);
@@ -630,21 +630,21 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 
     const 지급수량 = Math.min(requestedQty, currentStock);
     const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+    const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
+    const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
     const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
     if (!alertShown) {
       if (구매요청수량 > 0) {
         if (currentStock > 0) {
-          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+          alert(⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
           quantityInput.value = currentStock;
         } else {
-          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
+          alert(⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.);
         }
 
         if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
         }
 
         categorySelect.disabled = true;
@@ -656,7 +656,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         return; // 제출 중단
       } else {
         if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
+          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${지급문구} : ${지급문구};
         }
       }
     } else {
@@ -735,10 +735,10 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
           const fileName = url.split("/").pop().split(".")[0];
           const wrapper = document.createElement("div");
           wrapper.style.marginBottom = "20px";
-          wrapper.innerHTML = `
+          wrapper.innerHTML = 
             <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
             <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-          `;
+          ;
           container.appendChild(wrapper);
         });
       }
@@ -776,19 +776,19 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
 
   const 지급수량 = Math.min(quantity, currentStock);
   const 구매요청수량 = Math.max(0, quantity - currentStock);
-  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+  const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
+  const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
   if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-    remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
+    remarksText = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
   }
 
   if (구매요청수량 > 0) {
     if (currentStock > 0) {
-      alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
+      alert(⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.);
     } else {
-      alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
+      alert(⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.);
     }
   }
 
@@ -800,8 +800,8 @@ const li = document.createElement("li");
 
 // ✅ 표시 텍스트 분리 및 중복 제거
 const displayText = [
-  지급수량 > 0 ? `${지급수량}개 지급` : "",
-  구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : ""
+  지급수량 > 0 ? ${지급수량}개 지급 : "",
+  구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : ""
 ].filter(Boolean).join(" / ");
 
 // ✅ remarksText에서 displayText 제거
@@ -813,13 +813,13 @@ const cleanedRemarks = remarksText
 
 
 // ✅ HTML 텍스트 구성 (백틱 사용!!)
-li.innerHTML = `
+li.innerHTML = 
   <div class="item-text">
     ${subcategory} (${size}) - [${displayText}]
-    ${cleanedRemarks ? `<br/>${cleanedRemarks}` : ""}
+    ${cleanedRemarks ? <br/>${cleanedRemarks} : ""}
   </div>
   <button class="remove-btn">삭제</button>
-`;
+;
 
 // ✅ 삭제 버튼 동작
 const removeBtn = li.querySelector(".remove-btn");
@@ -868,7 +868,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 
     for (const item of itemList) {
       const stockMap = items[item.category]?.stockMap || {};
-      const key = `${item.subcategory}__${item.size}`;
+      const key = ${item.subcategory}__${item.size};
       const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
 
       const 지급수량 = Math.min(item.quantity, currentStock);
@@ -887,8 +887,8 @@ const formData = new URLSearchParams({
 });
 
 photoData.forEach((img, idx) => {
-  formData.append(`base64_${idx + 1}`, img.base64);
-  formData.append(`filename_${idx + 1}`, img.filename);
+  formData.append(base64_${idx + 1}, img.base64);
+  formData.append(filename_${idx + 1}, img.filename);
 });
 
 
@@ -897,17 +897,17 @@ photoData.forEach((img, idx) => {
         body: formData,
       });
       if (!res.ok) {
-        throw new Error(`HTTP error: ${res.status}`);
+        throw new Error(HTTP error: ${res.status});
       }
       const data = await res.json();
 
-      let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
+      let msg = ${item.category} > ${item.subcategory} (${item.size}): ;
       if (지급수량 > 0 && 구매요청수량 > 0) {
-        msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
+        msg += ${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료;
       } else if (지급수량 > 0) {
-        msg += `${지급수량}개 신청 완료`;
+        msg += ${지급수량}개 신청 완료;
       } else if (구매요청수량 > 0) {
-        msg += `${구매요청수량}개 구매 요청 완료`;
+        msg += ${구매요청수량}개 구매 요청 완료;
       }
       완료메시지목록.push(msg);
     }
