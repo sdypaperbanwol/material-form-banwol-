@@ -213,8 +213,6 @@
 <!-- 3. 가장 마지막에 ✅ 신청 버튼 -->
 <button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
 
- 
-    
 <div id="loadingOverlay" style="
   display: none;
   position: fixed;
@@ -232,9 +230,7 @@
 ">
   ⏳ 신청 중입니다...
 </div>
-
-
-
+    
    <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
 <div class="message" id="msg"></div>
 
@@ -275,13 +271,8 @@
   </div>
 </div>
 
-
-
-
  </form>
     
-
-
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec";
 const loginSection = document.getElementById("login-section");
@@ -289,7 +280,6 @@ const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
   
-
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
@@ -395,7 +385,6 @@ function checkPhotoLimit(input) {
     return;
   }
 
-  
   fileArray.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -592,9 +581,6 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
-
-
-  
 
   fetch(API_URL)
     .then(res => res.json())
