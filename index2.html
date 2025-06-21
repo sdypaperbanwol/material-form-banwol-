@@ -316,7 +316,7 @@ if (saved) {
       }
       nameInput.value = saved;
       loginSection.style.display = "none";
-      materialForm.style.display = "flex";
+      formTypeSelection.style.display = "flex";
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -1006,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("goToFormBtn").addEventListener("click", () => {
   formTypeSelection.style.display = "none";
-  materialForm.style.display = "flex";
+  formTypeSelection.style.display = "flex";
 });
 
 document.getElementById("goToRecordsBtn").addEventListener("click", () => {
