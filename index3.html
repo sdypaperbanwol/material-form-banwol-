@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>신대양제지반월 신청 시스템</title>
+  <style>
+    body {
+      background-color: #f7f7f7;
+      font-family: 'Arial', sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    .hidden { display: none; }
+    .step { margin-bottom: 30px; }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    select, input, textarea {
+      margin: 10px;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 80%;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ 로그인 -->
+  <div id="login-section">
+    <h3>로그인</h3>
+    <input type="text" id="empId" placeholder="사번 입력" />
+    <input type="text" id="empName" placeholder="이름 입력" />
+    <button id="loginBtn">확인</button>
+    <p id="loginMsg" style="color:red; font-weight:bold;"></p>
+  </div>
+
+  <!-- ✅ 단계별 UI -->
+  <div id="materialForm" class="hidden">
+    <!-- Step 1: 항목 분류 -->
+    <div id="step1" class="step">
+      <h3>항목 분류를 선택하세요</h3>
+      <div id="category-buttons" class="button-group"></div>
+    </div>
+
+    <!-- Step 2: 세부 항목 -->
+    <div id="step2" class="step hidden">
+      <h3>세부 항목을 선택하세요</h3>
+      <div id="subcategory-buttons" class="button-group"></div>
+    </div>
+
+    <!-- Step 3: 상세 옵션 -->
+    <div id="step3" class="step hidden">
+      <h3>상세 옵션 입력</h3>
+      <select id="sizeSelect"></select><br />
+      <input type="number" id="quantityInput" placeholder="수량 입력" /><br />
+      <textarea id="remarksInput" placeholder="비고 입력"></textarea><br />
+      <button id="submitBtn">신청하기</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec";
+
+    let selectedCategory = "", selectedSubcategory = "", selectedName = "";
+    let materialData = {};
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const empId = document.getElementById("empId").value.trim();
+      const empName = document.getElementById("empName").value.trim();
+      if (!empId || !empName) {
+        document.getElementById("loginMsg").textContent = "사번과 이름을 입력하세요.";
+        return;
+      }
+      fetch(API_URL, {
+        method: "POST",
+        body: new URLSearchParams({ empId, empName })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "success") {
+          selectedName = `${empId} ${empName}`;
+          document.getElementById("login-section").style.display = "none";
+          document.getElementById("materialForm").style.display = "block";
+          fetchMaterialData();
+        } else {
+          document.getElementById("loginMsg").textContent = "승인되지 않은 사용자입니다.";
+        }
+      });
+    });
+
+    function fetchMaterialData() {
+      fetch(`${API_URL}?mode=load`)
+        .then(res => res.json())
+        .then(data => {
+          materialData = data;
+          renderCategories();
+        });
+    }
+
+    function renderCategories() {
+      const container = document.getElementById("category-buttons");
+      container.innerHTML = "";
+      Object.keys(materialData).forEach(cat => {
+        const btn = document.createElement("button");
+        btn.textContent = cat;
+        btn.onclick = () => {
+          selectedCategory = cat;
+          document.getElementById("step1").classList.add("hidden");
+          document.getElementById("step2").classList.remove("hidden");
+          renderSubcategories(cat);
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderSubcategories(category) {
+      const container = document.getElementById("subcategory-buttons");
+      container.innerHTML = "";
+      materialData[category].types.forEach(type => {
+        const btn = document.createElement("button");
+        btn.textContent = type;
+        btn.onclick = () => {
+          selectedSubcategory = type;
+          document.getElementById("step2").classList.add("hidden");
+          document.getElementById("step3").classList.remove("hidden");
+          renderSizes(category, type);
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderSizes(category, type) {
+      const select = document.getElementById("sizeSelect");
+      select.innerHTML = `<option value="">사이즈 선택</option>`;
+      const map = materialData[category].stockMap;
+      Object.keys(map).forEach(key => {
+        if (key.startsWith(`${type}__`)) {
+          const size = key.split("__")[1];
+          const option = document.createElement("option");
+          option.value = size;
+          option.textContent = `${size} (${map[key]}개)`;
+          select.appendChild(option);
+        }
+      });
+    }
+
+    document.getElementById("submitBtn").addEventListener("click", () => {
+      const size = document.getElementById("sizeSelect").value;
+      const quantity = parseInt(document.getElementById("quantityInput").value, 10);
+      const remarks = document.getElementById("remarksInput").value.trim();
+
+      if (!selectedName || !selectedCategory || !selectedSubcategory || !size || isNaN(quantity) || quantity <= 0) {
+        alert("모든 항목을 정확히 입력하세요.");
+        return;
+      }
+
+      const formData = new URLSearchParams({
+        name: selectedName,
+        category: selectedCategory,
+        subcategory: selectedSubcategory,
+        size,
+        quantity,
+        remarks
+      });
+
+      fetch(API_URL, {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "success") {
+          alert("신청이 완료되었습니다!");
+          location.reload();
+        } else {
+          alert("오류: " + data.message);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
