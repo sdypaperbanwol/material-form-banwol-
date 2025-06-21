@@ -225,22 +225,34 @@
 
 
 
-<!-- 📄 내 신청 내역 모달 -->
+<!-- ✅ 모달 전체 영역 -->
 <div id="myRecordsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:white; padding:20px 24px 30px; border-radius:10px; max-width:800px; width:95%; max-height:90vh; overflow:auto; position:relative;">
+  
+  <!-- ✅ 모달 안 컨텐츠 박스 -->
+  <div style="position:relative; background:white; padding:20px 24px 30px; border-radius:10px; max-width:800px; width:95%; max-height:90vh; overflow:auto;">
+    
+    <!-- ✅ 상단 고정 X버튼 -->
+    <button id="closeRecordsModal" style="
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: #333;
+    ">✖</button>
 
-    <!-- ✅ X버튼: fixed처럼 상단 고정 -->
-    <div style="position:sticky; top:0; display:flex; justify-content:flex-end; background:white; z-index:100;">
-      <button id="closeRecordsModal" style="font-size:20px; font-weight:bold; border:none; background:none; cursor:pointer; padding:4px;">✖</button>
-    </div>
-
-    <h3 style="margin-bottom: 15px;">📄 내 신청 내역</h3>
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 내 신청 내역</h3>
     <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
       <thead><tr></tr></thead>
       <tbody></tbody>
     </table>
+
   </div>
 </div>
+
 
 
     
