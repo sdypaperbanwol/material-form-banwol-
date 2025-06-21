@@ -521,7 +521,12 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 
       // ✅ 이제는 모달로 표시!
       document.getElementById("myRecordsModal").style.display = "flex";
-    })
+   ✅ 항목 선택 안내 문구 제거
+  const msgDiv = document.getElementById("msgDiv");
+  if (msgDiv) msgDiv.textContent = "";
+
+})
+    
     .catch(err => {
       console.error("신청 내역 로딩 오류:", err);
       alert("❌ 조회 중 오류가 발생했습니다.");
