@@ -128,6 +128,12 @@
     <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
 
+  <!-- ✅ 로그인 후 폼 유형 선택 버튼 -->
+<div id="formTypeSelection" style="display: none; flex-direction: column; gap: 12px; align-items: center; margin-top: 30px;">
+  <button id="goToFormBtn" style="width: 220px; font-size: 16px;">📝 신청하기</button>
+  <button id="goToRecordsBtn" style="width: 220px; font-size: 16px; background-color:#f8f9fa; color:#007bff; border: 1px solid #007bff;">📄 신청내역 보기</button>
+</div>
+  
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
      <!-- 🔽 여기 추가 -->
@@ -341,7 +347,7 @@ function verifyUser() {
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
-      materialForm.style.display = "flex";
+      formTypeSelection.style.display = "flex"; // ✅ 새 버튼 선택 UI 보여주기
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
@@ -998,7 +1004,18 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("hideNoticeDate", todayKey);
     document.getElementById("noticeModal").style.display = "none";
   });
+  document.getElementById("goToFormBtn").addEventListener("click", () => {
+  formTypeSelection.style.display = "none";
+  materialForm.style.display = "flex";
 });
+
+document.getElementById("goToRecordsBtn").addEventListener("click", () => {
+  formTypeSelection.style.display = "none";
+  document.getElementById("myRecordsBtn").click();
+});
+
+
+    
 </script>
 
 </body>
