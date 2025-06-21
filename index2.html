@@ -476,49 +476,6 @@ function formatDate(raw) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-document.getElementById("myRecordsBtn").addEventListener("click", () => {
-  const fullName = localStorage.getItem("userInfo");
-  if (!fullName) {
-    alert("로그인 후 이용 가능합니다.");
-    return;
-  }
-
-  const empId = fullName.split(" ")[0];
-
-  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result !== "success") {
-        alert("❌ 신청 내역을 불러오지 못했습니다.");
-        return;
-      }
-
-      const table = document.getElementById("myRecordsTable");
-      const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-
-      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10, 8]; // 날짜~처리완료
-      const headerNames = desiredIndexes.map(i => data.header[i]);
-
-      thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
-        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${h}</th>`
-      ).join("") + "</tr>";
-
-      tbody.innerHTML = "";
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        desiredIndexes.forEach((colIndex, idx) => {
-          const td = document.createElement("td");
-          const cell = row[colIndex];
-          td.textContent = idx === 0 ? formatDate(cell) : cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          td.style.whiteSpace = "nowrap";
-          td.style.textAlign = "center";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
 
       // ✅ 이제는 모달로 표시!
       document.getElementById("myRecordsModal").style.display = "flex";
@@ -933,7 +890,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const todayKey = new Date().toISOString().split("T")[0];
   const hiddenDay = localStorage.getItem("hideNoticeDate");
 
-  // 공지사항 숨김 처리
+  // 공지사항 표시
   if (hiddenDay !== todayKey) {
     fetch(`${API_URL}?mode=notice`)
       .then(res => res.json())
@@ -945,34 +902,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-    document.getElementById("closeNotice").addEventListener("click", () => {
+    document.getElementById("closeNotice")?.addEventListener("click", () => {
       document.getElementById("noticeModal").style.display = "none";
     });
 
-    document.getElementById("hideTodayBtn").addEventListener("click", () => {
+    document.getElementById("hideTodayBtn")?.addEventListener("click", () => {
       localStorage.setItem("hideNoticeDate", todayKey);
       document.getElementById("noticeModal").style.display = "none";
     });
   }
 
-  // 모달 닫기 버튼
-  const closeBtn = document.getElementById("closeRecordsModal");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      document.getElementById("myRecordsModal").style.display = "none";
-    });
-  }
+  // 닫기 버튼
+  document.getElementById("closeRecordsModal")?.addEventListener("click", () => {
+    document.getElementById("myRecordsModal").style.display = "none";
+  });
 
   // ✅ 신청하기 버튼
-  document.getElementById("goToFormBtn").addEventListener("click", () => {
+  document.getElementById("goToFormBtn")?.addEventListener("click", () => {
     document.getElementById("formTypeSelection").style.display = "none";
     document.getElementById("materialForm").style.display = "flex";
   });
 
   // ✅ 신청내역 보기 버튼
-  document.getElementById("goToRecordsBtn").addEventListener("click", () => {
-    document.getElementById("formTypeSelection").style.display = "none";
-
+  document.getElementById("goToRecordsBtn")?.addEventListener("click", () => {
     const fullName = localStorage.getItem("userInfo");
     if (!fullName) {
       alert("로그인 후 이용 가능합니다.");
@@ -1016,9 +968,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         document.getElementById("myRecordsModal").style.display = "flex";
-
-        const msgDiv = document.getElementById("msg");
-        if (msgDiv) msgDiv.textContent = "";
+        document.getElementById("msg").textContent = "";
       })
       .catch(err => {
         console.error("신청 내역 로딩 오류:", err);
@@ -1027,6 +977,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 </script>
+
 
 
 
