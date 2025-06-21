@@ -140,26 +140,6 @@
 <!-- 제목만 한 줄에 표시 -->
 <h3 style="margin-bottom: 10px;">📋 신청·조사서 작성</h3>
 
-<!-- 버튼은 아래 줄, 오른쪽 정렬로 따로 배치 -->
-<div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-  <button id="myRecordsBtn" style="
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #007bff;
-    border: 1px solid #007bff;
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    transition: background 0.2s;
-  " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-    📄 <span>내 신청 내역</span>
-  </button>
-</div>
 
     <label for="category">항목 분류</label>
     <select id="category" name="category" required>
@@ -968,16 +948,17 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     </button>
   </div>
 </div>
-  <script>
+<script>
 document.addEventListener("DOMContentLoaded", () => {
+  const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec"; // ✅ 요기 추가!
+
   const todayKey = new Date().toISOString().split("T")[0];
   const hiddenDay = localStorage.getItem("hideNoticeDate");
 
-  if (hiddenDay === todayKey) {
-    console.log("📢 오늘 공지사항 안 보기 설정됨.");
-    return;
-  }
+  // 공지사항 숨김 처리 로직
+  if (hiddenDay === todayKey) return;
 
+  // 모달 닫기 버튼
   const closeBtn = document.getElementById("closeRecordsModal");
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
@@ -985,43 +966,71 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ✅ 요기 위치가 정답! (닫기 버튼 등록 바깥)
+  // ✅ 신청하기 버튼 이벤트
   document.getElementById("goToFormBtn").addEventListener("click", () => {
     formTypeSelection.style.display = "none";
     materialForm.style.display = "flex";
   });
 
+  // ✅ 신청내역 보기 버튼 이벤트
   document.getElementById("goToRecordsBtn").addEventListener("click", () => {
     formTypeSelection.style.display = "none";
-    document.getElementById("myRecordsBtn").click();
+
+    const fullName = localStorage.getItem("userInfo");
+    if (!fullName) {
+      alert("로그인 후 이용 가능합니다.");
+      return;
+    }
+
+    const empId = fullName.split(" ")[0];
+
+    fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)  // ✅ 백틱 (`)으로 감싸야 됨
+      .then(res => res.json())
+      .then(data => {
+        if (data.result !== "success") {
+          alert("❌ 신청 내역을 불러오지 못했습니다.");
+          return;
+        }
+
+        const table = document.getElementById("myRecordsTable");
+        const thead = table.querySelector("thead");
+        const tbody = table.querySelector("tbody");
+
+        const desiredIndexes = [0, 2, 4, 5, 6, 9, 10, 8];
+        const headerNames = desiredIndexes.map(i => data.header[i]);
+
+        thead.innerHTML = "<tr>" + headerNames.map(h =>
+          `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${h}</th>`
+        ).join("") + "</tr>";
+
+        tbody.innerHTML = "";
+        data.records.forEach(row => {
+          const tr = document.createElement("tr");
+          desiredIndexes.forEach((colIndex, idx) => {
+            const td = document.createElement("td");
+            td.textContent = idx === 0 ? formatDate(row[colIndex]) : row[colIndex];
+            td.style.border = "1px solid #ccc";
+            td.style.padding = "6px";
+            td.style.whiteSpace = "nowrap";
+            td.style.textAlign = "center";
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("myRecordsModal").style.display = "flex";
+
+        const msgDiv = document.getElementById("msg");
+        if (msgDiv) msgDiv.textContent = "";
+      })
+      .catch(err => {
+        console.error("신청 내역 로딩 오류:", err);
+        alert("❌ 조회 중 오류가 발생했습니다.");
+      });
   });
 });
-
-
-  fetch("https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec?mode=notice")
-
-    .then(res => res.json())
-    .then(data => {
-      const notice = data.notice?.trim();
-      if (notice) {
-        document.getElementById("noticeContent").textContent = notice;
-        document.getElementById("noticeModal").style.display = "flex";
-      }
-    });
-
-  document.getElementById("closeNotice").addEventListener("click", () => {
-    document.getElementById("noticeModal").style.display = "none";
-  });
-
-  document.getElementById("hideTodayBtn").addEventListener("click", () => {
-    localStorage.setItem("hideNoticeDate", todayKey);
-    document.getElementById("noticeModal").style.display = "none";
-  });
-
-
-
-    
 </script>
+
 
 </body>
 </html>
