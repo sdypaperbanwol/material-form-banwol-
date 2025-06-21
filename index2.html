@@ -132,7 +132,7 @@
   <form id="materialForm" style="display: none;">
      <!-- 🔽 여기 추가 -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <h3 style="margin: 0;">1~6 순서 입력</h3>
+    <h3 style="margin: 0;">📋 신청·조사 폼/h3>
     <!-- 개선 -->
 <button id="myRecordsBtn" style="
   font-size: 14px;
@@ -149,49 +149,42 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   transition: background 0.2s;
 " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-  📄 <span>신청 내역</span>
+  📄 <span>내 신청 내역</span>
 </button>
   </div>
-   <!-- ✅ Step 1: 항목 분류 -->
-<div id="step1" style="margin-bottom:20px;">
-  <h3>항목 분류를 선택하세요</h3>
-  <div id="category-buttons" class="button-group"></div>
+    <label for="category">항목 분류</label>
+    <select id="category" name="category" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-  <!-- ✅ 항목 사진 보기 버튼은 여기 유지 -->
-  <button type="button" id="viewPhotos" style="margin-top:10px; background:#007bff; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer;">
-    항목 사진 보기
-  </button>
-</div>
+    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
 
-<!-- ✅ Step 2: 세부 항목 -->
-<div id="step2" class="hidden" style="margin-bottom:20px;">
-  <h3>세부 항목을 선택하세요</h3>
-  <div id="subcategory-buttons" class="button-group"></div>
-</div>
+    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+        <span id="closeModal">✖</span>
+        <div id="photoContent"></div>
+      </div>
+    </div>
+    
+    <label for="subcategory">세부 항목</label>
+    <select id="subcategory" name="subcategory" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-<!-- ✅ Step 3: 상세 옵션 -->
-<div id="step3" class="hidden" style="margin-bottom:20px;">
-  <h3>상세 옵션을 선택하세요</h3>
-  <select id="sizeSelect"></select>
-</div>
+    <label for="size">상세 옵션</label>
+    <select id="size" name="size" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-<!-- ✅ 기존 모달 유지 -->
-<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
-  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-    <span id="closeModal">✖</span>
-    <div id="photoContent"></div>
-  </div>
-</div>
-
-    <label for="name">4. 작성자</label>
+    <label for="name">작성자</label>
     <input type="text" id="name" name="name" readonly />
 
-    <label for="quantity">5. 수량(수치)</label>
+    <label for="quantity">수량(수치)</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
 <!-- ✅ 비고(추가 내용) + 사진 업로드 통합 박스 -->
 <div style="display: flex; flex-direction: column; gap: 6px;">
-  <label for="remarks">6. 추가 내용 및 사진(없을 경우 생략)</label>
+  <label for="remarks">추가 내용 및 사진(없을 경우 생략)</label>
   <textarea id="remarks" name="remarks" placeholder="추가 내용" style="min-height: 60px;"></textarea>
 
   <div style="display:flex; align-items: center; gap: 10px;">
@@ -220,6 +213,8 @@
 <!-- 3. 가장 마지막에 ✅ 신청 버튼 -->
 <button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
 
+ 
+    
 <div id="loadingOverlay" style="
   display: none;
   position: fixed;
@@ -237,7 +232,9 @@
 ">
   ⏳ 신청 중입니다...
 </div>
-    
+
+
+
    <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
 <div class="message" id="msg"></div>
 
@@ -270,7 +267,7 @@
     max-height: 80vh;
     overflow: auto;
   ">
-    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 신청 내역</h3>
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 내 신청 내역</h3>
     <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
       <thead><tr></tr></thead>
       <tbody></tbody>
@@ -287,6 +284,7 @@ const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
   
+
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
@@ -392,6 +390,7 @@ function checkPhotoLimit(input) {
     return;
   }
 
+  
   fileArray.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -509,7 +508,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
 
-      const desiredIndexes = [0, 2, 4, 5, 6, 7, 9, 10, 8]; // 날짜~처리완료
+      const desiredIndexes = [0, 2, 4, 5, 6, 7, 8, 9, 10]; // 날짜~처리완료
       const headerNames = desiredIndexes.map(i => data.header[i]);
 
       thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
@@ -588,6 +587,9 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
+
+
+  
 
   fetch(API_URL)
     .then(res => res.json())
