@@ -618,7 +618,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         return; // 제출 중단
       } else {
         if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${지급문구} : ${지급문구};
+          remarksInput.value = `${remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`}`;
         }
       }
     } else {
