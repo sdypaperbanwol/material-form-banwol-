@@ -184,8 +184,8 @@
 
 <!-- ✅ 비고(추가 내용) + 사진 업로드 통합 박스 -->
 <div style="display: flex; flex-direction: column; gap: 6px;">
-  <label for="remarks">📎 추가 내용 및 현장 사진(없을 경우 생략)</label>
-  <textarea id="remarks" name="remarks" placeholder="추가 내용" style="min-height: 60px;"></textarea>
+  <label for="remarks">📎 추가 내용 및 현장 사진</label>
+  <textarea id="remarks" name="remarks" placeholder="추가 내용(없을 경우 생략)" style="min-height: 60px;"></textarea>
 
   <div style="display:flex; align-items: center; gap: 10px;">
     <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none; padding-left:0;">
@@ -198,7 +198,6 @@
     - 현재 보유 수량내에서 지급, 부족분은 구매 요청 가능합니다.<br>
     - 날짜 선택(오늘·내일 X시 수령/교환 기재) 가능합니다.<br>
     - 필요한 경우 사진 첨부도 가능합니다(최대 3장).<br>
-    - (단, 사진 첨부 시 해당 항목만 단독 신청 가능.)<br>
     - 과다 요청 시 일부 제한될 수 있습니다.
     </small>
 
@@ -660,7 +659,8 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
           alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
         }
 
-    
+        
+
         categorySelect.disabled = true;
         subSelect.disabled = true;
         sizeSelect.disabled = true;
@@ -791,7 +791,9 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
-    if (구매요청수량 > 0) {
+ 
+
+  if (구매요청수량 > 0) {
     if (currentStock > 0) {
       alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
     } else {
