@@ -337,10 +337,7 @@ function checkPhotoLimit(input) {
     return;
   }
 
-  if (itemList.length > 0) {
-    alert("📷 사진을 업로드하면 한 번에 한 품목만 신청할 수 있습니다. 기존 항목을 모두 지워주세요.");
-  }
-
+  
   fileArray.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -811,7 +808,6 @@ nameInput.value = localStorage.getItem("userInfo") || "";
 
 
 document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
-  // ✅ 사용자가 수동 클릭한 경우에만 실행되도록
   if (!e.isTrusted) return;
 
   if (itemList.length === 0) {
@@ -819,8 +815,14 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     return;
   }
 
-  document.getElementById("loadingOverlay").style.display = "flex";
+  // ✅ 이 위치에서 단 한 번만 검사!
+  const photoInput = document.getElementById("photoFiles");
+  if (photoInput.files.length > 0 && itemList.length > 1) {
+    alert("📷 사진을 업로드한 경우 한 품목만 신청할 수 있습니다. 항목을 정리해주세요.");
+    return;
+  }
 
+  document.getElementById("loadingOverlay").style.display = "flex";
 
   try {
     const 완료메시지목록 = [];
@@ -833,32 +835,29 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
-      const photoInput = document.getElementById("photoFiles");
-const files = photoInput.files;
-const photoData = await readFilesAsBase64(files);
+      const files = photoInput.files;
+      const photoData = await readFilesAsBase64(files);
 
-const formData = new URLSearchParams({
-  category: item.category,
-  subcategory: item.subcategory,
-  size: item.size,
-  name: item.name,
-  quantity: String(item.quantity),
-  remarks: item.remarks
-});
+      const formData = new URLSearchParams({
+        category: item.category,
+        subcategory: item.subcategory,
+        size: item.size,
+        name: item.name,
+        quantity: String(item.quantity),
+        remarks: item.remarks
+      });
 
-photoData.forEach((img, idx) => {
-  formData.append(`base64_${idx + 1}`, img.base64);
-  formData.append(`filename_${idx + 1}`, img.filename);
-});
-
+      photoData.forEach((img, idx) => {
+        formData.append(`base64_${idx + 1}`, img.base64);
+        formData.append(`filename_${idx + 1}`, img.filename);
+      });
 
       const res = await fetch(API_URL, {
         method: "POST",
         body: formData,
       });
-      if (!res.ok) {
-        throw new Error(`HTTP error: ${res.status}`);
-      }
+
+      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = await res.json();
 
       let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
@@ -869,12 +868,11 @@ photoData.forEach((img, idx) => {
       } else if (구매요청수량 > 0) {
         msg += `${구매요청수량}개 구매 요청 완료`;
       }
+
       완료메시지목록.push(msg);
     }
 
-    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
-
     alert("✅ 모든 신청이 저장되었습니다!\n\n" + 완료메시지목록.join("\n"));
     itemList = [];
     document.getElementById("itemListDisplay").innerHTML = "";
@@ -882,12 +880,10 @@ photoData.forEach((img, idx) => {
 
   } catch (err) {
     console.error("에러:", err);
-    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
-
 
 </script>
 
