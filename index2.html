@@ -173,16 +173,18 @@
     </small>
     <textarea id="remarks" name="remarks" placeholder="추가 내용(없을 경우 생략)"></textarea>
 
-<div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
+<!-- 1. textarea 아래에 ➕ 추가 버튼만 먼저 위치 -->
+<button type="button" id="addItemBtn" style="width:100%; margin-top:10px; background:#28a745;">➕ 추가</button>
+
+<!-- 2. 추가된 항목 리스트 -->
+<div style="width: 100%; margin-top: 10px; padding: 0;">
   <h4>📝 추가된 항목</h4>
   <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
 </div>
 
-    
-<div style="display:flex; gap:10px; width:100%;">
-  <button type="button" id="addItemBtn" style="flex:1; min-width:100px; background:#28a745;">➕ 추가</button>
-  <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#007bff;">✅ 신청(제출)</button>
-</div>
+<!-- 3. 가장 마지막에 ✅ 신청 버튼 -->
+<button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
+
 
 <div id="loadingOverlay" style="
   display: none;
