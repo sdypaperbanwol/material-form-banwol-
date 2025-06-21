@@ -970,12 +970,12 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 </div>
   <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+  const todayKey = new Date().toISOString().split("T")[0];
   const hiddenDay = localStorage.getItem("hideNoticeDate");
 
   if (hiddenDay === todayKey) {
     console.log("📢 오늘 공지사항 안 보기 설정됨.");
-    return; // 오늘은 안 보이게
+    return;
   }
 
   const closeBtn = document.getElementById("closeRecordsModal");
@@ -984,6 +984,19 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("myRecordsModal").style.display = "none";
     });
   }
+
+  // ✅ 요기 위치가 정답! (닫기 버튼 등록 바깥)
+  document.getElementById("goToFormBtn").addEventListener("click", () => {
+    formTypeSelection.style.display = "none";
+    materialForm.style.display = "flex";
+  });
+
+  document.getElementById("goToRecordsBtn").addEventListener("click", () => {
+    formTypeSelection.style.display = "none";
+    document.getElementById("myRecordsBtn").click();
+  });
+});
+
 
   fetch("https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec?mode=notice")
 
@@ -1004,15 +1017,7 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("hideNoticeDate", todayKey);
     document.getElementById("noticeModal").style.display = "none";
   });
-  document.getElementById("goToFormBtn").addEventListener("click", () => {
-  formTypeSelection.style.display = "none";
-  formTypeSelection.style.display = "flex";
-});
 
-document.getElementById("goToRecordsBtn").addEventListener("click", () => {
-  formTypeSelection.style.display = "none";
-  document.getElementById("myRecordsBtn").click();
-});
 
 
     
