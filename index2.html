@@ -160,12 +160,20 @@
     <label for="quantity">수량(수치)</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
-    <label for="photoFiles">현장 사진 업로드 (최대 3장)</label>
-    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none;padding-left:0;">
-    <small>사진은 선택사항입니다. 최대 3장까지 가능합니다.</small>
-    <div id="previewArea" style="display:flex; gap:8px; margin-top:10px;"></div>
+<!-- ✅ 비고(추가 내용) + 사진 업로드 통합 박스 -->
+<div style="display: flex; flex-direction: column; gap: 6px;">
+  <label for="remarks">📎 추가 내용 및 현장 사진</label>
+  <textarea id="remarks" name="remarks" placeholder="추가 내용을 입력하세요(없을 경우 생략)" style="min-height: 60px;"></textarea>
 
-    <label for="remarks">추가 내용</label>
+  <div style="display:flex; align-items: center; gap: 10px;">
+    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none; padding-left:0;">
+    <small style="flex:1;">사진은 선택사항이며, 최대 3장까지 업로드 가능합니다.</small>
+  </div>
+
+  <!-- 썸네일 영역 -->
+  <div id="previewArea" style="display:flex; gap:8px; margin-top:5px;"></div>
+</div>
+
     <small>
     - 현재 보유 수량내에서 지급, 부족분은 구매 요청됩니다.<br>
     - 날짜 선택 가능(오늘·내일 X시 수령/교환 기재).<br>
