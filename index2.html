@@ -128,20 +128,31 @@
     <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
 
-  <!-- ✅ 로그인 후 폼 유형 선택 버튼 -->
-<div id="formTypeSelection" style="display: none; flex-direction: column; gap: 12px; align-items: center; margin-top: 30px;">
-  <button id="goToFormBtn" style="width: 220px; font-size: 16px;">📝 신청하기</button>
-  <button id="goToRecordsBtn" style="width: 220px; font-size: 16px; background-color:#f8f9fa; color:#007bff; border: 1px solid #007bff;">📄 신청내역 보기</button>
-</div>
-  
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
      <!-- 🔽 여기 추가 -->
-<!-- 제목만 한 줄에 표시 -->
-<h3 style="margin-bottom: 10px;">📋 신청·조사서 작성</h3>
-
-
-    <label for="category">항목 분류</label>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3 style="margin: 0;">📋 신청·조사서 작성 </h3>
+    <!-- 개선 -->
+<button id="myRecordsBtn" style="
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #fff;
+  color: #007bff;
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
+  📄 <span>신청 내역</span>
+</button>
+  </div>
+    <label for="category">1. 항목 분류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
     </select>
@@ -155,25 +166,25 @@
       </div>
     </div>
     
-    <label for="subcategory">세부 항목</label>
+    <label for="subcategory">2. 세부 항목</label>
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="size">상세 옵션</label>
+    <label for="size">3. 상세 옵션</label>
     <select id="size" name="size" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="name">작성자</label>
+    <label for="name">4. 작성자</label>
     <input type="text" id="name" name="name" readonly />
 
-    <label for="quantity">수량(수치)</label>
+    <label for="quantity">5. 수량(수치)</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
 <!-- ✅ 비고(추가 내용) + 사진 업로드 통합 박스 -->
 <div style="display: flex; flex-direction: column; gap: 6px;">
-  <label for="remarks">추가 내용 및 사진(없을 경우 생략)</label>
+  <label for="remarks">6. 추가 내용 및 사진(없을 경우 생략)</label>
   <textarea id="remarks" name="remarks" placeholder="추가 내용" style="min-height: 60px;"></textarea>
 
   <div style="display:flex; align-items: center; gap: 10px;">
@@ -202,8 +213,6 @@
 <!-- 3. 가장 마지막에 ✅ 신청 버튼 -->
 <button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
 
- 
-    
 <div id="loadingOverlay" style="
   display: none;
   position: fixed;
@@ -221,9 +230,7 @@
 ">
   ⏳ 신청 중입니다...
 </div>
-
-
-
+    
    <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
 <div class="message" id="msg"></div>
 
@@ -256,7 +263,7 @@
     max-height: 80vh;
     overflow: auto;
   ">
-    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 내 신청 내역</h3>
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 신청 내역</h3>
     <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
       <thead><tr></tr></thead>
       <tbody></tbody>
@@ -273,7 +280,6 @@ const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
   
-
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
@@ -296,7 +302,7 @@ if (saved) {
       }
       nameInput.value = saved;
       loginSection.style.display = "none";
-      formTypeSelection.style.display = "flex";
+      materialForm.style.display = "flex";
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -327,7 +333,7 @@ function verifyUser() {
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
-      formTypeSelection.style.display = "flex"; // ✅ 새 버튼 선택 UI 보여주기
+      materialForm.style.display = "flex";
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
@@ -379,7 +385,6 @@ function checkPhotoLimit(input) {
     return;
   }
 
-  
   fileArray.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -476,6 +481,49 @@ function formatDate(raw) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+document.getElementById("myRecordsBtn").addEventListener("click", () => {
+  const fullName = localStorage.getItem("userInfo");
+  if (!fullName) {
+    alert("로그인 후 이용 가능합니다.");
+    return;
+  }
+
+  const empId = fullName.split(" ")[0];
+
+  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result !== "success") {
+        alert("❌ 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      const desiredIndexes = [0, 2, 4, 5, 6, 7, 9, 10, 8]; // 날짜~처리완료
+      const headerNames = desiredIndexes.map(i => data.header[i]);
+
+      thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${h}</th>`
+      ).join("") + "</tr>";
+
+      tbody.innerHTML = "";
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        desiredIndexes.forEach((colIndex, idx) => {
+          const td = document.createElement("td");
+          const cell = row[colIndex];
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          td.style.whiteSpace = "nowrap";
+          td.style.textAlign = "center";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
 
       // ✅ 이제는 모달로 표시!
       document.getElementById("myRecordsModal").style.display = "flex";
@@ -533,9 +581,6 @@ function formatDate(raw) {
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
-
-
-  
 
   fetch(API_URL)
     .then(res => res.json())
@@ -883,103 +928,66 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
   }
 });
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec";
-
-document.addEventListener("DOMContentLoaded", () => {
-  const todayKey = new Date().toISOString().split("T")[0];
-  const hiddenDay = localStorage.getItem("hideNoticeDate");
-
-  // 공지사항 표시
-  if (hiddenDay !== todayKey) {
-    fetch(`${API_URL}?mode=notice`)
-      .then(res => res.json())
-      .then(data => {
-        const notice = data.notice?.trim();
-        if (notice) {
-          document.getElementById("noticeContent").textContent = notice;
-          document.getElementById("noticeModal").style.display = "flex";
-        }
-      });
-
-    document.getElementById("closeNotice")?.addEventListener("click", () => {
-      document.getElementById("noticeModal").style.display = "none";
-    });
-
-    document.getElementById("hideTodayBtn")?.addEventListener("click", () => {
-      localStorage.setItem("hideNoticeDate", todayKey);
-      document.getElementById("noticeModal").style.display = "none";
-    });
-  }
-
-  // 닫기 버튼
-  document.getElementById("closeRecordsModal")?.addEventListener("click", () => {
-    document.getElementById("myRecordsModal").style.display = "none";
-  });
-
-  // ✅ 신청하기 버튼
-  document.getElementById("goToFormBtn")?.addEventListener("click", () => {
-    document.getElementById("formTypeSelection").style.display = "none";
-    document.getElementById("materialForm").style.display = "flex";
-  });
-
-  // ✅ 신청내역 보기 버튼
-  document.getElementById("goToRecordsBtn")?.addEventListener("click", () => {
-    const fullName = localStorage.getItem("userInfo");
-    if (!fullName) {
-      alert("로그인 후 이용 가능합니다.");
-      return;
-    }
-
-    const empId = fullName.split(" ")[0];
-
-    fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.result !== "success") {
-          alert("❌ 신청 내역을 불러오지 못했습니다.");
-          return;
-        }
-
-        const table = document.getElementById("myRecordsTable");
-        const thead = table.querySelector("thead");
-        const tbody = table.querySelector("tbody");
-
-        const desiredIndexes = [0, 2, 4, 5, 6, 9, 10, 8];
-        const headerNames = desiredIndexes.map(i => data.header[i]);
-
-        thead.innerHTML = "<tr>" + headerNames.map(h =>
-          `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${h}</th>`
-        ).join("") + "</tr>";
-
-        tbody.innerHTML = "";
-        data.records.forEach(row => {
-          const tr = document.createElement("tr");
-          desiredIndexes.forEach((colIndex, idx) => {
-            const td = document.createElement("td");
-            td.textContent = idx === 0 ? formatDate(row[colIndex]) : row[colIndex];
-            td.style.border = "1px solid #ccc";
-            td.style.padding = "6px";
-            td.style.whiteSpace = "nowrap";
-            td.style.textAlign = "center";
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-
-        document.getElementById("myRecordsModal").style.display = "flex";
-        document.getElementById("msg").textContent = "";
-      })
-      .catch(err => {
-        console.error("신청 내역 로딩 오류:", err);
-        alert("❌ 조회 중 오류가 발생했습니다.");
-      });
-  });
-});
 </script>
 
 
+<!-- ✅ 공지사항 모달 -->
+<div id="noticeModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:white; padding:20px 24px 30px; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 10px rgba(0,0,0,0.3); position:relative;">
+    
+    <!-- ❌ X 버튼: 더 위로 올리고 오른쪽으로 이동 -->
+    <span id="closeNotice" style="position:absolute; top:10px; right:10px; font-weight:bold; cursor:pointer; font-size:20px; z-index:1;">
+      ✖
+    </span>
+    
+    <!-- ✅ 공지 텍스트: 좌우 여백 + 줄바꿈 유지 -->
+    <div id="noticeContent" style="white-space:pre-wrap; font-size:15px; color:#333; padding: 10px 5px 0; line-height: 1.6;"></div>
+    
+    <!-- ✅ 오늘 하루 보지 않기 버튼: 가운데 정렬 -->
+    <button id="hideTodayBtn"
+      style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
+      오늘 하루 이 창 보지 않기
+    </button>
+  </div>
+</div>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+  const hiddenDay = localStorage.getItem("hideNoticeDate");
 
+  if (hiddenDay === todayKey) {
+    console.log("📢 오늘 공지사항 안 보기 설정됨.");
+    return; // 오늘은 안 보이게
+  }
+
+  const closeBtn = document.getElementById("closeRecordsModal");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      document.getElementById("myRecordsModal").style.display = "none";
+    });
+  }
+
+  fetch("https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec?mode=notice")
+
+    .then(res => res.json())
+    .then(data => {
+      const notice = data.notice?.trim();
+      if (notice) {
+        document.getElementById("noticeContent").textContent = notice;
+        document.getElementById("noticeModal").style.display = "flex";
+      }
+    });
+
+  document.getElementById("closeNotice").addEventListener("click", () => {
+    document.getElementById("noticeModal").style.display = "none";
+  });
+
+  document.getElementById("hideTodayBtn").addEventListener("click", () => {
+    localStorage.setItem("hideNoticeDate", todayKey);
+    document.getElementById("noticeModal").style.display = "none";
+  });
+});
+</script>
 
 </body>
 </html>
