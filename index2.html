@@ -225,12 +225,15 @@
 
 
 
+<!-- 📄 내 신청 내역 모달 -->
 <div id="myRecordsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
   <div style="background:white; padding:20px 24px 30px; border-radius:10px; max-width:800px; width:95%; max-height:90vh; overflow:auto; position:relative;">
-    
-    <!-- ✖ 닫기 버튼 -->
-    <span id="closeRecordsModal" style="position:absolute; top:10px; right:10px; font-weight:bold; cursor:pointer; font-size:20px;">✖</span>
-    
+
+    <!-- ✅ X버튼: fixed처럼 상단 고정 -->
+    <div style="position:sticky; top:0; display:flex; justify-content:flex-end; background:white; z-index:100;">
+      <button id="closeRecordsModal" style="font-size:20px; font-weight:bold; border:none; background:none; cursor:pointer; padding:4px;">✖</button>
+    </div>
+
     <h3 style="margin-bottom: 15px;">📄 내 신청 내역</h3>
     <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
       <thead><tr></tr></thead>
@@ -238,6 +241,7 @@
     </table>
   </div>
 </div>
+
 
     
   </form>
@@ -927,6 +931,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (hiddenDay === todayKey) {
     console.log("📢 오늘 공지사항 안 보기 설정됨.");
     return; // 오늘은 안 보이게
+  }
+
+  const closeBtn = document.getElementById("closeRecordsModal");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      document.getElementById("myRecordsModal").style.display = "none";
+    });
   }
 
   fetch("https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec?mode=notice")
