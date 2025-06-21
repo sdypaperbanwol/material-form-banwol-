@@ -105,20 +105,6 @@
     z-index: 10000;
   }
 
-  #photoFiles {
-    display: none;  /* ✅ 기본 input 숨김 */
-  }
-
-  #photoLabel {
-    display: inline-block;
-    padding: 8px 14px;
-    background-color: #007bff;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-    
   </style>
 </head>
 <body>
@@ -174,66 +160,32 @@
     <label for="quantity">수량(수치)</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
-   <div style="margin-top: 20px; border: 1px solid #ccc; padding: 14px; border-radius: 8px; background: #f9f9f9;">
-  <h4 style="margin-bottom: 10px;">🖼️ 현장 사진 업로드 및 추가 내용</h4>
+    <label for="photoFiles">현장 사진 업로드 (최대 3장)</label>
+    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none;padding-left:0;">
+    <small>사진은 선택사항입니다. 최대 3장까지 업로드 가능하며, 신청 완료 시 함께 전송됩니다.</small>
+    <div id="previewArea" style="display:flex; gap:8px; margin-top:10px;"></div>
 
-  <!-- 📤 파일 업로드 -->
-  <input type="file" id="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="display:none;" />
-  <label for="photoFiles" id="photoLabel" style="display:inline-block; padding:8px 14px; background:#007bff; color:#fff; border-radius:6px; cursor:pointer;">
-    📁 사진 선택
-  </label>
-  <div id="fileCount" style="font-size:13px; color:#555; margin-top: 4px;">사진이 선택되지 않았습니다</div>
-  <div id="previewArea" style="margin-top:10px;"></div>
+    <label for="remarks">추가 내용</label>
+    <small>
+      - 신청은 24시간 가능, 지급은 담당자 근무일에 진행됩니다.<br>
+      - 담당자 부재(휴가 등) 시 지급이 지연될 수 있습니다.<br>
+      - 날짜 선택 가능(추가 내용에 오늘·내일 X시 수령/교환 기재).<br>
+      - 재고 부족 시 보유 수량만 지급, 부족분은 구매 요청됩니다.<br>
+      - 과다 요청 시 지급이 제한될 수 있으니 양해 부탁드립니다.
+    </small>
+    <textarea id="remarks" name="remarks" placeholder="추가 내용을 입력하세요(없을 경우 생략)"></textarea>
 
-  <!-- 📝 추가 내용 안내 및 입력 -->
-  <small style="display: block; margin-top: 12px;">
-    - 현재 보유 수량내에서 지급, 부족분은 구매 요청됩니다.<br>
-    - 날짜 선택 가능(오늘·내일 X시 수령/교환 기재).<br>
-    - 과다 요청 시 일부 제한될 수 있습니다.
-  </small>
-
- <textarea
-  id="remarks"
-  name="remarks"
-  rows="3"
-  placeholder="추가 내용 입력(없을 경우 생략)"
-  style="width:100%; box-sizing: border-box; margin-top:12px; padding:10px; border-radius:6px; border:1px solid #ccc; resize: vertical;">
-</textarea>
-
-</div>
-
-   
-
-<!-- ➕ 추가 버튼 -->
-<div style="margin-top: 10px;">
-  <button id="addItemBtn" style="width: 100%; padding: 12px; background: #007bff; color: #fff; border: none; border-radius: 6px; font-size: 15px;">
-    ➕ 항목 추가
-  </button>
-</div>
-
-<!-- 📃 추가된 항목 -->
-<div style="margin-top: 16px;">
+<div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
   <h4>📝 추가된 항목</h4>
-  <ul id="itemListDisplay" style="padding-left: 0;"></ul>
+  <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
 </div>
 
-<div style="margin-top: 16px;">
-  <button id="submitAllBtn" style="width: 100%; padding: 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; font-size: 15px;">
-    ✅ 신청 제출
-  </button>
+    
+<div style="display:flex; gap:10px; width:100%;">
+  <button type="button" id="addItemBtn" style="flex:1; min-width:100px; background:#28a745;">➕ 추가</button>
+  <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#007bff;">✅ 신청(제출)</button>
 </div>
 
-
-<!-- 🔄 처음으로 / 📋 내 신청 내역 보기 -->
-<div style="display: flex; gap: 10px; margin-top: 12px;">
-  <button type="button" id="resetBtn" style="flex: 1; background-color: #999;">🔄 처음으로</button>
-  <button type="button" id="myRecordsBtn" style="flex: 1; background-color: #6c757d; color: white;">📋 내역 보기</button>
-</div>
-
-<!-- ✅ 결과 메시지 영역 -->
-<div class="message" id="msg" style="margin-top: 10px;"></div>
-
-<!-- ⏳ 로딩 오버레이 -->
 <div id="loadingOverlay" style="
   display: none;
   position: fixed;
@@ -253,6 +205,22 @@
 </div>
 
 
+
+   <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
+<div class="message" id="msg"></div>
+<button type="button" id="myRecordsBtn" style="background-color: #6c757d;">📄 내 신청 내역 보기</button>
+
+
+
+<div id="myRecordsSection" style="display: none; margin-top: 20px; overflow-x: auto;">
+  <h4>📋 신청 내역</h4>
+  <table id="myRecordsTable" style="min-width: 600px; width: 100%; font-size: 14px; border-collapse: collapse;">
+
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
     
   </form>
 
@@ -262,8 +230,7 @@ const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
-
-let uploadedFiles = [];  // ✅ 여기 넣으세요 (가장 위 변수들 사이에)
+  
 
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -359,20 +326,23 @@ function readFilesAsBase64(files) {
   return Promise.all(promises);
 }
 function checkPhotoLimit(input) {
-  const newFiles = Array.from(input.files);
+  const preview = document.getElementById("previewArea");
+  preview.innerHTML = "";
 
-  // 총합이 3장 초과 시 경고
-  if (uploadedFiles.length + newFiles.length > 3) {
+  if (input.files.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
     input.value = "";
     return;
   }
 
-  newFiles.forEach(file => {
-    uploadedFiles.push(file);  // 전역 배열에 저장
+  if (itemList.length > 0) {
+    alert("📷 사진을 업로드하면 한 번에 한 품목만 신청할 수 있습니다. 기존 항목을 모두 지워주세요.");
+  }
 
+  Array.from(input.files).forEach((file, idx) => {
     const reader = new FileReader();
     reader.onload = (e) => {
+      // 썸네일 + 삭제버튼 wrapper
       const wrapper = document.createElement("div");
       wrapper.style.position = "relative";
 
@@ -398,32 +368,18 @@ function checkPhotoLimit(input) {
       delBtn.style.height = "20px";
       delBtn.style.cursor = "pointer";
       delBtn.style.fontSize = "12px";
-
-     delBtn.onclick = () => {
-  const idx = uploadedFiles.indexOf(file);
-  if (idx > -1) uploadedFiles.splice(idx, 1);
-  wrapper.remove();
-
-  // ✅ 삭제 후 업로드 개수 표시 갱신
-  const fileCount = document.getElementById("fileCount");
-  if (uploadedFiles.length > 0) {
-    fileCount.textContent = `📷 ${uploadedFiles.length}장 업로드됨`;
-  } else {
-    fileCount.textContent = "사진이 선택되지 않았습니다";
-  }
-};
-
+      delBtn.onclick = () => {
+        input.value = ""; // 실제 input 비움
+        preview.innerHTML = ""; // 썸네일 영역 초기화
+      };
 
       wrapper.appendChild(img);
       wrapper.appendChild(delBtn);
-      document.getElementById("previewArea").appendChild(wrapper);
+      preview.appendChild(wrapper);
     };
     reader.readAsDataURL(file);
   });
-
-  input.value = "";  // 같은 파일 또 올릴 수 있도록 초기화
 }
-
 
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
@@ -444,7 +400,7 @@ document.addEventListener("DOMContentLoaded", function () {
   subSelect.addEventListener("change", () => {
     const cat = categorySelect.value;
     const type = subSelect.value;
-    subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
 
     if (items[cat]) {
       const stockMap = items[cat].stockMap;
@@ -493,12 +449,9 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const desiredIndexes = [0, 2, 4, 5, 6, 7, 8, 9, 10]; // 날짜~처리완료
       const headerNames = desiredIndexes.map(i => data.header[i]);
 
-   thead.innerHTML = "<tr>" + headerNames.map((h, i) => `
-  <th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center; ${i === 0 ? 'min-width:40px;' : ''}">
-    ${h}
-  </th>
-`).join("") + "</tr>";
-
+    thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
+  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center; ${i === 0 ? 'min-width:40px;' : ''}">${h}</th>`
+).join("") + "</tr>";
 
       tbody.innerHTML = "";
       data.records.forEach(row => {
@@ -526,7 +479,56 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 });
 
 
+  const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
 
+  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result !== "success") {
+        alert("❌ 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      // 헤더 생성
+      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
+  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
+).join("") + "</tr>";
+
+
+      // 본문 행 생성
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        row.slice(0, 10).forEach(cell => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsSection").style.display = "block";
+    })
+    .catch(err => {
+      console.error("신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
+
+//  sizeSelect.addEventListener("change", () => {
+//    const opt = sizeSelect.selectedOptions[0];
+//    const stock = parseInt(opt?.dataset.stock || "0", 10);
+//    if (stock === 0) {
+//      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
+//    }
+//  });
+  
 
   fetch(API_URL)
     .then(res => res.json())
@@ -543,38 +545,23 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       console.error("API 로드 에러:", err);
     });
 
- document.getElementById("resetBtn").addEventListener("click", () => {
-  alertShown = false;
-  isSubmitting = false;
-  materialForm.reset();
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    alertShown = false;
+    isSubmitting = false;
+    materialForm.reset();
+    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    categorySelect.disabled = false;
+    subSelect.disabled = false;
+    sizeSelect.disabled = false;
+    quantityInput.disabled = false;
+    nameInput.value = localStorage.getItem("userInfo") || "";
+    msgDiv.textContent = "";
 
-  // ✅ 파일 업로드 관련 초기화
-  uploadedFiles = []; // 배열 비우기
-  document.getElementById("photoFiles").value = ""; // 파일 선택 초기화
-  document.getElementById("previewArea").innerHTML = ""; // 썸네일 초기화
-  document.getElementById("fileCount").textContent = "사진이 선택되지 않았습니다";
-
-  // ✅ 선택 단계 초기화 등 기존 로직
-  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  categorySelect.disabled = false;
-  subSelect.disabled = false;
-  sizeSelect.disabled = false;
-  quantityInput.disabled = false;
-  nameInput.value = localStorage.getItem("userInfo") || "";
-  msgDiv.textContent = "";
-
-  itemList = [];
-  document.getElementById("itemListDisplay").innerHTML = "";
-  document.getElementById("myRecordsSection").style.display = "none";
-
-  // ✅ 단계 초기화
-  document.getElementById("step1").style.display = "block";
-  document.getElementById("step2").style.display = "none";
-  document.getElementById("step3").style.display = "none";
-  document.getElementById("step4").style.display = "none";
-});
-
+    itemList = [];  // 추가된 항목 초기화
+  document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
+     document.getElementById("myRecordsSection").style.display = "none";
+  });
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
@@ -618,7 +605,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         return; // 제출 중단
       } else {
         if (!remarksText.includes("지급")) {
-          remarksInput.value = `${remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`}`;
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
         }
       }
     } else {
@@ -697,11 +684,10 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
           const fileName = url.split("/").pop().split(".")[0];
           const wrapper = document.createElement("div");
           wrapper.style.marginBottom = "20px";
-         wrapper.innerHTML = `
-  <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
-  <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-`;
-
+          wrapper.innerHTML = `
+            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+          `;
           container.appendChild(wrapper);
         });
       }
@@ -727,21 +713,18 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   let remarksText = remarksInput.value.trim();
 
   if (!category || !subcategory || !size || !quantity || quantity <= 0) {
-  const msg = document.getElementById("msg");
-  msg.textContent = "⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.";
-  msg.style.color = "red";
-  msg.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  return;
-}
+    alert("⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.");
+    return;
+  }
 
   const selectedSizeOption = sizeSelect.selectedOptions[0];
   const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
 
   const 지급수량 = Math.min(quantity, currentStock);
   const 구매요청수량 = Math.max(0, quantity - currentStock);
- const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
+  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
+  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
   if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
     remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
@@ -783,7 +766,6 @@ li.innerHTML = `
   </div>
   <button class="remove-btn">삭제</button>
 `;
-
 
 // ✅ 삭제 버튼 동작
 const removeBtn = li.querySelector(".remove-btn");
@@ -839,7 +821,8 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
       const photoInput = document.getElementById("photoFiles");
-const photoData = await readFilesAsBase64(uploadedFiles);
+const files = photoInput.files;
+const photoData = await readFilesAsBase64(files);
 
 const formData = new URLSearchParams({
   category: item.category,
@@ -867,11 +850,11 @@ photoData.forEach((img, idx) => {
 
       let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
       if (지급수량 > 0 && 구매요청수량 > 0) {
-       msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
+        msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
       } else if (지급수량 > 0) {
-       msg += `${지급수량}개 신청 완료`;
+        msg += `${지급수량}개 신청 완료`;
       } else if (구매요청수량 > 0) {
-       	msg += `${구매요청수량}개 구매 요청 완료`;
+        msg += `${구매요청수량}개 구매 요청 완료`;
       }
       완료메시지목록.push(msg);
     }
@@ -949,3 +932,217 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
+
+(ㅇㅅㅇ)
+
+function getTrueLastRow(sheet) {
+  const values = sheet.getRange("A7:I").getValues();
+  let lastRow = 0;
+  for (let i = 0; i < values.length; i++) {
+    if (values[i].some(val => val !== "")) {
+      lastRow = i + 1;
+    }
+  }
+  return lastRow + 6; // A7부터니까 보정
+}
+
+function doPost(e) {
+  const data = e.parameter;
+
+  // 🔹 로그인 요청 처리
+  const empId = data.empId;
+  const empName = data.empName;
+  const category = data.category;
+  const isLoginRequest = empId && empName && !category;
+
+  if (isLoginRequest) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("이름사번메일");
+    const records = sheet.getRange("C5:E" + sheet.getLastRow()).getValues();
+    const matched = records.find(([id, name, active]) =>
+      String(id).trim() === empId && String(name).trim() === empName
+    );
+    if (matched) {
+      const active = String(matched[2] || "").trim();
+      return ContentService.createTextOutput(
+        JSON.stringify({ result: active === "Y" || active === "Z" ? "success" : "disabled", active })
+      ).setMimeType(ContentService.MimeType.JSON);
+    } else {
+      return ContentService.createTextOutput(JSON.stringify({ result: "fail" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // 🔹 신청 처리
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 지급(통합)");
+  const date = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss.SSS");
+
+  const name = (data.name || "").trim();
+  const subcategory = (data.subcategory || "").trim();
+  const size = (data.size || "").trim();
+  const remarks = (data.remarks || "").trim();
+  const quantity = parseInt(data.quantity || "0", 10);
+
+  if (!name || !category || !subcategory || !size || quantity <= 0) {
+    return ContentService.createTextOutput(JSON.stringify({
+      result: "error",
+      message: `필수 값 누락 또는 수량 오류: name='${name}', category='${category}', subcategory='${subcategory}', size='${size}', quantity='${data.quantity}'`
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const [empIdPart, empNamePart] = name.split(" ");
+  if (!empIdPart || !empNamePart) {
+    return ContentService.createTextOutput(JSON.stringify({
+      result: "error",
+      message: "name 형식 오류: '사번 이름' 형식이어야 합니다."
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 지급수량 / 구매요청수량 추출
+  let 지급수량 = 0, 구매요청수량 = 0;
+  const 지급Match = remarks.match(/(\d+)개 지급/);
+  const 구매Match = remarks.match(/(\d+)개 구매 요청/);
+  if (지급Match) 지급수량 = parseInt(지급Match[1], 10);
+  if (구매Match) 구매요청수량 = parseInt(구매Match[1], 10);
+
+  try {
+    const lastRow = getTrueLastRow(sheet);
+    const nextRow = lastRow + 1;
+
+    // 🔹 신청 정보 저장 (A~I열)
+    sheet.getRange(nextRow, 1, 1, 9).setValues([[
+      date, empIdPart, empNamePart, category, subcategory, size, 지급수량, 구매요청수량, remarks
+    ]]);
+
+    // 🔹 사진 처리: base64_1 ~ base64_3, filename_1 ~ filename_3
+    const photoUrls = [];
+    const folder = DriveApp.getFolderById("1BO0I70xVUT17-qy4Wytv6ueoZSlUPKoL");
+
+    for (let i = 1; i <= 3; i++) {
+      const base64 = data[`base64_${i}`];
+      const filename = data[`filename_${i}`];
+
+      if (base64 && filename) {
+        const contentType = filename.toLowerCase().endsWith(".png") ? MimeType.PNG : MimeType.JPEG;
+        const blob = Utilities.newBlob(Utilities.base64Decode(base64), contentType, filename);
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        photoUrls.push(file.getUrl());
+      }
+    }
+
+    if (photoUrls.length > 0) {
+      const range = sheet.getRange(nextRow, 12, 1, 3); // L~N 열
+      const paddedUrls = [photoUrls[0] || "", photoUrls[1] || "", photoUrls[2] || ""];
+      range.setValues([paddedUrls]);
+    }
+
+    sendTelegramAlert({ date, empId: empIdPart, empName: empNamePart, category, subcategory, size, quantity, 지급수량, 구매요청수량, remarks });
+
+    return ContentService.createTextOutput(JSON.stringify({ result: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      result: "error",
+      message: "신청 처리 중 오류: " + err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+
+
+
+function sendTelegramAlert(data) {
+  const token = "7984153021:AAFeJqyiWga05mnqEJv0mvYb_44rGu-TmzA";
+  const chatId = "7717030762";
+  const message = `
+📦 <b>새 자재 신청이 접수되었습니다!</b>
+👤 이름: ${data.empId} ${data.empName}
+📁 분류: ${data.category} > ${data.subcategory}
+📐 사이즈: ${data.size}
+🔢 수량: 지급 ${data.지급수량} / 요청 ${data.구매요청수량}
+📝 비고: ${data.remarks}
+🕒 신청 시각: ${data.date}
+  `.trim();
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  const payload = {
+    method: 'post',
+    payload: {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'HTML'
+    }
+  };
+
+  try {
+    UrlFetchApp.fetch(url, payload);
+  } catch (error) {
+    Logger.log("🔴 Telegram 전송 실패: " + error.message);
+  }
+}
+
+function doGet(e) {
+  const mode = e?.parameter?.mode || "";
+
+  // 🔔 공지사항
+  if (mode === "notice") {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("이름사번메일");
+    const notice = sheet.getRange("A11").getValue();
+    return ContentService.createTextOutput(JSON.stringify({ notice }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 🖼️ 사진
+  if (mode === "photo") {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 리스트 관리");
+    const values = sheet.getRange("B2:G300").getValues();
+    const photoMap = {};
+
+    values.forEach(row => {
+      const category = String(row[0] || "").trim();
+      const url = String(row[5] || "").trim();
+      if (!category || !url) return;
+      if (!photoMap[category]) photoMap[category] = [];
+      photoMap[category].push(url);
+    });
+
+    return ContentService.createTextOutput(JSON.stringify(photoMap))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ✅ 신청 내역 조회 (추가된 부분)
+  if (mode === "myrecords") {
+    const empId = e.parameter.empId;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("문서번호 : SDYB-QESH-GH204-02");
+
+    const header = ["날짜", "사번", "이름", "항목 분류", "세부 항목", "상세 옵션", "지급", "구매요청", "추가 내용", "처리여부", "지급장소"];
+    const values = sheet.getRange("A8:K" + sheet.getLastRow()).getValues();
+    const records = values.filter(row => String(row[1]).trim() === empId);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      result: "success",
+      header,
+      records
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 📦 물품 리스트 로딩
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("물품 리스트 관리");
+  const values = sheet.getDataRange().getValues();
+  const data = values.slice(1);
+  const result = {};
+
+  data.forEach(row => {
+    const [, category, type, size, active, stock] = row;
+    if (active !== "Y" || !category || !type || !size) return;
+
+    if (!result[category]) result[category] = { types: [], stockMap: {} };
+    if (!result[category].types.includes(type)) result[category].types.push(type);
+    result[category].stockMap[`${type}__${size}`] = parseInt(stock, 10) || 0;
+  });
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
