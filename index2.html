@@ -876,13 +876,18 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const photoData = await readFilesAsBase64(files);
 
       const formData = new URLSearchParams({
-        category: item.category,
-        subcategory: item.subcategory,
-        size: item.size,
-        name: item.name,
-        quantity: String(item.quantity),
-        remarks: item.remarks
-      });
+  category: item.category,
+  subcategory: item.subcategory,
+  size: item.size,
+  name: item.name,
+  quantity: String(item.quantity),
+  remarks: item.remarks,
+
+  // ✅ 아래 두 줄 반드시 추가
+  지급수량: String(item.지급수량 || 0),
+  구매요청수량: String(item.구매요청수량 || 0)
+});
+
 
       photoData.forEach((img, idx) => {
         formData.append(`base64_${idx + 1}`, img.base64);
