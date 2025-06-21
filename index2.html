@@ -152,10 +152,18 @@
   📄 <span>신청 내역</span>
 </button>
   </div>
-    <label for="category">1. 항목 분류</label>
-    <select id="category" name="category" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+    <!-- ✅ 1단계: 항목 분류 버튼 UI -->
+<div id="step1" style="text-align:center; display:block;">
+  <h3>항목 분류를 선택하세요</h3>
+  <div id="category-buttons" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px;"></div>
+</div>
+
+<!-- ✅ 2단계: 세부 항목 버튼 (다음 단계에서 구현 예정, 일단 틀만) -->
+<div id="step2" style="display:none; text-align:center;">
+  <h3>세부 항목을 선택하세요</h3>
+  <div id="subcategory-buttons" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
+</div>
+
 
     <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
 
@@ -303,6 +311,7 @@ if (saved) {
       nameInput.value = saved;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
+      renderCategories(); // ✅ 추가
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -334,6 +343,7 @@ function verifyUser() {
       nameInput.value = fullName;
       loginSection.style.display = "none";
       materialForm.style.display = "flex";
+      renderCategories(); // ✅ 이거 꼭 필요!
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
@@ -717,7 +727,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 
 <script>
 document.getElementById("viewPhotos").addEventListener("click", () => {
-  const category = document.getElementById("category").value.trim();
+  const category = selected.category; // ✅ 드롭다운 없으니 selected 기준
   if (!category) {
     alert("물품 종류를 먼저 선택해주세요.");
     return;
@@ -752,7 +762,59 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
 document.getElementById("closeModal").addEventListener("click", () => {
   document.getElementById("photoModal").style.display = "none";
 });
+
+// ✅ ✅ ✅ 여기부터는 함수 정의는 밖에 따로 빼야 합니다!
+let selected = { category: "", subcategory: "" };
+
+function renderCategories() {
+  const container = document.getElementById("category-buttons");
+  container.innerHTML = "";
+  Object.keys(items).forEach(cat => {
+    const btn = document.createElement("button");
+    btn.textContent = cat;
+    btn.className = "category-btn";
+    btn.style.padding = "10px 16px";
+    btn.style.borderRadius = "6px";
+    btn.style.border = "1px solid #ccc";
+    btn.style.background = "#fff";
+    btn.style.cursor = "pointer";
+
+    btn.onclick = () => {
+      selected.category = cat;
+      renderSubcategories(cat);
+      document.getElementById("step1").style.display = "none";
+      document.getElementById("step2").style.display = "block";
+    };
+
+    container.appendChild(btn);
+  });
+}
+
+function renderSubcategories(cat) {
+  const container = document.getElementById("subcategory-buttons");
+  container.innerHTML = "";
+  const types = items[cat]?.types || [];
+
+  types.forEach(type => {
+    const btn = document.createElement("button");
+    btn.textContent = type;
+    btn.className = "subcategory-btn";
+    btn.style.padding = "10px 16px";
+    btn.style.borderRadius = "6px";
+    btn.style.border = "1px solid #ccc";
+    btn.style.background = "#fff";
+    btn.style.cursor = "pointer";
+
+    btn.onclick = () => {
+      selected.subcategory = type;
+      console.log("선택됨:", selected);
+    };
+
+    container.appendChild(btn);
+  });
+}
 </script>
+
 
 <script>
 let itemList = [];
