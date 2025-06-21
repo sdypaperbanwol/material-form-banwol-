@@ -569,9 +569,10 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     msgDiv.textContent = "";
 
     itemList = [];  // 추가된 항목 초기화
-  document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
+     document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
      document.getElementById("myRecordsSection").style.display = "none";
-  });
+     document.getElementById("previewArea").innerHTML = "";
+});
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
