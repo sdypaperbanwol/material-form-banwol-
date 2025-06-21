@@ -514,7 +514,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
 
-      const desiredIndexes = [0, 2, 4, 5, 6, 7, 9, 10, 8]; // 날짜~처리완료
+      const desiredIndexes = [0, 2, 4, 5, 9, 10, 8]; // 날짜~처리완료
       const headerNames = desiredIndexes.map(i => data.header[i]);
 
       thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
