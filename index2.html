@@ -133,9 +133,24 @@
      <!-- 🔽 여기 추가 -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
     <h3 style="margin: 0;">📋 자재 신청 폼</h3>
-    <button id="myRecordsBtn" style="font-size: 13px; background: none; color: #007bff; border: none; cursor: pointer; padding: 4px;">
-      📄 내 신청 내역
-    </button>
+    <!-- 개선 -->
+<button id="myRecordsBtn" style="
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #fff;
+  color: #007bff;
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
+  📄 <span>내 신청 내역</span>
+</button>
   </div>
     <label for="category">항목 분류</label>
     <select id="category" name="category" required>
