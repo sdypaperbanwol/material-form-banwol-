@@ -152,29 +152,36 @@
   📄 <span>신청 내역</span>
 </button>
   </div>
-    <label for="category">1. 항목 분류</label>
-    <select id="category" name="category" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+   <!-- ✅ Step 1: 항목 분류 -->
+<div id="step1" style="margin-bottom:20px;">
+  <h3>항목 분류를 선택하세요</h3>
+  <div id="category-buttons" class="button-group"></div>
 
-    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
+  <!-- ✅ 항목 사진 보기 버튼은 여기 유지 -->
+  <button type="button" id="viewPhotos" style="margin-top:10px; background:#007bff; color:white; padding:10px; border:none; border-radius:6px; cursor:pointer;">
+    항목 사진 보기
+  </button>
+</div>
 
-    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
-      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-        <span id="closeModal">✖</span>
-        <div id="photoContent"></div>
-      </div>
-    </div>
-    
-    <label for="subcategory">2. 세부 항목</label>
-    <select id="subcategory" name="subcategory" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+<!-- ✅ Step 2: 세부 항목 -->
+<div id="step2" class="hidden" style="margin-bottom:20px;">
+  <h3>세부 항목을 선택하세요</h3>
+  <div id="subcategory-buttons" class="button-group"></div>
+</div>
 
-    <label for="size">3. 상세 옵션</label>
-    <select id="size" name="size" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
+<!-- ✅ Step 3: 상세 옵션 -->
+<div id="step3" class="hidden" style="margin-bottom:20px;">
+  <h3>상세 옵션을 선택하세요</h3>
+  <select id="sizeSelect"></select>
+</div>
+
+<!-- ✅ 기존 모달 유지 -->
+<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+    <span id="closeModal">✖</span>
+    <div id="photoContent"></div>
+  </div>
+</div>
 
     <label for="name">4. 작성자</label>
     <input type="text" id="name" name="name" readonly />
