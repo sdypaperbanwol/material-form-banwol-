@@ -329,7 +329,9 @@ function checkPhotoLimit(input) {
   const preview = document.getElementById("previewArea");
   preview.innerHTML = "";
 
-  if (input.files.length > 3) {
+  const fileArray = Array.from(input.files);
+
+  if (fileArray.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
     input.value = "";
     return;
@@ -339,10 +341,9 @@ function checkPhotoLimit(input) {
     alert("📷 사진을 업로드하면 한 번에 한 품목만 신청할 수 있습니다. 기존 항목을 모두 지워주세요.");
   }
 
-  Array.from(input.files).forEach((file, idx) => {
+  fileArray.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      // 썸네일 + 삭제버튼 wrapper
       const wrapper = document.createElement("div");
       wrapper.style.position = "relative";
 
@@ -368,9 +369,10 @@ function checkPhotoLimit(input) {
       delBtn.style.height = "20px";
       delBtn.style.cursor = "pointer";
       delBtn.style.fontSize = "12px";
+
       delBtn.onclick = () => {
-        input.value = ""; // 실제 input 비움
-        preview.innerHTML = ""; // 썸네일 영역 초기화
+        fileArray.splice(index, 1); // 선택한 이미지 제거
+        recreateFileInput(fileArray); // 새로 렌더링
       };
 
       wrapper.appendChild(img);
@@ -379,6 +381,16 @@ function checkPhotoLimit(input) {
     };
     reader.readAsDataURL(file);
   });
+}
+function recreateFileInput(files) {
+  const dataTransfer = new DataTransfer();
+  files.forEach(file => dataTransfer.items.add(file));
+
+  const input = document.getElementById("photoFiles");
+  input.files = dataTransfer.files;
+
+  // 다시 미리보기 렌더링
+  checkPhotoLimit(input);
 }
 
 document.addEventListener("DOMContentLoaded", function () {
