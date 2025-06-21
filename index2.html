@@ -466,7 +466,7 @@ function formatDate(raw) {
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
   const ss = String(d.getSeconds()).padStart(2, '0');
-  return ${yyyy}-${mm}-${dd};
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 document.getElementById("myRecordsBtn").addEventListener("click", () => {
@@ -478,7 +478,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 
   const empId = fullName.split(" ")[0];
 
-  fetch(${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)})
+  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
     .then(res => res.json())
     .then(data => {
       if (data.result !== "success") {
@@ -589,8 +589,8 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 
     const 지급수량 = Math.min(requestedQty, currentStock);
     const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? ${지급수량}개 지급 : "";
-    const 구매문구 = 구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : "";
+    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
+    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
     const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
     if (!alertShown) {
@@ -603,7 +603,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         }
 
         if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
+          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
         }
 
         categorySelect.disabled = true;
@@ -698,6 +698,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
   <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
   <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
 `;
+
           container.appendChild(wrapper);
         });
       }
@@ -741,7 +742,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
   if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-    remarksText = remarksText.length > 0 ? ${remarksText} / ${추가문구} : ${추가문구};
+    remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
   }
 
   if (구매요청수량 > 0) {
@@ -760,8 +761,8 @@ const li = document.createElement("li");
 
 // ✅ 표시 텍스트 분리 및 중복 제거
 const displayText = [
-  지급수량 > 0 ? ${지급수량}개 지급 : "",
-  구매요청수량 > 0 ? ${구매요청수량}개 구매 요청 : ""
+  지급수량 > 0 ? `${지급수량}개 지급` : "",
+  구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : ""
 ].filter(Boolean).join(" / ");
 
 // ✅ remarksText에서 displayText 제거
@@ -829,7 +830,7 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 
     for (const item of itemList) {
       const stockMap = items[item.category]?.stockMap || {};
-      const key = ${item.subcategory}__${item.size};
+      const key = `${item.subcategory}__${item.size}`;
       const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
 
       const 지급수량 = Math.min(item.quantity, currentStock);
@@ -848,8 +849,8 @@ const formData = new URLSearchParams({
 });
 
 photoData.forEach((img, idx) => {
-  formData.append(base64_${idx + 1}, img.base64);
-  formData.append(filename_${idx + 1}, img.filename);
+  formData.append(`base64_${idx + 1}`, img.base64);
+  formData.append(`filename_${idx + 1}`, img.filename);
 });
 
 
@@ -858,17 +859,17 @@ photoData.forEach((img, idx) => {
         body: formData,
       });
       if (!res.ok) {
-        throw new Error(HTTP error: ${res.status});
+        throw new Error(`HTTP error: ${res.status}`);
       }
       const data = await res.json();
 
-      let msg = ${item.category} > ${item.subcategory} (${item.size}): ;
+      let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
       if (지급수량 > 0 && 구매요청수량 > 0) {
-        msg += ${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료;
+       msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
       } else if (지급수량 > 0) {
-        msg += ${지급수량}개 신청 완료;
+       msg += `${지급수량}개 신청 완료`;
       } else if (구매요청수량 > 0) {
-        msg += ${구매요청수량}개 구매 요청 완료;
+       	msg += `${구매요청수량}개 구매 요청 완료`;
       }
       완료메시지목록.push(msg);
     }
