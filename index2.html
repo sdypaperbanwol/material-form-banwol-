@@ -601,26 +601,29 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   alertShown = false;
   isSubmitting = false;
   materialForm.reset();
+
   subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   categorySelect.disabled = false;
   subSelect.disabled = false;
   sizeSelect.disabled = false;
   quantityInput.disabled = false;
+
   nameInput.value = localStorage.getItem("userInfo") || "";
   msgDiv.textContent = "";
   itemList = [];
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 완전 제거
-  const preview = document.getElementById("previewArea");
-  while (preview.firstChild) {
-    preview.removeChild(preview.firstChild);
-  }
+  // ✅ 썸네일 전부 제거
+  const previewArea = document.getElementById("previewArea");
+  previewArea.innerHTML = "";
 
-  // ✅ 파일 input 초기화
+  // ✅ photoFiles input 완전 교체
   const oldInput = document.getElementById("photoFiles");
+  const parentDiv = oldInput.parentNode;
+  parentDiv.removeChild(oldInput);
+
   const newInput = document.createElement("input");
   newInput.type = "file";
   newInput.id = "photoFiles";
@@ -630,11 +633,14 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   newInput.style.border = "none";
   newInput.style.paddingLeft = "0";
   newInput.setAttribute("onchange", "checkPhotoLimit(this)");
-  oldInput.parentNode.replaceChild(newInput, oldInput);
 
-  // ✅ 전역 배열도 초기화 꼭 해줘야 함
-  uploadedFiles = []; // ← 네 코드에 이 배열 있으면 무조건 초기화해야 함
+  parentDiv.prepend(newInput); // 기존 위치에 삽입
+
+  // ✅ 전역 배열 초기화
+  if (typeof uploadedFiles !== "undefined") uploadedFiles = [];
+  if (typeof fileArray !== "undefined") fileArray = [];
 });
+
 
 
 
