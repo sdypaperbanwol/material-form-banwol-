@@ -129,28 +129,79 @@
   </div>
 
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
-  <form id="materialForm" style="display: none;">
-     <!-- 🔽 여기 추가 -->
+  <!-- ✅ 로그인 후 첫 화면: 버튼 3개만 보이도록 구성 -->
+<!-- ✅ 로그인 후 첫 화면: 버튼 3개만 보이도록 구성 -->
+<div id="mainMenu" style="
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 400px;
+  margin: 60px auto;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+">
+
+  <h2 style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 20px;">무엇을 하시겠습니까?</h2>
+
+  <button id="startRequestBtn" style="
+    padding: 14px 20px;
+    width: 100%;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  ">📝 신청하기</button>
+
+  <button id="viewMyRecordsBtn" style="
+    padding: 14px 20px;
+    width: 100%;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  ">📄 내 신청내역 보기</button>
+
+  <button id="otherBtn" style="
+    padding: 14px 20px;
+    width: 100%;
+    font-size: 16px;
+    background-color: #888;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  ">🔧 기타</button>
+
+</div>
+
+
+<!-- ✅ 실제 신청 입력 폼: 버튼 선택 후에만 보이도록 숨김 -->
+<form id="materialForm" style="display: none;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
     <h3 style="margin: 0;">📋 신청·조사서 작성 </h3>
-    <!-- 개선 -->
-<button id="myRecordsBtn" style="
-  font-size: 14px;
-  font-weight: bold;
-  background-color: #fff;
-  color: #007bff;
-  border: 1px solid #007bff;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  transition: background 0.2s;
-" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-  📄 <span>신청 내역</span>
-</button>
+    <button id="myRecordsBtn" style="font-size: 14px; font-weight: bold; background-color: #fff; color: #007bff; border: 1px solid #007bff; border-radius: 6px; padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); transition: background 0.2s;" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">📄 <span>신청 내역</span></button>
+  </div>
+
+  <!-- 원래 있던 폼 내부 내용은 그대로 유지하시면 됩니다 -->
+</form>
+
+  <!-- ✅ 버튼 방식 단계별 선택 UI -->
+<div id="stepContainer" style="display: none; flex-direction: column; gap: 20px; max-width: 400px; margin: 30px auto;">
+  <div id="stepTitle" style="font-size: 18px; font-weight: bold; color: #333;">항목 분류를 선택하세요</div>
+  <div id="buttonList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+  <div style="display: flex; justify-content: space-between;">
+    <button id="backBtn" style="display: none; background: #ccc; padding: 10px 16px; border-radius: 6px;">← 뒤로가기</button>
+    <button id="stepResetBtn" style="background: #888; color: white; padding: 10px 16px; border-radius: 6px;">처음으로</button>
+  </div>
+</div>
+
+  
   </div>
     <label for="category">1. 항목 분류</label>
     <select id="category" name="category" required>
@@ -302,7 +353,7 @@ if (saved) {
       }
       nameInput.value = saved;
       loginSection.style.display = "none";
-      materialForm.style.display = "flex";
+      mainMenu.style.display = "flex";
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -333,7 +384,7 @@ function verifyUser() {
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
-      materialForm.style.display = "flex";
+      mainMenu.style.display = "flex";
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
@@ -582,17 +633,28 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     });
 });
 
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-      nameInput.value = localStorage.getItem("userInfo") || "";
-      console.log("items:", items);
-    })
+ fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    items = data;
+
+    // 기존 드롭다운 초기화 (안 써도 일단 유지)
+    categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+    Object.keys(items).forEach(cat => {
+      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+
+    nameInput.value = localStorage.getItem("userInfo") || "";
+
+    // ✅ 처음 로그인 시 폼 대신 메뉴 3개만 표시
+    if (localStorage.getItem("userInfo")) {
+      loginSection.style.display = "none";
+      mainMenu.style.display = "flex";
+    }
+
+    console.log("items:", items);
+  })
+
     .catch(err => {
       console.error("API 로드 에러:", err);
     });
@@ -988,6 +1050,159 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 </script>
+<script>
+let selection = { category: "", subcategory: "", size: "" };
+
+const mainMenu = document.getElementById("mainMenu");
+const stepContainer = document.getElementById("stepContainer");
+const stepTitle = document.getElementById("stepTitle");
+const buttonList = document.getElementById("buttonList");
+const backBtn = document.getElementById("backBtn");
+const stepResetBtn = document.getElementById("stepResetBtn");
+
+document.getElementById("startRequestBtn").addEventListener("click", () => {
+  mainMenu.style.display = "none";
+  stepContainer.style.display = "flex";
+  renderCategories();
+});
+
+document.getElementById("viewMyRecordsBtn").addEventListener("click", () => {
+  document.getElementById("myRecordsBtn").click();
+});
+
+stepResetBtn.addEventListener("click", () => {
+  stepContainer.style.display = "none";
+  mainMenu.style.display = "flex";
+  resetStepUI();
+});
+
+backBtn.addEventListener("click", () => {
+  if (selection.size) {
+    selection.size = "";
+    renderSizes(selection.category, selection.subcategory);
+  } else if (selection.subcategory) {
+    selection.subcategory = "";
+    renderSubcategories(selection.category);
+  } else if (selection.category) {
+    selection.category = "";
+    renderCategories();
+  }
+});
+
+function renderCategories() {
+  stepTitle.textContent = "1. 항목 분류를 선택하세요";
+  buttonList.innerHTML = "";
+  backBtn.style.display = "none";
+
+  Object.keys(items).forEach(cat => {
+    const btn = document.createElement("button");
+    btn.textContent = cat;
+    btn.style.padding = "12px";
+    btn.style.border = "1px solid #ccc";
+    btn.style.borderRadius = "6px";
+    btn.style.cursor = "pointer";
+    btn.onclick = () => {
+      selection.category = cat;
+      renderSubcategories(cat);
+    };
+    buttonList.appendChild(btn);
+  });
+}
+
+function renderSubcategories(category) {
+  stepTitle.textContent = "2. 세부 항목을 선택하세요";
+  buttonList.innerHTML = "";
+  backBtn.style.display = "inline-block";
+
+  items[category].types.forEach(type => {
+    const btn = document.createElement("button");
+    btn.textContent = type;
+    btn.style.padding = "12px";
+    btn.style.border = "1px solid #ccc";
+    btn.style.borderRadius = "6px";
+    btn.style.cursor = "pointer";
+    btn.onclick = () => {
+      selection.subcategory = type;
+      renderSizes(category, type);
+    };
+    buttonList.appendChild(btn);
+  });
+}
+
+function renderSizes(category, type) {
+  stepTitle.textContent = "3. 상세 옵션을 선택하세요";
+  buttonList.innerHTML = "";
+  backBtn.style.display = "inline-block";
+
+  const stockMap = items[category].stockMap;
+  const sizes = [];
+
+  for (const key in stockMap) {
+    const [sub, size] = key.split("__");
+    if (sub === type) {
+      sizes.push({ size, stock: stockMap[key] });
+    }
+  }
+
+  sizes.forEach(({ size, stock }) => {
+    const btn = document.createElement("button");
+    btn.innerHTML = `${size} <span style="font-size:12px;">(재고: ${stock || "X"})</span>`;
+    btn.style.padding = "12px";
+    btn.style.border = "1px solid #ccc";
+    btn.style.borderRadius = "6px";
+    btn.style.cursor = "pointer";
+    btn.onclick = () => {
+      selection.size = size;
+
+      // ✅ 드롭다운 값 세팅
+      document.getElementById("category").value = selection.category;
+      updateSubcategoryDropdown(selection.category, selection.subcategory);
+      updateSizeDropdown(selection.category, selection.subcategory, selection.size);
+
+      stepContainer.style.display = "none";
+      document.getElementById("materialForm").style.display = "flex";
+    };
+    buttonList.appendChild(btn);
+  });
+}
+
+function updateSubcategoryDropdown(category, subcategory) {
+  const sub = document.getElementById("subcategory");
+  sub.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  items[category].types.forEach(type => {
+    const opt = document.createElement("option");
+    opt.value = type;
+    opt.textContent = type;
+    if (type === subcategory) opt.selected = true;
+    sub.appendChild(opt);
+  });
+}
+
+function updateSizeDropdown(category, subcategory, size) {
+  const sizeSelect = document.getElementById("size");
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  const stockMap = items[category].stockMap;
+
+  for (const key in stockMap) {
+    const [sub, sz] = key.split("__");
+    if (sub === subcategory) {
+      const opt = document.createElement("option");
+      opt.value = sz;
+      opt.textContent = `${sz} (재고: ${stockMap[key] || "X"})`;
+      opt.dataset.stock = stockMap[key];
+      if (sz === size) opt.selected = true;
+      sizeSelect.appendChild(opt);
+    }
+  }
+}
+
+function resetStepUI() {
+  selection = { category: "", subcategory: "", size: "" };
+  buttonList.innerHTML = "";
+  backBtn.style.display = "none";
+}
+</script>
+
 
 </body>
 </html>
