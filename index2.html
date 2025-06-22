@@ -104,6 +104,21 @@
     cursor: pointer;
     z-index: 10000;
   }
+      .highlight {
+    border: 2px solid #ff9800 !important;
+    background-color: #fff8e1 !important;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0% { box-shadow: 0 0 5px #ff9800; }
+    50% { box-shadow: 0 0 15px #ff9800; }
+    100% { box-shadow: 0 0 5px #ff9800; }
+  }
+
+  .disabled-hint {
+    opacity: 0.5;
+  }
 
   </style>
 </head>
@@ -441,37 +456,58 @@ function recreateFileInput(files) {
 
 
 document.addEventListener("DOMContentLoaded", function () {
+
+  
   document.getElementById("loadingOverlay").style.display = "none";
+ highlightRequired(categorySelect);  // 처음엔 category 강조
+  subSelect.classList.add("disabled-hint");
+  sizeSelect.classList.add("disabled-hint");
+  
   let isSubmitting = false;
   let alertShown = false;
 
   categorySelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      items[cat].types.forEach(type => {
-        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-      });
-    }
-  });
+  clearHighlight(categorySelect); // 강조 제거
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
 
-  subSelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    const type = subSelect.value;
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  const cat = categorySelect.value;
+  if (items[cat]) {
+    items[cat].types.forEach(type => {
+      subSelect.innerHTML += `<option value="${type}">${type}</option>`;
+    });
+  }
 
-    if (items[cat]) {
-      const stockMap = items[cat].stockMap;
+  highlightRequired(subSelect); // 다음 단계 강조
+  subSelect.classList.remove("disabled-hint");
+});
 
-      for (const [key, stock] of Object.entries(stockMap)) {
-        const [t, size] = key.split("__");
-        if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
-        }
+
+subSelect.addEventListener("change", () => {
+  clearHighlight(subSelect); // 이전 강조 제거
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+
+  const cat = categorySelect.value;
+  const type = subSelect.value;
+  if (items[cat]) {
+    const stockMap = items[cat].stockMap;
+
+    for (const [key, stock] of Object.entries(stockMap)) {
+      const [t, size] = key.split("__");
+      if (t === type) {
+        sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
       }
     }
-  });
+  }
+
+  
+  highlightRequired(sizeSelect); // 다음 단계 강조
+  sizeSelect.classList.remove("disabled-hint");
+});
+  sizeSelect.addEventListener("change", () => {
+  clearHighlight(sizeSelect); // 최종 강조 제거
+});
+
 
 function formatDate(raw) {
   const d = new Date(raw);
