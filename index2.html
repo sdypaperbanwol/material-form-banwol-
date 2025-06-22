@@ -275,6 +275,7 @@
     
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec";
+  let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -377,11 +378,12 @@ function checkPhotoLimit(input) {
   const preview = document.getElementById("previewArea");
   preview.innerHTML = "";
 
-  const fileArray = Array.from(input.files);
+  fileArray = Array.from(input.files); // 전역 배열로 복사
 
   if (fileArray.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
     input.value = "";
+    fileArray = [];
     return;
   }
 
@@ -415,8 +417,8 @@ function checkPhotoLimit(input) {
       delBtn.style.fontSize = "12px";
 
       delBtn.onclick = () => {
-        fileArray.splice(index, 1); // 선택한 이미지 제거
-        recreateFileInput(fileArray); // 새로 렌더링
+        fileArray.splice(index, 1);
+        recreateFileInput(fileArray); // 다시 렌더링
       };
 
       wrapper.appendChild(img);
@@ -426,6 +428,7 @@ function checkPhotoLimit(input) {
     reader.readAsDataURL(file);
   });
 }
+
 function recreateFileInput(files) {
   const dataTransfer = new DataTransfer();
   files.forEach(file => dataTransfer.items.add(file));
@@ -433,9 +436,9 @@ function recreateFileInput(files) {
   const input = document.getElementById("photoFiles");
   input.files = dataTransfer.files;
 
-  // 다시 미리보기 렌더링
   checkPhotoLimit(input);
 }
+
 
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
@@ -615,40 +618,17 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 전부 제거
-  const previewArea = document.getElementById("previewArea");
-  while (previewArea.firstChild) {
-    previewArea.removeChild(previewArea.firstChild);
-  }
+  // ✅ 썸네일 제거
+  document.getElementById("previewArea").innerHTML = "";
 
-  // ✅ photoFiles input 완전 교체
-  const oldInput = document.getElementById("photoFiles");
-  const parentDiv = oldInput.parentNode;
-
-  const newInput = document.createElement("input");
-  newInput.type = "file";
-  newInput.id = "photoFiles";
-  newInput.name = "photoFiles";
-  newInput.accept = "image/*";
-  newInput.multiple = true;
-  newInput.style.border = "none";
-  newInput.style.paddingLeft = "0";
-  newInput.onchange = function () {
-    checkPhotoLimit(this);
-  };
-
-  parentDiv.replaceChild(newInput, oldInput);
-
-  // ✅ 브라우저 내부 캐시된 파일들도 제거 (확실한 초기화)
-  if (window.DataTransfer) {
-    const dt = new DataTransfer(); // 빈 파일 목록
-    newInput.files = dt.files;
-  }
+  // ✅ file input 비우기
+  const input = document.getElementById("photoFiles");
+  input.value = "";
 
   // ✅ 전역 배열도 초기화
-  window.fileArray = [];
-  window.uploadedFiles = [];
+  fileArray = [];
 });
+
 
 
 
