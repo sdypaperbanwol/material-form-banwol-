@@ -1103,13 +1103,17 @@ function renderSizes(category, type) {
       selection.size = size;
 
       // ✅ 드롭다운 값 세팅
-      document.getElementById("category").value = selection.category;
-      updateSubcategoryDropdown(selection.category, selection.subcategory);
-      updateSizeDropdown(selection.category, selection.subcategory, selection.size);
+      // ✅ 드롭다운 값 세팅 강제 적용
+  document.getElementById("category").value = selection.category;
+  document.getElementById("subcategory").value = selection.subcategory;
+  document.getElementById("size").value = selection.size;
 
-      stepContainer.style.display = "none";
-      document.getElementById("materialForm").style.display = "flex";
-    };
+  updateSubcategoryDropdown(selection.category, selection.subcategory);
+  updateSizeDropdown(selection.category, selection.subcategory, selection.size);
+
+  stepContainer.style.display = "none";
+  document.getElementById("materialForm").style.display = "flex";
+};
     buttonList.appendChild(btn);
   });
 }
