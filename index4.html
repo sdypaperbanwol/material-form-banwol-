@@ -768,9 +768,9 @@ document.getElementById("closeModal").addEventListener("click", () => {
 let itemList = [];
 
 document.getElementById("addItemBtn").addEventListener("click", () => {
- const category = selection.category;
-const subcategory = selection.subcategory;
-const size = selection.size;
+ const category = document.getElementById("category").value;
+const subcategory = document.getElementById("subcategory").value;
+const size = document.getElementById("size").value;
   const name = nameInput.value;
   const quantity = parseInt(quantityInput.value, 10);
   let remarksText = remarksInput.value.trim();
