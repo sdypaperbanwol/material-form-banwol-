@@ -605,7 +605,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   isSubmitting = false;
   materialForm.reset();
 
-  // 기본 필드 초기화
+  // 드롭다운 초기화
   subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   categorySelect.disabled = false;
@@ -613,19 +613,20 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   sizeSelect.disabled = false;
   quantityInput.disabled = false;
 
+  // 기타 UI 초기화
   nameInput.value = localStorage.getItem("userInfo") || "";
   msgDiv.textContent = "";
   itemList = [];
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 전부 제거
+  // ✅ 썸네일 완전 제거
   const previewArea = document.getElementById("previewArea");
   while (previewArea.firstChild) {
     previewArea.removeChild(previewArea.firstChild);
   }
 
-  // ✅ <input type="file"> 완전히 교체 (onchange 포함)
+  // ✅ <input type="file"> 완전 새로 만들기
   const oldInput = document.getElementById("photoFiles");
   const newInput = document.createElement("input");
   newInput.type = "file";
@@ -635,15 +636,16 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   newInput.multiple = true;
   newInput.style.border = "none";
   newInput.style.paddingLeft = "0";
-  newInput.onchange = function () {
+  newInput.addEventListener("change", function () {
     checkPhotoLimit(this);
-  };
+  });
 
   oldInput.parentNode.replaceChild(newInput, oldInput);
 
-  // ✅ 전역 배열 초기화
-  fileArray = [];
+  // ✅ fileArray 초기화
+  if (typeof fileArray !== "undefined") fileArray = [];
 });
+
 
 
   materialForm.addEventListener("submit", function(e) {
