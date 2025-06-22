@@ -605,6 +605,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   isSubmitting = false;
   materialForm.reset();
 
+  // 기본 필드 초기화
   subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
   categorySelect.disabled = false;
@@ -618,21 +619,31 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 제거
-  document.getElementById("previewArea").innerHTML = "";
+  // ✅ 썸네일 전부 제거
+  const previewArea = document.getElementById("previewArea");
+  while (previewArea.firstChild) {
+    previewArea.removeChild(previewArea.firstChild);
+  }
 
-  // ✅ file input 비우기
-  const input = document.getElementById("photoFiles");
-  input.value = "";
+  // ✅ <input type="file"> 완전히 교체 (onchange 포함)
+  const oldInput = document.getElementById("photoFiles");
+  const newInput = document.createElement("input");
+  newInput.type = "file";
+  newInput.id = "photoFiles";
+  newInput.name = "photoFiles";
+  newInput.accept = "image/*";
+  newInput.multiple = true;
+  newInput.style.border = "none";
+  newInput.style.paddingLeft = "0";
+  newInput.onchange = function () {
+    checkPhotoLimit(this);
+  };
 
-  // ✅ 전역 배열도 초기화
+  oldInput.parentNode.replaceChild(newInput, oldInput);
+
+  // ✅ 전역 배열 초기화
   fileArray = [];
 });
-
-
-
-
-
 
 
   materialForm.addEventListener("submit", function(e) {
