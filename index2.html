@@ -597,7 +597,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       console.error("API 로드 에러:", err);
     });
 
- document.getElementById("resetBtn").addEventListener("click", () => {
+document.getElementById("resetBtn").addEventListener("click", () => {
   alertShown = false;
   isSubmitting = false;
   materialForm.reset();
@@ -609,15 +609,17 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
   quantityInput.disabled = false;
   nameInput.value = localStorage.getItem("userInfo") || "";
   msgDiv.textContent = "";
-
   itemList = [];
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 제거
-  document.getElementById("previewArea").innerHTML = "";
+  // ✅ 썸네일 DOM 제거
+  const preview = document.getElementById("previewArea");
+  while (preview.firstChild) {
+    preview.removeChild(preview.firstChild);
+  }
 
-  // ✅ 기존 파일 input 제거하고 새로 생성
+  // ✅ 파일 input 완전 초기화
   const oldInput = document.getElementById("photoFiles");
   const newInput = document.createElement("input");
   newInput.type = "file";
@@ -631,6 +633,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 
   oldInput.parentNode.replaceChild(newInput, oldInput);
 });
+
 
 
   materialForm.addEventListener("submit", function(e) {
