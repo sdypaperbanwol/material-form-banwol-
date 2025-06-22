@@ -3,60 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>신대양제지반월 신청 시스템</title>
- <style>
-  body {
-    background-color: #f7f7f7;
-    font-family: 'Arial', sans-serif;
-    padding: 20px;
-    text-align: center;
-  }
-  .hidden { display: none; }
-  .step { margin-bottom: 30px; }
-  .button-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  .button-group button {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 12px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    background-color: #4CAF50;
-    color: white;
-    cursor: pointer;
-  }
-  .button-group button:hover {
-    background-color: #45a049;
-  }
-  select, input, textarea {
-    margin: 10px;
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    width: 80%;
-  }
-</style>
+  <title>신대양제지반월 신청·조사 시스템</title>
+  <style>
+    body {
+      background-color: #f7f7f7;
+      font-family: 'Arial', sans-serif;
+      padding: 20px;
+    }
 
+    form, #login-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 400px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    select, input, textarea {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    button {
+      padding: 12px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .hidden { display: none; }
+
+    .step {
+      margin-bottom: 30px;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .button-group button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+
+    .button-group button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
-  <!-- ✅ 로그인 -->
+  <!-- ✅ 상단 로고 및 시스템 제목 -->
+  <div style="text-align: center; margin-bottom: 20px;">
+    <img src="https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/신대양제지반월_로고.png" 
+         alt="신대양제지반월 로고" 
+         style="max-width: 140px; margin-bottom: 10px;">
+    <div style="font-size: 20px; font-weight: bold; color: #333;">
+      신청·조사 시스템
+    </div>
+  </div>
+
+  <!-- ✅ 로그인 화면 -->
   <div id="login-section">
     <h3>로그인</h3>
+    <p>사번과 이름을 입력하세요</p>
     <input type="text" id="empId" placeholder="사번 입력" />
     <input type="text" id="empName" placeholder="이름 입력" />
     <button id="loginBtn">확인</button>
     <p id="loginMsg" style="color:red; font-weight:bold;"></p>
   </div>
 
-  <!-- ✅ 단계별 UI -->
+  <!-- ✅ 신청 폼 -->
   <div id="materialForm" class="hidden">
     <!-- Step 1: 항목 분류 -->
     <div id="step1" class="step">
