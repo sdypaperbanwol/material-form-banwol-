@@ -55,14 +55,19 @@
       margin-bottom: 30px;
     }
 
-    .button-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 100%;
-      max-width: 400px;
-      margin: 0 auto;
-    }
+   .step h3 {
+  text-align: center;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px; /* ✅ 모바일 최적화 */
+  margin: 0 auto;
+}
+
 
     .button-group button {
       width: 100%;
@@ -111,19 +116,23 @@
     </div>
 
     <!-- Step 2: 세부 항목 -->
-    <div id="step2" class="step hidden">
-      <h3>세부 항목을 선택하세요</h3>
-      <div id="subcategory-buttons" class="button-group"></div>
-    </div>
+   <!-- Step 2: 세부 항목 -->
+<div id="step2" class="step hidden">
+  <h3>세부 항목을 선택하세요</h3>
+  <div id="subcategory-buttons" class="button-group"></div>
+  <button onclick="goBackToStep1()" style="margin-top:10px;">← 뒤로가기</button>
+</div>
 
-    <!-- Step 3: 상세 옵션 -->
-    <div id="step3" class="step hidden">
-      <h3>상세 옵션 입력</h3>
-      <select id="sizeSelect"></select><br />
-      <input type="number" id="quantityInput" placeholder="수량 입력" /><br />
-      <textarea id="remarksInput" placeholder="비고 입력"></textarea><br />
-      <button id="submitBtn">신청하기</button>
-    </div>
+<!-- Step 3: 상세 옵션 -->
+<div id="step3" class="step hidden">
+  <h3>상세 옵션 입력</h3>
+  <select id="sizeSelect"></select><br />
+  <input type="number" id="quantityInput" placeholder="수량 입력" /><br />
+  <textarea id="remarksInput" placeholder="비고 입력"></textarea><br />
+  <button id="submitBtn">신청하기</button>
+  <button onclick="goBackToStep2()" style="margin-top:10px;">← 뒤로가기</button>
+</div>
+
   </div>
 
   <script>
@@ -245,6 +254,15 @@
         }
       });
     });
+      function goBackToStep1() {
+    document.getElementById("step2").classList.add("hidden");
+    document.getElementById("step1").classList.remove("hidden");
+  }
+
+  function goBackToStep2() {
+    document.getElementById("step3").classList.add("hidden");
+    document.getElementById("step2").classList.remove("hidden");
+  }
   </script>
 </body>
 </html>
