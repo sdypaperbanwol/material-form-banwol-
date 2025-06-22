@@ -613,13 +613,13 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 DOM 제거
+  // ✅ 썸네일 완전 제거
   const preview = document.getElementById("previewArea");
   while (preview.firstChild) {
     preview.removeChild(preview.firstChild);
   }
 
-  // ✅ 파일 input 완전 초기화
+  // ✅ 파일 input 초기화
   const oldInput = document.getElementById("photoFiles");
   const newInput = document.createElement("input");
   newInput.type = "file";
@@ -630,9 +630,12 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   newInput.style.border = "none";
   newInput.style.paddingLeft = "0";
   newInput.setAttribute("onchange", "checkPhotoLimit(this)");
-
   oldInput.parentNode.replaceChild(newInput, oldInput);
+
+  // ✅ 전역 배열도 초기화 꼭 해줘야 함
+  uploadedFiles = []; // ← 네 코드에 이 배열 있으면 무조건 초기화해야 함
 });
+
 
 
 
