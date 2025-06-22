@@ -598,23 +598,28 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     });
 
   document.getElementById("resetBtn").addEventListener("click", () => {
-    alertShown = false;
-    isSubmitting = false;
-    materialForm.reset();
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
-    quantityInput.disabled = false;
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    msgDiv.textContent = "";
+  alertShown = false;
+  isSubmitting = false;
+  materialForm.reset();
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+  nameInput.value = localStorage.getItem("userInfo") || "";
+  msgDiv.textContent = "";
 
-    itemList = [];  // 추가된 항목 초기화
-     document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
-     document.getElementById("myRecordsSection").style.display = "none";
-     document.getElementById("previewArea").innerHTML = "";
+  itemList = [];  // 항목 초기화
+  document.getElementById("itemListDisplay").innerHTML = "";
+  document.getElementById("myRecordsSection").style.display = "none";
+
+  // ✅ 사진 업로드 입력값 초기화
+  const photoInput = document.getElementById("photoFiles");
+  photoInput.value = ""; // 파일 초기화
+  document.getElementById("previewArea").innerHTML = ""; // 썸네일 제거
 });
+
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
