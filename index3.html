@@ -55,19 +55,18 @@
       margin-bottom: 30px;
     }
 
-   .step h3 {
-  text-align: center;
-}
+    .step h3 {
+      text-align: center;
+    }
 
-.button-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  max-width: 320px; /* ✅ 모바일 최적화 */
-  margin: 0 auto;
-}
-
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+    }
 
     .button-group button {
       width: 100%;
@@ -87,17 +86,11 @@
   </style>
 </head>
 <body>
-  <!-- ✅ 상단 로고 및 시스템 제목 -->
   <div style="text-align: center; margin-bottom: 20px;">
-    <img src="https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/신대양제지반월_로고.png" 
-         alt="신대양제지반월 로고" 
-         style="max-width: 140px; margin-bottom: 10px;">
-    <div style="font-size: 20px; font-weight: bold; color: #333;">
-      신청·조사 시스템
-    </div>
+    <img src="https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/ì讏¹ ì隴°¬ì讏°­_ë¸ê³.png" alt="신대양제지반월 로고" style="max-width: 140px; margin-bottom: 10px;">
+    <div style="font-size: 20px; font-weight: bold; color: #333;">신청·조사 시스템</div>
   </div>
 
-  <!-- ✅ 로그인 화면 -->
   <div id="login-section">
     <h3>로그인</h3>
     <p>사번과 이름을 입력하세요</p>
@@ -107,37 +100,30 @@
     <p id="loginMsg" style="color:red; font-weight:bold;"></p>
   </div>
 
-  <!-- ✅ 신청 폼 -->
   <div id="materialForm" class="hidden">
-    <!-- Step 1: 항목 분류 -->
     <div id="step1" class="step">
       <h3>항목 분류를 선택하세요</h3>
       <div id="category-buttons" class="button-group"></div>
     </div>
 
-    <!-- Step 2: 세부 항목 -->
-   <!-- Step 2: 세부 항목 -->
-<div id="step2" class="step hidden">
-  <h3>세부 항목을 선택하세요</h3>
-  <div id="subcategory-buttons" class="button-group"></div>
-  <button onclick="goBackToStep1()" style="margin-top:10px;">← 뒤로가기</button>
-</div>
+    <div id="step2" class="step hidden">
+      <h3>세부 항목을 선택하세요</h3>
+      <div id="subcategory-buttons" class="button-group"></div>
+      <button onclick="goBackToStep1()" style="margin-top:10px;">← 뒤로가기</button>
+    </div>
 
-<!-- Step 3: 상세 옵션 -->
-<div id="step3" class="step hidden">
-  <h3>상세 옵션 입력</h3>
-  <select id="sizeSelect"></select><br />
-  <input type="number" id="quantityInput" placeholder="수량 입력" /><br />
-  <textarea id="remarksInput" placeholder="비고 입력"></textarea><br />
-  <button id="submitBtn">신청하기</button>
-  <button onclick="goBackToStep2()" style="margin-top:10px;">← 뒤로가기</button>
-</div>
-
+    <div id="step3" class="step hidden">
+      <h3>상세 옵션 입력</h3>
+      <select id="sizeSelect"></select><br />
+      <input type="number" id="quantityInput" placeholder="수량 입력" /><br />
+      <textarea id="remarksInput" placeholder="비고 입력"></textarea><br />
+      <button id="submitBtn">신청하기</button>
+      <button onclick="goBackToStep2()" style="margin-top:10px;">← 뒤로가기</button>
+    </div>
   </div>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec";
-
     let selectedCategory = "", selectedSubcategory = "", selectedName = "";
     let materialData = {};
 
@@ -254,15 +240,16 @@
         }
       });
     });
-      function goBackToStep1() {
-    document.getElementById("step2").classList.add("hidden");
-    document.getElementById("step1").classList.remove("hidden");
-  }
 
-  function goBackToStep2() {
-    document.getElementById("step3").classList.add("hidden");
-    document.getElementById("step2").classList.remove("hidden");
-  }
+    function goBackToStep1() {
+      document.getElementById("step2").classList.add("hidden");
+      document.getElementById("step1").classList.remove("hidden");
+    }
+
+    function goBackToStep2() {
+      document.getElementById("step3").classList.add("hidden");
+      document.getElementById("step2").classList.remove("hidden");
+    }
   </script>
 </body>
 </html>
