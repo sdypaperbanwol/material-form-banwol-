@@ -615,14 +615,17 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 제거 + 파일 input 완전 초기화
+  // ✅ 썸네일 전부 제거
   const previewArea = document.getElementById("previewArea");
-  previewArea.innerHTML = "";
+  while (previewArea.firstChild) {
+    previewArea.removeChild(previewArea.firstChild);
+  }
 
+  // ✅ photoFiles input 완전 교체
   const oldInput = document.getElementById("photoFiles");
   const parentDiv = oldInput.parentNode;
-  const newInput = document.createElement("input");
 
+  const newInput = document.createElement("input");
   newInput.type = "file";
   newInput.id = "photoFiles";
   newInput.name = "photoFiles";
@@ -630,14 +633,23 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   newInput.multiple = true;
   newInput.style.border = "none";
   newInput.style.paddingLeft = "0";
-  newInput.setAttribute("onchange", "checkPhotoLimit(this)");
+  newInput.onchange = function () {
+    checkPhotoLimit(this);
+  };
 
   parentDiv.replaceChild(newInput, oldInput);
 
+  // ✅ 브라우저 내부 캐시된 파일들도 제거 (확실한 초기화)
+  if (window.DataTransfer) {
+    const dt = new DataTransfer(); // 빈 파일 목록
+    newInput.files = dt.files;
+  }
+
   // ✅ 전역 배열도 초기화
-  if (typeof uploadedFiles !== "undefined") uploadedFiles = [];
-  if (typeof fileArray !== "undefined") fileArray = [];
+  window.fileArray = [];
+  window.uploadedFiles = [];
 });
+
 
 
 
