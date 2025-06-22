@@ -615,16 +615,14 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   document.getElementById("itemListDisplay").innerHTML = "";
   document.getElementById("myRecordsSection").style.display = "none";
 
-  // ✅ 썸네일 전부 제거
+  // ✅ 썸네일 제거 + 파일 input 완전 초기화
   const previewArea = document.getElementById("previewArea");
   previewArea.innerHTML = "";
 
-  // ✅ photoFiles input 완전 교체
   const oldInput = document.getElementById("photoFiles");
   const parentDiv = oldInput.parentNode;
-  parentDiv.removeChild(oldInput);
-
   const newInput = document.createElement("input");
+
   newInput.type = "file";
   newInput.id = "photoFiles";
   newInput.name = "photoFiles";
@@ -634,9 +632,9 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   newInput.style.paddingLeft = "0";
   newInput.setAttribute("onchange", "checkPhotoLimit(this)");
 
-  parentDiv.prepend(newInput); // 기존 위치에 삽입
+  parentDiv.replaceChild(newInput, oldInput);
 
-  // ✅ 전역 배열 초기화
+  // ✅ 전역 배열도 초기화
   if (typeof uploadedFiles !== "undefined") uploadedFiles = [];
   if (typeof fileArray !== "undefined") fileArray = [];
 });
