@@ -603,22 +603,11 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
 document.getElementById("resetBtn").addEventListener("click", () => {
   alertShown = false;
   isSubmitting = false;
-  materialForm.reset();
 
-  // 드롭다운 초기화
-  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  categorySelect.disabled = false;
-  subSelect.disabled = false;
-  sizeSelect.disabled = false;
-  quantityInput.disabled = false;
-
-  // 기타 UI 초기화
-  nameInput.value = localStorage.getItem("userInfo") || "";
-  msgDiv.textContent = "";
-  itemList = [];
-  document.getElementById("itemListDisplay").innerHTML = "";
-  document.getElementById("myRecordsSection").style.display = "none";
+  // ✅ 썸네일 및 사진 파일 초기화
+  fileArray = [];
+  const oldInput = document.getElementById("photoFiles");
+  oldInput.value = "";  // 파일 목록 초기화
 
   // ✅ 썸네일 완전 제거
   const previewArea = document.getElementById("previewArea");
@@ -626,8 +615,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
     previewArea.removeChild(previewArea.firstChild);
   }
 
-  // ✅ <input type="file"> 완전 새로 만들기
-  const oldInput = document.getElementById("photoFiles");
+  // ✅ input 요소 완전 재생성
   const newInput = document.createElement("input");
   newInput.type = "file";
   newInput.id = "photoFiles";
@@ -639,11 +627,22 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   newInput.addEventListener("change", function () {
     checkPhotoLimit(this);
   });
-
   oldInput.parentNode.replaceChild(newInput, oldInput);
 
-  // ✅ fileArray 초기화
-  if (typeof fileArray !== "undefined") fileArray = [];
+  // ✅ 폼 내용 초기화
+  materialForm.reset();
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+
+  nameInput.value = localStorage.getItem("userInfo") || "";
+  msgDiv.textContent = "";
+  itemList = [];
+  document.getElementById("itemListDisplay").innerHTML = "";
+  document.getElementById("myRecordsSection").style.display = "none";
 });
 
 
