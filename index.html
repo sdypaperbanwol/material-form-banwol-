@@ -130,7 +130,29 @@
 
   <!-- ✅ 로그인 후 보이는 신청 폼 -->
   <form id="materialForm" style="display: none;">
-    <label for="category">항목 분류</label>
+     <!-- 🔽 여기 추가 -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3 style="margin: 0;">📋 신청·조사서 작성 </h3>
+    <!-- 개선 -->
+<button id="myRecordsBtn" style="
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #fff;
+  color: #007bff;
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
+  📄 <span>신청 내역</span>
+</button>
+  </div>
+    <label for="category">1. 항목 분류</label>
     <select id="category" name="category" required>
       <option value="">-- 선택하세요 --</option>
     </select>
@@ -144,40 +166,52 @@
       </div>
     </div>
     
-    <label for="subcategory">세부 항목</label>
+    <label for="subcategory">2. 세부 항목</label>
     <select id="subcategory" name="subcategory" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="size">상세 옵션</label>
+    <label for="size">3. 상세 옵션</label>
     <select id="size" name="size" required>
       <option value="">-- 선택하세요 --</option>
     </select>
 
-    <label for="name">작성자</label>
+    <label for="name">4. 작성자</label>
     <input type="text" id="name" name="name" readonly />
 
-    <label for="quantity">수량(수치)</label>
+    <label for="quantity">5. 수량(수치)</label>
     <input type="number" id="quantity" name="quantity" min="1" required />
 
-    <label for="remarks">추가 내용</label>
+<!-- ✅ 비고(추가 내용) + 사진 업로드 통합 박스 -->
+<div style="display: flex; flex-direction: column; gap: 6px;">
+  <label for="remarks">6. 추가 내용 및 사진(없을 경우 생략)</label>
+  <textarea id="remarks" name="remarks" placeholder="추가 내용" style="min-height: 60px;"></textarea>
+
+  <div style="display:flex; align-items: center; gap: 10px;">
+    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none; padding-left:0;">
+    </div>
+
+  <!-- 썸네일 영역 -->
+  <div id="previewArea" style="display:flex; gap:8px; margin-top:5px;"></div>
+</div>
     <small>
-    - 현재 보유 수량내에서 지급, 부족분은 구매 요청됩니다.<br>
-    - 날짜 선택 가능(오늘·내일 X시 수령/교환 기재).<br>
+    - 현재 보유 수량내에서 지급, 부족분은 구매 요청 됩니다.<br>
+    - 날짜 선택(오늘·내일 X시 수령/교환 기재) 가능합니다.<br>
+    - 필요한 경우 사진 첨부도 가능합니다(최대 3장).<br>
     - 과다 요청 시 일부 제한될 수 있습니다.
     </small>
-    <textarea id="remarks" name="remarks" placeholder="추가 내용 입력(없을 경우 생략)"></textarea>
 
-<div style="width: 100%; margin-top: 10px; padding: 0; margin-left: 0;">
-  <h4>📝 추가된 항목</h4>
+<!-- 1. textarea 아래에 ➕ 항목 담기 버튼만 먼저 위치 -->
+<button type="button" id="addItemBtn" style="width:100%; margin-top:10px; background:#28a745;">➕ 항목 담기</button>
+
+<!-- 2. 담겨진 항목 리스트 -->
+<div style="width: 100%; margin-top: 10px; padding: 0;">
+  <h4>📝 담겨진 항목 리스트</h4>
   <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
 </div>
 
-    
-<div style="display:flex; gap:10px; width:100%;">
-  <button type="button" id="addItemBtn" style="flex:1; min-width:100px; background:#28a745;">➕ 추가</button>
-  <button type="button" id="submitAllBtn" style="flex:1; min-width:100px; background:#007bff;">✅ 신청(제출)</button>
-</div>
+<!-- 3. 가장 마지막에 ✅ 신청 버튼 -->
+<button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
 
 <div id="loadingOverlay" style="
   display: none;
@@ -196,35 +230,57 @@
 ">
   ⏳ 신청 중입니다...
 </div>
-
-
-
+    
    <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
 <div class="message" id="msg"></div>
-<button type="button" id="myRecordsBtn" style="background-color: #6c757d;">📄 내 신청 내역 보기</button>
 
+<!-- 📄 내 신청 내역 모달 -->
+<div id="myRecordsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999;">
 
+  <!-- ✅ 닫기 X 버튼: 항상 우측 상단 고정 -->
+  <button id="closeRecordsModal" style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: white;
+    z-index: 10000;
+  ">✖</button>
 
-<div id="myRecordsSection" style="display: none; margin-top: 20px; overflow-x: auto;">
-  <h4>📋 신청 내역</h4>
-  <table id="myRecordsTable" style="min-width: 600px; width: 100%; font-size: 14px; border-collapse: collapse;">
-
-    <thead><tr></tr></thead>
-    <tbody></tbody>
-  </table>
+  <!-- ✅ 모달 내용 박스 (스크롤 가능) -->
+  <div style="
+    position: relative;
+    margin: 60px auto 0;
+    background: white;
+    padding: 20px 24px 30px;
+    border-radius: 10px;
+    max-width: 800px;
+    width: 95%;
+    max-height: 80vh;
+    overflow: auto;
+  ">
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 신청 내역</h3>
+    <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
+      <thead><tr></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
+ </form>
     
-  </form>
-
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyZNubsiRqJtEYPW_eWSYYmRKC_smLbkiK7Q4McUXeRQokCKZcZ9sSS6WJ4raXE3tub/exec";
+  let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
 const loginMsg = document.getElementById("loginMsg");
   
-
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
@@ -298,6 +354,91 @@ const remarksInput = document.getElementById("remarks");
 const msgDiv = document.getElementById("msg");
 
 let items = {};
+// ✅ 이 함수는 여기에 넣으세요
+function readFilesAsBase64(files) {
+  const promises = [];
+  const limit = Math.min(files.length, 3);
+
+  for (let i = 0; i < limit; i++) {
+    const file = files[i];
+    const reader = new FileReader();
+    promises.push(new Promise((resolve, reject) => {
+      reader.onload = () => resolve({
+        base64: reader.result.split(",")[1],
+        filename: file.name
+      });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }));
+  }
+
+  return Promise.all(promises);
+}
+function checkPhotoLimit(input) {
+  const preview = document.getElementById("previewArea");
+  preview.innerHTML = "";
+
+  fileArray = Array.from(input.files); // 전역 배열로 복사
+
+  if (fileArray.length > 3) {
+    alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
+    input.value = "";
+    fileArray = [];
+    return;
+  }
+
+  fileArray.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "relative";
+
+      const img = document.createElement("img");
+      img.src = e.target.result;
+      img.style.width = "80px";
+      img.style.height = "80px";
+      img.style.objectFit = "cover";
+      img.style.border = "1px solid #ccc";
+      img.style.borderRadius = "6px";
+
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "✖";
+      delBtn.title = "사진 제거";
+      delBtn.style.position = "absolute";
+      delBtn.style.top = "-8px";
+      delBtn.style.right = "-8px";
+      delBtn.style.background = "#dc3545";
+      delBtn.style.color = "white";
+      delBtn.style.border = "none";
+      delBtn.style.borderRadius = "50%";
+      delBtn.style.width = "20px";
+      delBtn.style.height = "20px";
+      delBtn.style.cursor = "pointer";
+      delBtn.style.fontSize = "12px";
+
+      delBtn.onclick = () => {
+        fileArray.splice(index, 1);
+        recreateFileInput(fileArray); // 다시 렌더링
+      };
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(delBtn);
+      preview.appendChild(wrapper);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function recreateFileInput(files) {
+  const dataTransfer = new DataTransfer();
+  files.forEach(file => dataTransfer.items.add(file));
+
+  const input = document.getElementById("photoFiles");
+  input.files = dataTransfer.files;
+
+  checkPhotoLimit(input);
+}
+
 
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
@@ -364,12 +505,12 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
 
-      const desiredIndexes = [0, 2, 4, 5, 6, 7, 8, 9, 10]; // 날짜~처리완료
+      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10, 8]; // 날짜~처리완료
       const headerNames = desiredIndexes.map(i => data.header[i]);
 
-    thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
-  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center; ${i === 0 ? 'min-width:40px;' : ''}">${h}</th>`
-).join("") + "</tr>";
+      thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${h}</th>`
+      ).join("") + "</tr>";
 
       tbody.innerHTML = "";
       data.records.forEach(row => {
@@ -382,19 +523,25 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
           td.style.padding = "6px";
           td.style.whiteSpace = "nowrap";
           td.style.textAlign = "center";
-
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
       });
 
-      document.getElementById("myRecordsSection").style.display = "block";
-    })
+      // ✅ 이제는 모달로 표시!
+      document.getElementById("myRecordsModal").style.display = "flex";
+   //✅ 항목 선택 안내 문구 제거
+  const msgDiv = document.getElementById("msg");
+  if (msgDiv) msgDiv.textContent = "";
+
+})
+    
     .catch(err => {
       console.error("신청 내역 로딩 오류:", err);
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
+
 
 
   const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
@@ -438,16 +585,6 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     });
 });
 
-
-//  sizeSelect.addEventListener("change", () => {
-//    const opt = sizeSelect.selectedOptions[0];
-//    const stock = parseInt(opt?.dataset.stock || "0", 10);
-//    if (stock === 0) {
-//      alert("⚠️ 현재 재고가 없습니다. 신청 시 구매 요청으로 접수됩니다.");
-//    }
-//  });
-  
-
   fetch(API_URL)
     .then(res => res.json())
     .then(data => {
@@ -463,23 +600,52 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       console.error("API 로드 에러:", err);
     });
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    alertShown = false;
-    isSubmitting = false;
-    materialForm.reset();
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
-    quantityInput.disabled = false;
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    msgDiv.textContent = "";
+document.getElementById("resetBtn").addEventListener("click", () => {
+  alertShown = false;
+  isSubmitting = false;
 
-    itemList = [];  // 추가된 항목 초기화
-  document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
-     document.getElementById("myRecordsSection").style.display = "none";
+  // ✅ 썸네일 및 사진 파일 초기화
+  fileArray = [];
+  const oldInput = document.getElementById("photoFiles");
+  oldInput.value = "";  // 파일 목록 초기화
+
+  // ✅ 썸네일 완전 제거
+  const previewArea = document.getElementById("previewArea");
+  while (previewArea.firstChild) {
+    previewArea.removeChild(previewArea.firstChild);
+  }
+
+  // ✅ input 요소 완전 재생성
+  const newInput = document.createElement("input");
+  newInput.type = "file";
+  newInput.id = "photoFiles";
+  newInput.name = "photoFiles";
+  newInput.accept = "image/*";
+  newInput.multiple = true;
+  newInput.style.border = "none";
+  newInput.style.paddingLeft = "0";
+  newInput.addEventListener("change", function () {
+    checkPhotoLimit(this);
   });
+  oldInput.parentNode.replaceChild(newInput, oldInput);
+
+  // ✅ 폼 내용 초기화
+  materialForm.reset();
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+
+  nameInput.value = localStorage.getItem("userInfo") || "";
+  msgDiv.textContent = "";
+  itemList = [];
+  document.getElementById("itemListDisplay").innerHTML = "";
+  document.getElementById("myRecordsSection").style.display = "none";
+});
+
+
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
@@ -716,7 +882,6 @@ nameInput.value = localStorage.getItem("userInfo") || "";
 
 
 document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
-  // ✅ 사용자가 수동 클릭한 경우에만 실행되도록
   if (!e.isTrusted) return;
 
   if (itemList.length === 0) {
@@ -724,8 +889,14 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
     return;
   }
 
-  document.getElementById("loadingOverlay").style.display = "flex";
+  // ✅ 이 위치에서 단 한 번만 검사!
+  const photoInput = document.getElementById("photoFiles");
+  if (photoInput.files.length > 0 && itemList.length > 1) {
+    alert("📷 사진을 업로드한 경우 한 품목만 신청할 수 있습니다. 항목을 정리해주세요.");
+    return;
+  }
 
+  document.getElementById("loadingOverlay").style.display = "flex";
 
   try {
     const 완료메시지목록 = [];
@@ -738,6 +909,9 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       const 지급수량 = Math.min(item.quantity, currentStock);
       const 구매요청수량 = Math.max(0, item.quantity - currentStock);
 
+      const files = photoInput.files;
+      const photoData = await readFilesAsBase64(files);
+
       const formData = new URLSearchParams({
         category: item.category,
         subcategory: item.subcategory,
@@ -747,13 +921,17 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
         remarks: item.remarks
       });
 
+      photoData.forEach((img, idx) => {
+        formData.append(`base64_${idx + 1}`, img.base64);
+        formData.append(`filename_${idx + 1}`, img.filename);
+      });
+
       const res = await fetch(API_URL, {
         method: "POST",
         body: formData,
       });
-      if (!res.ok) {
-        throw new Error(`HTTP error: ${res.status}`);
-      }
+
+      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = await res.json();
 
       let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
@@ -764,12 +942,11 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
       } else if (구매요청수량 > 0) {
         msg += `${구매요청수량}개 구매 요청 완료`;
       }
+
       완료메시지목록.push(msg);
     }
 
-    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
-
     alert("✅ 모든 신청이 저장되었습니다!\n\n" + 완료메시지목록.join("\n"));
     itemList = [];
     document.getElementById("itemListDisplay").innerHTML = "";
@@ -777,12 +954,10 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 
   } catch (err) {
     console.error("에러:", err);
-    // 🔚 로딩 종료
     document.getElementById("loadingOverlay").style.display = "none";
     alert("❌ 네트워크 오류 또는 서버 응답 실패");
   }
 });
-
 
 </script>
 
@@ -816,7 +991,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return; // 오늘은 안 보이게
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbyMEenPHDOAtPdtBQdIqixvDdkqLL2_ngd9D18nCyrRGlDVoRPBI-FDd1t7T9-J3mlg/exec?mode=notice")
+  const closeBtn = document.getElementById("closeRecordsModal");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      document.getElementById("myRecordsModal").style.display = "none";
+    });
+  }
+
+  fetch("https://script.google.com/macros/s/AKfycbyZNubsiRqJtEYPW_eWSYYmRKC_smLbkiK7Q4McUXeRQokCKZcZ9sSS6WJ4raXE3tub/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
