@@ -1033,25 +1033,53 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 </script>
 
 
-<!-- ✅ 공지사항 모달 -->
-<div id="noticeModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:white; padding:20px 24px 30px; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 10px rgba(0,0,0,0.3); position:relative;">
-    
-    <!-- ❌ X 버튼: 더 위로 올리고 오른쪽으로 이동 -->
-    <span id="closeNotice" style="position:absolute; top:10px; right:10px; font-weight:bold; cursor:pointer; font-size:20px; z-index:1;">
-      ✖
-    </span>
-    
-    <!-- ✅ 공지 텍스트: 좌우 여백 + 줄바꿈 유지 -->
-    <div id="noticeContent" style="white-space:pre-wrap; font-size:15px; color:#333; padding: 10px 5px 0; line-height: 1.6;"></div>
-    
-    <!-- ✅ 오늘 하루 보지 않기 버튼: 가운데 정렬 -->
-    <button id="hideTodayBtn"
-      style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      오늘 하루 이 창 보지 않기
-    </button>
+<!-- ✅ 모달 배경 -->
+<div id="noticeModal" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+  box-sizing: border-box;
+">
+
+  <!-- ✅ 모달 내용 박스 -->
+  <div style="
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 1rem;
+  ">
+    <!-- ✅ 닫기 버튼 -->
+    <button id="closeNotice" style="
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.2rem;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+    ">✖</button>
+
+    <div id="noticeContent" style="white-space: pre-wrap; line-height: 1.5;"></div>
+<!-- ✅ 하루 보지 않기 버튼 -->
+<button id="hideTodayBtn"
+  style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
+  오늘 하루 이 창 보지 않기
+</button>
   </div>
 </div>
+
   <script>
 document.addEventListener("DOMContentLoaded", () => {
   const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
