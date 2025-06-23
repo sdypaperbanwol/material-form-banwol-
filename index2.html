@@ -600,7 +600,7 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
         desiredIndexes.forEach((colIndex, idx) => {
           const td = document.createElement("td");
           const cell = row[colIndex];
-          td.textContent = cell;
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
           td.style.border = "1px solid #ccc";
           td.style.padding = "6px";
           td.style.whiteSpace = "nowrap";
@@ -645,7 +645,7 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
         const tr = document.createElement("tr");
         row.slice(0, 10).forEach(cell => {
           const td = document.createElement("td");
-          td.textContent = cell;
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
           td.style.border = "1px solid #ccc";
           td.style.padding = "6px";
           tr.appendChild(td);
