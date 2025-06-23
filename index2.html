@@ -676,11 +676,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
           alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
         }
 
-        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-        }
-
-        categorySelect.disabled = true;
+           categorySelect.disabled = true;
         subSelect.disabled = true;
         sizeSelect.disabled = true;
         quantityInput.disabled = true;
@@ -688,9 +684,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
         alertShown = true;
         return; // 제출 중단
       } else {
-        if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
-        }
+       
       }
     } else {
       alertShown = false;
@@ -810,10 +804,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
-  if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-    remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-  }
-
+ 
   if (구매요청수량 > 0) {
     if (currentStock > 0) {
       alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
@@ -921,6 +912,10 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
         remarks: item.remarks
       });
 
+      formData.append("지급수량", 지급수량);
+      formData.append("구매요청수량", 구매요청수량);
+      
+      
       photoData.forEach((img, idx) => {
         formData.append(`base64_${idx + 1}`, img.base64);
         formData.append(`filename_${idx + 1}`, img.filename);
