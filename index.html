@@ -114,6 +114,7 @@
     z-index: 10000;
   }
 </style>
+
 </head>
 <body>
   <!-- ✅ 페이지 최상단 회사 로고 + 시스템 이름 -->
@@ -142,23 +143,51 @@
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
     <h3 style="margin: 0;">📋 신청·조사서 작성 </h3>
     <!-- 개선 -->
-<button id="myRecordsBtn" style="
-  font-size: 14px;
-  font-weight: bold;
-  background-color: #fff;
-  color: #007bff;
-  border: 1px solid #007bff;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  transition: background 0.2s;
-" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-  📄 <span>신청 내역</span>
-</button>
+
+   <!-- ✅ 버튼 묶음 -->
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 10px;">
+  
+  <!-- 📄 신청 내역 버튼 -->
+  <button id="myRecordsBtn" style="
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #007bff;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
+    📄 <span>내 신청 내역</span>
+  </button>
+
+  <!-- 👥 팀 신청 내역 버튼 -->
+  <button id="myTeamRecordsBtn" style="
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #28a745;
+    border: 1px solid #28a745;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
+    👥 <span>팀 신청 내역</span>
+  </button>
+
+</div>
+
+    
   </div>
     <label for="category">1. 항목 분류</label>
     <select id="category" name="category" required>
@@ -282,7 +311,7 @@
  </form>
     
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyZNubsiRqJtEYPW_eWSYYmRKC_smLbkiK7Q4McUXeRQokCKZcZ9sSS6WJ4raXE3tub/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyCWcTF2-zUyNvf9GcOirFjfShH-7LGPY2_zYAZRlOsb4JEdcOTuGL0fOcKMIKQsvo9/exec";
   let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -536,16 +565,68 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         tbody.appendChild(tr);
       });
 
-      // ✅ 이제는 모달로 표시!
       document.getElementById("myRecordsModal").style.display = "flex";
-   //✅ 항목 선택 안내 문구 제거
-  const msgDiv = document.getElementById("msg");
-  if (msgDiv) msgDiv.textContent = "";
 
-})
-    
+      const msgDiv = document.getElementById("msg");
+      if (msgDiv) msgDiv.textContent = "";
+    })
     .catch(err => {
       console.error("신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
+document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
+  const fullName = localStorage.getItem("userInfo");
+  if (!fullName) {
+    alert("로그인 후 이용 가능합니다.");
+    return;
+  }
+
+  const empId = fullName.split(" ")[0];
+
+  fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.result === "forbidden") {
+    alert("⚠️ 팀 내역 조회 권한이 없습니다.");
+    return;
+  }
+      if (data.result !== "success") {
+        alert("❌ 팀 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10]; // 보여줄 열
+
+      thead.innerHTML = "<tr>" + desiredIndexes.map(i =>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>`
+      ).join("") + "</tr>";
+
+      tbody.innerHTML = "";
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        desiredIndexes.forEach((colIndex, idx) => {
+          const td = document.createElement("td");
+          const cell = row[colIndex];
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          td.style.whiteSpace = "nowrap";
+          td.style.textAlign = "center";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsModal").style.display = "flex";
+    })
+    .catch(err => {
+      console.error("팀 신청 내역 로딩 오류:", err);
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
@@ -577,7 +658,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         const tr = document.createElement("tr");
         row.slice(0, 10).forEach(cell => {
           const td = document.createElement("td");
-          td.textContent = cell;
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
           td.style.border = "1px solid #ccc";
           td.style.padding = "6px";
           tr.appendChild(td);
@@ -965,25 +1046,53 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 </script>
 
 
-<!-- ✅ 공지사항 모달 -->
-<div id="noticeModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:white; padding:20px 24px 30px; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 10px rgba(0,0,0,0.3); position:relative;">
-    
-    <!-- ❌ X 버튼: 더 위로 올리고 오른쪽으로 이동 -->
-    <span id="closeNotice" style="position:absolute; top:10px; right:10px; font-weight:bold; cursor:pointer; font-size:20px; z-index:1;">
-      ✖
-    </span>
-    
-    <!-- ✅ 공지 텍스트: 좌우 여백 + 줄바꿈 유지 -->
-    <div id="noticeContent" style="white-space:pre-wrap; font-size:15px; color:#333; padding: 10px 5px 0; line-height: 1.6;"></div>
-    
-    <!-- ✅ 오늘 하루 보지 않기 버튼: 가운데 정렬 -->
-    <button id="hideTodayBtn"
-      style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      오늘 하루 이 창 보지 않기
-    </button>
+<!-- ✅ 모달 배경 -->
+<div id="noticeModal" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+  box-sizing: border-box;
+">
+
+  <!-- ✅ 모달 내용 박스 -->
+  <div style="
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 1rem;
+  ">
+    <!-- ✅ 닫기 버튼 -->
+    <button id="closeNotice" style="
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.2rem;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+    ">✖</button>
+
+    <div id="noticeContent" style="white-space: pre-wrap; line-height: 1.5;"></div>
+<!-- ✅ 하루 보지 않기 버튼 -->
+<button id="hideTodayBtn"
+  style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
+  오늘 하루 이 창 보지 않기
+</button>
   </div>
 </div>
+
   <script>
 document.addEventListener("DOMContentLoaded", () => {
   const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
@@ -1001,7 +1110,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbyZNubsiRqJtEYPW_eWSYYmRKC_smLbkiK7Q4McUXeRQokCKZcZ9sSS6WJ4raXE3tub/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbyCWcTF2-zUyNvf9GcOirFjfShH-7LGPY2_zYAZRlOsb4JEdcOTuGL0fOcKMIKQsvo9/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
