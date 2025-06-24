@@ -311,7 +311,7 @@
  </form>
     
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzNuLgLdueTU-ffcXhWR-XiqFXCjwKLsyxaDHA5NBIYcR-JjpwcagtdKUq7LyotmmIm/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyCWcTF2-zUyNvf9GcOirFjfShH-7LGPY2_zYAZRlOsb4JEdcOTuGL0fOcKMIKQsvo9/exec";
   let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -588,6 +588,10 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
   fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
     .then(res => res.json())
     .then(data => {
+        if (data.result === "forbidden") {
+    alert("⚠️ 팀 내역 조회 권한이 없습니다.");
+    return;
+  }
       if (data.result !== "success") {
         alert("❌ 팀 신청 내역을 불러오지 못했습니다.");
         return;
@@ -1106,7 +1110,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbzNuLgLdueTU-ffcXhWR-XiqFXCjwKLsyxaDHA5NBIYcR-JjpwcagtdKUq7LyotmmIm/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbyCWcTF2-zUyNvf9GcOirFjfShH-7LGPY2_zYAZRlOsb4JEdcOTuGL0fOcKMIKQsvo9/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
