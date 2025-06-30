@@ -596,8 +596,9 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
       const desiredIndexes = [0, 2, 4, 5, 6, 9, 10];
 
       thead.innerHTML = "<tr>" + desiredIndexes.map(i =>
-        <th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>
-      ).join("") + "</tr>";
+  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>`
+).join("") + "</tr>";
+
 
       tbody.innerHTML = "";
       data.records.forEach(row => {
