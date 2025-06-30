@@ -529,7 +529,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     return;
   }
 
-  fetch(${API_URL}?mode=myrecords&name=${encodeURIComponent(fullName)})
+  fetch(`${API_URL}?mode=myrecords&name=${encodeURIComponent(fullName)}`)
     .then(res => res.json())
     .then(data => {
       if (data.result !== "success") {
@@ -542,15 +542,15 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const tbody = table.querySelector("tbody");
 
       thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
-        <th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
       ).join("") + "</tr>";
 
       tbody.innerHTML = "";
       data.records.forEach((row, idx) => {
         const tr = document.createElement("tr");
-        row.slice(0, 10).forEach(cell => {
+        row.slice(0, 10).forEach((cell, i) => {
           const td = document.createElement("td");
-          td.textContent = idx === 0 ? formatDate(cell) : cell;
+          td.textContent = i === 0 ? formatDate(cell) : cell;
           td.style.border = "1px solid #ccc";
           td.style.padding = "6px";
           tr.appendChild(td);
@@ -565,6 +565,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
+
 
 document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
   const fullName = localStorage.getItem("userInfo");
