@@ -521,7 +521,7 @@ function formatDate(raw) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// ✅ 내 신청 내역
+// ✅ 내 신청 내역 버튼 클릭
 document.getElementById("myRecordsBtn").addEventListener("click", () => {
   const fullName = localStorage.getItem("userInfo");
   if (!fullName) {
@@ -553,6 +553,8 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
           td.textContent = i === 0 ? formatDate(cell) : cell;
           td.style.border = "1px solid #ccc";
           td.style.padding = "6px";
+          td.style.whiteSpace = "nowrap";
+          td.style.textAlign = "center";
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -565,6 +567,64 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
+
+
+// ✅ 팀 신청 내역 버튼 클릭
+document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
+  const fullName = localStorage.getItem("userInfo");
+  if (!fullName) {
+    alert("로그인 후 이용 가능합니다.");
+    return;
+  }
+
+  const empId = fullName.split(" ")[0];
+
+  fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result === "forbidden") {
+        alert("⚠️ 팀 내역 조회 권한이 없습니다.");
+        return;
+      }
+      if (data.result !== "success") {
+        alert("❌ 팀 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10];
+
+      thead.innerHTML = "<tr>" + desiredIndexes.map(i =>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>`
+      ).join("") + "</tr>";
+
+      tbody.innerHTML = "";
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        desiredIndexes.forEach((colIndex, idx) => {
+          const td = document.createElement("td");
+          const cell = row[colIndex];
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          td.style.whiteSpace = "nowrap";
+          td.style.textAlign = "center";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsModal").style.display = "flex";
+    })
+    .catch(err => {
+      console.error("팀 신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
 
 
 document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
