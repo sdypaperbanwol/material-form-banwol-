@@ -521,7 +521,6 @@ function formatDate(raw) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// ✅ 내 신청 내역 버튼 클릭
 document.getElementById("myRecordsBtn").addEventListener("click", () => {
   const fullName = localStorage.getItem("userInfo");
   if (!fullName) {
@@ -529,7 +528,9 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     return;
   }
 
-  fetch(`${API_URL}?mode=myrecords&name=${encodeURIComponent(fullName)}`)
+  const empId = fullName.split(" ")[0];
+
+  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
     .then(res => res.json())
     .then(data => {
       if (data.result !== "success") {
@@ -541,16 +542,20 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
 
-      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
-        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
+      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10, 8]; // 날짜~처리완료
+      const headerNames = desiredIndexes.map(i => data.header[i]);
+
+      thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${h}</th>`
       ).join("") + "</tr>";
 
       tbody.innerHTML = "";
-      data.records.forEach((row, idx) => {
+      data.records.forEach(row => {
         const tr = document.createElement("tr");
-        row.slice(0, 10).forEach((cell, i) => {
+        desiredIndexes.forEach((colIndex, idx) => {
           const td = document.createElement("td");
-          td.textContent = i === 0 ? formatDate(cell) : cell;
+          const cell = row[colIndex];
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
           td.style.border = "1px solid #ccc";
           td.style.padding = "6px";
           td.style.whiteSpace = "nowrap";
@@ -561,6 +566,9 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       });
 
       document.getElementById("myRecordsModal").style.display = "flex";
+
+      const msgDiv = document.getElementById("msg");
+      if (msgDiv) msgDiv.textContent = "";
     })
     .catch(err => {
       console.error("신청 내역 로딩 오류:", err);
@@ -568,8 +576,6 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     });
 });
 
-
-// ✅ 팀 신청 내역 버튼 클릭
 document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
   const fullName = localStorage.getItem("userInfo");
   if (!fullName) {
@@ -582,10 +588,10 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
   fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
     .then(res => res.json())
     .then(data => {
-      if (data.result === "forbidden") {
-        alert("⚠️ 팀 내역 조회 권한이 없습니다.");
-        return;
-      }
+        if (data.result === "forbidden") {
+    alert("⚠️ 팀 내역 조회 권한이 없습니다.");
+    return;
+  }
       if (data.result !== "success") {
         alert("❌ 팀 신청 내역을 불러오지 못했습니다.");
         return;
@@ -595,7 +601,7 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
 
-      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10];
+      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10]; // 보여줄 열
 
       thead.innerHTML = "<tr>" + desiredIndexes.map(i =>
         `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>`
@@ -625,21 +631,21 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
     });
 });
 
- fetch(API_URL + "?mode=items")
-  .then(res => res.json())
-  .then(data => {
-    items = data;
-    categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    Object.keys(items).forEach(cat => {
-      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-    });
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    console.log("items:", items);
-  })
-  .catch(err => {
-    console.error("API 로드 에러:", err);
-  });
 
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      items = data;
+      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      Object.keys(items).forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+      nameInput.value = localStorage.getItem("userInfo") || "";
+      console.log("items:", items);
+    })
+    .catch(err => {
+      console.error("API 로드 에러:", err);
+    });
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   alertShown = false;
@@ -777,8 +783,8 @@ document.getElementById("resetBtn").addEventListener("click", () => {
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
     });
-});
   });
+
 </script>
 
 <script>
@@ -790,33 +796,29 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
   }
 
   fetch(API_URL + "?mode=photo")
-  .then(res => res.json())
-  .then(photoMap => {
-    const urls = photoMap[category];
-    const container = document.getElementById("photoContent");
-    container.innerHTML = "";
+    .then(res => res.json())
+    .then(photoMap => {
+      const urls = photoMap[category];
+      const container = document.getElementById("photoContent");
+      container.innerHTML = "";
 
-    if (!urls || urls.length === 0) {
-      container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
-    } else {
-      urls.forEach(url => {
-        const fileName = url.split("/").pop().split(".")[0];
-        const wrapper = document.createElement("div");
-        wrapper.style.marginBottom = "20px";
-        wrapper.innerHTML = `
-          <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
-          <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-        `;
-        container.appendChild(wrapper);
-      });
-    }
+      if (!urls || urls.length === 0) {
+        container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
+      } else {
+        urls.forEach(url => {
+          const fileName = url.split("/").pop().split(".")[0];
+          const wrapper = document.createElement("div");
+          wrapper.style.marginBottom = "20px";
+          wrapper.innerHTML = `
+            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+          `;
+          container.appendChild(wrapper);
+        });
+      }
 
-    document.getElementById("photoModal").style.display = "block";
-  })
-  .catch(err => {
-    console.error("사진 로딩 오류:", err);
-    alert("❌ 사진을 불러오는 중 오류가 발생했습니다.");
-  });
+      document.getElementById("photoModal").style.display = "block";
+    });
 });
 
 document.getElementById("closeModal").addEventListener("click", () => {
@@ -849,6 +851,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
+ 
   if (구매요청수량 > 0) {
     if (currentStock > 0) {
       alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
@@ -856,7 +859,6 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
       alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
     }
   }
-
 
   const item = { category, subcategory, size, name, quantity, remarks: remarksText };
 itemList.push(item);
