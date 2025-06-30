@@ -576,7 +576,8 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
 
   const empId = fullName.split(" ")[0];
 
-  fetch(${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)})
+  fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
+
     .then(res => res.json())
     .then(data => {
       if (data.result === "forbidden") {
