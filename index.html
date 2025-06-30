@@ -311,7 +311,7 @@
  </form>
     
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxIdxEYPYXgFDYDKCxmJE6HpxAxzzk70dI6LxR8jiDwXrB-JU45LaGj0H9w7I6fSiPD/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwJpzW_j0ydSypEYAu0FIk_VlYEhlrXgTDU0n3aOSKBaXcgxnjngcHVQJUtxSelD2vE/exec";
   let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -322,33 +322,33 @@ function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("userInfo");
-  if (saved) {
-    const [empId, empName] = saved.split(" ");
-    fetch(API_URL, {
-      method: "POST",
-      body: new URLSearchParams({ empId, empName })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === "success") {
-        if (data.active === "Y" && !isMobileDevice()) {
-          alert("⚠️ 이 계정은 모바일에서만 접근할 수 있습니다.");
-          localStorage.removeItem("userInfo");
-          return;
-        }
-        nameInput.value = saved;
-        loginSection.style.display = "none";
-        materialForm.style.display = "flex";
-      } else {
+const saved = localStorage.getItem("userInfo");
+if (saved) {
+    
+  const [empId, empName] = saved.split(" ");
+  fetch(API_URL, {
+    method: "POST",
+    body: new URLSearchParams({ empId, empName })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.result === "success") {
+      if (data.active === "Y" && !isMobileDevice()) {
+        alert("⚠️ 이 계정은 모바일에서만 접근할 수 있습니다.");
         localStorage.removeItem("userInfo");
-        alert("승인이 해제되어 자동 로그아웃됩니다.");
-        location.reload();
+        return;
       }
-    });
-  }
-});
+      nameInput.value = saved;
+      loginSection.style.display = "none";
+      materialForm.style.display = "flex";
+    } else {
+      localStorage.removeItem("userInfo");
+      alert("승인이 해제되어 자동 로그아웃됩니다.");
+      location.reload();
+    }
+  });
+}
+
 function verifyUser() {
   const empId = document.getElementById("empId").value.trim();
   const empName = document.getElementById("empName").value.trim();
@@ -481,12 +481,6 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
   let isSubmitting = false;
   let alertShown = false;
-
-  // ✅ form 기본 제출 막기 (여기에 추가!)
-  materialForm.addEventListener("submit", function(e) {
-    e.preventDefault();
-    alert("❌ 항목을 먼저 담은 뒤 '✅ 신청(제출)' 버튼을 눌러주세요.");
-  });
 
   categorySelect.addEventListener("change", () => {
     const cat = categorySelect.value;
@@ -1116,7 +1110,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbxIdxEYPYXgFDYDKCxmJE6HpxAxzzk70dI6LxR8jiDwXrB-JU45LaGj0H9w7I6fSiPD/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbwJpzW_j0ydSypEYAu0FIk_VlYEhlrXgTDU0n3aOSKBaXcgxnjngcHVQJUtxSelD2vE/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
