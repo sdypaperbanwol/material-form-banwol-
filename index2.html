@@ -845,29 +845,33 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
   }
 
   fetch(API_URL + "?mode=photo")
-    .then(res => res.json())
-    .then(photoMap => {
-      const urls = photoMap[category];
-      const container = document.getElementById("photoContent");
-      container.innerHTML = "";
+  .then(res => res.json())
+  .then(photoMap => {
+    const urls = photoMap[category];
+    const container = document.getElementById("photoContent");
+    container.innerHTML = "";
 
-      if (!urls || urls.length === 0) {
-        container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
-      } else {
-        urls.forEach(url => {
-          const fileName = url.split("/").pop().split(".")[0];
-          const wrapper = document.createElement("div");
-          wrapper.style.marginBottom = "20px";
-          wrapper.innerHTML = `
-            <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
-            <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
-          `;
-          container.appendChild(wrapper);
-        });
-      }
+    if (!urls || urls.length === 0) {
+      container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
+    } else {
+      urls.forEach(url => {
+        const fileName = url.split("/").pop().split(".")[0];
+        const wrapper = document.createElement("div");
+        wrapper.style.marginBottom = "20px";
+        wrapper.innerHTML = `
+          <div style="font-weight:bold;margin-bottom:5px;">${fileName}</div>
+          <img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />
+        `;
+        container.appendChild(wrapper);
+      });
+    }
 
-      document.getElementById("photoModal").style.display = "block";
-    });
+    document.getElementById("photoModal").style.display = "block";
+  })
+  .catch(err => {
+    console.error("사진 로딩 오류:", err);
+    alert("❌ 사진을 불러오는 중 오류가 발생했습니다.");
+  });
 });
 
 document.getElementById("closeModal").addEventListener("click", () => {
@@ -900,7 +904,6 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
- 
   if (구매요청수량 > 0) {
     if (currentStock > 0) {
       alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
@@ -908,6 +911,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
       alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
     }
   }
+
 
   const item = { category, subcategory, size, name, quantity, remarks: remarksText };
 itemList.push(item);
