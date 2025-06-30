@@ -521,6 +521,7 @@ function formatDate(raw) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// ✅ 내 신청 내역
 document.getElementById("myRecordsBtn").addEventListener("click", () => {
   const fullName = localStorage.getItem("userInfo");
   if (!fullName) {
@@ -528,7 +529,43 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     return;
   }
 
-  
+  fetch(${API_URL}?mode=myrecords&name=${encodeURIComponent(fullName)})
+    .then(res => res.json())
+    .then(data => {
+      if (data.result !== "success") {
+        alert("❌ 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
+        <th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>
+      ).join("") + "</tr>";
+
+      tbody.innerHTML = "";
+      data.records.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        row.slice(0, 10).forEach(cell => {
+          const td = document.createElement("td");
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsModal").style.display = "flex";
+    })
+    .catch(err => {
+      console.error("신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
 document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
   const fullName = localStorage.getItem("userInfo");
   if (!fullName) {
@@ -538,13 +575,13 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
 
   const empId = fullName.split(" ")[0];
 
-  fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
+  fetch(${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)})
     .then(res => res.json())
     .then(data => {
-        if (data.result === "forbidden") {
-    alert("⚠️ 팀 내역 조회 권한이 없습니다.");
-    return;
-  }
+      if (data.result === "forbidden") {
+        alert("⚠️ 팀 내역 조회 권한이 없습니다.");
+        return;
+      }
       if (data.result !== "success") {
         alert("❌ 팀 신청 내역을 불러오지 못했습니다.");
         return;
@@ -554,10 +591,10 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
 
-      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10]; // 보여줄 열
+      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10];
 
       thead.innerHTML = "<tr>" + desiredIndexes.map(i =>
-        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>`
+        <th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>
       ).join("") + "</tr>";
 
       tbody.innerHTML = "";
@@ -583,28 +620,6 @@ document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
       alert("❌ 조회 중 오류가 발생했습니다.");
     });
 });
- 
-      // 헤더 생성
-      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
-  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
-).join("") + "</tr>";
-
-
-      // 본문 행 생성
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        row.slice(0, 10).forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = idx === 0 ? formatDate(cell) : cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("myRecordsSection").style.display = "block";
-    })
     .catch(err => {
       console.error("신청 내역 로딩 오류:", err);
       alert("❌ 조회 중 오류가 발생했습니다.");
