@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>드론 지도 음영 시스템</title>
+  <style>
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0 0 100px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #map-container {
+    position: relative;
+    width: 90%;
+    max-width: 1000px;
+    border: 1px solid #ccc;
+    margin-top: 20px;
+  }
+  #map {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  #overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    pointer-events: auto;
+  }
+#cad {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 5;
+}
+
+  #controls {
+    margin-top: 30px;
+    margin-bottom: 100px;
+    width: 90%;
+    max-width: 800px;
+  }
+
+
+  #coords {
+    font-family: monospace;
+    margin-bottom: 10px;
+  }
+  #saved {
+    font-family: monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    background: #f8f8f8;
+    border: 1px solid #ccc;
+    padding: 14px;
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    line-height: 1.5;
+  }
+ /* ⬇️ 이거 새로 추가해도 됨 */
+    #saved div {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #saved div:hover {
+      background: #eef;
+    }
+  button {
+    margin-bottom: 10px;
+    padding: 8px 16px;
+    font-size: 15px;
+  }
+</style>
+
+</head>
+<body>
+
+<h3>🧽 드론 지도 음영 시스템 (Canvas)</h3>
+
+<div id="map-container">
+  <img id="map" src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론.png" />
+  <img id="cad" 
+       src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_도면.png" 
+       style="display:none; position:absolute; top:0; left:0; width:100%; height:auto; z-index:5; opacity:0.5;" />
+  <canvas id="overlay"></canvas>
+</div>
+<div id="controls">
+  <div id="coords">좌표: </div>
+  <button id="saveBtn">📌 선택 좌표 저장</button>
+<button id="toggleCadBtn">🟢 CAD 보기 끄기</button>
+ <div style="margin: 8px 0;">
+    <label>CAD 투명도:
+      <input type="range" id="cadOpacity" min="0" max="100" value="50">
+    </label>
+  </div>
+
+
+  <div id="saved">저장된 좌표 없음</div>
+</div>
+
+<script>
+const map = document.getElementById("map");
+const canvas = document.getElementById("overlay");
+const ctx = canvas.getContext("2d");
+const coordsDiv = document.getElementById("coords");
+const saveBtn = document.getElementById("saveBtn");
+const savedDiv = document.getElementById("saved");
+
+let cellSize = 20;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let hasMoved = false;
+let lastSelection = null;
+
+function getMetersPerPixel() {
+  return 0.15;
+}
+
+function resizeCanvas() {
+  canvas.width = map.clientWidth;
+  canvas.height = map.clientHeight;
+  drawGrid();
+}
+
+function getScale() {
+  return canvas.width / map.naturalWidth;
+}
+
+function getRelativeCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scale = getScale();
+  return {
+    x: (e.clientX - rect.left) / scale,
+    y: (e.clientY - rect.top) / scale
+  };
+}
+
+function drawGrid() {
+  const scale = getScale();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "rgba(0,0,0,0.3)";
+  ctx.lineWidth = 1;
+
+  const step = cellSize * scale;
+  const fontSize = Math.max(14 * scale, 11);
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.fillStyle = "yellow";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  // X축 숫자 인덱스 (상단)
+  for (let x = 0, i = 0; x <= canvas.width; x += step, i++) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+    ctx.fillText(i, x + step / 2, 0); // 인덱스 숫자
+  }
+
+  // Y축 숫자 인덱스 (좌측)
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  for (let y = 0, j = 0; y <= canvas.height; y += step, j++) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+    ctx.fillText(j, 0, y + step / 2); // 인덱스 숫자
+  }
+ drawScaleBar();
+}
+
+function drawScaleBar() {
+  const scale = getScale();
+  const metersPerPixel = getMetersPerPixel();
+  const canvasWidth = canvas.width;
+
+  const maxBarPx = canvasWidth * 0.25; // 화면 너비의 25% 이내로 제한
+  const maxMeters = maxBarPx / metersPerPixel;
+
+  // 보기 좋은 단위 선택 (예: 1, 2, 5, 10, 20, 50, 100...)
+  const niceSteps = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+  let chosenLengthM = niceSteps.find(step => step <= maxMeters) || niceSteps[niceSteps.length - 1];
+  const barLengthPx = chosenLengthM / metersPerPixel;
+
+  const x = canvas.width - barLengthPx - 20;
+  const y = canvas.height - 20;
+
+  // 선 그리기
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + barLengthPx, y);
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 텍스트
+  ctx.fillStyle = "white";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`약 ${chosenLengthM} m`, x + barLengthPx / 2, y - 10);
+}
+
+
+
+function drawShadedArea(x1, y1, x2, y2) {
+  const scale = getScale();
+  ctx.fillStyle = "rgba(0,0,255,0.2)";  // ← 드래그 중과 같은 파란색으로
+  for (let y = y1; y < y2; y += cellSize) {
+    for (let x = x1; x < x2; x += cellSize) {
+      ctx.fillRect(x * scale, y * scale, cellSize * scale, cellSize * scale);
+    }
+  }
+}
+
+
+function drawLabel(x, y, text) {
+  const scale = getScale();
+  const fontSize = Math.max(14 * scale, 12);
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.fillStyle = "yellow";
+  ctx.fillText(text, x * scale, y * scale);
+}
+
+function drawMultilineLabel(x, y, lines) {
+  const scale = getScale();
+  const fontSize = Math.max(13 * scale, 11);
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.fillStyle = "yellow";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  const totalHeight = lines.length * (fontSize + 2);
+  const startY = y * scale - totalHeight / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, x * scale, startY + i * (fontSize + 2));
+  });
+}
+
+function handleStart(e) {
+  const pos = getRelativeCoords(e);
+  dragStartX = pos.x;
+  dragStartY = pos.y;
+  isDragging = true;
+  hasMoved = false;
+}
+
+function handleMove(e) {
+  if (!isDragging) return;
+  hasMoved = true;
+  const pos = getRelativeCoords(e);
+  const x = Math.min(dragStartX, pos.x);
+  const y = Math.min(dragStartY, pos.y);
+  const w = Math.abs(dragStartX - pos.x);
+  const h = Math.abs(dragStartY - pos.y);
+
+  drawGrid();
+  ctx.fillStyle = "rgba(0,0,255,0.2)";
+  ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
+
+  const x1 = Math.floor(x / cellSize) * cellSize;
+  const y1 = Math.floor(y / cellSize) * cellSize;
+  const x2 = Math.ceil((x + w) / cellSize) * cellSize;
+  const y2 = Math.ceil((y + h) / cellSize) * cellSize;
+
+  const pixelWidth = x2 - x1;
+  const pixelHeight = y2 - y1;
+  const cols = pixelWidth / cellSize;
+  const rows = pixelHeight / cellSize;
+  const metersPerPixel = getMetersPerPixel();
+  const widthM = pixelWidth * metersPerPixel;
+  const heightM = pixelHeight * metersPerPixel;
+  const areaM2 = widthM * heightM;
+  const areaPy = areaM2 / 3.3058;
+
+   drawMultilineLabel(
+  x1 + (x2 - x1) / 2,
+  y1 + (y2 - y1) / 2,
+  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+);
+
+
+
+}
+
+function handleEnd(e) {
+  const pos = getRelativeCoords(e);
+  let x1 = Math.floor(Math.min(dragStartX, pos.x) / cellSize) * cellSize;
+  let y1 = Math.floor(Math.min(dragStartY, pos.y) / cellSize) * cellSize;
+  let x2 = Math.ceil(Math.max(dragStartX, pos.x) / cellSize) * cellSize;
+  let y2 = Math.ceil(Math.max(dragStartY, pos.y) / cellSize) * cellSize;
+
+  if (!hasMoved) {
+    x1 = Math.floor(pos.x / cellSize) * cellSize;
+    y1 = Math.floor(pos.y / cellSize) * cellSize;
+    x2 = x1 + cellSize;
+    y2 = y1 + cellSize;
+  }
+
+  const cols = (x2 - x1) / cellSize;
+  const rows = (y2 - y1) / cellSize;
+  const metersPerPixel = getMetersPerPixel();
+  const widthM = (x2 - x1) * metersPerPixel;
+  const heightM = (y2 - y1) * metersPerPixel;
+  const areaM2 = widthM * heightM;
+  const areaPy = areaM2 / 3.3058;
+
+  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+
+  drawGrid();
+  drawShadedArea(x1, y1, x2, y2);
+ drawMultilineLabel(
+  x1 + (x2 - x1) / 2,
+  y1 + (y2 - y1) / 2,
+  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+);
+
+  coordsDiv.innerText =
+  `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
+  `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+
+  isDragging = false;
+  hasMoved = false;
+}
+
+saveBtn.addEventListener("click", () => {
+  if (!lastSelection) return;
+
+  const { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy } = lastSelection;
+const text = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy).join(" / ");
+
+
+
+
+  const entry = document.createElement("div");
+  entry.style.marginBottom = "6px";
+  entry.style.cursor = "pointer";
+  entry.dataset.x1 = x1;
+  entry.dataset.y1 = y1;
+  entry.dataset.x2 = x2;
+  entry.dataset.y2 = y2;
+
+  const span = document.createElement("span");
+  span.textContent = text;
+  span.style.whiteSpace = "pre-wrap";
+
+  const del = document.createElement("button");
+del.textContent = "❌";
+del.style.marginLeft = "8px";
+del.style.fontSize = "12px";
+del.style.padding = "2px 4px";
+del.style.lineHeight = "1";
+del.style.border = "none";
+del.style.background = "transparent";
+del.style.cursor = "pointer";
+
+del.onclick = (e) => {
+  e.stopPropagation(); // ✅ 필수!
+  savedDiv.removeChild(entry);
+};
+// ✅ 🔗 링크 복사 버튼 추가 위치
+const linkBtn = document.createElement("button");
+linkBtn.textContent = "🔗 링크 복사";
+linkBtn.style.fontSize = "12px";
+linkBtn.style.marginLeft = "8px";
+linkBtn.style.padding = "2px 4px";
+linkBtn.style.lineHeight = "1";
+linkBtn.style.border = "none";
+linkBtn.style.background = "transparent";
+linkBtn.style.cursor = "pointer";
+
+linkBtn.onclick = () => {
+  const url = new URL(location.href);
+  url.searchParams.set("x1", x1);
+  url.searchParams.set("y1", y1);
+  url.searchParams.set("x2", x2);
+  url.searchParams.set("y2", y2);
+  navigator.clipboard.writeText(url.toString());
+  alert("✅ 공유 링크가 복사되었습니다!");
+};
+
+
+  entry.appendChild(span);
+  entry.appendChild(del);
+entry.appendChild(linkBtn); // ✅ 이 줄을 꼭 추가해야 함
+
+
+  entry.onclick = (e) => {
+    if (e.target.tagName === "BUTTON") return;
+    drawGrid();
+    drawShadedArea(x1, y1, x2, y2);
+   drawMultilineLabel(
+  x1 + (x2 - x1) / 2,
+  y1 + (y2 - y1) / 2,
+  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+);
+
+  };
+
+  if (savedDiv.textContent.trim() === "저장된 좌표 없음") savedDiv.innerHTML = "";
+  savedDiv.appendChild(entry);
+});
+
+canvas.addEventListener("mousedown", handleStart);
+canvas.addEventListener("mousemove", handleMove);
+canvas.addEventListener("mouseup", handleEnd);
+
+canvas.addEventListener("touchstart", e => {
+  if (e.touches.length === 1) handleStart(e.touches[0]);
+});
+canvas.addEventListener("touchmove", e => {
+  e.preventDefault();
+  if (e.touches.length === 1) handleMove(e.touches[0]);
+}, { passive: false });
+canvas.addEventListener("touchend", e => {
+  if (e.changedTouches.length === 1) handleEnd(e.changedTouches[0]);
+});
+
+map.onload = resizeCanvas;
+window.addEventListener("resize", resizeCanvas);
+
+function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
+  const xStart = x1 / cellSize;
+  const yStart = y1 / cellSize;
+  const xEnd = xStart + cols - 1;
+  const yEnd = yStart + rows - 1;
+
+  return [
+    `셀 X=${xStart}~${xEnd}, Y=${yStart}~${yEnd}`,
+    `${cols}x${rows}칸`,
+    `${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`,
+    `${areaM2.toFixed(2)}m² (약 ${areaPy.toFixed(2)}평)`
+  ];
+}
+// CAD 보기 on/off 토글
+const cadImg = document.getElementById("cad");
+const toggleCadBtn = document.getElementById("toggleCadBtn");
+let cadVisible = false;  // ✅ 처음부터 꺼짐 상태
+toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
+
+toggleCadBtn.addEventListener("click", () => {
+  cadVisible = !cadVisible;
+  cadImg.style.display = cadVisible ? "block" : "none";
+  toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
+});
+
+// ✅ CAD 투명도 슬라이더 연결
+const cadOpacity = document.getElementById("cadOpacity");
+
+cadOpacity.addEventListener("input", () => {
+  const value = cadOpacity.value; // 0~100
+  cadImg.style.opacity = value / 100;
+});
+
+// ✅ 여기에 삽입
+window.addEventListener("load", () => {
+  const params = new URLSearchParams(location.search);
+  const x1 = parseInt(params.get("x1"));
+  const y1 = parseInt(params.get("y1"));
+  const x2 = parseInt(params.get("x2"));
+  const y2 = parseInt(params.get("y2"));
+  if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
+    drawGrid();
+    drawShadedArea(x1, y1, x2, y2);
+
+    const cols = (x2 - x1) / cellSize;
+    const rows = (y2 - y1) / cellSize;
+    const metersPerPixel = getMetersPerPixel();
+    const widthM = (x2 - x1) * metersPerPixel;
+    const heightM = (y2 - y1) * metersPerPixel;
+    const areaM2 = widthM * heightM;
+    const areaPy = areaM2 / 3.3058;
+
+    drawMultilineLabel(
+      x1 + (x2 - x1) / 2,
+      y1 + (y2 - y1) / 2,
+      formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+    );
+  // 🔽 이 줄 추가!
+  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+  }
+});
+</script>
+
+</body>
+</html>
