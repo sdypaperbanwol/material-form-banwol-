@@ -376,11 +376,32 @@ del.onclick = (e) => {
   e.stopPropagation(); // ✅ 필수!
   savedDiv.removeChild(entry);
 };
+// ✅ 🔗 링크 복사 버튼 추가 위치
+const linkBtn = document.createElement("button");
+linkBtn.textContent = "🔗 링크 복사";
+linkBtn.style.fontSize = "12px";
+linkBtn.style.marginLeft = "8px";
+linkBtn.style.padding = "2px 4px";
+linkBtn.style.lineHeight = "1";
+linkBtn.style.border = "none";
+linkBtn.style.background = "transparent";
+linkBtn.style.cursor = "pointer";
 
+linkBtn.onclick = () => {
+  const url = new URL(location.href);
+  url.searchParams.set("x1", x1);
+  url.searchParams.set("y1", y1);
+  url.searchParams.set("x2", x2);
+  url.searchParams.set("y2", y2);
+  navigator.clipboard.writeText(url.toString());
+  alert("✅ 공유 링크가 복사되었습니다!");
+};
 
 
   entry.appendChild(span);
   entry.appendChild(del);
+entry.appendChild(linkBtn); // ✅ 이 줄을 꼭 추가해야 함
+
 
   entry.onclick = (e) => {
     if (e.target.tagName === "BUTTON") return;
@@ -449,6 +470,34 @@ cadOpacity.addEventListener("input", () => {
   cadImg.style.opacity = value / 100;
 });
 
+// ✅ 여기에 삽입
+window.addEventListener("load", () => {
+  const params = new URLSearchParams(location.search);
+  const x1 = parseInt(params.get("x1"));
+  const y1 = parseInt(params.get("y1"));
+  const x2 = parseInt(params.get("x2"));
+  const y2 = parseInt(params.get("y2"));
+  if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
+    drawGrid();
+    drawShadedArea(x1, y1, x2, y2);
+
+    const cols = (x2 - x1) / cellSize;
+    const rows = (y2 - y1) / cellSize;
+    const metersPerPixel = getMetersPerPixel();
+    const widthM = (x2 - x1) * metersPerPixel;
+    const heightM = (y2 - y1) * metersPerPixel;
+    const areaM2 = widthM * heightM;
+    const areaPy = areaM2 / 3.3058;
+
+    drawMultilineLabel(
+      x1 + (x2 - x1) / 2,
+      y1 + (y2 - y1) / 2,
+      formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+    );
+  // 🔽 이 줄 추가!
+  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+  }
+});
 </script>
 
 </body>
