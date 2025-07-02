@@ -66,6 +66,21 @@
     overflow-y: auto;
     line-height: 1.5;
   }
+ /* ⬇️ 이거 새로 추가해도 됨 */
+    #saved div {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #saved div:hover {
+      background: #eef;
+    }
   button {
     margin-bottom: 10px;
     padding: 8px 16px;
@@ -115,7 +130,7 @@ let hasMoved = false;
 let lastSelection = null;
 
 function getMetersPerPixel() {
-  return 0.04518;
+  return 0.15;
 }
 
 function resizeCanvas() {
