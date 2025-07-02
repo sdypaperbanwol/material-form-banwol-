@@ -31,12 +31,25 @@
     z-index: 10;
     pointer-events: auto;
   }
+#cad {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 5;
+}
+
   #controls {
     margin-top: 30px;
     margin-bottom: 100px;
     width: 90%;
     max-width: 800px;
   }
+
+
   #coords {
     font-family: monospace;
     margin-bottom: 10px;
@@ -66,13 +79,23 @@
 <h3>🧽 드론 지도 음영 시스템 (Canvas)</h3>
 
 <div id="map-container">
-  <img id="map" src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론.JPG" />
+  <img id="map" src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론.png" />
+  <img id="cad" 
+       src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_도면.png" 
+       style="display:none; position:absolute; top:0; left:0; width:100%; height:auto; z-index:5; opacity:0.5;" />
   <canvas id="overlay"></canvas>
 </div>
-
 <div id="controls">
   <div id="coords">좌표: </div>
   <button id="saveBtn">📌 선택 좌표 저장</button>
+<button id="toggleCadBtn">🟢 CAD 보기 끄기</button>
+ <div style="margin: 8px 0;">
+    <label>CAD 투명도:
+      <input type="range" id="cadOpacity" min="0" max="100" value="50">
+    </label>
+  </div>
+
+
   <div id="saved">저장된 좌표 없음</div>
 </div>
 
@@ -84,7 +107,7 @@ const coordsDiv = document.getElementById("coords");
 const saveBtn = document.getElementById("saveBtn");
 const savedDiv = document.getElementById("saved");
 
-let cellSize = 80;
+let cellSize = 20;
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
@@ -391,7 +414,25 @@ function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
     `${areaM2.toFixed(2)}m² (약 ${areaPy.toFixed(2)}평)`
   ];
 }
+// CAD 보기 on/off 토글
+const cadImg = document.getElementById("cad");
+const toggleCadBtn = document.getElementById("toggleCadBtn");
+let cadVisible = false;  // ✅ 처음부터 꺼짐 상태
+toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
 
+toggleCadBtn.addEventListener("click", () => {
+  cadVisible = !cadVisible;
+  cadImg.style.display = cadVisible ? "block" : "none";
+  toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
+});
+
+// ✅ CAD 투명도 슬라이더 연결
+const cadOpacity = document.getElementById("cadOpacity");
+
+cadOpacity.addEventListener("input", () => {
+  const value = cadOpacity.value; // 0~100
+  cadImg.style.opacity = value / 100;
+});
 
 </script>
 
