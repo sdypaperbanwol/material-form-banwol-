@@ -23,7 +23,7 @@
       margin-bottom: 10px;
     }
 
-  #factory-selector {
+ #factory-selector {
   display: flex;
   flex-direction: column;         /* ✅ 세로 정렬 유지 */
   align-items: center;
@@ -37,6 +37,14 @@
   font-size: 1.15rem;
   transform: scale(1.15);         /* ✅ 전체 크기 15% 확대 */
   transform-origin: center top;
+
+  /* ✅ fade-in 효과 준비 */
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+#factory-selector.show {
+  opacity: 1; /* ✅ fade-in 대상 클래스 */
 }
 
 #factory-selector button {
@@ -55,6 +63,16 @@
 #factory-selector button:hover {
   background: #f0f0f0;
 }
+
+/* ✅ 모바일에서 버튼 간격 키우기 */
+ @media (max-width: 600px) {
+      #factory-selector button {
+        margin-bottom: 20px;
+        padding: 20px;
+        font-size: 1.1rem;
+      }
+    }
+
 
 
     #main-app {
@@ -708,6 +726,9 @@ window.loadFactory = loadFactory;
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const viewOnly = params.get("view") === "1";
+
+ const fs = document.getElementById("factory-selector");
+  setTimeout(() => fs.classList.add("show"), 100);
 
     if (code) {
   try {
