@@ -309,17 +309,22 @@ function loadFactory(factoryNum) {
 
   document.getElementById("currentFactory").innerText = `🏭 현재 공장: ${factoryNames[factoryNum]}`;
 
-  // ✅ 이미지 로드 완료 후 실행
-  mapEl.onload = () => {
+  // ✅ 이미지 로드 완료 처리 (모바일 대응 포함)
+  const finishInit = () => {
     resizeCanvas();
-
     if (!isInitialized) {
       initSystem();
       isInitialized = true;
     }
-
   };
+
+  if (mapEl.complete) {
+    finishInit();
+  } else {
+    mapEl.onload = finishInit;
+  }
 }
+
 window.loadFactory = loadFactory;
 
 
