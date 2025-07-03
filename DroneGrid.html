@@ -273,9 +273,10 @@ function loadFactory(factoryNum) {
       initSystem();
       isInitialized = true;
     }
+
   };
 }
-
+window.loadFactory = loadFactory;
 
 
     // ✅ 아래는 기존 시스템 스크립트 전체 삽입
@@ -557,15 +558,16 @@ canvas.addEventListener("touchend", e => {
 
   const linkBtn = document.createElement("button");
   linkBtn.textContent = "🔗 링크 복사";
-  linkBtn.onclick = () => {
-    const url = new URL(location.href);
-    url.searchParams.set("x1", x1);
-    url.searchParams.set("y1", y1);
-    url.searchParams.set("x2", x2);
-    url.searchParams.set("y2", y2);
-    navigator.clipboard.writeText(url.toString());
-    alert("✅ 공유 링크가 복사되었습니다!");
-  };
+ linkBtn.onclick = () => {
+  const url = new URL(location.href);
+  const raw = [x1, y1, x2, y2, selectedFactory, 1].join("|");
+const encoded = btoa(raw);  // base64 인코딩
+url.searchParams.set("code", encoded);
+
+
+  navigator.clipboard.writeText(url.toString());
+  alert("✅ 공유 링크가 복사되었습니다!");
+};
 
   entry.appendChild(span);
   entry.appendChild(del);
@@ -602,55 +604,70 @@ document.getElementById("backBtn").addEventListener("click", () => {
 });
 document.getElementById("currentFactory").innerText = "";
 
-window.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const x1 = parseInt(params.get("x1"));
-  const y1 = parseInt(params.get("y1"));
-  const x2 = parseInt(params.get("x2"));
-  const y2 = parseInt(params.get("y2"));
+window.loadFactory = loadFactory;
 
-  // 필수 파라미터가 모두 존재하고 숫자일 경우에만 복원
-  if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
-    // 공장 자동 선택 (선택적: factory=1 또는 2가 URL에 포함되면 사용)
-    const factoryParam = parseInt(params.get("factory"));
-    const defaultFactory = factoryParam === 2 ? 2 : 1;
+  window.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const viewOnly = params.get("view") === "1";
 
-    loadFactory(defaultFactory);  // 지도 로딩
+    if (code) {
+      try {
+        const decoded = atob(code);
+        const [x1, y1, x2, y2, factoryParam, viewFlag] = decoded.split("|").map(Number);
+        const isViewOnly = viewFlag === 1;
 
-    // 이미지 로드 후 좌표 복원
-    document.getElementById("map").onload = () => {
-      resizeCanvas();
+        if (
+          isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) ||
+          !(factoryParam === 1 || factoryParam === 2)
+        ) throw new Error("Invalid data");
 
-      if (!isInitialized) {
-        initSystem();
-        isInitialized = true;
+        loadFactory(factoryParam);
+
+        document.getElementById("map").onload = () => {
+          resizeCanvas();
+          if (!isInitialized) {
+            initSystem();
+            isInitialized = true;
+          }
+
+          const cols = (x2 - x1) / cellSize;
+          const rows = (y2 - y1) / cellSize;
+          const metersPerPixel = getMetersPerPixel();
+          const widthM = (x2 - x1) * metersPerPixel;
+          const heightM = (y2 - y1) * metersPerPixel;
+          const areaM2 = widthM * heightM;
+          const areaPy = areaM2 / 3.3058;
+
+          lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+
+          drawGrid();
+          drawShadedArea(x1, y1, x2, y2);
+          drawMultilineLabel(
+            x1 + (x2 - x1) / 2,
+            y1 + (y2 - y1) / 2,
+            formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+          );
+
+          document.getElementById("coords").innerText =
+            `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
+            `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+
+          if (isViewOnly) {
+            document.getElementById("controls").style.display = "none";
+            canvas.style.pointerEvents = "none";
+          }
+        };
+
+        return;
+      } catch (e) {
+        alert("잘못된 링크입니다.");
       }
+    }
 
-      const cols = (x2 - x1) / cellSize;
-      const rows = (y2 - y1) / cellSize;
-      const metersPerPixel = getMetersPerPixel();
-      const widthM = (x2 - x1) * metersPerPixel;
-      const heightM = (y2 - y1) * metersPerPixel;
-      const areaM2 = widthM * heightM;
-      const areaPy = areaM2 / 3.3058;
-
-      lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
-
-      drawGrid();
-      drawShadedArea(x1, y1, x2, y2);
-      drawMultilineLabel(
-        x1 + (x2 - x1) / 2,
-        y1 + (y2 - y1) / 2,
-        formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-      );
-
-      coordsDiv.innerText =
-        `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
-        `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
-    };
-  }
-});
-
-  </script>
+    // code 파라미터가 없으면 기본 상태 → 공장 선택 화면 그대로 유지
+    document.getElementById("currentFactory").innerText = "";
+  });
+</script>
 </body>
 </html>
