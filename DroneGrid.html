@@ -34,7 +34,7 @@
   background: #fafafa;
   margin: 40px 0;
   gap: 24px;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   transform: scale(1.15);         /* ✅ 전체 크기 15% 확대 */
   transform-origin: center top;
 
@@ -217,6 +217,9 @@
 
 
 
+
+
+
 <!-- ✅ 상단 회사 로고 + 제목 -->
 <div id="header">
   <img src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_로고.png" alt="회사 로고">
@@ -255,7 +258,12 @@
 
 </div>
 
-
+<div id="admin-password-panel" style="display: none; margin-top: 20px; text-align: center;">
+  <h3>🛠️ admin 비밀번호 변경</h3>
+  <input type="password" id="new-admin-pw" placeholder="새 비밀번호" style="padding: 8px; font-size: 1rem;">
+  <button onclick="changeAdminPassword()" style="padding: 8px 16px; margin-left: 10px;">변경</button>
+  <p style="font-size: 0.9rem; color: gray; margin-top: 8px;">※ admin 계정으로 로그인할 때 사용됩니다.</p>
+</div>
 
 
 
@@ -302,25 +310,37 @@
 
   <!-- ✅ 통합 스크립트 -->
   <script>
- function handleLogin() {
+function handleLogin() {
   const id = document.getElementById("login-id").value;
   const pw = document.getElementById("login-pw").value;
+  const savedAdminPw = localStorage.getItem("adminPw") || "1234";
 
-  if (id === "admin" && pw === "1234") {
-    localStorage.setItem("auth", "ok");
+  if (id === "superadmin" && pw === "master123") {
+    localStorage.setItem("auth", "superadmin");
     document.getElementById("login-screen").style.display = "none";
-    showFactorySelector();  // ✅ 바로 공장 선택화면으로 전환
+    showFactorySelector();
+    document.getElementById("admin-password-panel").style.display = "block";
+  } else if (id === "admin" && pw === savedAdminPw) {
+    localStorage.setItem("auth", "admin");
+    document.getElementById("login-screen").style.display = "none";
+    showFactorySelector();
+    document.getElementById("admin-password-panel").style.display = "none";
   } else {
     alert("❌ 아이디 또는 비밀번호가 잘못되었습니다.");
   }
 }
 
 
+
 function showFactorySelector() {
   const selector = document.getElementById("factory-selector");
   selector.style.display = "flex";
-  selector.classList.add("show");
+  // 💡 1프레임 지연 후 클래스 추가
+  requestAnimationFrame(() => {
+    selector.classList.add("show");
+  });
 }
+
 
     const FACTORY_DATA = {
       1: {
@@ -862,6 +882,17 @@ if (!code && !viewOnly) {
     showFactorySelector(); // 기본 진입
   }
 });
+
+function changeAdminPassword() {
+  const newPw = document.getElementById("new-admin-pw").value.trim();
+  if (!newPw) {
+    alert("새 비밀번호를 입력하세요.");
+    return;
+  }
+  localStorage.setItem("adminPw", newPw);
+  alert("✅ admin 비밀번호가 변경되었습니다.");
+  document.getElementById("new-admin-pw").value = "";
+}
 
 
 
