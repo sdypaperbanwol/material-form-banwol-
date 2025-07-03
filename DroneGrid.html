@@ -1,72 +1,126 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>드론 지도 음영 시스템</title>
   <style>
-  body {
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0 0 100px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  #map-container {
-    position: relative;
-    width: 90%;
-    max-width: 1000px;
-    border: 1px solid #ccc;
-    margin-top: 20px;
-  }
-  #map {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-  #overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 10;
-    pointer-events: auto;
-  }
-#cad {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: auto;
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 5;
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding-bottom: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #header {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    #header img {
+      height: 80px;
+      margin-bottom: 10px;
+    }
+
+  #factory-selector {
+  display: flex;
+  flex-direction: column;         /* ✅ 세로 정렬 유지 */
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  background: #fafafa;
+  margin: 40px 0;
+  gap: 24px;
+  font-size: 1.15rem;
+  transform: scale(1.15);         /* ✅ 전체 크기 15% 확대 */
+  transform-origin: center top;
 }
 
-  #controls {
-    margin-top: 30px;
-    margin-bottom: 100px;
-    width: 90%;
-    max-width: 800px;
-  }
+#factory-selector button {
+  width: 320px;
+  padding: 16px 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+#factory-selector button:hover {
+  background: #f0f0f0;
+}
 
 
-  #coords {
-    font-family: monospace;
-    margin-bottom: 10px;
-  }
-  #saved {
-    font-family: monospace;
-    font-size: 13px;
-    white-space: pre-wrap;
-    background: #f8f8f8;
-    border: 1px solid #ccc;
-    padding: 14px;
-    min-height: 120px;
-    max-height: 300px;
-    overflow-y: auto;
-    line-height: 1.5;
-  }
- /* ⬇️ 이거 새로 추가해도 됨 */
+    #main-app {
+      display: none;
+      width: 100%;
+    }
+
+    #map-container {
+      position: relative;
+      width: 90%;
+      max-width: 1000px;
+      border: 1px solid #ccc;
+      margin: 20px auto 0;
+    }
+
+    #map {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    #cad {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      pointer-events: auto;
+    }
+
+
+
+    #controls {
+      margin: 30px auto 100px;
+      width: 90%;
+      max-width: 800px;
+    }
+
+    #coords {
+      font-family: monospace;
+      margin-bottom: 10px;
+    }
+
+    #saved {
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      background: #f8f8f8;
+      border: 1px solid #ccc;
+      padding: 14px;
+      min-height: 120px;
+      max-height: 300px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
     #saved div {
       background: #f9f9f9;
       border: 1px solid #ddd;
@@ -81,424 +135,522 @@
     #saved div:hover {
       background: #eef;
     }
-  button {
-    margin-bottom: 10px;
-    padding: 8px 16px;
-    font-size: 15px;
-  }
-</style>
 
+    button {
+      margin-bottom: 10px;
+      padding: 8px 16px;
+      font-size: 15px;
+    }
+  </style>
 </head>
 <body>
 
-<h3>🧽 드론 지도 음영 시스템 (Canvas)</h3>
-
-<div id="map-container">
-  <img id="map" src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론3.png" />
-  <img id="cad" 
-       src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_도면3.png" 
-       style="display:none; position:absolute; top:0; left:0; width:100%; height:auto; z-index:5; opacity:0.5;" />
-  <canvas id="overlay"></canvas>
+<!-- ✅ 상단 회사 로고 + 제목 -->
+<div id="header">
+  <img src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_로고.png" alt="회사 로고">
+  <h2>🛰️ 드론 지도 음영 시스템 (Canvas)</h2>
 </div>
-<div id="controls">
-  <div id="coords">좌표: </div>
-  <button id="saveBtn">📌 선택 좌표 저장</button>
-<button id="toggleCadBtn">🟢 CAD 보기 끄기</button>
- <div style="margin: 8px 0;">
-    <label>CAD 투명도:
-      <input type="range" id="cadOpacity" min="0" max="100" value="50">
-    </label>
+
+<!-- ✅ 공장 선택 버튼 -->
+<!-- ✅ 공장 선택 화면 -->
+<div id="factory-selector">
+
+  <h3 style="margin-bottom: 30px; font-size: 1.3em;">📍 공장을 선택해주세요</h3>
+
+  <!-- ✅ 본공장 -->
+  <div style="display: flex; align-items: center; gap: 20px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px 24px; margin-bottom: 30px; max-width: 700px;">
+    <!-- 왼쪽: 버튼 설명 -->
+    <div style="flex: 1;">
+      <button onclick="loadFactory(1)" style="width: 100%; padding: 16px; border-radius: 8px; border: 1px solid #aaa; font-size: 1rem; background: #f9f9f9; cursor: pointer;">
+        🏭 신대양제지반월 본공장<br>
+        <small style="color:gray;">(본공장 / 경기도 안산시 단원구 목내로 29)</small>
+      </button>
+    </div>
+    <!-- 오른쪽: 이미지 썸네일 -->
+    <img src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론3.png" style="width: 240px; border-radius: 8px;">
   </div>
 
+  <!-- ✅ 2공장 -->
+  <div style="display: flex; align-items: center; gap: 20px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px 24px; margin-bottom: 30px; max-width: 700px;">
+    <div style="flex: 1;">
+      <button onclick="loadFactory(2)" style="width: 100%; padding: 16px; border-radius: 8px; border: 1px solid #aaa; font-size: 1rem; background: #f9f9f9; cursor: pointer;">
+        🏭 신대양제지반월 2공장<br>
+        <small style="color:gray;">(2공장 / 경기도 안산시 단원구 별망로 408)</small>
+      </button>
+    </div>
+    <img src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_드론.png" style="width: 240px; border-radius: 8px;">
+  </div>
 
-  <div id="saved">저장된 좌표 없음</div>
 </div>
 
-<script>
-const map = document.getElementById("map");
-const canvas = document.getElementById("overlay");
-const ctx = canvas.getContext("2d");
-const coordsDiv = document.getElementById("coords");
-const saveBtn = document.getElementById("saveBtn");
-const savedDiv = document.getElementById("saved");
 
-let cellSize = 20;
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let hasMoved = false;
-let lastSelection = null;
 
-function getMetersPerPixel() {
-  return 0.15;
-}
 
-function resizeCanvas() {
-  canvas.width = map.clientWidth;
-  canvas.height = map.clientHeight;
-  drawGrid();
-}
 
-function getScale() {
-  return canvas.width / map.naturalWidth;
-}
 
-function getRelativeCoords(e) {
-  const rect = canvas.getBoundingClientRect();
-  const scale = getScale();
-  return {
-    x: (e.clientX - rect.left) / scale,
-    y: (e.clientY - rect.top) / scale
+<!-- ✅ 메인 시스템 영역 -->
+<div id="main-app">
+  <!-- 공장 이름 표시 -->
+  <div id="currentFactory" style="margin: 0 auto 10px; text-align: center; font-weight: bold;"></div>
+
+  <!-- 지도 및 오버레이 영역 -->
+  <div id="map-container">
+    <img id="map" />
+    <img id="cad" style="display: none;" />
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <!-- 컨트롤 패널 -->
+  <div id="controls">
+    <!-- ✅ 버튼 3개 한 줄 정렬 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+      <div style="display: flex; gap: 10px;">
+        <button id="saveBtn">📌 선택 좌표 저장</button>
+        <button id="toggleCadBtn">🔴 CAD 보기 켜기</button>
+      </div>
+      <button id="backBtn">🔙 공장 선택으로 돌아가기</button>
+    </div>
+
+    <!-- 좌표 정보 -->
+    <div id="coords">좌표: </div>
+
+    <!-- CAD 투명도 조절 -->
+    <div style="margin: 8px 0;">
+      <label>CAD 투명도:
+        <input type="range" id="cadOpacity" min="0" max="100" value="50">
+      </label>
+    </div>
+
+    <!-- 저장된 좌표 목록 -->
+    <div id="saved">저장된 좌표 없음</div>
+  </div>
+</div>
+
+
+
+  <!-- ✅ 통합 스크립트 -->
+  <script>
+    const FACTORY_DATA = {
+      1: {
+        map: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론3.png",
+        cad: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_도면3.png"
+      },
+      2: {
+        map: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_드론.png",
+        cad: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_도면.png"
+      }
+    };
+
+const factoryNames = {
+  1: "신대양제지반월 본공장",
+  2: "신대양제지반월 2공장"
+};
+
+    let selectedFactory = null;
+let isInitialized = false;
+
+function loadFactory(factoryNum) {
+  selectedFactory = factoryNum;
+  const factory = FACTORY_DATA[factoryNum];
+  if (!factory) return;
+
+  document.getElementById("factory-selector").style.display = "none";
+  document.getElementById("main-app").style.display = "block";
+
+  const mapEl = document.getElementById("map");
+  const cadEl = document.getElementById("cad");
+
+  mapEl.src = factory.map;
+  cadEl.src = factory.cad;
+
+  document.getElementById("currentFactory").innerText = `🏭 현재 공장: ${factoryNames[factoryNum]}`;
+
+  // ✅ 이미지 로드 완료 후 실행
+  mapEl.onload = () => {
+    resizeCanvas();
+
+    if (!isInitialized) {
+      initSystem();
+      isInitialized = true;
+    }
   };
 }
 
-function drawGrid() {
-  const scale = getScale();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "rgba(0,0,0,0.3)";
-  ctx.lineWidth = 1;
-
-  const step = cellSize * scale;
-  const fontSize = Math.max(14 * scale, 11);
-  ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = "yellow";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-
-  // X축 숫자 인덱스 (상단)
-  for (let x = 0, i = 0; x <= canvas.width; x += step, i++) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
-    ctx.stroke();
-    ctx.fillText(i, x + step / 2, 0); // 인덱스 숫자
-  }
-
-  // Y축 숫자 인덱스 (좌측)
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  for (let y = 0, j = 0; y <= canvas.height; y += step, j++) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(canvas.width, y);
-    ctx.stroke();
-    ctx.fillText(j, 0, y + step / 2); // 인덱스 숫자
-  }
- drawScaleBar();
-}
-
-function drawScaleBar() {
-  const scale = getScale();
-  const metersPerPixel = getMetersPerPixel();
-  const canvasWidth = canvas.width;
-
-  const maxBarPx = canvasWidth * 0.25; // 화면 너비의 25% 이내로 제한
-  const maxMeters = maxBarPx / metersPerPixel;
-
-  // 보기 좋은 단위 선택 (예: 1, 2, 5, 10, 20, 50, 100...)
-  const niceSteps = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
-  let chosenLengthM = niceSteps.find(step => step <= maxMeters) || niceSteps[niceSteps.length - 1];
-  const barLengthPx = chosenLengthM / metersPerPixel;
-
-  const x = canvas.width - barLengthPx - 20;
-  const y = canvas.height - 20;
-
-  // 선 그리기
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + barLengthPx, y);
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // 텍스트
-  ctx.fillStyle = "white";
-  ctx.font = "12px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(`약 ${chosenLengthM} m`, x + barLengthPx / 2, y - 10);
-}
 
 
+    // ✅ 아래는 기존 시스템 스크립트 전체 삽입
+    // 단, map.onload에서 resizeCanvas()만 호출하면 됨
+    let cellSize = 20;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let hasMoved = false;
+    let lastSelection = null;
 
-function drawShadedArea(x1, y1, x2, y2) {
-  const scale = getScale();
-  ctx.fillStyle = "rgba(0,0,255,0.2)";  // ← 드래그 중과 같은 파란색으로
-  for (let y = y1; y < y2; y += cellSize) {
-    for (let x = x1; x < x2; x += cellSize) {
-      ctx.fillRect(x * scale, y * scale, cellSize * scale, cellSize * scale);
+    const map = document.getElementById("map");
+    const canvas = document.getElementById("overlay");
+    const ctx = canvas.getContext("2d");
+    const coordsDiv = document.getElementById("coords");
+    const saveBtn = document.getElementById("saveBtn");
+    const savedDiv = document.getElementById("saved");
+    const cadImg = document.getElementById("cad");
+    const toggleCadBtn = document.getElementById("toggleCadBtn");
+    const cadOpacity = document.getElementById("cadOpacity");
+
+    let cadVisible = false;
+    toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
+
+    function getMetersPerPixel() {
+      return 0.15;
     }
+
+    function resizeCanvas() {
+      canvas.width = map.clientWidth;
+      canvas.height = map.clientHeight;
+      drawGrid();
+    }
+
+    function getScale() {
+      return canvas.width / map.naturalWidth;
+    }
+
+    function getRelativeCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = getScale();
+      return {
+        x: (e.clientX - rect.left) / scale,
+        y: (e.clientY - rect.top) / scale
+      };
+    }
+
+    function drawGrid() {
+      const scale = getScale();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "rgba(0,0,0,0.3)";
+      ctx.lineWidth = 1;
+
+      const step = cellSize * scale;
+      const fontSize = Math.max(14 * scale, 11);
+      ctx.font = `${fontSize}px sans-serif`;
+      ctx.fillStyle = "yellow";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+
+      for (let x = 0, i = 0; x <= canvas.width; x += step, i++) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+        ctx.fillText(i, x + step / 2, 0);
+      }
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      for (let y = 0, j = 0; y <= canvas.height; y += step, j++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+        ctx.fillText(j, 0, y + step / 2);
+      }
+
+      drawScaleBar();
+    }
+
+    function drawScaleBar() {
+      const scale = getScale();
+      const metersPerPixel = getMetersPerPixel();
+      const canvasWidth = canvas.width;
+
+      const maxBarPx = canvasWidth * 0.25;
+      const niceSteps = [1, 2, 5, 10, 20, 50, 100, 200];
+      const maxMeters = maxBarPx / metersPerPixel;
+      let chosen = niceSteps.find(m => m <= maxMeters) || niceSteps[niceSteps.length - 1];
+      const barPx = chosen / metersPerPixel;
+
+      const x = canvasWidth - barPx - 20;
+      const y = canvas.height - 20;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + barPx, y);
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = "white";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`약 ${chosen} m`, x + barPx / 2, y - 10);
+    }
+
+    function drawMultilineLabel(x, y, lines) {
+      const scale = getScale();
+      const fontSize = Math.max(13 * scale, 11);
+      ctx.font = `${fontSize}px sans-serif`;
+      ctx.fillStyle = "yellow";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+
+      const totalHeight = lines.length * (fontSize + 2);
+      const startY = y * scale - totalHeight / 2;
+
+      lines.forEach((line, i) => {
+        ctx.fillText(line, x * scale, startY + i * (fontSize + 2));
+      });
+    }
+
+    function drawShadedArea(x1, y1, x2, y2) {
+      const scale = getScale();
+      ctx.fillStyle = "rgba(0,0,255,0.2)";
+      for (let y = y1; y < y2; y += cellSize) {
+        for (let x = x1; x < x2; x += cellSize) {
+          ctx.fillRect(x * scale, y * scale, cellSize * scale, cellSize * scale);
+        }
+      }
+    }
+
+    function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
+      const xStart = x1 / cellSize;
+      const yStart = y1 / cellSize;
+      const xEnd = xStart + cols - 1;
+      const yEnd = yStart + rows - 1;
+
+      return [
+        `셀 X=${xStart}~${xEnd}, Y=${yStart}~${yEnd}`,
+        `${cols}x${rows}칸`,
+        `${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`,
+        `${areaM2.toFixed(2)}m² (약 ${areaPy.toFixed(2)}평)`
+      ];
+    }
+
+    function handleStart(e) {
+      const pos = getRelativeCoords(e);
+      dragStartX = pos.x;
+      dragStartY = pos.y;
+      isDragging = true;
+      hasMoved = false;
+    }
+
+    function handleMove(e) {
+      if (!isDragging) return;
+      hasMoved = true;
+      const pos = getRelativeCoords(e);
+      const x = Math.min(dragStartX, pos.x);
+      const y = Math.min(dragStartY, pos.y);
+      const w = Math.abs(dragStartX - pos.x);
+      const h = Math.abs(dragStartY - pos.y);
+
+      drawGrid();
+      ctx.fillStyle = "rgba(0,0,255,0.2)";
+      ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
+    }
+
+    function handleEnd(e) {
+      const pos = getRelativeCoords(e);
+      let x1 = Math.floor(Math.min(dragStartX, pos.x) / cellSize) * cellSize;
+      let y1 = Math.floor(Math.min(dragStartY, pos.y) / cellSize) * cellSize;
+      let x2 = Math.ceil(Math.max(dragStartX, pos.x) / cellSize) * cellSize;
+      let y2 = Math.ceil(Math.max(dragStartY, pos.y) / cellSize) * cellSize;
+
+      if (!hasMoved) {
+        x1 = Math.floor(pos.x / cellSize) * cellSize;
+        y1 = Math.floor(pos.y / cellSize) * cellSize;
+        x2 = x1 + cellSize;
+        y2 = y1 + cellSize;
+      }
+
+      const cols = (x2 - x1) / cellSize;
+      const rows = (y2 - y1) / cellSize;
+      const metersPerPixel = getMetersPerPixel();
+      const widthM = (x2 - x1) * metersPerPixel;
+      const heightM = (y2 - y1) * metersPerPixel;
+      const areaM2 = widthM * heightM;
+      const areaPy = areaM2 / 3.3058;
+
+      lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+
+      drawGrid();
+      drawShadedArea(x1, y1, x2, y2);
+      drawMultilineLabel(x1 + (x2 - x1) / 2, y1 + (y2 - y1) / 2, formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy));
+
+      coordsDiv.innerText =
+        `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
+        `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+
+      isDragging = false;
+      hasMoved = false;
+    }
+
+    function initSystem() {
+      map.onload = resizeCanvas;
+      window.addEventListener("resize", resizeCanvas);
+
+ // ✅ CAD 초기 상태 보장
+  cadImg.style.display = "none";
+  cadVisible = false;
+  toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
+
+      canvas.addEventListener("mousedown", handleStart);
+      canvas.addEventListener("mousemove", handleMove);
+      canvas.addEventListener("mouseup", handleEnd);
+
+// ✅ 모바일 터치 대응 이벤트
+canvas.addEventListener("touchstart", e => {
+  if (e.touches.length === 1) {
+    e.preventDefault(); // 스크롤 방지
+    handleStart(e.touches[0]);
   }
-}
+}, { passive: false });
 
-
-function drawLabel(x, y, text) {
-  const scale = getScale();
-  const fontSize = Math.max(14 * scale, 12);
-  ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = "yellow";
-  ctx.fillText(text, x * scale, y * scale);
-}
-
-function drawMultilineLabel(x, y, lines) {
-  const scale = getScale();
-  const fontSize = Math.max(13 * scale, 11);
-  ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = "yellow";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-
-  const totalHeight = lines.length * (fontSize + 2);
-  const startY = y * scale - totalHeight / 2;
-
-  lines.forEach((line, i) => {
-    ctx.fillText(line, x * scale, startY + i * (fontSize + 2));
-  });
-}
-
-function handleStart(e) {
-  const pos = getRelativeCoords(e);
-  dragStartX = pos.x;
-  dragStartY = pos.y;
-  isDragging = true;
-  hasMoved = false;
-}
-
-function handleMove(e) {
-  if (!isDragging) return;
-  hasMoved = true;
-  const pos = getRelativeCoords(e);
-  const x = Math.min(dragStartX, pos.x);
-  const y = Math.min(dragStartY, pos.y);
-  const w = Math.abs(dragStartX - pos.x);
-  const h = Math.abs(dragStartY - pos.y);
-
-  drawGrid();
-  ctx.fillStyle = "rgba(0,0,255,0.2)";
-  ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
-
-  const x1 = Math.floor(x / cellSize) * cellSize;
-  const y1 = Math.floor(y / cellSize) * cellSize;
-  const x2 = Math.ceil((x + w) / cellSize) * cellSize;
-  const y2 = Math.ceil((y + h) / cellSize) * cellSize;
-
-  const pixelWidth = x2 - x1;
-  const pixelHeight = y2 - y1;
-  const cols = pixelWidth / cellSize;
-  const rows = pixelHeight / cellSize;
-  const metersPerPixel = getMetersPerPixel();
-  const widthM = pixelWidth * metersPerPixel;
-  const heightM = pixelHeight * metersPerPixel;
-  const areaM2 = widthM * heightM;
-  const areaPy = areaM2 / 3.3058;
-
-   drawMultilineLabel(
-  x1 + (x2 - x1) / 2,
-  y1 + (y2 - y1) / 2,
-  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-);
-
-
-
-}
-
-function handleEnd(e) {
-  const pos = getRelativeCoords(e);
-  let x1 = Math.floor(Math.min(dragStartX, pos.x) / cellSize) * cellSize;
-  let y1 = Math.floor(Math.min(dragStartY, pos.y) / cellSize) * cellSize;
-  let x2 = Math.ceil(Math.max(dragStartX, pos.x) / cellSize) * cellSize;
-  let y2 = Math.ceil(Math.max(dragStartY, pos.y) / cellSize) * cellSize;
-
-  if (!hasMoved) {
-    x1 = Math.floor(pos.x / cellSize) * cellSize;
-    y1 = Math.floor(pos.y / cellSize) * cellSize;
-    x2 = x1 + cellSize;
-    y2 = y1 + cellSize;
+canvas.addEventListener("touchmove", e => {
+  if (e.touches.length === 1) {
+    e.preventDefault();
+    handleMove(e.touches[0]);
   }
+}, { passive: false });
 
-  const cols = (x2 - x1) / cellSize;
-  const rows = (y2 - y1) / cellSize;
-  const metersPerPixel = getMetersPerPixel();
-  const widthM = (x2 - x1) * metersPerPixel;
-  const heightM = (y2 - y1) * metersPerPixel;
-  const areaM2 = widthM * heightM;
-  const areaPy = areaM2 / 3.3058;
+canvas.addEventListener("touchend", e => {
+  if (e.changedTouches.length === 1) {
+    e.preventDefault();
+    handleEnd(e.changedTouches[0]);
+  }
+}, { passive: false });
 
-  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
 
-  drawGrid();
-  drawShadedArea(x1, y1, x2, y2);
- drawMultilineLabel(
-  x1 + (x2 - x1) / 2,
-  y1 + (y2 - y1) / 2,
-  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-);
+      cadOpacity.addEventListener("input", () => {
+        cadImg.style.opacity = cadOpacity.value / 100;
+      });
 
-  coordsDiv.innerText =
-  `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
-  `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+      toggleCadBtn.addEventListener("click", () => {
+        cadVisible = !cadVisible;
+        cadImg.style.display = cadVisible ? "block" : "none";
+        toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
+      });
 
-  isDragging = false;
-  hasMoved = false;
-}
-
-saveBtn.addEventListener("click", () => {
+      saveBtn.addEventListener("click", () => {
   if (!lastSelection) return;
-
   const { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy } = lastSelection;
-const text = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy).join(" / ");
 
-
-
+  const labelLines = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy); // ✅ 정의
+  const labelText = labelLines.join(" / ");  // ✅ 한 줄 텍스트 생성
 
   const entry = document.createElement("div");
-  entry.style.marginBottom = "6px";
-  entry.style.cursor = "pointer";
   entry.dataset.x1 = x1;
   entry.dataset.y1 = y1;
   entry.dataset.x2 = x2;
   entry.dataset.y2 = y2;
 
   const span = document.createElement("span");
-  span.textContent = text;
-  span.style.whiteSpace = "pre-wrap";
+  span.textContent = labelText;
+  span.style.whiteSpace = "nowrap";  // ✅ 한 줄로 유지
 
   const del = document.createElement("button");
-del.textContent = "❌";
-del.style.marginLeft = "8px";
-del.style.fontSize = "12px";
-del.style.padding = "2px 4px";
-del.style.lineHeight = "1";
-del.style.border = "none";
-del.style.background = "transparent";
-del.style.cursor = "pointer";
+  del.textContent = "❌";
+  del.onclick = (e) => {
+    e.stopPropagation();
+    savedDiv.removeChild(entry);
+    if (savedDiv.childElementCount === 0) {
+      savedDiv.textContent = "저장된 좌표 없음";
+    }
+  };
 
-del.onclick = (e) => {
-  e.stopPropagation(); // ✅ 필수!
-  savedDiv.removeChild(entry);
-};
-// ✅ 🔗 링크 복사 버튼 추가 위치
-const linkBtn = document.createElement("button");
-linkBtn.textContent = "🔗 링크 복사";
-linkBtn.style.fontSize = "12px";
-linkBtn.style.marginLeft = "8px";
-linkBtn.style.padding = "2px 4px";
-linkBtn.style.lineHeight = "1";
-linkBtn.style.border = "none";
-linkBtn.style.background = "transparent";
-linkBtn.style.cursor = "pointer";
-
-linkBtn.onclick = () => {
-  const url = new URL(location.href);
-  url.searchParams.set("x1", x1);
-  url.searchParams.set("y1", y1);
-  url.searchParams.set("x2", x2);
-  url.searchParams.set("y2", y2);
-  navigator.clipboard.writeText(url.toString());
-  alert("✅ 공유 링크가 복사되었습니다!");
-};
-
+  const linkBtn = document.createElement("button");
+  linkBtn.textContent = "🔗 링크 복사";
+  linkBtn.onclick = () => {
+    const url = new URL(location.href);
+    url.searchParams.set("x1", x1);
+    url.searchParams.set("y1", y1);
+    url.searchParams.set("x2", x2);
+    url.searchParams.set("y2", y2);
+    navigator.clipboard.writeText(url.toString());
+    alert("✅ 공유 링크가 복사되었습니다!");
+  };
 
   entry.appendChild(span);
   entry.appendChild(del);
-entry.appendChild(linkBtn); // ✅ 이 줄을 꼭 추가해야 함
+  entry.appendChild(linkBtn);
 
-
-  entry.onclick = (e) => {
-    if (e.target.tagName === "BUTTON") return;
+  entry.onclick = () => {
     drawGrid();
     drawShadedArea(x1, y1, x2, y2);
-   drawMultilineLabel(
-  x1 + (x2 - x1) / 2,
-  y1 + (y2 - y1) / 2,
-  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-);
-
+    drawMultilineLabel(
+      x1 + (x2 - x1) / 2,
+      y1 + (y2 - y1) / 2,
+      labelLines  // ✅ 배열 재사용
+    );
   };
 
   if (savedDiv.textContent.trim() === "저장된 좌표 없음") savedDiv.innerHTML = "";
   savedDiv.appendChild(entry);
 });
 
-canvas.addEventListener("mousedown", handleStart);
-canvas.addEventListener("mousemove", handleMove);
-canvas.addEventListener("mouseup", handleEnd);
+    }
 
-canvas.addEventListener("touchstart", e => {
-  if (e.touches.length === 1) handleStart(e.touches[0]);
+document.getElementById("backBtn").addEventListener("click", () => {
+  document.getElementById("main-app").style.display = "none";
+  const selectorDiv = document.getElementById("factory-selector");
+  selectorDiv.style.display = "flex";                   // ✅ 필수: flex 유지
+  selectorDiv.style.flexDirection = "column";           // ✅ 세로 정렬 복구
+  selectorDiv.style.alignItems = "center";              // ✅ 중앙 정렬 복구
+
+  // 상태 초기화
+  savedDiv.innerHTML = "저장된 좌표 없음";
+  coordsDiv.innerText = "좌표: ";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  lastSelection = null;
 });
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-  if (e.touches.length === 1) handleMove(e.touches[0]);
-}, { passive: false });
-canvas.addEventListener("touchend", e => {
-  if (e.changedTouches.length === 1) handleEnd(e.changedTouches[0]);
-});
+document.getElementById("currentFactory").innerText = "";
 
-map.onload = resizeCanvas;
-window.addEventListener("resize", resizeCanvas);
-
-function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
-  const xStart = x1 / cellSize;
-  const yStart = y1 / cellSize;
-  const xEnd = xStart + cols - 1;
-  const yEnd = yStart + rows - 1;
-
-  return [
-    `셀 X=${xStart}~${xEnd}, Y=${yStart}~${yEnd}`,
-    `${cols}x${rows}칸`,
-    `${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`,
-    `${areaM2.toFixed(2)}m² (약 ${areaPy.toFixed(2)}평)`
-  ];
-}
-// CAD 보기 on/off 토글
-const cadImg = document.getElementById("cad");
-const toggleCadBtn = document.getElementById("toggleCadBtn");
-let cadVisible = false;  // ✅ 처음부터 꺼짐 상태
-toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
-
-toggleCadBtn.addEventListener("click", () => {
-  cadVisible = !cadVisible;
-  cadImg.style.display = cadVisible ? "block" : "none";
-  toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
-});
-
-// ✅ CAD 투명도 슬라이더 연결
-const cadOpacity = document.getElementById("cadOpacity");
-
-cadOpacity.addEventListener("input", () => {
-  const value = cadOpacity.value; // 0~100
-  cadImg.style.opacity = value / 100;
-});
-
-// ✅ 여기에 삽입
-window.addEventListener("load", () => {
-  const params = new URLSearchParams(location.search);
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
   const x1 = parseInt(params.get("x1"));
   const y1 = parseInt(params.get("y1"));
   const x2 = parseInt(params.get("x2"));
   const y2 = parseInt(params.get("y2"));
+
+  // 필수 파라미터가 모두 존재하고 숫자일 경우에만 복원
   if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
-    drawGrid();
-    drawShadedArea(x1, y1, x2, y2);
+    // 공장 자동 선택 (선택적: factory=1 또는 2가 URL에 포함되면 사용)
+    const factoryParam = parseInt(params.get("factory"));
+    const defaultFactory = factoryParam === 2 ? 2 : 1;
 
-    const cols = (x2 - x1) / cellSize;
-    const rows = (y2 - y1) / cellSize;
-    const metersPerPixel = getMetersPerPixel();
-    const widthM = (x2 - x1) * metersPerPixel;
-    const heightM = (y2 - y1) * metersPerPixel;
-    const areaM2 = widthM * heightM;
-    const areaPy = areaM2 / 3.3058;
+    loadFactory(defaultFactory);  // 지도 로딩
 
-    drawMultilineLabel(
-      x1 + (x2 - x1) / 2,
-      y1 + (y2 - y1) / 2,
-      formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-    );
-  // 🔽 이 줄 추가!
-  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+    // 이미지 로드 후 좌표 복원
+    document.getElementById("map").onload = () => {
+      resizeCanvas();
+
+      if (!isInitialized) {
+        initSystem();
+        isInitialized = true;
+      }
+
+      const cols = (x2 - x1) / cellSize;
+      const rows = (y2 - y1) / cellSize;
+      const metersPerPixel = getMetersPerPixel();
+      const widthM = (x2 - x1) * metersPerPixel;
+      const heightM = (y2 - y1) * metersPerPixel;
+      const areaM2 = widthM * heightM;
+      const areaPy = areaM2 / 3.3058;
+
+      lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+
+      drawGrid();
+      drawShadedArea(x1, y1, x2, y2);
+      drawMultilineLabel(
+        x1 + (x2 - x1) / 2,
+        y1 + (y2 - y1) / 2,
+        formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+      );
+
+      coordsDiv.innerText =
+        `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
+        `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+    };
   }
 });
-</script>
 
+  </script>
 </body>
 </html>
