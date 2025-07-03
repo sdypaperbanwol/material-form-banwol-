@@ -185,9 +185,37 @@
   font-size: 13px;
   padding: 5px 10px;
 }
+
+#header {
+  text-align: center;
+  margin-top: 10px; /* 또는 0 */
+}
+
   </style>
 </head>
 <body>
+<!-- 로그인 창 -->
+<!-- 로그인 창 -->
+<div id="login-screen" style="
+  display: none;                /* 기본은 숨김 */
+  position: absolute;          /* 위에 고정되게 */
+  top: 150px;                  /* 로고 아래로 내려오게 조정 */
+  left: 0;
+  right: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 100;
+">
+  <h2>🔒 로그인</h2>
+  <input type="text" id="login-id" placeholder="아이디" style="padding: 8px; font-size: 1rem;"><br><br>
+  <input type="password" id="login-pw" placeholder="비밀번호" style="padding: 8px; font-size: 1rem;"><br><br>
+  <button onclick="handleLogin()" style="padding: 10px 20px;">로그인</button>
+</div>
+
+
 
 <!-- ✅ 상단 회사 로고 + 제목 -->
 <div id="header">
@@ -197,7 +225,7 @@
 
 <!-- ✅ 공장 선택 버튼 -->
 <!-- ✅ 공장 선택 화면 -->
-<div id="factory-selector">
+<div id="factory-selector" style="display: none;">
 
   <h3 style="margin-bottom: 30px; font-size: 1.3em;">📍 공장을 선택해주세요</h3>
 
@@ -274,6 +302,26 @@
 
   <!-- ✅ 통합 스크립트 -->
   <script>
+ function handleLogin() {
+  const id = document.getElementById("login-id").value;
+  const pw = document.getElementById("login-pw").value;
+
+  if (id === "admin" && pw === "1234") {
+    localStorage.setItem("auth", "ok");
+    document.getElementById("login-screen").style.display = "none";
+    showFactorySelector();  // ✅ 바로 공장 선택화면으로 전환
+  } else {
+    alert("❌ 아이디 또는 비밀번호가 잘못되었습니다.");
+  }
+}
+
+
+function showFactorySelector() {
+  const selector = document.getElementById("factory-selector");
+  selector.style.display = "flex";
+  selector.classList.add("show");
+}
+
     const FACTORY_DATA = {
       1: {
         map: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론3.png",
@@ -309,7 +357,6 @@ function loadFactory(factoryNum) {
 
   document.getElementById("currentFactory").innerText = `🏭 현재 공장: ${factoryNames[factoryNum]}`;
 
-  // ✅ 이미지 로드 완료 처리 (모바일 대응 포함)
   const finishInit = () => {
     resizeCanvas();
     if (!isInitialized) {
@@ -324,6 +371,7 @@ function loadFactory(factoryNum) {
     mapEl.onload = finishInit;
   }
 }
+
 
 window.loadFactory = loadFactory;
 
@@ -726,85 +774,86 @@ document.getElementById("backBtn").addEventListener("click", () => {
 document.getElementById("currentFactory").innerText = "";
 
 window.loadFactory = loadFactory;
-
-  window.addEventListener("DOMContentLoaded", () => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const viewOnly = params.get("view") === "1";
-
- const fs = document.getElementById("factory-selector");
-  setTimeout(() => fs.classList.add("show"), 100);
-
-    if (code) {
-  try {
-    const decoded = atob(code);
-    const parts = decoded.split("|");
-    const [x1, y1, x2, y2, factoryParam, viewFlag] = parts.slice(0, 6).map(Number);
-    const labelText = parts[6] ? decodeURIComponent(parts[6]) : "";
-
-    const isViewOnly = viewFlag === 1;
-
-    if (
-      isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) ||
-      !(factoryParam === 1 || factoryParam === 2)
-    ) throw new Error("Invalid data");
-
-    loadFactory(factoryParam);
-
-    document.getElementById("map").onload = () => {
-      resizeCanvas();
-      if (!isInitialized) {
-        initSystem();
-        isInitialized = true;
-      }
-
-      const cols = (x2 - x1) / cellSize;
-      const rows = (y2 - y1) / cellSize;
-      const metersPerPixel = getMetersPerPixel();
-      const widthM = (x2 - x1) * metersPerPixel;
-      const heightM = (y2 - y1) * metersPerPixel;
-      const areaM2 = widthM * heightM;
-      const areaPy = areaM2 / 3.3058;
-
-      lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
-
-      drawGrid();
-      drawShadedArea(x1, y1, x2, y2);
-      drawMultilineLabel(
-        x1 + (x2 - x1) / 2,
-        y1 + (y2 - y1) / 2,
-        formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-      );
-
-      document.getElementById("coords").innerText =
-        `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
-        `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
-
-      // ✅ 여기에서 제목 표시!
-      if (labelText) {
-        const labelDiv = document.createElement("div");
-        labelDiv.innerHTML = `<span style="color:green; font-weight:bold;">📌 공유 제목: ${labelText}</span>`;
-        labelDiv.style.margin = "10px auto 20px";
-        labelDiv.style.textAlign = "center";
-        document.getElementById("main-app").insertBefore(labelDiv, document.getElementById("map-container"));
-      }
-
-      if (isViewOnly) {
-        document.getElementById("controls").style.display = "none";
-        canvas.style.pointerEvents = "none";
-      }
-    };
-
+localStorage.removeItem("auth");
+window.addEventListener("DOMContentLoaded", () => {
+  const isLoggedIn = localStorage.getItem("auth") === "ok";
+  if (!isLoggedIn) {
+    document.getElementById("login-screen").style.display = "block";
     return;
-  } catch (e) {
-    alert("잘못된 링크입니다.");
   }
-}
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const viewOnly = params.get("view") === "1";
+
+  if (code) {
+    try {
+      const decoded = atob(code);
+      const parts = decoded.split("|");
+      const [x1, y1, x2, y2, factoryParam, viewFlag] = parts.slice(0, 6).map(Number);
+      const labelText = parts[6] ? decodeURIComponent(parts[6]) : "";
+
+      const isViewOnly = viewFlag === 1;
+
+      if (
+        isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) ||
+        !(factoryParam === 1 || factoryParam === 2)
+      ) throw new Error("Invalid data");
+
+      loadFactory(factoryParam);
+
+      document.getElementById("map").onload = () => {
+        resizeCanvas();
+        if (!isInitialized) {
+          initSystem();
+          isInitialized = true;
+        }
+
+        const cols = (x2 - x1) / cellSize;
+        const rows = (y2 - y1) / cellSize;
+        const metersPerPixel = getMetersPerPixel();
+        const widthM = (x2 - x1) * metersPerPixel;
+        const heightM = (y2 - y1) * metersPerPixel;
+        const areaM2 = widthM * heightM;
+        const areaPy = areaM2 / 3.3058;
+
+        lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+
+        drawGrid();
+        drawShadedArea(x1, y1, x2, y2);
+        drawMultilineLabel(
+          x1 + (x2 - x1) / 2,
+          y1 + (y2 - y1) / 2,
+          formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+        );
+
+        document.getElementById("coords").innerText =
+          `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
+          `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+
+        if (labelText) {
+          const labelDiv = document.createElement("div");
+          labelDiv.innerHTML = `<span style="color:green; font-weight:bold;">📌 공유 제목: ${labelText}</span>`;
+          labelDiv.style.margin = "10px auto 20px";
+          labelDiv.style.textAlign = "center";
+          document.getElementById("main-app").insertBefore(labelDiv, document.getElementById("map-container"));
+        }
+
+        if (isViewOnly) {
+          document.getElementById("controls").style.display = "none";
+          canvas.style.pointerEvents = "none";
+        }
+      };
+    } catch (e) {
+      alert("잘못된 링크입니다.");
+      showFactorySelector();  // ✅ 예외 발생 시 기본 화면
+    }
+  } else {
+    showFactorySelector(); // ✅ code 없을 때 기본 화면
+  }
+});
 
 
-    // code 파라미터가 없으면 기본 상태 → 공장 선택 화면 그대로 유지
-    document.getElementById("currentFactory").innerText = "";
-  });
 </script>
 </body>
 </html>
