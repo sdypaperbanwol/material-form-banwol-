@@ -141,6 +141,32 @@
       padding: 8px 16px;
       font-size: 15px;
     }
+#saved .entry {
+  background: #eef7ff;
+  border: 1px solid #bcd;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#saved .entry .text {
+  font-size: 14px;
+  word-break: keep-all;
+}
+
+#saved .entry .buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+#saved .entry .buttons button {
+  font-size: 13px;
+  padding: 5px 10px;
+}
   </style>
 </head>
 <body>
@@ -574,42 +600,76 @@ canvas.addEventListener("touchend", e => {
   const labelLines = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy); // ✅ 정의
   const labelText = labelLines.join(" / ");  // ✅ 한 줄 텍스트 생성
 
-  const entry = document.createElement("div");
-  entry.dataset.x1 = x1;
-  entry.dataset.y1 = y1;
-  entry.dataset.x2 = x2;
-  entry.dataset.y2 = y2;
+const entry = document.createElement("div");
+entry.className = "entry";
+entry.dataset.x1 = x1;
+entry.dataset.y1 = y1;
+entry.dataset.x2 = x2;
+entry.dataset.y2 = y2;
 
-  const span = document.createElement("span");
-  span.textContent = labelText;
-  span.style.whiteSpace = "nowrap";  // ✅ 한 줄로 유지
+// 텍스트 박스
+const textDiv = document.createElement("div");
+textDiv.className = "text";
+textDiv.textContent = labelText;
 
-  const del = document.createElement("button");
-  del.textContent = "❌";
-  del.onclick = (e) => {
-    e.stopPropagation();
-    savedDiv.removeChild(entry);
-    if (savedDiv.childElementCount === 0) {
-      savedDiv.textContent = "저장된 좌표 없음";
-    }
+// 수정 버튼
+const editBtn = document.createElement("button");
+editBtn.textContent = "✏️ 수정";
+editBtn.onclick = () => {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = textDiv.textContent;
+  input.style.fontSize = "13px";
+  input.style.width = "100%";
+
+  input.onblur = () => {
+    textDiv.textContent = input.value;
+    textDiv.style.display = "block";
+    input.remove();
+  };
+  input.onkeydown = e => {
+    if (e.key === "Enter") input.blur();
   };
 
-  const linkBtn = document.createElement("button");
-  linkBtn.textContent = "🔗 링크 복사";
- linkBtn.onclick = () => {
+  textDiv.style.display = "none";
+  entry.insertBefore(input, btnBox);
+  input.focus();
+};
+
+// 삭제 버튼
+const delBtn = document.createElement("button");
+delBtn.textContent = "❌";
+delBtn.onclick = (e) => {
+  e.stopPropagation();
+  savedDiv.removeChild(entry);
+  if (savedDiv.childElementCount === 0) {
+    savedDiv.textContent = "저장된 좌표 없음";
+  }
+};
+
+// 링크 버튼
+const linkBtn = document.createElement("button");
+linkBtn.textContent = "🔗 링크 복사";
+linkBtn.onclick = () => {
   const url = new URL(location.href);
-  const raw = [x1, y1, x2, y2, selectedFactory, 1].join("|");
-const encoded = btoa(raw);  // base64 인코딩
-url.searchParams.set("code", encoded);
-
-
+  const raw = [x1, y1, x2, y2, selectedFactory, 1, encodeURIComponent(textDiv.textContent.trim())].join("|");
+  const encoded = btoa(raw);
+  url.searchParams.set("code", encoded);
   navigator.clipboard.writeText(url.toString());
   alert("✅ 공유 링크가 복사되었습니다!");
 };
 
-  entry.appendChild(span);
-  entry.appendChild(del);
-  entry.appendChild(linkBtn);
+// 버튼 박스
+const btnBox = document.createElement("div");
+btnBox.className = "buttons";
+btnBox.appendChild(editBtn);
+btnBox.appendChild(delBtn);
+btnBox.appendChild(linkBtn);
+
+// 전체 조합
+entry.appendChild(textDiv);
+entry.appendChild(btnBox);
+
 
   entry.onclick = () => {
     drawGrid();
@@ -650,58 +710,71 @@ window.loadFactory = loadFactory;
     const viewOnly = params.get("view") === "1";
 
     if (code) {
-      try {
-        const decoded = atob(code);
-        const [x1, y1, x2, y2, factoryParam, viewFlag] = decoded.split("|").map(Number);
-        const isViewOnly = viewFlag === 1;
+  try {
+    const decoded = atob(code);
+    const parts = decoded.split("|");
+    const [x1, y1, x2, y2, factoryParam, viewFlag] = parts.slice(0, 6).map(Number);
+    const labelText = parts[6] ? decodeURIComponent(parts[6]) : "";
 
-        if (
-          isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) ||
-          !(factoryParam === 1 || factoryParam === 2)
-        ) throw new Error("Invalid data");
+    const isViewOnly = viewFlag === 1;
 
-        loadFactory(factoryParam);
+    if (
+      isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) ||
+      !(factoryParam === 1 || factoryParam === 2)
+    ) throw new Error("Invalid data");
 
-        document.getElementById("map").onload = () => {
-          resizeCanvas();
-          if (!isInitialized) {
-            initSystem();
-            isInitialized = true;
-          }
+    loadFactory(factoryParam);
 
-          const cols = (x2 - x1) / cellSize;
-          const rows = (y2 - y1) / cellSize;
-          const metersPerPixel = getMetersPerPixel();
-          const widthM = (x2 - x1) * metersPerPixel;
-          const heightM = (y2 - y1) * metersPerPixel;
-          const areaM2 = widthM * heightM;
-          const areaPy = areaM2 / 3.3058;
-
-          lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
-
-          drawGrid();
-          drawShadedArea(x1, y1, x2, y2);
-          drawMultilineLabel(
-            x1 + (x2 - x1) / 2,
-            y1 + (y2 - y1) / 2,
-            formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-          );
-
-          document.getElementById("coords").innerText =
-            `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
-            `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
-
-          if (isViewOnly) {
-            document.getElementById("controls").style.display = "none";
-            canvas.style.pointerEvents = "none";
-          }
-        };
-
-        return;
-      } catch (e) {
-        alert("잘못된 링크입니다.");
+    document.getElementById("map").onload = () => {
+      resizeCanvas();
+      if (!isInitialized) {
+        initSystem();
+        isInitialized = true;
       }
-    }
+
+      const cols = (x2 - x1) / cellSize;
+      const rows = (y2 - y1) / cellSize;
+      const metersPerPixel = getMetersPerPixel();
+      const widthM = (x2 - x1) * metersPerPixel;
+      const heightM = (y2 - y1) * metersPerPixel;
+      const areaM2 = widthM * heightM;
+      const areaPy = areaM2 / 3.3058;
+
+      lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+
+      drawGrid();
+      drawShadedArea(x1, y1, x2, y2);
+      drawMultilineLabel(
+        x1 + (x2 - x1) / 2,
+        y1 + (y2 - y1) / 2,
+        formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+      );
+
+      document.getElementById("coords").innerText =
+        `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
+        `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+
+      // ✅ 여기에서 제목 표시!
+      if (labelText) {
+        const labelDiv = document.createElement("div");
+        labelDiv.innerHTML = `<span style="color:green; font-weight:bold;">📌 공유 제목: ${labelText}</span>`;
+        labelDiv.style.margin = "10px auto 20px";
+        labelDiv.style.textAlign = "center";
+        document.getElementById("main-app").insertBefore(labelDiv, document.getElementById("map-container"));
+      }
+
+      if (isViewOnly) {
+        document.getElementById("controls").style.display = "none";
+        canvas.style.pointerEvents = "none";
+      }
+    };
+
+    return;
+  } catch (e) {
+    alert("잘못된 링크입니다.");
+  }
+}
+
 
     // code 파라미터가 없으면 기본 상태 → 공장 선택 화면 그대로 유지
     document.getElementById("currentFactory").innerText = "";
