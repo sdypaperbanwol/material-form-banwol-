@@ -388,8 +388,8 @@ window.loadFactory = loadFactory;
     function drawMultilineLabel(x, y, lines) {
       const scale = getScale();
       const fontSize = Math.max(13 * scale, 11);
-      ctx.font = `${fontSize}px sans-serif`;
-      ctx.fillStyle = "yellow";
+      ctx.font = `bold ${fontSize}px sans-serif`;  // ✅ bold 추가
+ctx.fillStyle = "black";
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
 
@@ -401,15 +401,27 @@ window.loadFactory = loadFactory;
       });
     }
 
-    function drawShadedArea(x1, y1, x2, y2) {
-      const scale = getScale();
-      ctx.fillStyle = "rgba(0,0,255,0.2)";
-      for (let y = y1; y < y2; y += cellSize) {
-        for (let x = x1; x < x2; x += cellSize) {
-          ctx.fillRect(x * scale, y * scale, cellSize * scale, cellSize * scale);
-        }
-      }
+function drawShadedArea(x1, y1, x2, y2) {
+  const scale = getScale();
+
+  ctx.fillStyle = "rgba(255,255,0,0.3)";
+  for (let y = y1; y < y2; y += cellSize) {
+    for (let x = x1; x < x2; x += cellSize) {
+      ctx.fillRect(x * scale, y * scale, cellSize * scale, cellSize * scale);
     }
+  }
+
+  // ✅ 테두리 한 번만 전체에 그림
+  const boxX = x1 * scale;
+  const boxY = y1 * scale;
+  const boxW = (x2 - x1) * scale;
+  const boxH = (y2 - y1) * scale;
+
+  ctx.strokeStyle = "orange";   // 테두리 색
+  ctx.lineWidth = 3;            // 테두리 두께
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
+}
+
 
     function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
       const xStart = x1 / cellSize;
@@ -434,18 +446,44 @@ window.loadFactory = loadFactory;
     }
 
     function handleMove(e) {
-      if (!isDragging) return;
-      hasMoved = true;
-      const pos = getRelativeCoords(e);
-      const x = Math.min(dragStartX, pos.x);
-      const y = Math.min(dragStartY, pos.y);
-      const w = Math.abs(dragStartX - pos.x);
-      const h = Math.abs(dragStartY - pos.y);
+  if (!isDragging) return;
+  hasMoved = true;
 
-      drawGrid();
-      ctx.fillStyle = "rgba(0,0,255,0.2)";
-      ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
-    }
+  const pos = getRelativeCoords(e);
+  const x = Math.min(dragStartX, pos.x);
+  const y = Math.min(dragStartY, pos.y);
+  const w = Math.abs(dragStartX - pos.x);
+  const h = Math.abs(dragStartY - pos.y);
+
+  drawGrid();
+
+  ctx.fillStyle = "rgba(255,255,0,0.3)";
+  ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
+
+  ctx.strokeStyle = "orange";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
+
+  // ✅ 드래그 중 라벨 표시 추가
+  const x1 = Math.floor(Math.min(dragStartX, pos.x) / cellSize) * cellSize;
+  const y1 = Math.floor(Math.min(dragStartY, pos.y) / cellSize) * cellSize;
+  const x2 = Math.ceil(Math.max(dragStartX, pos.x) / cellSize) * cellSize;
+  const y2 = Math.ceil(Math.max(dragStartY, pos.y) / cellSize) * cellSize;
+
+  const cols = (x2 - x1) / cellSize;
+  const rows = (y2 - y1) / cellSize;
+  const widthM = (x2 - x1) * getMetersPerPixel();
+  const heightM = (y2 - y1) * getMetersPerPixel();
+  const areaM2 = widthM * heightM;
+  const areaPy = areaM2 / 3.3058;
+
+  drawMultilineLabel(
+    x1 + (x2 - x1) / 2,
+    y1 + (y2 - y1) / 2,
+    formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+  );
+}
+
 
     function handleEnd(e) {
       const pos = getRelativeCoords(e);
