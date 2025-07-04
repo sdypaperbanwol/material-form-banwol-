@@ -963,7 +963,7 @@ a.click();
   delBtn.onclick = () => {
     savedDiv.removeChild(entry);
     if (savedDiv.childElementCount === 0) {
-      savedDiv.textContent = "저장된 좌표 없음";
+      savedDiv.textContent = "목록";
     }
   };
 
@@ -997,7 +997,7 @@ a.click();
                     selectorDiv.style.alignItems = "center";              // ✅ 중앙 정렬 복구
 
                     // 상태 초기화
-                    savedDiv.innerHTML = "저장된 좌표 없음";
+                    savedDiv.innerHTML = "목록";
                     coordsDiv.innerText = "좌표: ";
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     lastSelection = null;
@@ -1009,7 +1009,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   drawAllSelections(); // ✅ 전체 그리기 초기화
   coordsDiv.innerText = "좌표: ";
   updateTempCount();
-  savedDiv.innerHTML = "저장된 좌표 없음";
+  savedDiv.innerHTML = "목록";
 
   // ✅ CAD 보기 상태도 초기화
   cadVisible = false;
