@@ -345,9 +345,7 @@
         <canvas id="overlay"></canvas>
       </div>
 <div id="instruction" style="margin-top: 20px; font-size: 1rem; color: #444; text-align: center;">
-※ 원하는 부분을 <strong>드래그</strong>한 뒤, <strong>좌표 추가</strong> 버튼을 누르세요.<br>
-좌표 추가 후 <strong>좌표 저장</strong>을 누르면 공유 링크를 만들 수 있습니다.<br>
-<strong>📄 PC에서는 PDF 다운로드가 가능합니다.</strong> (※ 모바일에서는 지원되지 않습니다)
+※ 원하는 영역을 드래그한 뒤 <strong>좌표 추가</strong> 및 <strong>좌표 저장</strong>을 누르면, 공유 링크 생성과 PDF 저장이 가능합니다.
 
 </div>
 
@@ -355,19 +353,17 @@
       <!-- 컨트롤 패널 -->
       <div id="controls">
         <!-- ✅ 버튼 3개 한 줄 정렬 -->
-        <div
-  style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;"
->
-  <!-- 왼쪽 버튼들 -->
+   <!-- 기존 버튼들 -->
+<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; justify-content: space-between; align-items: center;">
+  <!-- 좌측 버튼 묶음 -->
   <div style="display: flex; gap: 10px;">
     <button id="addTempBtn">➕ 좌표 추가</button>
     <button id="saveBtn">📌 좌표 저장</button>
     <button id="resetBtn">♻️ 초기화</button>
     <button id="backBtn">🔙 공장 선택</button>
-   
   </div>
 
-  <!-- ✅ 오른쪽: CAD 버튼 + 슬라이더 묶음 -->
+  <!-- 우측 CAD 묶음 -->
   <div style="display: flex; align-items: center; gap: 10px;">
     <button id="toggleCadBtn">🔴 CAD 보기 켜기</button>
     <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
@@ -376,15 +372,8 @@
     </label>
   </div>
 </div>
-
-
-        <div id="coords">좌표:</div>
-       <div id="temp-count" style="color: gray; font-size: 0.9rem;">임시 선택 0건</div>
-
-
-       
-
-<div id="color-selector" style="margin: 10px 0;">
+<!-- 색상 선택은 따로 한 줄 더 아래 -->
+<div id="color-selector" style="margin: 10px 0; display: flex; gap: 10px; align-items: center;">
   <span>색상 선택:</span>
   <button onclick="setColor('yellow')" data-color="yellow" style="background: yellow;">&nbsp;</button>
   <button onclick="setColor('blue')" data-color="blue" style="background: lightblue;">&nbsp;</button>
@@ -392,6 +381,11 @@
   <button onclick="setColor('green')" data-color="green" style="background: lightgreen;">&nbsp;</button>
   <button onclick="setColor('magenta')" data-color="magenta" style="background: magenta;">&nbsp;</button>
 </div>
+
+
+
+        <div id="coords">좌표:</div>
+       <div id="temp-count" style="color: gray; font-size: 0.9rem;">임시 선택 0건</div>
 
 
 
@@ -1265,7 +1259,7 @@ function updateTempCount() {
     ? `총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`
     : "";
 
-  // ✅ 기존 요소가 없으면 추가
+  // ✅ 기존 요소가 없으면 추가f
   let totalDiv = document.getElementById("total-area");
   if (!totalDiv) {
     totalDiv = document.createElement("div");
