@@ -1117,37 +1117,35 @@ document.getElementById("map").onload = () => {
   setTimeout(() => {
     selections = [];
 
-coordsList.forEach((coord, idx) => {
-  const { x1, y1, x2, y2, color } = coord;
-  const cols = (x2 - x1) / cellSize;
-  const rows = (y2 - y1) / cellSize;
-  const widthM = (x2 - x1) * getMetersPerPixel();
-  const heightM = (y2 - y1) * getMetersPerPixel();
-  const areaM2 = widthM * heightM;
-  const areaPy = areaM2 / 3.3058;
+    coordsList.forEach((coord, idx) => {
+      const { x1, y1, x2, y2, color } = coord;
+      const cols = (x2 - x1) / cellSize;
+      const rows = (y2 - y1) / cellSize;
+      const widthM = (x2 - x1) * getMetersPerPixel();
+      const heightM = (y2 - y1) * getMetersPerPixel();
+      const areaM2 = widthM * heightM;
+      const areaPy = areaM2 / 3.3058;
 
-  const selection = {
-    x1, y1, x2, y2,
-    cols, rows,
-    widthM, heightM,
-    areaM2, areaPy,
-    color
-  };
+      const selection = {
+        x1, y1, x2, y2,
+        cols, rows,
+        widthM, heightM,
+        areaM2, areaPy,
+        color
+      };
 
-  selections.push(selection);
-});
-}, 0); // ✅ 요렇게 setTimeout 블록 닫기까지 완성!
+      selections.push(selection);
+    });
 
     // ✅ 총 면적 표시 (공유 링크용)
-const totalArea = parts[4] ? Number(parts[4]) : 0;
-const totalPy = totalArea / 3.3058;
+    const totalArea = parts[4] ? Number(parts[4]) : 0;
+    const totalPy = totalArea / 3.3058;
 
-const summaryDiv = document.createElement("div");
-summaryDiv.innerHTML = `<span style="color:#555;">🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)</span>`;
-summaryDiv.style.textAlign = "center";
-summaryDiv.style.margin = "6px auto 16px";
-document.getElementById("main-app").insertBefore(summaryDiv, document.getElementById("map-container"));
-
+    const summaryDiv = document.createElement("div");
+    summaryDiv.innerHTML = `<span style="color:#555;">🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)</span>`;
+    summaryDiv.style.textAlign = "center";
+    summaryDiv.style.margin = "6px auto 16px";
+    document.getElementById("main-app").insertBefore(summaryDiv, document.getElementById("map-container"));
 
     drawAllSelections();
     updateTempCount();
@@ -1169,7 +1167,10 @@ document.getElementById("main-app").insertBefore(summaryDiv, document.getElement
       document.getElementById("controls").style.display = "none";
       canvas.style.pointerEvents = "none";
     }
-  }, 0); // 💡 0ms지만 다음 이벤트 루프로 밀어 canvas 초기화 이후 실행
+
+  }, 0); // ✅ 여기서 정확하게 setTimeout 닫기
+};
+
 
                       } catch (e) {
                                                                     }
