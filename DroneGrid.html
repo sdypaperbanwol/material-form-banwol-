@@ -203,7 +203,8 @@
   max-width: 800px;
 }
 
-    </style>
+     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </head>
   <body>
     <!-- 로그인 창 -->
@@ -246,7 +247,7 @@
         src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_로고.png"
         alt="회사 로고"
       />
-      <h2>🛰️ 드론 지도 음영 시스템 (Canvas)</h2>
+      <h2>🏭 공장 부지 음영 관리 도구</h2>
     </div>
 
     <!-- ✅ 공장 선택 버튼 -->
@@ -338,8 +339,8 @@
         <canvas id="overlay"></canvas>
       </div>
 <div id="instruction" style="margin-top: 20px; font-size: 1rem; color: #444; text-align: center;">
-  📌 원하는 부분을 <strong>드래그</strong>한 뒤, <strong>좌표 추가</strong> 버튼을 누르세요.<br>
-  여러 구역을 드래그해서 추가한 후 <strong>좌표 저장</strong>을 누르면 공유 링크를 만들 수 있습니다.
+  ※ 원하는 부분을 <strong>드래그</strong>한 뒤, <strong>좌표 추가</strong> 버튼을 누르세요.<br>
+  좌표 추가 후 <strong>좌표 저장</strong>을 누르면 공유 링크를 만들 수 있습니다.
 </div>
 
 
@@ -355,6 +356,7 @@
     <button id="saveBtn">📌 좌표 저장</button>
     <button id="resetBtn">♻️ 초기화</button>
     <button id="backBtn">🔙 공장 선택</button>
+   <button id="exportPdfBtn">📄 PDF로 저장</button> <!-- ✅ 추가 -->
   </div>
 
   <!-- ✅ 오른쪽: CAD 버튼 + 슬라이더 묶음 -->
@@ -376,12 +378,13 @@
 
 <div id="color-selector" style="margin: 10px 0;">
   <span>색상 선택:</span>
-  <button onclick="setColor('yellow')" style="background: yellow;">&nbsp;</button>
-  <button onclick="setColor('blue')" style="background: lightblue;">&nbsp;</button>
-  <button onclick="setColor('red')" style="background: lightcoral;">&nbsp;</button>
-  <button onclick="setColor('green')" style="background: lightgreen;">&nbsp;</button>
-  <button onclick="setColor('magenta')" style="background: magenta;">&nbsp;</button>
+  <button onclick="setColor('yellow')" data-color="yellow" style="background: yellow;">&nbsp;</button>
+  <button onclick="setColor('blue')" data-color="blue" style="background: lightblue;">&nbsp;</button>
+  <button onclick="setColor('red')" data-color="red" style="background: lightcoral;">&nbsp;</button>
+  <button onclick="setColor('green')" data-color="green" style="background: lightgreen;">&nbsp;</button>
+  <button onclick="setColor('magenta')" data-color="magenta" style="background: magenta;">&nbsp;</button>
 </div>
+
 
 
 
@@ -457,7 +460,7 @@
                     mapEl.src = factory.map;
                     cadEl.src = factory.cad;
 
-                    document.getElementById("currentFactory").innerText = `🏭 현재 공장: ${factoryNames[factoryNum]}`;
+                    document.getElementById("currentFactory").innerText = `■ 현재 공장: ${factoryNames[factoryNum]}`;
 
                     const finishInit = () => {
                       resizeCanvas();
@@ -490,7 +493,21 @@ let currentColor = "yellow"; // 기본 색상
 
 function setColor(color) {
   currentColor = color;
+
+  const colorButtons = document.querySelectorAll('#color-selector button');
+  colorButtons.forEach(btn => {
+    btn.style.outline = "none";
+    btn.style.border = "1px solid #ccc";
+  });
+
+  const selectedBtn = [...colorButtons].find(btn => btn.dataset.color === color);
+  if (selectedBtn) {
+    selectedBtn.style.outline = "2px solid #333";
+    selectedBtn.style.border = "2px solid #333";
+  }
 }
+
+
 
 
                       const map = document.getElementById("map");
@@ -927,6 +944,23 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   cadVisible = false;
   cadImg.style.display = "none";
   toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
+// ✅ CAD 투명도 초기화
+  cadOpacity.value = 50;
+  cadImg.style.opacity = 0.5;
+ // ✅ 색상 선택 초기화
+  currentColor = "yellow";
+
+  const colorButtons = document.querySelectorAll('#color-selector button');
+  colorButtons.forEach(btn => {
+    btn.style.outline = "none";
+    btn.style.border = "1px solid #ccc";
+  });
+
+  const yellowBtn = [...colorButtons].find(btn => btn.style.background.includes("yellow"));
+  if (yellowBtn) {
+    yellowBtn.style.outline = "2px solid #333";
+    yellowBtn.style.border = "2px solid #333";
+  }
 });
 
 
@@ -1132,6 +1166,38 @@ coordsList.forEach((coord, idx) => {
 function updateTempCount() {
   document.getElementById("temp-count").innerText = `임시 선택 ${selections.length}건`;
 }
+// ✅ PDF 저장 기능
+document.getElementById("exportPdfBtn").addEventListener("click", () => {
+  const { jsPDF } = window.jspdf;
+
+  const canvas = document.getElementById("overlay");
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
+
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+
+  // 백그라운드 이미지도 함께 그리기
+  const mapImg = document.getElementById("map");
+  tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
+
+  // overlay 캔버스 복사
+  tempCtx.drawImage(canvas, 0, 0);
+
+  const imgData = tempCanvas.toDataURL("image/png");
+
+  const pdf = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4"
+  });
+
+  // PDF 가로 비율 기준으로 축소
+  pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
+  pdf.save("drone-map-overlay.pdf");
+});
+
+
     </script>
   </body>
 </html>
