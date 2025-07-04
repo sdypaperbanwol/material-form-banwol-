@@ -817,6 +817,30 @@ saveBtn.addEventListener("click", () => {
  const entry = document.createElement("div");
 entry.className = "entry";
 
+  // ✅ 여기에 추가
+entry.addEventListener("click", () => {
+  drawGrid();
+  drawAllSelections();
+
+  coordsData.forEach(str => {
+    const [x1, y1, x2, y2, color] = str.split(",");
+    const cols = (x2 - x1) / cellSize;
+    const rows = (y2 - y1) / cellSize;
+    const widthM = (x2 - x1) * getMetersPerPixel();
+    const heightM = (y2 - y1) * getMetersPerPixel();
+    const areaM2 = widthM * heightM;
+    const areaPy = areaM2 / 3.3058;
+
+    drawShadedArea(Number(x1), Number(y1), Number(x2), Number(y2), color);
+    drawMultilineLabel(
+      Number(x1) + (Number(x2) - Number(x1)) / 2,
+      Number(y1) + (Number(y2) - Number(y1)) / 2,
+      formatLabel(Number(x1), Number(y1), cols, rows, widthM, heightM, areaM2, areaPy)
+    );
+  });
+});
+
+  
 let combinedLabel = "";
 const coordsData = [];
 let totalArea = 0;
