@@ -811,10 +811,9 @@ ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
                           toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
                         });
 
-                  saveBtn.addEventListener("click", () => {
+saveBtn.addEventListener("click", () => {
   if (selections.length === 0) return;
 
-                    
   const entry = document.createElement("div");
   entry.className = "entry";
 
@@ -827,7 +826,6 @@ ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
     const label = `📌 영역 ${idx + 1}: ${lines.join(" / ")}`;
     combinedLabel += label + "\n";
     coordsData.push([x1, y1, x2, y2, sel.color || "yellow"].join(","));
-
   });
 
   const textDiv = document.createElement("div");
@@ -835,85 +833,91 @@ ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
   textDiv.textContent = combinedLabel;
 
   const title = selections.length === 1 ? "영역 1건" : `영역 ${selections.length}건`;
-const encoded = btoa(coordsData.join(";") + "|" + selectedFactory + "|1|" + encodeURIComponent(title));
+  const encoded = btoa(coordsData.join(";") + "|" + selectedFactory + "|1|" + encodeURIComponent(title));
 
+  const linkBtn = document.createElement("button");
+  linkBtn.textContent = "🔗 링크 복사";
+  linkBtn.onclick = () => {
+    const url = new URL(location.href);
+    url.searchParams.set("code", encoded);
+    navigator.clipboard.writeText(url.toString());
+    alert("✅ 공유 링크가 복사되었습니다!");
+  };
 
-const linkBtn = document.createElement("button");
-linkBtn.textContent = "🔗 링크 복사";
-linkBtn.onclick = () => {
-  const url = new URL(location.href);
-  url.searchParams.set("code", encoded);
-  navigator.clipboard.writeText(url.toString());
-  alert("✅ 공유 링크가 복사되었습니다!");
-};
+  const pdfBtn = document.createElement("button");
+  pdfBtn.textContent = "📄 PDF 저장";
+  pdfBtn.onclick = () => {
+    const tempSelections = coordsData.map(str => {
+      const [x1, y1, x2, y2, color] = str.split(",");
+      const cols = (x2 - x1) / cellSize;
+      const rows = (y2 - y1) / cellSize;
+      const widthM = (x2 - x1) * getMetersPerPixel();
+      const heightM = (y2 - y1) * getMetersPerPixel();
+      const areaM2 = widthM * heightM;
+      const areaPy = areaM2 / 3.3058;
 
-const pdfBtn = document.createElement("button");
-pdfBtn.textContent = "📄 PDF 저장";
-pdfBtn.onclick = () => {
-  const tempSelections = coordsData.map(str => {
-    const [x1, y1, x2, y2, color] = str.split(",");
-    const cols = (x2 - x1) / cellSize;
-    const rows = (y2 - y1) / cellSize;
-    const widthM = (x2 - x1) * getMetersPerPixel();
-    const heightM = (y2 - y1) * getMetersPerPixel();
-    const areaM2 = widthM * heightM;
-    const areaPy = areaM2 / 3.3058;
+      return {
+        x1: Number(x1), y1: Number(y1),
+        x2: Number(x2), y2: Number(y2),
+        cols, rows, widthM, heightM, areaM2, areaPy, color
+      };
+    });
 
-    return {
-      x1: Number(x1), y1: Number(y1),
-      x2: Number(x2), y2: Number(y2),
-      cols, rows, widthM, heightM, areaM2, areaPy, color
-    };
-  });
+    drawGrid();
+    for (const sel of tempSelections) {
+      drawShadedArea(sel.x1, sel.y1, sel.x2, sel.y2, sel.color);
+      drawMultilineLabel(
+        sel.x1 + (sel.x2 - sel.x1) / 2,
+        sel.y1 + (sel.y2 - sel.y1) / 2,
+        formatLabel(sel.x1, sel.y1, sel.cols, sel.rows, sel.widthM, sel.heightM, sel.areaM2, sel.areaPy)
+      );
+    }
 
-  drawGrid();
-  for (const sel of tempSelections) {
-    drawShadedArea(sel.x1, sel.y1, sel.x2, sel.y2, sel.color);
-    drawMultilineLabel(
-      sel.x1 + (sel.x2 - sel.x1) / 2,
-      sel.y1 + (sel.y2 - sel.y1) / 2,
-      formatLabel(sel.x1, sel.y1, sel.cols, sel.rows, sel.widthM, sel.heightM, sel.areaM2, sel.areaPy)
-    );
-  }
+    const { jsPDF } = window.jspdf;
+    const mapImg = document.getElementById("map");
+    const canvas = document.getElementById("overlay");
 
-  const { jsPDF } = window.jspdf;
-  const mapImg = document.getElementById("map");
-  const canvas = document.getElementById("overlay");
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
 
-  const tempCanvas = document.createElement("canvas");
-  const tempCtx = tempCanvas.getContext("2d");
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
+    tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(canvas, 0, 0);
 
-  tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
-  tempCtx.drawImage(canvas, 0, 0);
+    const imgData = tempCanvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
+    pdf.save("선택영역.pdf");
+  };
 
-  const imgData = tempCanvas.toDataURL("image/png");
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "❌";
+  delBtn.onclick = () => {
+    savedDiv.removeChild(entry);
+    if (savedDiv.childElementCount === 0) {
+      savedDiv.textContent = "저장된 좌표 없음";
+    }
+  };
 
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
-  pdf.save("선택영역.pdf");
-};
-
-const delBtn = document.createElement("button");
-delBtn.textContent = "❌";
-delBtn.onclick = () => {
-  savedDiv.removeChild(entry);
-  if (savedDiv.childElementCount === 0) {
-    savedDiv.textContent = "저장된 좌표 없음";
-  }
-};
-
+  // ✅ 여기에 넣어야 보입니다!
+  entry.appendChild(textDiv);
+  const buttonsDiv = document.createElement("div");
+  buttonsDiv.className = "buttons";
+  buttonsDiv.appendChild(linkBtn);
+  buttonsDiv.appendChild(pdfBtn);
+  buttonsDiv.appendChild(delBtn);
+  entry.appendChild(buttonsDiv);
 
   savedDiv.appendChild(entry);
 
-  // 저장 후 초기화
+  // 초기화
   selections = [];
-drawAllSelections();  // 선택 지우고 그리기
-coordsDiv.innerText = "좌표: ";
-updateTempCount();  // 👈 추가!
-
+  drawAllSelections();
+  coordsDiv.innerText = "좌표: ";
+  updateTempCount();
 });
+
 
 
                       }
