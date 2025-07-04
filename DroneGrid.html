@@ -1137,7 +1137,7 @@ document.getElementById("map").onload = () => {
       selections.push(selection);
     });
 
-    // ✅ 총 면적 표시 (공유 링크용)
+    // ✅ 여기서부터는 setTimeout 안쪽입니다
     const totalArea = parts[4] ? Number(parts[4]) : 0;
     const totalPy = totalArea / 3.3058;
 
@@ -1167,9 +1167,10 @@ document.getElementById("map").onload = () => {
       document.getElementById("controls").style.display = "none";
       canvas.style.pointerEvents = "none";
     }
-
-  }, 0); // ✅ 여기서 정확하게 setTimeout 닫기
+    
+  }, 0); // ✅ setTimeout 끝 닫기 위치는 여기 하나만
 };
+
 
 
                       } catch (e) {
@@ -1229,7 +1230,7 @@ function updateTempCount() {
 
   totalDiv.textContent = summary;
 }
-}
+
 
 
 
