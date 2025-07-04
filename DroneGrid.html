@@ -932,7 +932,7 @@ if (/iPhone|iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in documen
   // 📌 selections에서 총 면적 계산
 totalArea = 0; // let 제거
 selections.forEach(sel => totalArea += sel.areaM2);
-const totalPy = totalArea / 3.3058;
+totalPy = totalArea / 3.3058;
 
 // 📌 총 면적 텍스트 생성
 const totalText = `🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`;
