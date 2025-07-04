@@ -813,53 +813,7 @@ ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
 
                   saveBtn.addEventListener("click", () => {
   if (selections.length === 0) return;
-const pdfBtn = document.createElement("button");
-pdfBtn.textContent = "📄 PDF 저장";
-pdfBtn.onclick = () => {
-  const tempSelections = coordsData.map(str => {
-    const [x1, y1, x2, y2, color] = str.split(",");
-    const cols = (x2 - x1) / cellSize;
-    const rows = (y2 - y1) / cellSize;
-    const widthM = (x2 - x1) * getMetersPerPixel();
-    const heightM = (y2 - y1) * getMetersPerPixel();
-    const areaM2 = widthM * heightM;
-    const areaPy = areaM2 / 3.3058;
 
-    return {
-      x1: Number(x1), y1: Number(y1),
-      x2: Number(x2), y2: Number(y2),
-      cols, rows, widthM, heightM, areaM2, areaPy, color
-    };
-  });
-
-  drawGrid();
-  for (const sel of tempSelections) {
-    drawShadedArea(sel.x1, sel.y1, sel.x2, sel.y2, sel.color);
-    drawMultilineLabel(
-      sel.x1 + (sel.x2 - sel.x1) / 2,
-      sel.y1 + (sel.y2 - sel.y1) / 2,
-      formatLabel(sel.x1, sel.y1, sel.cols, sel.rows, sel.widthM, sel.heightM, sel.areaM2, sel.areaPy)
-    );
-  }
-
-  const { jsPDF } = window.jspdf;
-  const mapImg = document.getElementById("map");
-  const canvas = document.getElementById("overlay");
-
-  const tempCanvas = document.createElement("canvas");
-  const tempCtx = tempCanvas.getContext("2d");
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-
-  tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
-  tempCtx.drawImage(canvas, 0, 0);
-
-  const imgData = tempCanvas.toDataURL("image/png");
-
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
-  pdf.save("선택영역.pdf");
-};
                     
   const entry = document.createElement("div");
   entry.className = "entry";
