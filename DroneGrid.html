@@ -356,7 +356,7 @@
     <button id="saveBtn">📌 좌표 저장</button>
     <button id="resetBtn">♻️ 초기화</button>
     <button id="backBtn">🔙 공장 선택</button>
-   <button id="exportPdfBtn">📄 PDF로 저장</button> <!-- ✅ 추가 -->
+   
   </div>
 
   <!-- ✅ 오른쪽: CAD 버튼 + 슬라이더 묶음 -->
@@ -1212,36 +1212,7 @@ coordsList.forEach((coord, idx) => {
 function updateTempCount() {
   document.getElementById("temp-count").innerText = `임시 선택 ${selections.length}건`;
 }
-// ✅ PDF 저장 기능
-document.getElementById("exportPdfBtn").addEventListener("click", () => {
-  const { jsPDF } = window.jspdf;
 
-  const canvas = document.getElementById("overlay");
-  const tempCanvas = document.createElement("canvas");
-  const tempCtx = tempCanvas.getContext("2d");
-
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-
-  // 백그라운드 이미지도 함께 그리기
-  const mapImg = document.getElementById("map");
-  tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
-
-  // overlay 캔버스 복사
-  tempCtx.drawImage(canvas, 0, 0);
-
-  const imgData = tempCanvas.toDataURL("image/png");
-
-  const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a4"
-  });
-
-  // PDF 가로 비율 기준으로 축소
-  pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
-  pdf.save("drone-map-overlay.pdf");
-});
 
 
     </script>
