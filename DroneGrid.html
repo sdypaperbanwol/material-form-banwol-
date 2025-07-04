@@ -918,11 +918,17 @@ updateTempCount();  // 👈 추가!
 document.getElementById("resetBtn").addEventListener("click", () => {
   selections = [];
   lastSelection = null;
-  drawAllSelections(); // ✅ 기존 선택 모두 지움 + 다시 그림
+  drawAllSelections(); // ✅ 전체 그리기 초기화
   coordsDiv.innerText = "좌표: ";
   updateTempCount();
-  savedDiv.innerHTML = "저장된 좌표 없음";  // ✅ 저장 목록도 초기화
+  savedDiv.innerHTML = "저장된 좌표 없음";
+
+  // ✅ CAD 보기 상태도 초기화
+  cadVisible = false;
+  cadImg.style.display = "none";
+  toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
 });
+
 
 
 document.getElementById("addTempBtn").addEventListener("click", () => {
