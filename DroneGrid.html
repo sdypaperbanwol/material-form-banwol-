@@ -814,23 +814,29 @@ ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
 saveBtn.addEventListener("click", () => {
   if (selections.length === 0) return;
 
-  const entry = document.createElement("div");
-  entry.className = "entry";
+ const entry = document.createElement("div");
+entry.className = "entry";
 
-  let combinedLabel = "";
-  const coordsData = [];
+let combinedLabel = "";
+const coordsData = [];
+let totalArea = 0;
 
-  selections.forEach((sel, idx) => {
-    const { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy } = sel;
-    const lines = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy);
-    const label = `📌 영역 ${idx + 1}: ${lines.join(" / ")}`;
-    combinedLabel += label + "\n";
-    coordsData.push([x1, y1, x2, y2, sel.color || "yellow"].join(","));
-  });
+selections.forEach((sel, idx) => {
+  const { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy } = sel;
+  const lines = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy);
+  const label = `📌 영역 ${idx + 1}: ${lines.join(" / ")}`;
+  combinedLabel += label + "\n";
+  coordsData.push([x1, y1, x2, y2, sel.color || "yellow"].join(","));
+  totalArea += areaM2;
+});
 
-  const textDiv = document.createElement("div");
-  textDiv.className = "text";
-  textDiv.textContent = combinedLabel;
+const totalPy = totalArea / 3.3058;
+combinedLabel += `\n🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)\n`;
+
+const textDiv = document.createElement("div");
+textDiv.className = "text";
+textDiv.textContent = combinedLabel;
+
 
   const title = selections.length === 1 ? "영역 1건" : `영역 ${selections.length}건`;
   const encoded = btoa(coordsData.join(";") + "|" + selectedFactory + "|1|" + encodeURIComponent(title));
