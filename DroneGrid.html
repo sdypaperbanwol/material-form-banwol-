@@ -833,7 +833,8 @@ saveBtn.addEventListener("click", () => {
   textDiv.textContent = combinedLabel;
 
   const title = selections.length === 1 ? "영역 1건" : `영역 ${selections.length}건`;
-  const encoded = btoa(coordsData.join(";") + "|" + selectedFactory + "|1|" + encodeURIComponent(title));
+  const encoded = btoa(coordsData.join(";") + "|" + selectedFactory + "|1|" + encodeURIComponent(title) + "|" + totalArea);
+
 
   const linkBtn = document.createElement("button");
   linkBtn.textContent = "🔗 링크 복사";
@@ -863,45 +864,56 @@ saveBtn.addEventListener("click", () => {
     };
   });
 
-  drawGrid();
-  for (const sel of tempSelections) {
-    drawShadedArea(sel.x1, sel.y1, sel.x2, sel.y2, sel.color);
-    drawMultilineLabel(
-      sel.x1 + (sel.x2 - sel.x1) / 2,
-      sel.y1 + (sel.y2 - sel.y1) / 2,
-      formatLabel(sel.x1, sel.y1, sel.cols, sel.rows, sel.widthM, sel.heightM, sel.areaM2, sel.areaPy)
-    );
-  }
+ drawGrid();
+for (const sel of tempSelections) {
+  drawShadedArea(sel.x1, sel.y1, sel.x2, sel.y2, sel.color);
+  drawMultilineLabel(
+    sel.x1 + (sel.x2 - sel.x1) / 2,
+    sel.y1 + (sel.y2 - sel.y1) / 2,
+    formatLabel(sel.x1, sel.y1, sel.cols, sel.rows, sel.widthM, sel.heightM, sel.areaM2, sel.areaPy)
+  );
+}
 
-  const { jsPDF } = window.jspdf;
-  const mapImg = document.getElementById("map");
-  const canvas = document.getElementById("overlay");
+const { jsPDF } = window.jspdf;
+const mapImg = document.getElementById("map");
+const canvas = document.getElementById("overlay");
 
-  const tempCanvas = document.createElement("canvas");
-  const tempCtx = tempCanvas.getContext("2d");
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
+const tempCanvas = document.createElement("canvas");
+const tempCtx = tempCanvas.getContext("2d");
+tempCanvas.width = canvas.width;
+tempCanvas.height = canvas.height;
 
-  tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
-  tempCtx.drawImage(canvas, 0, 0);
+tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
+tempCtx.drawImage(canvas, 0, 0);
 
-  const imgData = tempCanvas.toDataURL("image/png");
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
+const imgData = tempCanvas.toDataURL("image/png");
 
-  // ✅ iOS 포함 모든 환경에서 PDF를 새 탭으로 열어줌
-  const pdfUrl = pdf.output('dataurlstring');
-  const a = document.createElement('a');
-  a.href = pdfUrl;
-  a.download = "선택영역.pdf"; // iOS에선 무시될 수 있음
-  a.target = "_blank";
-  a.click();
+// ✅ PDF 생성 후 이미지와 텍스트 추가
+const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
 
-  // ✅ 추가 안내 (iOS 사용자 친절 메시지)
-  if (/iPhone|iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document) {
-    alert("📄 PDF가 새 창에서 열렸습니다. Safari 메뉴에서 '공유' 또는 '파일에 저장'을 선택하세요.");
-  }
-};
+// ✅ 총 면적 계산 및 PDF에 표시
+let totalArea = 0;
+for (const sel of tempSelections) {
+  totalArea += sel.areaM2;
+}
+const totalPy = totalArea / 3.3058;
+pdf.setFontSize(10);
+pdf.text(`총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`, 10, 200);
+
+// ✅ PDF 다운로드 또는 새 창 열기
+const pdfUrl = pdf.output('dataurlstring');
+const a = document.createElement('a');
+a.href = pdfUrl;
+a.download = "선택영역.pdf";
+a.target = "_blank";
+a.click();
+
+// ✅ iOS 사용자 안내
+if (/iPhone|iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document) {
+  alert("📄 PDF가 새 창에서 열렸습니다. Safari 메뉴에서 '공유' 또는 '파일에 저장'을 선택하세요.");
+}
+
 
 
 
@@ -916,6 +928,25 @@ saveBtn.addEventListener("click", () => {
 
   // ✅ 여기에 넣어야 보입니다!
   entry.appendChild(textDiv);
+
+  // 📌 selections에서 총 면적 계산
+let totalArea = 0;
+selections.forEach(sel => totalArea += sel.areaM2);
+const totalPy = totalArea / 3.3058;
+
+// 📌 총 면적 텍스트 생성
+const totalText = `🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`;
+
+// 📌 div 생성 후 entry에 추가
+const areaDiv = document.createElement("div");
+areaDiv.style.fontSize = "0.9rem";
+areaDiv.style.color = "#333";
+areaDiv.style.marginTop = "4px";
+areaDiv.innerText = totalText;
+entry.appendChild(areaDiv);
+
+
+  
   const buttonsDiv = document.createElement("div");
   buttonsDiv.className = "buttons";
   buttonsDiv.appendChild(linkBtn);
@@ -1106,6 +1137,16 @@ coordsList.forEach((coord, idx) => {
 
   selections.push(selection);
 });
+
+    // ✅ 총 면적 표시 (공유 링크용)
+const totalArea = parts[4] ? Number(parts[4]) : 0;
+const totalPy = totalArea / 3.3058;
+
+const summaryDiv = document.createElement("div");
+summaryDiv.innerHTML = `<span style="color:#555;">🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)</span>`;
+summaryDiv.style.textAlign = "center";
+summaryDiv.style.margin = "6px auto 16px";
+document.getElementById("main-app").insertBefore(summaryDiv, document.getElementById("map-container"));
 
 
     drawAllSelections();
