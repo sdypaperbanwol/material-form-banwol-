@@ -385,7 +385,7 @@
 
 
         <div id="coords">좌표:</div>
-       <div id="temp-count" style="color: gray; font-size: 0.9rem;">임시 선택 0건</div>
+       <div id="temp-count" style="color: gray; font-size: 0.9rem;">좌표 추가 0건</div>
 
 
 
@@ -693,7 +693,7 @@ function getFillRGBA(color) {
   const h = Math.abs(dragStartY - pos.y);
 
   drawGrid();
-  drawAllSelections(); // ✅ 추가: 기존 임시 선택 다시 그림
+  drawAllSelections(); // ✅ 추가: 기존 좌표 추가 다시 그림
 
   ctx.fillStyle = getFillRGBA(currentColor);
 ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
@@ -1246,7 +1246,7 @@ document.getElementById("main-app").insertBefore(summaryDiv, document.getElement
                     }
                   }
 function updateTempCount() {
-  document.getElementById("temp-count").innerText = `임시 선택 ${selections.length}건`;
+  document.getElementById("temp-count").innerText = `좌표 추가 ${selections.length}건`;
 
   // ✅ 총 면적 계산
   let totalArea = 0;
