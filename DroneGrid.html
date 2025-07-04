@@ -1183,7 +1183,32 @@ coordsList.forEach((coord, idx) => {
                   }
 function updateTempCount() {
   document.getElementById("temp-count").innerText = `임시 선택 ${selections.length}건`;
+
+  // ✅ 총 면적 계산
+  let totalArea = 0;
+  for (const sel of selections) {
+    totalArea += sel.areaM2;
+  }
+
+  const totalPy = totalArea / 3.3058;
+  const summary = selections.length > 0
+    ? `총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`
+    : "";
+
+  // ✅ 기존 요소가 없으면 추가
+  let totalDiv = document.getElementById("total-area");
+  if (!totalDiv) {
+    totalDiv = document.createElement("div");
+    totalDiv.id = "total-area";
+    totalDiv.style.marginTop = "4px";
+    totalDiv.style.fontSize = "0.95rem";
+    totalDiv.style.color = "#444";
+    document.getElementById("temp-count").after(totalDiv);
+  }
+
+  totalDiv.textContent = summary;
 }
+
 
 
 
