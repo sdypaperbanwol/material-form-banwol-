@@ -1136,6 +1136,7 @@ coordsList.forEach((coord, idx) => {
 
   selections.push(selection);
 });
+}, 0); // ✅ 요렇게 setTimeout 블록 닫기까지 완성!
 
     // ✅ 총 면적 표시 (공유 링크용)
 const totalArea = parts[4] ? Number(parts[4]) : 0;
@@ -1170,26 +1171,6 @@ document.getElementById("main-app").insertBefore(summaryDiv, document.getElement
     }
   }, 0); // 💡 0ms지만 다음 이벤트 루프로 밀어 canvas 초기화 이후 실행
 };
-
-  updateTempCount();
-
-  const first = selections[0];
-  coordsDiv.innerText =
-    `좌표: 셀 X=${first.x1 / cellSize}, Y=${first.y1 / cellSize} (픽셀 X=${first.x1}, Y=${first.y1})\n` +
-    `크기: ${first.cols}×${first.rows}칸, 약 ${first.widthM.toFixed(2)}m × ${first.heightM.toFixed(2)}m`;
-
-  if (labelText) {
-    const labelDiv = document.createElement("div");
-    labelDiv.innerHTML = `<span style="color:green; font-weight:bold;">📌 공유 제목: ${labelText}</span>`;
-    labelDiv.style.margin = "10px auto 20px";
-    labelDiv.style.textAlign = "center";
-    document.getElementById("main-app").insertBefore(labelDiv, document.getElementById("map-container"));
-  }
-
-  if (viewFlag === 1) {
-    document.getElementById("controls").style.display = "none";
-    canvas.style.pointerEvents = "none";
-  }
 
                       } catch (e) {
                                                                     }
