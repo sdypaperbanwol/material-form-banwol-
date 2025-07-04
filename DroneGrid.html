@@ -894,7 +894,8 @@ textDiv.textContent = combinedLabel;
   // PDF 생성
 const imgData = tempCanvas.toDataURL("image/png");
 const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
+pdf.addImage(imgData, 'PNG', 10, 10, 277, 160);  // 이미지 높이를 줄여 아래 여백 확보
+
 
 // ✅ 총 면적 계산
 let totalArea = 0;
@@ -907,9 +908,8 @@ const totalText = `Total Area: ${totalArea.toFixed(2)} m² (approx. ${totalPy.to
 
 // ✅ PDF 하단 중앙에 텍스트 삽입
 pdf.setFontSize(14);
-pdf.setTextColor(40);
-pdf.text(totalText, 148.5, 200, { align: "center" });  // x=가로 중앙, y=하단 조금 위
-
+pdf.setTextColor(0, 0, 0);  // 검정색
+pdf.text(totalText, 148.5, 180, { align: "center" });  // 아래 여백에 출력
 // PDF 열기
 const pdfUrl = pdf.output('dataurlstring');
 const a = document.createElement('a');
