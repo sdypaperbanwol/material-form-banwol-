@@ -889,14 +889,20 @@ saveBtn.addEventListener("click", () => {
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
 
-  // ✅ iOS 감지 및 대응
-  const isIOS = /iPhone|iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
-  if (isIOS) {
-    pdf.output('dataurlnewwindow');  // 새 창으로 열기
-  } else {
-    pdf.save("선택영역.pdf");        // 바로 다운로드
+  // ✅ iOS 포함 모든 환경에서 PDF를 새 탭으로 열어줌
+  const pdfUrl = pdf.output('dataurlstring');
+  const a = document.createElement('a');
+  a.href = pdfUrl;
+  a.download = "선택영역.pdf"; // iOS에선 무시될 수 있음
+  a.target = "_blank";
+  a.click();
+
+  // ✅ 추가 안내 (iOS 사용자 친절 메시지)
+  if (/iPhone|iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document) {
+    alert("📄 PDF가 새 창에서 열렸습니다. Safari 메뉴에서 '공유' 또는 '파일에 저장'을 선택하세요.");
   }
 };
+
 
 
   const delBtn = document.createElement("button");
