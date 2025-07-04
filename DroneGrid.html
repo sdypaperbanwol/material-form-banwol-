@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
   <head>
@@ -116,28 +117,34 @@
 
 
           #controls {
-            margin: 30px auto 100px;
-            width: 90%;
-            max-width: 800px;
-          }
+  margin: 30px auto 100px;
+  width: 90%;
+  max-width: 1000px;   /* ← 수정 */
+}
 
           #coords {
             font-family: monospace;
             margin-bottom: 10px;
           }
 
-          #saved {
-            font-family: monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            background: #f8f8f8;
-            border: 1px solid #ccc;
-            padding: 14px;
-            min-height: 120px;
-            max-height: 300px;
-            overflow-y: auto;
-            line-height: 1.5;
-          }
+         #saved {
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  background: #f8f8f8;
+  border: 1px solid #ccc;
+  padding: 14px;
+  min-height: 120px;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.5;
+  
+  /* ✅ 추가 */
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
 
           #saved div {
             background: #f9f9f9;
@@ -200,9 +207,8 @@
   border-radius: 8px;
   padding: 12px;
   width: 90%;
-  max-width: 800px;
+  max-width: 1000px;   /* ← 수정 */
 }
-
      </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </head>
