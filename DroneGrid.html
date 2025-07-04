@@ -1117,6 +1117,23 @@ coordsList.forEach((coord, idx) => {
     drawAllSelections();
     updateTempCount();
 
+    // ✅ 총 면적도 함께 표시
+let totalArea = 0;
+selections.forEach(sel => {
+  totalArea += sel.areaM2;
+});
+const totalPy = totalArea / 3.3058;
+
+const summaryDiv = document.createElement("div");
+summaryDiv.style.margin = "10px auto";
+summaryDiv.style.textAlign = "center";
+summaryDiv.style.fontSize = "1rem";
+summaryDiv.style.color = "#444";
+summaryDiv.innerHTML = `🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`;
+
+document.getElementById("main-app").insertBefore(summaryDiv, document.getElementById("controls"));
+
+
     const first = selections[0];
     coordsDiv.innerText =
       `좌표: 셀 X=${first.x1 / cellSize}, Y=${first.y1 / cellSize} (픽셀 X=${first.x1}, Y=${first.y1})\n` +
