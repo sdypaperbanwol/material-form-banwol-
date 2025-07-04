@@ -930,7 +930,7 @@ if (/iPhone|iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in documen
   entry.appendChild(textDiv);
 
   // 📌 selections에서 총 면적 계산
-let totalArea = 0;
+totalArea = 0; // let 제거
 selections.forEach(sel => totalArea += sel.areaM2);
 const totalPy = totalArea / 3.3058;
 
