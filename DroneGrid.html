@@ -902,7 +902,8 @@ tempSelections.forEach(sel => {
   totalArea += sel.areaM2;
 });
 const totalPy = totalArea / 3.3058;
-const totalText = `총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`;
+const totalText = `Total Area: ${totalArea.toFixed(2)} m² (approx. ${totalPy.toFixed(2)} py)`;
+
 
 // ✅ PDF 하단 중앙에 텍스트 삽입
 pdf.setFontSize(14);
