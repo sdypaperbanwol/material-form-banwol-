@@ -141,14 +141,40 @@
 <form id="materialForm" style="display: none;">
 
   <!-- ✅ 신청서 제목 -->
-  <div style="font-size: 18px; font-weight: bold; color: #222; margin-bottom: 6px;">
-    📋 신청서 작성
+<!-- ✅ 신청서 작성 제목: 중앙 정렬 -->
+<div style="
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+">
+  <div style="
+    font-size: 18px;
+    font-weight: bold;
+    color: #222;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  ">
+    📋 <span style="margin-left: 6px;">신청서 작성</span>
   </div>
+</div>
 
-  <!-- ✅ 버튼 묶음 (세로 정렬) -->
-  <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 16px; max-width: 250px;">
+<!-- ✅ 버튼 묶음: 오른쪽 정렬 + 세로 -->
+<div style="
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+">
+  <div style="
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 150px;
+  ">
 
-    <!-- 📄 신청 내역 버튼 -->
+    <!-- 📄 내 신청 내역 -->
     <button id="myRecordsBtn" style="
       width: 100%;
       font-size: 14px;
@@ -160,16 +186,17 @@
       padding: 6px 12px;
       cursor: pointer;
       display: flex;
+      justify-content: flex-end;
       align-items: center;
       gap: 6px;
       white-space: nowrap;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       transition: background 0.2s;
     " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-      📄 <span>내 신청 내역</span>
+      <span>📄 내 신청 내역</span>
     </button>
 
-    <!-- 👥 팀 신청 내역 버튼 -->
+    <!-- 👥 팀 신청 내역 -->
     <button id="myTeamRecordsBtn" style="
       width: 100%;
       font-size: 14px;
@@ -181,16 +208,17 @@
       padding: 6px 12px;
       cursor: pointer;
       display: flex;
+      justify-content: flex-end;
       align-items: center;
       gap: 6px;
       white-space: nowrap;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       transition: background 0.2s;
     " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
-      👥 <span>팀 신청 내역</span>
+      <span>👥 팀 신청 내역</span>
     </button>
 
-    <!-- 🔔 알림 버튼 -->
+    <!-- 🔔 알림 -->
     <button id="alertFilesBtn" style="
       width: 100%;
       font-size: 14px;
@@ -202,16 +230,19 @@
       padding: 6px 12px;
       cursor: pointer;
       display: flex;
+      justify-content: flex-end;
       align-items: center;
       gap: 6px;
       white-space: nowrap;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       transition: background 0.2s;
     " onmouseover="this.style.background='#fff8e1'" onmouseout="this.style.background='#fff'">
-      🔔 <span>알림</span>
+      <span>🔔 알림</span>
     </button>
 
   </div>
+</div>
+
 
     
   </div>
