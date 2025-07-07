@@ -144,11 +144,41 @@
     <h3 style="margin: 0;">📋 신청서 작성 </h3>
     <!-- 개선 -->
 
-   <!-- ✅ 버튼 묶음 -->
-<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 10px;">
-  
-  <!-- 📄 신청 내역 버튼 -->
+<!-- ✅ 버튼 3개 한 줄 정렬 묶음 -->
+<div style="
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  justify-content: flex-start;
+">
+
+  <!-- 🔔 알림 버튼 -->
+  <button id="alertFilesBtn" style="
+    flex: 1 1 auto;
+    min-width: 110px;
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #ff9800;
+    border: 1px solid #ff9800;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  " onmouseover="this.style.background='#fff8e1'" onmouseout="this.style.background='#fff'">
+    🔔 <span>알림</span>
+  </button>
+
+  <!-- 📄 내 신청 내역 버튼 -->
   <button id="myRecordsBtn" style="
+    flex: 1 1 auto;
+    min-width: 110px;
     font-size: 14px;
     font-weight: bold;
     background-color: #fff;
@@ -157,6 +187,7 @@
     border-radius: 6px;
     padding: 6px 12px;
     cursor: pointer;
+    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -168,6 +199,8 @@
 
   <!-- 👥 팀 신청 내역 버튼 -->
   <button id="myTeamRecordsBtn" style="
+    flex: 1 1 auto;
+    min-width: 110px;
     font-size: 14px;
     font-weight: bold;
     background-color: #fff;
@@ -176,6 +209,7 @@
     border-radius: 6px;
     padding: 6px 12px;
     cursor: pointer;
+    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -186,24 +220,7 @@
   </button>
 
 </div>
-<!-- 🔔 알림 버튼 -->
-<button id="alertFilesBtn" style="
-  font-size: 14px;
-  font-weight: bold;
-  background-color: #fff;
-  color: #ff9800;
-  border: 1px solid #ff9800;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  transition: background 0.2s;
-" onmouseover="this.style.background='#fff8e1'" onmouseout="this.style.background='#fff'">
-  🔔 <span>알림</span>
-</button>
+
 <!-- 📢 알림 모달 -->
 <div id="alertModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999;">
 
@@ -244,6 +261,7 @@
     </table>
   </div>
 </div>
+
 
     
   </div>
