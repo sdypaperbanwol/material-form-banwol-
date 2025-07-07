@@ -184,9 +184,66 @@
   " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
     👥 <span>팀 신청 내역</span>
   </button>
-
+  
+<!-- 📢 공지사항 버튼 -->
+<button id="noticeListBtn" style="
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #fff;
+  color: #ff9800;
+  border: 1px solid #ff9800;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+" onmouseover="this.style.background='#fffbe6'" onmouseout="this.style.background='#fff'">
+  📢 <span>공지사항</span>
+</button>
+  
 </div>
+<div id="noticeListModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999;">
+  <button id="closeNoticeListModal" style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: white;
+    z-index: 10000;
+  ">✖</button>
 
+  <div style="
+    position: relative;
+    margin: 60px auto;
+    background: white;
+    padding: 20px 24px 30px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 95%;
+    max-height: 80vh;
+    overflow: auto;
+  ">
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📢 공지사항</h3>
+    <table id="noticeTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #ccc; padding:6px; background:#f7f7f7;">제목</th>
+          <th style="border:1px solid #ccc; padding:6px; background:#f7f7f7;">날짜</th>
+          <th style="border:1px solid #ccc; padding:6px; background:#f7f7f7;">보기</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+    
     
   </div>
     <label for="category">1. 항목 분류</label>
@@ -311,7 +368,7 @@
  </form>
     
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzt4CCtOnf-CTQy89PPHyWd7WlWgQrWW1FVCBm8IAifX91q5Xcodk1JLHE4A0H7u4o7/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwQ12QjfWMue77BazYAmdMX6odvrMKwOgEseLOXXRALFXHWmdrYZyH5m2ytQTcr_0e3/exec";
   let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -1069,7 +1126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbzt4CCtOnf-CTQy89PPHyWd7WlWgQrWW1FVCBm8IAifX91q5Xcodk1JLHE4A0H7u4o7/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbwQ12QjfWMue77BazYAmdMX6odvrMKwOgEseLOXXRALFXHWmdrYZyH5m2ytQTcr_0e3/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
@@ -1089,7 +1146,51 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("noticeModal").style.display = "none";
   });
 });
+
+document.getElementById("noticeListBtn").addEventListener("click", () => {
+  fetch(API_URL + "?mode=notices")
+    .then(res => res.json())
+    .then(data => {
+      if (!data || !Array.isArray(data.records)) {
+        alert("❌ 공지사항을 불러오지 못했습니다.");
+        return;
+      }
+
+      const tbody = document.querySelector("#noticeTable tbody");
+      tbody.innerHTML = "";
+
+      data.records.forEach(notice => {
+        const tr = document.createElement("tr");
+        const title = notice.title || "제목 없음";
+        const url = notice.url;
+        const date = notice.date || "-";
+
+        tr.innerHTML = `
+          <td style="border:1px solid #ccc; padding:6px;">${title}</td>
+          <td style="border:1px solid #ccc; padding:6px; text-align:center;">${date}</td>
+          <td style="border:1px solid #ccc; padding:6px; text-align:center;">
+            <a href="${url}" target="_blank" style="color:#007bff;">📄 보기</a>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("noticeListModal").style.display = "flex";
+    })
+    .catch(err => {
+      console.error("공지사항 로딩 오류:", err);
+      alert("❌ 오류가 발생했습니다.");
+    });
+});
+
+document.getElementById("closeNoticeListModal").addEventListener("click", () => {
+  document.getElementById("noticeListModal").style.display = "none";
+});
+
+    
 </script>
 
+ 
 </body>
 </html>
