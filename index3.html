@@ -1149,22 +1149,41 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-    document.getElementById("alertFilesBtn").addEventListener("click", () => {
-  fetch("https://script.google.com/macros/s/AKfycbzt4CCtOnf-CTQy89PPHyWd7WlWgQrWW1FVCBm8IAifX91q5Xcodk1JLHE4A0H7u4o7/exec?mode=notice")
+document.getElementById("alertFilesBtn").addEventListener("click", () => {
+  fetch(`${API_URL}?mode=noticefiles`)
     .then(res => res.json())
     .then(data => {
-      const notice = data.notice?.trim();
-      if (notice) {
-        document.getElementById("noticeContent").textContent = notice;
-        document.getElementById("noticeModal").style.display = "flex";
-      } else {
-        alert("📢 현재 표시할 공지사항이 없습니다.");
+      if (data.result !== "success") {
+        alert("❌ 알림 파일을 불러오지 못했습니다.");
+        return;
       }
-    })
-    .catch(err => {
-      console.error("공지사항 로딩 오류:", err);
-      alert("❌ 공지사항을 불러오는 데 실패했습니다.");
+
+      const tbody = document.querySelector("#alertTable tbody");
+      tbody.innerHTML = "";
+
+      data.records.forEach(record => {
+        const tr = document.createElement("tr");
+        const title = record.title || "제목 없음";
+        const url = record.url;
+        const date = record.date || "-";
+
+        tr.innerHTML = `
+          <td style="border:1px solid #ccc; padding:6px;">${date}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${title}</td>
+          <td style="border:1px solid #ccc; padding:6px; text-align:center;">
+            <a href="${url}" target="_blank">📄 보기</a>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("alertModal").style.display = "flex";
     });
+});
+
+document.getElementById("closeAlertModal").addEventListener("click", () => {
+  document.getElementById("alertModal").style.display = "none";
 });
 
 </script>
