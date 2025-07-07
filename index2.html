@@ -1159,23 +1159,22 @@ document.getElementById("noticeListBtn").addEventListener("click", () => {
       const tbody = document.querySelector("#noticeTable tbody");
       tbody.innerHTML = "";
 
-      data.records.forEach(notice => {
-        const tr = document.createElement("tr");
-        const title = notice.title || "제목 없음";
-        const url = notice.url;
-        const date = notice.date || "-";
+    data.records.forEach(notice => {
+  const tr = document.createElement("tr");
+  const title = notice.title || "제목 없음";
+  const url = notice.url;
+  const date = notice.date || "-";
 
-tr.innerHTML = `
-  <td style="border:1px solid #ccc; padding:6px;">${record.date}</td>
-  <td style="border:1px solid #ccc; padding:6px;">${record.title}</td>
-  <td style="border:1px solid #ccc; padding:6px; text-align:center;">
-    <a href="${record.url}" target="_blank">📄 보기</a>
-  </td>
-`;
+  tr.innerHTML = `
+    <td style="border:1px solid #ccc; padding:6px;">${date}</td>
+    <td style="border:1px solid #ccc; padding:6px;">${title}</td>
+    <td style="border:1px solid #ccc; padding:6px; text-align:center;">
+      <a href="${url}" target="_blank">📄 보기</a>
+    </td>
+  `;
+  tbody.appendChild(tr);
+});
 
-
-        tbody.appendChild(tr);
-      });
 
       document.getElementById("noticeListModal").style.display = "flex";
     })
