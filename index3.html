@@ -137,114 +137,77 @@
     <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
 
-<!-- ✅ 로그인 후 보이는 신청 폼 -->
-<form id="materialForm" style="display: none;">
+  <!-- ✅ 로그인 후 보이는 신청 폼 -->
+  <form id="materialForm" style="display: none;">
+     <!-- 🔽 여기 추가 -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3 style="margin: 0;">📋 신청서 작성 </h3>
+    <!-- 개선 -->
 
-
-<!-- ✅ 버튼 묶음: 오른쪽 정렬 + 세로 -->
-<!-- ✅ 신청서 작성 + 버튼 세트 -->
-<div style="
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;  /* ✅ 버튼 위쪽 맞춤 */
-  gap: 20px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-">
-
-  <!-- 📋 신청서 작성 -->
-  <div style="
-    font-size: 18px;
-    font-weight: bold;
-    color: #222;
-    white-space: nowrap;
-  ">
-    📋 신청서 작성
-  </div>
-
-  <!-- ✅ 버튼 묶음 (세로 정렬, 오른쪽) -->
-  <div style="
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-width: 140px;
-    width: 100%;
-    align-items: flex-end;
-  ">
-
-    <!-- 📄 내 신청 -->
-    <button id="myRecordsBtn" style="
-      width: 100%;
-      font-size: 14px;
-      font-weight: bold;
-      background-color: #fff;
-      color: #007bff;
-      border: 1px solid #007bff;
-      border-radius: 6px;
-      padding: 6px 12px;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      transition: background 0.2s;
-    " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-      📄 <span>내 신청 내역</span>
-    </button>
-
-    <!-- 👥 팀 신청 -->
-
-<button id="myTeamRecordsBtn" style="
-  width: 100%;
-  font-size: 14px;
-  font-weight: bold;
-  background-color: #fff;
-  color: #28a745;
-  border: 1px solid #28a745;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  transition: background 0.2s;
-" onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
-  👥 <span>팀 신청 내역</span>
+   <!-- ✅ 버튼 묶음 -->
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 10px;">
+<button id="noticeBtn" style="margin-top: 10px; background: #fff; border: 1px solid #007bff; color: #007bff; border-radius: 6px; padding: 6px 12px; cursor: pointer;">
+  📢 알림
 </button>
 
-
-
-    <!-- 🔔 알림 버튼 -->
-    <button id="alertFilesBtn" style="
-      width: 100%;
-      font-size: 14px;
-      font-weight: bold;
-      background-color: #fff;
-      color: #ff9800;
-      border: 1px solid #ff9800;
-      border-radius: 6px;
-      padding: 6px 12px;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      transition: background 0.2s;
-    " onmouseover="this.style.background='#fff8e1'" onmouseout="this.style.background='#fff'">
-      🔔 <span>알림</span>
-    </button>
-
-  </div>
+<!-- ✅ 모달 -->
+<div id="noticeModal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:#fff; border-radius:10px; padding:20px; box-shadow:0 0 10px rgba(0,0,0,0.3); max-height:70vh; overflow:auto; z-index:999;">
+  <h3>📢 알림 파일 목록</h3>
+  <table style="width:100%; border-collapse: collapse;">
+    <thead>
+      <tr style="background:#eee;">
+        <th style="border:1px solid #ccc; padding:6px;">날짜</th>
+        <th style="border:1px solid #ccc; padding:6px;">제목</th>
+        <th style="border:1px solid #ccc; padding:6px;">보기</th>
+      </tr>
+    </thead>
+    <tbody id="noticeListBody">
+      <!-- PDF 목록이 여기에 추가됨 -->
+    </tbody>
+  </table>
+  <button onclick="document.getElementById('noticeModal').style.display='none'" style="margin-top:10px;">닫기</button>
 </div>
 
+  
+  <!-- 📄 신청 내역 버튼 -->
+  <button id="myRecordsBtn" style="
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #007bff;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
+    📄 <span>내 신청 내역</span>
+  </button>
 
+  <!-- 👥 팀 신청 내역 버튼 -->
+  <button id="myTeamRecordsBtn" style="
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #28a745;
+    border: 1px solid #28a745;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
+    👥 <span>팀 신청 내역</span>
+  </button>
+
+</div>
 
     
   </div>
@@ -370,7 +333,7 @@
  </form>
     
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzt4CCtOnf-CTQy89PPHyWd7WlWgQrWW1FVCBm8IAifX91q5Xcodk1JLHE4A0H7u4o7/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwqPJmSJ1zUYXhVsycv7xsU68UyH3BUsFVUpyCtkgm4xoDuI8WxJqZpxvEmNcNEuHbc/exec";
   let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
@@ -1128,7 +1091,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbzt4CCtOnf-CTQy89PPHyWd7WlWgQrWW1FVCBm8IAifX91q5Xcodk1JLHE4A0H7u4o7/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbwqPJmSJ1zUYXhVsycv7xsU68UyH3BUsFVUpyCtkgm4xoDuI8WxJqZpxvEmNcNEuHbc/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
@@ -1148,44 +1111,37 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("noticeModal").style.display = "none";
   });
 });
+document.getElementById("noticeBtn").addEventListener("click", async () => {
+  const modal = document.getElementById("noticeModal");
+  const tbody = document.getElementById("noticeListBody");
+  tbody.innerHTML = ""; // 초기화
 
-document.getElementById("alertFilesBtn").addEventListener("click", () => {
-  fetch(`${API_URL}?mode=noticefiles`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result !== "success") {
-        alert("❌ 알림 파일을 불러오지 못했습니다.");
-        return;
-      }
-
-      const tbody = document.querySelector("#alertTable tbody");
-      tbody.innerHTML = "";
-
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbwqPJmSJ1zUYXhVsycv7xsU68UyH3BUsFVUpyCtkgm4xoDuI8WxJqZpxvEmNcNEuHbc/exec?mode=noticefiles");
+    const data = await res.json();
+    if (data.result === "success") {
       data.records.forEach(record => {
         const tr = document.createElement("tr");
-        const title = record.title || "제목 없음";
-        const url = record.url;
-        const date = record.date || "-";
-
         tr.innerHTML = `
-          <td style="border:1px solid #ccc; padding:6px;">${date}</td>
-          <td style="border:1px solid #ccc; padding:6px;">${title}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${record.date}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${record.title}</td>
           <td style="border:1px solid #ccc; padding:6px; text-align:center;">
-            <a href="${url}" target="_blank">📄 보기</a>
+            <a href="${record.url}" target="_blank">📄 보기</a>
           </td>
         `;
-
         tbody.appendChild(tr);
       });
+    } else {
+      tbody.innerHTML = `<tr><td colspan="3">📛 불러오기 실패</td></tr>`;
+    }
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="3">❌ 오류 발생</td></tr>`;
+    console.error("📛 알림 목록 오류:", err);
+  }
 
-      document.getElementById("alertModal").style.display = "flex";
-    });
+  modal.style.display = "block";
 });
-
-document.getElementById("closeAlertModal").addEventListener("click", () => {
-  document.getElementById("alertModal").style.display = "none";
-});
-
+    
 </script>
 
 </body>
