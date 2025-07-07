@@ -142,11 +142,11 @@
      <!-- 🔽 여기 추가 -->
     <!-- 개선 -->
 
-<!-- ✅ 신청서 작성 헤더 + 세로 버튼 묶음 -->
+<!-- ✅ 신청서 작성 헤더 + 세로 버튼 묶음 (오른쪽 정렬 + 적당한 너비) -->
 <div style="
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end; /* 오른쪽 정렬 */
   gap: 8px;
   margin-bottom: 16px;
   width: 100%;
@@ -154,71 +154,85 @@
 
   <!-- 📋 신청서 텍스트 -->
   <div style="
+    align-self: flex-start;  /* 왼쪽에 유지 */
     font-size: 18px;
     font-weight: bold;
     color: #222;
     display: flex;
     align-items: center;
     white-space: nowrap;
+    margin-bottom: 4px;
   ">
     📋 <span style="margin-left: 6px;">신청서 작성</span>
   </div>
 
-  <!-- 🔔 알림 버튼 -->
-  <button id="alertFilesBtn" style="
-    width: 100%;
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #ff9800;
-    border: 1px solid #ff9800;
-    border-radius: 6px;
-    padding: 8px 12px;
-    cursor: pointer;
-    white-space: nowrap;
+  <!-- 버튼 컨테이너 -->
+  <div style="
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 8px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  ">🔔 알림</button>
-
-  <!-- 📄 내 신청 -->
-  <button id="myRecordsBtn" style="
     width: 100%;
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #007bff;
-    border: 1px solid #007bff;
-    border-radius: 6px;
-    padding: 8px 12px;
-    cursor: pointer;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  ">📄 내 신청 내역</button>
+    max-width: 250px;  /* ✅ 최대 너비 제한 */
+  ">
 
-  <!-- 👥 팀 신청 -->
-  <button id="myTeamRecordsBtn" style="
-    width: 100%;
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #28a745;
-    border: 1px solid #28a745;
-    border-radius: 6px;
-    padding: 8px 12px;
-    cursor: pointer;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  ">👥 팀 신청 내역</button>
+    <!-- 🔔 알림 버튼 -->
+    <button id="alertFilesBtn" style="
+      width: 100%;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: #fff;
+      color: #ff9800;
+      border: 1px solid #ff9800;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    ">🔔 알림</button>
 
+    <!-- 📄 내 신청 -->
+    <button id="myRecordsBtn" style="
+      width: 100%;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: #fff;
+      color: #007bff;
+      border: 1px solid #007bff;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    ">📄 내 신청 내역</button>
+
+    <!-- 👥 팀 신청 -->
+    <button id="myTeamRecordsBtn" style="
+      width: 100%;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: #fff;
+      color: #28a745;
+      border: 1px solid #28a745;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    ">👥 팀 신청 내역</button>
+
+  </div>
 </div>
+
 
 
 
