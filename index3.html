@@ -144,81 +144,96 @@
     <h3 style="margin: 0;">📋 신청서 작성 </h3>
     <!-- 개선 -->
 
-<!-- ✅ 버튼 3개 한 줄 정렬 묶음 -->
+<!-- ✅ 신청서 작성 헤더 + 버튼 묶음 -->
 <div style="
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
   gap: 8px;
-  margin-bottom: 10px;
-  justify-content: flex-start;
+  width: 100%;
 ">
 
-  <!-- 🔔 알림 버튼 -->
-  <button id="alertFilesBtn" style="
-    flex: 1 1 auto;
-    min-width: 110px;
-    font-size: 14px;
+  <!-- 📋 신청서 텍스트 -->
+  <div style="
+    font-size: 18px;
     font-weight: bold;
-    background-color: #fff;
-    color: #ff9800;
-    border: 1px solid #ff9800;
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
-    white-space: nowrap;
+    color: #222;
     display: flex;
     align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    transition: background 0.2s;
-  " onmouseover="this.style.background='#fff8e1'" onmouseout="this.style.background='#fff'">
-    🔔 <span>알림</span>
-  </button>
-
-  <!-- 📄 내 신청 내역 버튼 -->
-  <button id="myRecordsBtn" style="
-    flex: 1 1 auto;
-    min-width: 110px;
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #007bff;
-    border: 1px solid #007bff;
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
     white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    transition: background 0.2s;
-  " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-    📄 <span>내 신청 내역</span>
-  </button>
+  ">
+    📋 <span style="margin-left: 6px;">신청서 작성</span>
+  </div>
 
-  <!-- 👥 팀 신청 내역 버튼 -->
-  <button id="myTeamRecordsBtn" style="
-    flex: 1 1 auto;
-    min-width: 110px;
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #28a745;
-    border: 1px solid #28a745;
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
-    white-space: nowrap;
+  <!-- ✅ 버튼 3개 묶음 -->
+  <div style="
     display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    transition: background 0.2s;
-  " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
-    👥 <span>팀 신청 내역</span>
-  </button>
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    flex: 1;
+  ">
 
+    <!-- 🔔 알림 버튼 -->
+    <button id="alertFilesBtn" style="
+      flex: 1 1 auto;
+      min-width: 100px;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: #fff;
+      color: #ff9800;
+      border: 1px solid #ff9800;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    ">🔔 알림</button>
+
+    <!-- 📄 내 신청 -->
+    <button id="myRecordsBtn" style="
+      flex: 1 1 auto;
+      min-width: 100px;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: #fff;
+      color: #007bff;
+      border: 1px solid #007bff;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    ">📄 내 신청 내역</button>
+
+    <!-- 👥 팀 신청 -->
+    <button id="myTeamRecordsBtn" style="
+      flex: 1 1 auto;
+      min-width: 100px;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: #fff;
+      color: #28a745;
+      border: 1px solid #28a745;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    ">👥 팀 신청 내역</button>
+
+  </div>
 </div>
 
 <!-- 📢 알림 모달 -->
