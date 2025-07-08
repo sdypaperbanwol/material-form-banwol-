@@ -58,7 +58,7 @@
 
     h1 {
       margin-top: 40px;
-      margin-bottom: 150px; /* 👈 추가 */
+      margin-bottom: 70px; /* 👈 추가 */
     }
 
   .button-container {
@@ -71,7 +71,7 @@
 
     .menu-button {
   width: 220px;          /* 🔧 더 넓게 */
-  height: 150px;         /* 🔧 살짝 줄여서 직사각형 비율 */
+  height: 70px;         /* 🔧 살짝 줄여서 직사각형 비율 */
   background: #007bff;
   color: white;
   border: none;
@@ -89,6 +89,18 @@
   line-height: 1.4;
 }
 
+.worker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.worker-number {
+  width: 20px;
+  text-align: right;
+  font-weight: bold;
+}
 
 
     .menu-button:hover {
@@ -248,7 +260,10 @@
 
       <div class="step" id="step4" style="display:none;">
         <p>📞 연락처 (11자리 숫자)</p>
-        <input id="phone" type="text" inputmode="numeric" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+        <input id="phone" type="text" maxlength="13"
+  value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+
+
         <div class="step-buttons">
           <button onclick="prevStep(3)">뒤로</button>
           <button onclick="nextStep(5, 'phone')">다음</button>
@@ -315,11 +330,14 @@
       <p>👥 작업자 명단 입력</p>
 
       <div id="workerList">
-        <div class="worker-row">
-          <input type="text" name="wName[]" placeholder="성명" />
-          <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="11" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
-        </div>
-      </div>
+  <div class="worker-row">
+    <span class="worker-number">1</span>
+    <input type="text" name="wName[]" placeholder="성명" />
+    <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
+  inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+
+  </div>
+</div>
 
  <p style="font-size: 14px; color: #888; margin-top: 10px;">
     👉 성명과 전화번호를 모두 입력하면 다음 줄이 자동으로 생성됩니다.
@@ -360,17 +378,18 @@
   const value = input?.value.trim();
 
   if (inputId === 'carNo') {
-    valid = /^\d{4}$/.test(value);
-  } else if (inputId === 'phone') {
-    valid = /^\d{11}$/.test(value); // ✅ 11자리 숫자만 허용
-  } else if (inputId === 'purpose') {
-    const other = document.getElementById("purposeOther");
-    valid = other.style.display === "block"
-      ? other.value.trim().length > 0
-      : !!other.dataset.selected;
-  } else {
-    valid = value.length > 0;
-  }
+  valid = /^\d{4}$/.test(value);
+} else if (inputId === 'phone') {
+  valid = /^010-\d{4}-\d{4}$/.test(value);
+} else if (inputId === 'purpose') {
+  const other = document.getElementById("purposeOther");
+  valid = other.style.display === "block"
+    ? other.value.trim().length > 0
+    : !!other.dataset.selected;
+} else {
+  valid = value.length > 0;
+}
+
 
   if (!valid) {
     alert("입력값을 확인해주세요.");
@@ -442,7 +461,9 @@
   document.getElementById("workerList").innerHTML = `
     <div class="worker-row">
       <input type="text" name="wName[]" placeholder="성명" />
-      <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="11" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+      <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
+  inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+
     </div>
   `;
 
@@ -539,27 +560,31 @@ function selectDepartment(el, dept) {
 }
 
   // ✅ 자동 행 추가 기능
-  function initWorkerInputLogic() {
-    const container = document.getElementById("workerList");
+function initWorkerInputLogic() {
+  const container = document.getElementById("workerList");
 
-    container.addEventListener("input", (e) => {
-      const rows = container.querySelectorAll(".worker-row");
-      const lastRow = rows[rows.length - 1];
-      const name = lastRow.querySelector("input[name='wName[]']").value.trim();
-      const phone = lastRow.querySelector("input[name='wPhone[]']").value.trim();
+  container.addEventListener("input", (e) => {
+    const rows = container.querySelectorAll(".worker-row");
+    const lastRow = rows[rows.length - 1];
+    const name = lastRow.querySelector("input[name='wName[]']").value.trim();
+    const phone = lastRow.querySelector("input[name='wPhone[]']").value.trim();
 
-      // 마지막 줄이 채워지면 새 줄 추가
-      if (name && /^\d{11}$/.test(phone)) {
-        const newRow = document.createElement("div");
-        newRow.className = "worker-row";
-        newRow.innerHTML = `
-          <input type="text" name="wName[]" placeholder="성명" />
-          <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="11" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
-        `;
-        container.appendChild(newRow);
-      }
-    });
-  }
+    if (name && /^010-\d{4}-\d{4}$/.test(phone)) {
+
+      const newRow = document.createElement("div");
+      newRow.className = "worker-row";
+      newRow.innerHTML = `
+  <span class="worker-number">${rows.length + 1}</span>
+  <input type="text" name="wName[]" placeholder="성명" />
+  <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13" inputmode="numeric"
+    value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+`;
+
+      container.appendChild(newRow);
+    }
+  });
+}
+
 
   document.addEventListener("DOMContentLoaded", initWorkerInputLogic);
 
@@ -580,7 +605,8 @@ function selectDepartment(el, dept) {
     const name = row.querySelector("input[name='wName[]']").value.trim();
     const phone = row.querySelector("input[name='wPhone[]']").value.trim();
 
-    if (name && /^\d{11}$/.test(phone)) {
+   if (name && /^010-\d{4}-\d{4}$/.test(phone)) {
+
       dataList.push({
         type: "worker",
         company,
@@ -628,6 +654,24 @@ function hideLoading() {
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
+function formatPhoneInput(input) {
+  let numbers = input.value.replace(/[^0-9]/g, ""); // 숫자만 남김
+
+  if (numbers.length <= 3) {
+    input.value = numbers;
+  } else if (numbers.length <= 7) {
+    input.value = numbers.slice(0, 3) + "-" + numbers.slice(3);
+  } else if (numbers.length <= 11) {
+    input.value = numbers.slice(0, 3) + "-" + numbers.slice(3, 7) + "-" + numbers.slice(7);
+  } else {
+    input.value = numbers.slice(0, 3) + "-" + numbers.slice(3, 7) + "-" + numbers.slice(7, 11);
+  }
+}
+function moveCursorToEnd(el) {
+  setTimeout(() => {
+    el.selectionStart = el.selectionEnd = el.value.length;
+  }, 0);
+}
 
   </script>
 
