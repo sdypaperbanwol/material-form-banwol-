@@ -173,17 +173,43 @@
     </div>
   </div>
 
-  <!-- ✅ 작업자 등록 -->
-  <div id="worker" class="form-section">
-    <h2>👷 작업자 출입 명단</h2>
-    <form>
-      <label>출입일자</label><input type="date" />
-      <label>업체명</label><input type="text" />
-      <label>성명</label><input type="text" />
-      <label>전화번호</label><input type="text" />
-      <button type="button" class="submit-btn" onclick="submitWorker()">작업자 등록 제출</button>
-    </form>
+  <!-- ✅ 작업자 등록 (단계별 버튼 UI) -->
+<div id="worker" class="form-section">
+  <h2>👷 작업자 출입 명단</h2>
+  <div id="workerSteps">
+    <!-- 1. 업체명 -->
+    <div class="step" id="wstep1">
+      <p>🏢 업체명</p>
+      <input id="wCompany" type="text" />
+      <div class="step-buttons">
+        <button disabled style="visibility: hidden;">뒤로</button>
+        <button onclick="nextWStep(2, 'wCompany')">다음</button>
+      </div>
+    </div>
+
+    <!-- 2. 성명 -->
+    <div class="step" id="wstep2" style="display:none;">
+      <p>👤 성명</p>
+      <input id="wName" type="text" />
+      <div class="step-buttons">
+        <button onclick="prevWStep(1)">뒤로</button>
+        <button onclick="nextWStep(3, 'wName')">다음</button>
+      </div>
+    </div>
+
+    <!-- 3. 전화번호 -->
+    <div class="step" id="wstep3" style="display:none;">
+      <p>📞 전화번호 (숫자만)</p>
+      <input id="wPhone" type="text" inputmode="numeric" maxlength="11"
+             oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+      <div class="step-buttons">
+        <button onclick="prevWStep(2)">뒤로</button>
+        <button onclick="submitWorker()">✅ 제출</button>
+      </div>
+    </div>
   </div>
+</div>
+
 
   <!-- ✅ 지도 -->
   <div id="map" class="form-section">
@@ -243,31 +269,45 @@
     }
 
     function submitVisitor() {
-      const carNo = document.getElementById("carNo").value.trim();
-      const company = document.getElementById("company").value.trim();
-      const name = document.getElementById("name").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const purposeOther = document.getElementById("purposeOther");
-      const purpose = purposeOther.style.display === "block"
-        ? purposeOther.value.trim()
-        : purposeOther.dataset.selected;
-      const sign = document.getElementById("sign").value.trim();
+  const carNo = document.getElementById("carNo").value.trim();
+  const company = document.getElementById("company").value.trim();
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const purposeOther = document.getElementById("purposeOther");
+  const purpose = purposeOther.style.display === "block"
+    ? purposeOther.value.trim()
+    : purposeOther.dataset.selected;
+  const sign = document.getElementById("sign").value.trim();
 
-      if (!carNo || !company || !name || !phone || !purpose || !sign) {
-        alert("모든 항목을 입력해주세요.");
-        return;
-      }
+  if (!carNo || !company || !name || !phone || !purpose || !sign) {
+    alert("모든 항목을 입력해주세요.");
+    return;
+  }
 
-      const data = { type: "visitor", carNo, company, name, phone, purpose, sign };
+  const data = { type: "visitor", carNo, company, name, phone, purpose, sign };
 
-      fetch(scriptURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(data)
-      })
-      .then(() => alert("✅ 방문객 등록 완료"))
-      .catch(err => alert("❌ 오류: " + err));
-    }
+  fetch(scriptURL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(data)
+  })
+  .then(() => {
+    alert("✅ 방문객 등록 완료");
+
+    // ✅ 입력 폼 초기화
+    document.querySelectorAll("#visitor input").forEach(input => input.value = "");
+    document.getElementById("purposeOther").style.display = "none";
+    delete document.getElementById("purposeOther").dataset.selected;
+
+    // ✅ 단계 초기화 (step1만 보이게)
+    document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
+    document.getElementById("step1").style.display = "block";
+
+    // ✅ 처음 버튼 선택 화면으로 이동
+    showSection('');
+  })
+  .catch(err => alert("❌ 오류: " + err));
+}
 
     function submitWorker() {
       const form = document.querySelector('#worker form');
