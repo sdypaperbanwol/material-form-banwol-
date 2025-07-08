@@ -98,12 +98,66 @@
       opacity: 0.85;
     }
 
+.purpose-button {
+  padding: 14px 24px;
+  font-size: 16px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  background: white;
+  color: #007bff;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.purpose-button:hover {
+  background: #e6f0ff;
+}
+
+.purpose-button.selected {
+  background: #007bff;
+  color: white;
+}
+
+.department-button {
+  padding: 10px 18px;
+  font-size: 15px;
+  border: 2px solid #28a745;
+  border-radius: 8px;
+  background: white;
+  color: #28a745;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.department-button:hover {
+  background: #eaffea;
+}
+
+.department-button.selected {
+  background: #28a745;
+  color: white;
+}
+
+
+
     #map-image {
       max-width: 90%;
       height: auto;
       border-radius: 12px;
       margin-top: 20px;
     }
+
+ #purposeOther {
+    display: none;
+    margin-top: 10px;
+    width: 80%;
+    max-width: 300px;
+    padding: 10px;
+    font-size: 16px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
   </style>
 </head>
 <body>
@@ -155,20 +209,37 @@
         </div>
       </div>
 
-      <div class="step" id="step5" style="display:none;">
-        <p>🌟 방문 목적</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-          <button type="button" onclick="selectPurpose('납품')">납품</button>
-          <button type="button" onclick="selectPurpose('설비 점검')">설비 점검</button>
-          <button type="button" onclick="selectPurpose('회의')">회의</button>
-          <button type="button" onclick="selectPurpose('기타')">기타</button>
-        </div>
-        <input id="purposeOther" type="text" placeholder="기타 입력" style="display:none; margin-top:10px;" />
-        <div class="step-buttons">
-          <button onclick="prevStep(4)">뒤로</button>
-          <button onclick="nextStep(6, 'purpose')">다음</button>
-        </div>
-      </div>
+     <!-- step5 내부로 포함 -->
+<div class="step" id="step5" style="display:none;">
+  <p>🌟 방문 목적</p>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '납품')">납품</button>
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '설비 점검')">설비 점검</button>
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '회의')">회의</button>
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '기타')">기타</button>
+  </div>
+  <input id="purposeOther" type="text" placeholder="기타 입력" />
+
+  <!-- ✅ 부서 선택도 여기 안에 넣기 -->
+  <div style="margin-top: 20px;">
+    <p>📌 관련 부서 선택 (선택 사항)</p>
+    <div id="department-buttons" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+      <button type="button" class="department-button" onclick="selectDepartment(this, '초지(현장)')">초지(현장)</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '원질(현장)')">원질(현장)</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '공무')">공무</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '소각')">소각</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '환경')">환경</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '전기')">전기</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '인사(관리)')">인사(관리)</button>
+    </div>
+  </div>
+
+  <div class="step-buttons">
+    <button onclick="prevStep(4)">뒤로</button>
+    <button onclick="nextStep(6, 'purpose')">다음</button>
+  </div>
+</div>
+
 
       <div class="step" id="step6" style="display:none;">
         <p>✍ 서명 (이름 입력)</p>
@@ -223,7 +294,7 @@
   </div>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyQLgmyvf2kLqwRXS8qm3BgW5eELj_GeI6PxdaJNDetQO8mNdX_d4VfEDSeyYFj6bUXtg/exec'; // 실제 Web App URL로 교체
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwliCdnu_jPcApL_qjDF_rXz_iRBX1TLXropFb-vUXaHtjClxktTimz7j046ZjEDbYd3g/exec'; // 실제 Web App URL로 교체
 
     function showSection(sectionId) {
       ['visitor', 'worker', 'map'].forEach(id => {
@@ -325,7 +396,14 @@
         return;
       }
 
-      const data = { type: "visitor", carNo, company, name, phone, purpose, sign };
+     const data = { type: "visitor", carNo, company, name, phone, purpose, sign };
+
+// 부서 선택값이 있을 경우 포함
+if (selectedDepartment) {
+  data.department = selectedDepartment;
+}
+
+
 
       fetch(scriptURL, {
         method: 'POST',
@@ -368,6 +446,39 @@
       })
       .catch(err => alert("❌ 오류: " + err));
     }
+
+function selectPurpose(el, value) {
+  // 모든 버튼 선택 해제
+  document.querySelectorAll(".purpose-button").forEach(btn => {
+    btn.classList.remove("selected");
+  });
+
+  // 현재 클릭한 버튼만 선택 표시
+  el.classList.add("selected");
+
+  const input = document.getElementById("purposeOther");
+
+  if (value === "기타") {
+    input.style.display = "block";
+    input.focus();
+    delete input.dataset.selected;
+  } else {
+    input.style.display = "none";
+    input.value = "";
+    input.dataset.selected = value;
+  }
+}
+
+let selectedDepartment = "";
+
+function selectDepartment(el, dept) {
+  document.querySelectorAll(".department-button").forEach(btn => {
+    btn.classList.remove("selected");
+  });
+  el.classList.add("selected");
+  selectedDepartment = dept;
+}
+
   </script>
 </body>
 </html>
