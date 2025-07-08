@@ -43,7 +43,7 @@
 
     .form-section {
       display: none;
-      max-width: 500px;
+      max-width: 600px;
       margin: 0 auto 50px;
       background: #fff;
       padding: 30px;
@@ -51,34 +51,40 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    label {
-      display: block;
-      text-align: left;
-      margin-top: 10px;
-      font-weight: bold;
+    .step input {
+      padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      max-width: 300px;
     }
 
-    input, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    button.submit-btn {
+    .step-buttons {
       margin-top: 20px;
-      padding: 12px 20px;
-      font-size: 1rem;
-      background-color: #28a745;
-      color: white;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .step-buttons button {
+      padding: 10px 24px;
+      font-size: 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
-    button.submit-btn:hover {
-      background-color: #218838;
+    .step-buttons button:first-child {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .step-buttons button:last-child {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .step-buttons button:hover {
+      opacity: 0.85;
     }
 
     #map-image {
@@ -98,25 +104,76 @@
     <button class="menu-button" onclick="showSection('map')">🗺 지도 보기</button>
   </div>
 
-  <!-- 방문객 등록 -->
+  <!-- ✅ 방문객 등록 (단계별) -->
   <div id="visitor" class="form-section">
     <h2>🧾 방문객 등록</h2>
-    <form>
-      <label>차량번호</label><input type="text" />
-      <label>업체명</label><input type="text" />
-      <label>방문객 성명</label><input type="text" />
-      <label>방문 인원수</label><input type="number" />
-      <label>작업 내용</label><textarea rows="2"></textarea>
-      <label>연락처</label><input type="text" />
-      <label>면담자</label><input type="text" />
-      <label>출입증 번호</label><input type="text" />
-      <label>출입 시간</label><input type="time" />
-      <label>방문자 서명</label><input type="text" />
-      <button type="button" class="submit-btn" onclick="submitVisitor()">방문객 등록 제출</button>
-    </form>
+    <div id="visitorSteps">
+      <div class="step" id="step1">
+        <p>🚗 차량번호 (4자리 숫자)</p>
+        <input id="carNo" type="text" inputmode="numeric" maxlength="4"
+               oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+        <div class="step-buttons">
+          <button disabled style="visibility: hidden;">뒤로</button>
+          <button onclick="nextStep(2, 'carNo')">다음</button>
+        </div>
+      </div>
+
+      <div class="step" id="step2" style="display:none;">
+        <p>🏢 업체명</p>
+        <input id="company" type="text" />
+        <div class="step-buttons">
+          <button onclick="prevStep(1)">뒤로</button>
+          <button onclick="nextStep(3, 'company')">다음</button>
+        </div>
+      </div>
+
+      <div class="step" id="step3" style="display:none;">
+        <p>👤 성명</p>
+        <input id="name" type="text" />
+        <div class="step-buttons">
+          <button onclick="prevStep(2)">뒤로</button>
+          <button onclick="nextStep(4, 'name')">다음</button>
+        </div>
+      </div>
+
+      <div class="step" id="step4" style="display:none;">
+        <p>📞 연락처 (11자리 숫자)</p>
+        <input id="phone" type="text" inputmode="numeric" maxlength="11"
+               oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+        <div class="step-buttons">
+          <button onclick="prevStep(3)">뒤로</button>
+          <button onclick="nextStep(5, 'phone')">다음</button>
+        </div>
+      </div>
+
+      <div class="step" id="step5" style="display:none;">
+        <p>🎯 방문 목적</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+          <button type="button" onclick="selectPurpose('납품')">납품</button>
+          <button type="button" onclick="selectPurpose('설비 점검')">설비 점검</button>
+          <button type="button" onclick="selectPurpose('회의')">회의</button>
+          <button type="button" onclick="selectPurpose('기타')">기타</button>
+        </div>
+        <input id="purposeOther" type="text" placeholder="기타 입력"
+               style="display:none; margin-top:10px;" />
+        <div class="step-buttons">
+          <button onclick="prevStep(4)">뒤로</button>
+          <button onclick="nextStep(6, 'purpose')">다음</button>
+        </div>
+      </div>
+
+      <div class="step" id="step6" style="display:none;">
+        <p>✍ 서명 (이름 입력)</p>
+        <input id="sign" type="text" />
+        <div class="step-buttons">
+          <button onclick="prevStep(5)">뒤로</button>
+          <button onclick="submitVisitor()">✅ 제출</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- 작업자 등록 -->
+  <!-- ✅ 작업자 등록 -->
   <div id="worker" class="form-section">
     <h2>👷 작업자 출입 명단</h2>
     <form>
@@ -128,14 +185,14 @@
     </form>
   </div>
 
-  <!-- 지도 -->
+  <!-- ✅ 지도 -->
   <div id="map" class="form-section">
     <h2>🗺 회사 지도</h2>
     <img id="map-image" src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론3.png" alt="회사 지도 이미지" />
   </div>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbx5aVCVdvEXRsTt7p6lyAy48j4cDibF93MUsFjC16fK_Y_-FJ1cgU7cEu9K9CB457M76g/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyQLgmyvf2kLqwRXS8qm3BgW5eELj_GeI6PxdaJNDetQO8mNdX_d4VfEDSeyYFj6bUXtg/exec';
 
     function showSection(sectionId) {
       ['visitor', 'worker', 'map'].forEach(id => {
@@ -143,29 +200,73 @@
       });
     }
 
+  function nextStep(stepNumber, inputId) {
+  let valid = true;
+
+  if (inputId === 'purpose') {
+    const other = document.getElementById("purposeOther");
+    valid = other.style.display === "block"
+      ? other.value.trim().length > 0
+      : !!other.dataset.selected;
+  } else {
+    const input = document.getElementById(inputId);
+    const value = input?.value.trim();
+
+    // 차량번호는 정확히 4자리 숫자만 통과
+    if (inputId === 'carNo') {
+      valid = /^\d{4}$/.test(value);
+    } else {
+      valid = value.length > 0;
+    }
+  }
+
+  if (!valid) {
+    alert("입력값을 확인해주세요.");
+    return;
+  }
+
+  document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
+  document.getElementById(`step${stepNumber}`).style.display = "block";
+}
+
+
+    function selectPurpose(value) {
+      const input = document.getElementById("purposeOther");
+      if (value === "기타") {
+        input.style.display = "block";
+        input.focus();
+      } else {
+        input.style.display = "none";
+        input.value = "";
+        input.dataset.selected = value;
+      }
+    }
+
     function submitVisitor() {
-      const form = document.querySelector('#visitor form');
-      const data = {
-        type: "visitor",
-        carNo: form[0].value,
-        company: form[1].value,
-        name: form[2].value,
-        count: form[3].value,
-        work: form[4].value,
-        phone: form[5].value,
-        contact: form[6].value,
-        passNo: form[7].value,
-        time: form[8].value,
-        sign: form[9].value
-      };
+      const carNo = document.getElementById("carNo").value.trim();
+      const company = document.getElementById("company").value.trim();
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const purposeOther = document.getElementById("purposeOther");
+      const purpose = purposeOther.style.display === "block"
+        ? purposeOther.value.trim()
+        : purposeOther.dataset.selected;
+      const sign = document.getElementById("sign").value.trim();
+
+      if (!carNo || !company || !name || !phone || !purpose || !sign) {
+        alert("모든 항목을 입력해주세요.");
+        return;
+      }
+
+      const data = { type: "visitor", carNo, company, name, phone, purpose, sign };
 
       fetch(scriptURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(data)
       })
-      .then(res => alert("✅ 방문객 등록 완료"))
-      .catch(err => alert("❌ 오류 발생: " + err));
+      .then(() => alert("✅ 방문객 등록 완료"))
+      .catch(err => alert("❌ 오류: " + err));
     }
 
     function submitWorker() {
@@ -183,8 +284,8 @@
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(data)
       })
-      .then(res => alert("✅ 작업자 등록 완료"))
-      .catch(err => alert("❌ 오류 발생: " + err));
+      .then(() => alert("✅ 작업자 등록 완료"))
+      .catch(err => alert("❌ 오류: " + err));
     }
   </script>
 </body>
