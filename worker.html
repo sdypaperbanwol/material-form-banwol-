@@ -137,6 +137,33 @@
   background: #28a745;
   color: white;
 }
+<style>
+  .department-buttons-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3칸씩 */
+    gap: 10px;
+    justify-items: center;
+    margin-top: 20px;
+  }
+
+  .department-button {
+    padding: 14px 20px;
+    min-width: 120px;
+    text-align: center;
+    background-color: #f0f0f0;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .department-button.selected {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+</style>
 
 
 
@@ -209,7 +236,6 @@
         </div>
       </div>
 
-     <!-- step5 내부로 포함 -->
 <div class="step" id="step5" style="display:none;">
   <p>🌟 방문 목적</p>
   <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
@@ -218,12 +244,12 @@
     <button type="button" class="purpose-button" onclick="selectPurpose(this, '회의')">회의</button>
     <button type="button" class="purpose-button" onclick="selectPurpose(this, '기타')">기타</button>
   </div>
-  <input id="purposeOther" type="text" placeholder="기타 입력" />
+  <input id="purposeOther" type="text" placeholder="기타 입력" style="display:none; margin-top:10px; width:80%; max-width:300px; padding:10px; font-size:16px; text-align:center; margin-left:auto; margin-right:auto;" />
 
-  <!-- ✅ 부서 선택도 여기 안에 넣기 -->
-  <div style="margin-top: 20px;">
-    <p>📌 관련 부서 선택 (선택 사항)</p>
-    <div id="department-buttons" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+  <!-- ✅ 관련 부서 선택 -->
+  <div style="margin-top: 30px;">
+    <p>🏢 관련 부서 선택 (선택 사항)</p>
+    <div class="department-buttons-container">
       <button type="button" class="department-button" onclick="selectDepartment(this, '초지(현장)')">초지(현장)</button>
       <button type="button" class="department-button" onclick="selectDepartment(this, '원질(현장)')">원질(현장)</button>
       <button type="button" class="department-button" onclick="selectDepartment(this, '공무')">공무</button>
@@ -234,7 +260,7 @@
     </div>
   </div>
 
-  <div class="step-buttons">
+  <div class="step-buttons" style="margin-top: 30px;">
     <button onclick="prevStep(4)">뒤로</button>
     <button onclick="nextStep(6, 'purpose')">다음</button>
   </div>
