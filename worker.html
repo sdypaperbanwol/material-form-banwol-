@@ -145,32 +145,37 @@
   background: #28a745;
   color: white;
 }
-<style>
-  .department-buttons-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3칸씩 */
-    gap: 10px;
-    justify-items: center;
-    margin-top: 20px;
-  }
 
-  .department-button {
-    padding: 14px 20px;
-    min-width: 120px;
-    text-align: center;
-    background-color: #f0f0f0;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    font-size: 15px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
+ .department-buttons-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3개씩 배치 */
+  gap: 6px; /* 🔧 간격 줄이기 */
+  justify-items: center;
+  margin-top: 10px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
-  .department-button.selected {
-    background-color: #007bff;
-    color: white;
-    border-color: #007bff;
-  }
+.department-button {
+  padding: 10px 14px;  /* 🔧 패딩 줄임 */
+  min-width: 100px;
+  text-align: center;
+  background-color: #f0f0f0;
+  border: 2px solid #28a745;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: #28a745;
+}
+
+.department-button.selected {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
 </style>
 
 
@@ -238,12 +243,13 @@
   <div style="margin-top: 30px;">
     <p>🏢 관련 부서 선택 (선택 사항)</p>
     <div class="department-buttons-container">
-      <button type="button" class="department-button" onclick="selectDepartment(this, '초지(현장)')">초지(현장)</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '원질(현장)')">원질(현장)</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '초지')">초지</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '원질')">원질</button>
       <button type="button" class="department-button" onclick="selectDepartment(this, '공무')">공무</button>
       <button type="button" class="department-button" onclick="selectDepartment(this, '소각')">소각</button>
       <button type="button" class="department-button" onclick="selectDepartment(this, '환경')">환경</button>
       <button type="button" class="department-button" onclick="selectDepartment(this, '전기')">전기</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '안전')">안전</button>
       <button type="button" class="department-button" onclick="selectDepartment(this, '인사(관리)')">인사(관리)</button>
     </div>
   </div>
@@ -308,7 +314,7 @@
   </div>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwliCdnu_jPcApL_qjDF_rXz_iRBX1TLXropFb-vUXaHtjClxktTimz7j046ZjEDbYd3g/exec'; // 실제 Web App URL로 교체
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxszNrUdLFWc2NnSSWf4TWyDW_npLn28hNyCsVp-QddiqOamANW8391Zd9RfdTTZGjlcw/exec'; // 실제 Web App URL로 교체
 
     function showSection(sectionId) {
       ['visitor', 'worker', 'map'].forEach(id => {
@@ -498,12 +504,21 @@ function selectPurpose(el, value) {
 let selectedDepartment = "";
 
 function selectDepartment(el, dept) {
+  const wasSelected = el.classList.contains("selected");
+
+  // 모든 버튼 초기화
   document.querySelectorAll(".department-button").forEach(btn => {
     btn.classList.remove("selected");
   });
-  el.classList.add("selected");
-  selectedDepartment = dept;
+
+  if (!wasSelected) {
+    el.classList.add("selected");
+    selectedDepartment = dept;
+  } else {
+    selectedDepartment = ""; // 선택 해제
+  }
 }
+
 
   </script>
 </body>
