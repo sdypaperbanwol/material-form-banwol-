@@ -281,7 +281,19 @@
   <input id="purposeOther" type="text" placeholder="기타 입력" style="display:none; margin-top:10px; width:80%; max-width:300px; padding:10px; font-size:16px; text-align:center; margin-left:auto; margin-right:auto;" />
 
   <!-- ✅ 관련 부서 선택 -->
-  <div style="margin-top: 30px;">
+ 
+
+  <div class="step-buttons" style="margin-top: 30px;">
+    <button onclick="prevStep(4)">뒤로</button>
+    <button onclick="nextStep(6, 'purpose')">다음</button>
+  </div>
+</div>
+
+
+      <div class="step" id="step6" style="display:none;">
+        <p>✍ 면담자 </p>
+        <input id="sign" type="text" />
+ <div style="margin-top: 30px;">
     <p>🏢 관련 부서 선택 (선택 사항)</p>
     <div class="department-buttons-container">
       <button type="button" class="department-button" onclick="selectDepartment(this, '초지')">초지</button>
@@ -294,17 +306,7 @@
       <button type="button" class="department-button" onclick="selectDepartment(this, '인사(관리)')">인사(관리)</button>
     </div>
   </div>
-
-  <div class="step-buttons" style="margin-top: 30px;">
-    <button onclick="prevStep(4)">뒤로</button>
-    <button onclick="nextStep(6, 'purpose')">다음</button>
-  </div>
-</div>
-
-
-      <div class="step" id="step6" style="display:none;">
-        <p>✍ 면담자 </p>
-        <input id="sign" type="text" />
+        
         <div class="step-buttons">
           <button onclick="prevStep(5)">뒤로</button>
           <button onclick="submitVisitor()">✅ 제출</button>
@@ -365,7 +367,7 @@
   </div>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzAl_zj1lCIIPNBTXf5V55Ar_mZdaTsBlp5NbUYxzB2b6RRZdlCTq2EhF_MCgy42-9wOw/exec'; // 실제 Web App URL로 교체
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyROqMxlahn85VLgGzVYpGsC4EfpTWO8y0M2BkAs6l1RVApXDoK5QBRv-mEHNVdGRmZLg/exec'; // 실제 Web App URL로 교체
 
     function showSection(sectionId) {
       ['visitor', 'worker', 'map'].forEach(id => {
