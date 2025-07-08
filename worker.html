@@ -365,7 +365,7 @@
   </div>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxszNrUdLFWc2NnSSWf4TWyDW_npLn28hNyCsVp-QddiqOamANW8391Zd9RfdTTZGjlcw/exec'; // 실제 Web App URL로 교체
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzAl_zj1lCIIPNBTXf5V55Ar_mZdaTsBlp5NbUYxzB2b6RRZdlCTq2EhF_MCgy42-9wOw/exec'; // 실제 Web App URL로 교체
 
     function showSection(sectionId) {
       ['visitor', 'worker', 'map'].forEach(id => {
@@ -488,14 +488,14 @@
   const purpose = purposeOther.style.display === "block"
     ? purposeOther.value.trim()
     : purposeOther.dataset.selected;
-  const sign = document.getElementById("sign").value.trim();
+  const interviewer = document.getElementById("sign").value.trim();
 
   if (!carNo || !company || !name || !phone || !purpose || !sign) {
     alert("모든 항목을 입력해주세요.");
     return;
   }
 
-  const data = { type: "visitor", carNo, company, name, phone, purpose, sign };
+  const data = { type: "visitor", carNo, company, name, phone, purpose, interviewer };
 
   if (selectedDepartment) {
     data.department = selectedDepartment;
