@@ -340,8 +340,10 @@
 </div>
 
  <p style="font-size: 14px; color: #888; margin-top: 10px;">
-    👉 성명과 전화번호를 모두 입력하면 다음 줄이 자동으로 생성됩니다.
-  </p>
+  👉 성명과 전화번호를 모두 입력하면 다음 줄이 자동으로 생성됩니다.<br>
+  ✅ 모든 작업자를 작성하셨으면 아래 <strong>제출</strong> 버튼을 눌러주세요.
+</p>
+
 
 
       <div class="step-buttons">
@@ -458,14 +460,15 @@
   document.getElementById("wstep1").style.display = "block";
 
   // 🔹 작업자 목록도 초기화!
-  document.getElementById("workerList").innerHTML = `
-    <div class="worker-row">
-      <input type="text" name="wName[]" placeholder="성명" />
-      <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
-  inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+ document.getElementById("workerList").innerHTML = `
+  <div class="worker-row">
+    <span class="worker-number">1</span>
+    <input type="text" name="wName[]" placeholder="성명" />
+    <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
+      inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+  </div>
+`;
 
-    </div>
-  `;
 
   // 화면 구성 초기화
   ['visitor', 'worker', 'map'].forEach(id => {
@@ -655,24 +658,31 @@ function hideLoading() {
 }
 
 function formatPhoneInput(input) {
-  let numbers = input.value.replace(/[^0-9]/g, ""); // 숫자만 남김
+  let raw = input.value.replace(/[^0-9]/g, "");
 
-  if (numbers.length <= 3) {
-    input.value = numbers;
-  } else if (numbers.length <= 7) {
-    input.value = numbers.slice(0, 3) + "-" + numbers.slice(3);
-  } else if (numbers.length <= 11) {
-    input.value = numbers.slice(0, 3) + "-" + numbers.slice(3, 7) + "-" + numbers.slice(7);
-  } else {
-    input.value = numbers.slice(0, 3) + "-" + numbers.slice(3, 7) + "-" + numbers.slice(7, 11);
+  if (!raw.startsWith("010")) {
+    raw = "010" + raw.replace(/^010/, "");
   }
-}
-function moveCursorToEnd(el) {
+
+  if (raw.length > 11) {
+    raw = raw.slice(0, 11);
+  }
+
+  let formatted = raw;
+  if (raw.length >= 4 && raw.length <= 7) {
+    formatted = raw.slice(0, 3) + "-" + raw.slice(3);
+  } else if (raw.length >= 8) {
+    formatted = raw.slice(0, 3) + "-" + raw.slice(3, 7) + "-" + raw.slice(7);
+  }
+
+  input.value = formatted;
+
+  // 커서를 항상 끝으로 보내기
   setTimeout(() => {
-    el.selectionStart = el.selectionEnd = el.value.length;
+    input.selectionStart = input.selectionEnd = input.value.length;
   }, 0);
 }
-
+d
   </script>
 
 <div id="loadingOverlay" style="display:none;">
