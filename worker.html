@@ -303,29 +303,33 @@
       document.querySelector(".button-container").style.display = "none";
     }
 
-    function nextStep(stepNumber, inputId) {
-      let valid = true;
-      if (inputId === 'purpose') {
-        const other = document.getElementById("purposeOther");
-        valid = other.style.display === "block"
-          ? other.value.trim().length > 0
-          : !!other.dataset.selected;
-      } else {
-        const input = document.getElementById(inputId);
-        const value = input?.value.trim();
-        if (inputId === 'carNo') {
-          valid = /^\d{4}$/.test(value);
-        } else {
-          valid = value.length > 0;
-        }
-      }
-      if (!valid) {
-        alert("입력값을 확인해주세요.");
-        return;
-      }
-      document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
-      document.getElementById(`step${stepNumber}`).style.display = "block";
-    }
+   function nextStep(stepNumber, inputId) {
+  let valid = true;
+  const input = document.getElementById(inputId);
+  const value = input?.value.trim();
+
+  if (inputId === 'carNo') {
+    valid = /^\d{4}$/.test(value);
+  } else if (inputId === 'phone') {
+    valid = /^\d{11}$/.test(value); // ✅ 11자리 숫자만 허용
+  } else if (inputId === 'purpose') {
+    const other = document.getElementById("purposeOther");
+    valid = other.style.display === "block"
+      ? other.value.trim().length > 0
+      : !!other.dataset.selected;
+  } else {
+    valid = value.length > 0;
+  }
+
+  if (!valid) {
+    alert("입력값을 확인해주세요.");
+    return;
+  }
+
+  document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
+  document.getElementById(`step${stepNumber}`).style.display = "block";
+}
+
 
     function prevStep(stepNumber) {
       document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
@@ -333,14 +337,22 @@
     }
 
     function nextWStep(stepNumber, inputId) {
-      const input = document.getElementById(inputId);
-      if (!input || input.value.trim() === "") {
-        alert("입력값을 확인해주세요.");
-        return;
-      }
-      document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
-      document.getElementById(`wstep${stepNumber}`).style.display = "block";
-    }
+  const input = document.getElementById(inputId);
+  const value = input?.value.trim();
+
+  let valid = true;
+  if (!value) valid = false;
+  else if (inputId === 'wPhone') valid = /^\d{11}$/.test(value); // ✅ 11자리 확인
+
+  if (!valid) {
+    alert("입력값을 확인해주세요.");
+    return;
+  }
+
+  document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
+  document.getElementById(`wstep${stepNumber}`).style.display = "block";
+}
+
 
     function prevWStep(stepNumber) {
       document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
