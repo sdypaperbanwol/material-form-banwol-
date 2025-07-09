@@ -4,108 +4,117 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>신대양제지반월 신청·조사 시스템</title>
-  <style>
-    body {
-      background-color: #f7f7f7;
-      font-family: 'Arial', sans-serif;
-      padding: 20px;
-    }
-    
-    form, #login-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-width: 400px;
-      margin: 20px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    label {
-      font-weight: bold;
-    }
-    select, input, textarea {
-      padding: 10px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 60px;
-    }
-    button {
-      padding: 12px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .message {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    small {
-      font-size: 12px;
-      color: #666;
-      line-height: 1.4;
-    }
+ <style>
+  html { font-size: 16px; }
 
-    #itemListDisplay {
-  padding-left: 0;
-  margin-left: 0;
-  list-style: none;
-}
+  body {
+    font-size: 1rem;
+    line-height: 1.6;
+    background-color: #f7f7f7;
+    font-family: 'Arial', sans-serif;
+    padding: 1.25rem;
+  }
 
-#itemListDisplay li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 6px; /* 좌우 여백 조절 */
-  margin-bottom: 6px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-}
+  form, #login-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 25rem;
+    margin: 1.25rem auto;
+    background: #fff;
+    padding: 1.25rem;
+    border-radius: 0.625rem;
+    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
+  }
 
-#itemListDisplay li .item-text {
-  flex: 1;
-  text-align: left;
-  word-break: break-word;
-  font-size: 14px;
-  line-height: 1.4;
-}
+  label {
+    font-weight: bold;
+  }
 
+  select, input, textarea {
+    padding: 0.625rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    border: 1px solid #ccc;
+  }
 
-#itemListDisplay li .remove-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 4px 8px;
-  cursor: pointer;
-  margin-left: 10px;
-  white-space: nowrap;
-  font-size: 13px;
-}
+  textarea {
+    resize: vertical;
+    min-height: 3.75rem;
+  }
 
-      #closeModal {
+  button {
+    padding: 0.75rem;
+    font-size: 1rem;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+  }
+
+  .message {
+    margin-top: 0.625rem;
+    font-weight: bold;
+  }
+
+  small {
+    font-size: 0.75rem;
+    color: #666;
+    line-height: 1.4;
+  }
+
+  #itemListDisplay {
+    padding-left: 0;
+    margin-left: 0;
+    list-style: none;
+  }
+
+  #itemListDisplay li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem;
+    margin-bottom: 0.375rem;
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+  }
+
+  #itemListDisplay li .item-text {
+    flex: 1;
+    text-align: left;
+    word-break: break-word;
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  #itemListDisplay li .remove-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 0.3125rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    margin-left: 0.625rem;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+  }
+
+  #closeModal {
     position: fixed;
-    top: 20px;
-    right: 30px;
-    font-size: 24px;
+    top: 1.25rem;
+    right: 1.875rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: white;
     background-color: rgba(0,0,0,0.6);
-    padding: 5px 10px;
+    padding: 0.3125rem 0.625rem;
     border-radius: 50%;
     cursor: pointer;
     z-index: 10000;
   }
+</style>
 
-  </style>
 </head>
 <body>
   <!-- ✅ 페이지 최상단 회사 로고 + 시스템 이름 -->
@@ -128,152 +137,187 @@
     <p id="loginMsg" style="color: red; font-weight: bold;"></p>
   </div>
 
-  <!-- ✅ 로그인 후 보이는 신청 폼 -->
-  <!-- ✅ 로그인 후 첫 화면: 버튼 3개만 보이도록 구성 -->
-<!-- ✅ 로그인 후 첫 화면: 버튼 3개만 보이도록 구성 -->
-<div id="mainMenu" style="
-  display: none;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 400px;
-  margin: 60px auto;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 20px;
-">
-
-  <h2 style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 20px;">무엇을 하시겠습니까?</h2>
-
-  <button id="startRequestBtn" style="
-    padding: 14px 20px;
-    width: 100%;
-    font-size: 16px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  ">📝 신청하기</button>
-
-  <button id="viewMyRecordsBtn" style="
-    padding: 14px 20px;
-    width: 100%;
-    font-size: 16px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  ">📄 내 신청내역 보기</button>
-
-  <button id="otherBtn" style="
-    padding: 14px 20px;
-    width: 100%;
-    font-size: 16px;
-    background-color: #888;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  ">🔧 기타</button>
-
+<div id="categoryStep" style="display: none; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto;">
+  <h3>1. 항목 분류 선택</h3>
+  <div id="categoryButtons" style="display: flex; flex-direction: column; gap: 10px;"></div>
 </div>
-
-
-<!-- ✅ 실제 신청 입력 폼: 버튼 선택 후에만 보이도록 숨김 -->
-
-  <!-- 원래 있던 폼 내부 내용은 그대로 유지하시면 됩니다 -->
-</form>
-
-  <!-- ✅ 버튼 방식 단계별 선택 UI -->
-<div id="stepContainer" style="display: none; flex-direction: column; gap: 20px; max-width: 400px; margin: 30px auto;">
-  <div id="stepTitle" style="font-size: 18px; font-weight: bold; color: #333;">항목 분류를 선택하세요</div>
-  <div id="buttonList" style="display: flex; flex-direction: column; gap: 10px;"></div>
-  <div style="display: flex; justify-content: space-between;">
-    <button id="backBtn" style="display: none; background: #ccc; padding: 10px 16px; border-radius: 6px;">← 뒤로가기</button>
-    <button id="stepResetBtn" style="background: #888; color: white; padding: 10px 16px; border-radius: 6px;">처음으로</button>
-  </div>
-</div>
-
   
-  </div>
-    
-   <!-- ✅ form 안으로 전부 이동 -->
-<form id="materialForm" style="display: none; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto;">
-  <!-- 상단 제목 + 내역 버튼 -->
+  <!-- ✅ 로그인 후 보이는 신청 폼 -->
+  <form id="materialForm" style="display: none;">
+     <!-- 🔽 여기 추가 -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <h3 style="margin: 0;">📋 신청·조사서 작성</h3>
-    <button id="myRecordsBtn" style="font-size: 14px; font-weight: bold; background-color: #fff; color: #007bff; border: 1px solid #007bff; border-radius: 6px; padding: 6px 12px; cursor: pointer;">📄 신청 내역</button>
+    <h3 style="margin: 0;">📋 신청서 작성 </h3>
+    <!-- 개선 -->
+
+   <!-- ✅ 버튼 묶음 -->
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 10px;">
+  
+  <!-- 📄 신청 내역 버튼 -->
+  <button id="myRecordsBtn" style="
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #007bff;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
+    📄 <span>내 신청 내역</span>
+  </button>
+
+  <!-- 👥 팀 신청 내역 버튼 -->
+  <button id="myTeamRecordsBtn" style="
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #28a745;
+    border: 1px solid #28a745;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    transition: background 0.2s;
+  " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
+    👥 <span>팀 신청 내역</span>
+  </button>
+
+</div>
+
+    
   </div>
+    <label for="category">1. 항목 분류</label>
+    <select id="category" name="category" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-  <!-- 사진 보기 버튼 -->
-  <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
+    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
 
-  <!-- hidden -->
-  <input type="hidden" id="category" name="category" />
-  <input type="hidden" id="subcategory" name="subcategory" />
-  <input type="hidden" id="size" name="size" />
+    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+        <span id="closeModal">✖</span>
+        <div id="photoContent"></div>
+      </div>
+    </div>
+    
+    <label for="subcategory">2. 세부 항목</label>
+    <select id="subcategory" name="subcategory" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-  <!-- 이름 -->
-  <label for="name">4. 작성자</label>
-  <input type="text" id="name" name="name" readonly />
+    <label for="size">3. 상세 옵션</label>
+    <select id="size" name="size" required>
+      <option value="">-- 선택하세요 --</option>
+    </select>
 
-  <!-- 수량 -->
-  <label for="quantity">5. 수량(수치)</label>
-  <input type="number" id="quantity" name="quantity" min="1" required />
+    <label for="name">4. 작성자</label>
+    <input type="text" id="name" name="name" readonly />
 
-  <!-- 비고 + 사진 업로드 -->
+    <label for="quantity">5. 수량(수치)</label>
+    <input type="number" id="quantity" name="quantity" min="1" required />
+
+<!-- ✅ 비고(추가 내용) + 사진 업로드 통합 박스 -->
+<div style="display: flex; flex-direction: column; gap: 6px;">
   <label for="remarks">6. 추가 내용 및 사진(없을 경우 생략)</label>
   <textarea id="remarks" name="remarks" placeholder="추가 내용" style="min-height: 60px;"></textarea>
 
-  <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="margin-top: 5px;" />
-  <div id="previewArea" style="display:flex; gap:8px; margin-top:5px;"></div>
+  <div style="display:flex; align-items: center; gap: 10px;">
+    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none; padding-left:0;">
+    </div>
 
-  <!-- 안내 -->
-  <small style="color:#666;">
-    - 현재 보유 수량 내에서 지급, 부족분은 구매 요청 됩니다.<br>
+  <!-- 썸네일 영역 -->
+  <div id="previewArea" style="display:flex; gap:8px; margin-top:5px;"></div>
+</div>
+    <small>
+    - 현재 보유 수량내에서 지급, 부족분은 구매 요청 됩니다.<br>
     - 날짜 선택(오늘·내일 X시 수령/교환 기재) 가능합니다.<br>
     - 필요한 경우 사진 첨부도 가능합니다(최대 3장).<br>
     - 과다 요청 시 일부 제한될 수 있습니다.
-  </small>
+    </small>
 
-  <!-- 항목 담기 -->
-  <button type="button" id="addItemBtn" style="width:100%; margin-top:10px; background:#28a745;">➕ 항목 담기</button>
+<!-- 1. textarea 아래에 ➕ 항목 담기 버튼만 먼저 위치 -->
+<button type="button" id="addItemBtn" style="width:100%; margin-top:10px; background:#28a745;">➕ 항목 담기</button>
 
-  <!-- 리스트 -->
-  <div style="width: 100%; margin-top: 10px;">
-    <h4>📝 담겨진 항목 리스트</h4>
-    <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
-  </div>
+<!-- 2. 담겨진 항목 리스트 -->
+<div style="width: 100%; margin-top: 10px; padding: 0;">
+  <h4>📝 담겨진 항목 리스트</h4>
+  <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
+</div>
 
-  <!-- 신청 버튼 -->
-  <button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
+<!-- 3. 가장 마지막에 ✅ 신청 버튼 -->
+<button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
 
-  <!-- 로딩 -->
-  <div id="loadingOverlay" style="
-    display: none;
+<div id="loadingOverlay" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+">
+  ⏳ 신청 중입니다...
+</div>
+    
+   <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
+<div class="message" id="msg"></div>
+
+<!-- 📄 내 신청 내역 모달 -->
+<div id="myRecordsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999;">
+
+  <!-- ✅ 닫기 X 버튼: 항상 우측 상단 고정 -->
+  <button id="closeRecordsModal" style="
     position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.4);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
+    top: 20px;
+    right: 20px;
+    font-size: 22px;
     font-weight: bold;
-    color: white;">
-    ⏳ 신청 중입니다...
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: white;
+    z-index: 10000;
+  ">✖</button>
+
+  <!-- ✅ 모달 내용 박스 (스크롤 가능) -->
+  <div style="
+    position: relative;
+    margin: 60px auto 0;
+    background: white;
+    padding: 20px 24px 30px;
+    border-radius: 10px;
+    max-width: 800px;
+    width: 95%;
+    max-height: 80vh;
+    overflow: auto;
+  ">
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 신청 내역</h3>
+    <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
+      <thead><tr></tr></thead>
+      <tbody></tbody>
+    </table>
   </div>
+</div>
 
-  <!-- 처음으로 -->
-  <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
-  <div class="message" id="msg"></div>
-</form>
-
+ </form>
     
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec";
+  let fileArray = [];  // ✅ 이 줄 추가
 const loginSection = document.getElementById("login-section");
 const materialForm = document.getElementById("materialForm");
 const nameInput = document.getElementById("name");
@@ -301,7 +345,9 @@ if (saved) {
       }
       nameInput.value = saved;
       loginSection.style.display = "none";
-      mainMenu.style.display = "flex";
+document.getElementById("categoryStep").style.display = "flex";  // ✅ 항목 분류만 보이기
+// materialForm.style.display = "flex"; ← ❌ 이건 주석 처리 또는 삭제
+
     } else {
       localStorage.removeItem("userInfo");
       alert("승인이 해제되어 자동 로그아웃됩니다.");
@@ -332,7 +378,9 @@ function verifyUser() {
       localStorage.setItem("userInfo", fullName);
       nameInput.value = fullName;
       loginSection.style.display = "none";
-      mainMenu.style.display = "flex";
+document.getElementById("categoryStep").style.display = "flex";  // ✅ 항목 분류만 보이기
+// materialForm.style.display = "flex"; ← ❌ 이건 주석 처리 또는 삭제
+
     } else {
       loginMsg.textContent = "일치하는 정보가 없습니다.";
     }
@@ -376,11 +424,12 @@ function checkPhotoLimit(input) {
   const preview = document.getElementById("previewArea");
   preview.innerHTML = "";
 
-  const fileArray = Array.from(input.files);
+  fileArray = Array.from(input.files); // 전역 배열로 복사
 
   if (fileArray.length > 3) {
     alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
     input.value = "";
+    fileArray = [];
     return;
   }
 
@@ -414,8 +463,8 @@ function checkPhotoLimit(input) {
       delBtn.style.fontSize = "12px";
 
       delBtn.onclick = () => {
-        fileArray.splice(index, 1); // 선택한 이미지 제거
-        recreateFileInput(fileArray); // 새로 렌더링
+        fileArray.splice(index, 1);
+        recreateFileInput(fileArray); // 다시 렌더링
       };
 
       wrapper.appendChild(img);
@@ -425,6 +474,7 @@ function checkPhotoLimit(input) {
     reader.readAsDataURL(file);
   });
 }
+
 function recreateFileInput(files) {
   const dataTransfer = new DataTransfer();
   files.forEach(file => dataTransfer.items.add(file));
@@ -432,9 +482,9 @@ function recreateFileInput(files) {
   const input = document.getElementById("photoFiles");
   input.files = dataTransfer.files;
 
-  // 다시 미리보기 렌더링
   checkPhotoLimit(input);
 }
+
 
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("loadingOverlay").style.display = "none";
@@ -524,56 +574,10 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         tbody.appendChild(tr);
       });
 
-      // ✅ 이제는 모달로 표시!
       document.getElementById("myRecordsModal").style.display = "flex";
-   //✅ 항목 선택 안내 문구 제거
-  const msgDiv = document.getElementById("msg");
-  if (msgDiv) msgDiv.textContent = "";
 
-})
-    
-    .catch(err => {
-      console.error("신청 내역 로딩 오류:", err);
-      alert("❌ 조회 중 오류가 발생했습니다.");
-    });
-});
-
-
-
-  const empId = fullName.split(" ")[0]; // "919075 김성연" → "919075"
-
-  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result !== "success") {
-        alert("❌ 신청 내역을 불러오지 못했습니다.");
-        return;
-      }
-
-      const table = document.getElementById("myRecordsTable");
-      const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-
-      // 헤더 생성
-      thead.innerHTML = "<tr>" + data.header.slice(0, 10).map(h =>
-  `<th style="border:1px solid #ccc; background:#f0f0f0; padding:6px; white-space:nowrap;">${h}</th>`
-).join("") + "</tr>";
-
-
-      // 본문 행 생성
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        row.slice(0, 10).forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("myRecordsSection").style.display = "block";
+      const msgDiv = document.getElementById("msg");
+      if (msgDiv) msgDiv.textContent = "";
     })
     .catch(err => {
       console.error("신청 내역 로딩 오류:", err);
@@ -581,25 +585,97 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
     });
 });
 
- fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
-    items = data;
+document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
+  const fullName = localStorage.getItem("userInfo");
+  if (!fullName) {
+    alert("로그인 후 이용 가능합니다.");
+    return;
+  }
 
-    // 기존 드롭다운 초기화 (안 써도 일단 유지)
-    categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  const empId = fullName.split(" ")[0];
+
+  fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.result === "forbidden") {
+    alert("⚠️ 팀 내역 조회 권한이 없습니다.");
+    return;
+  }
+      if (data.result !== "success") {
+        alert("❌ 팀 신청 내역을 불러오지 못했습니다.");
+        return;
+      }
+
+      const table = document.getElementById("myRecordsTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+
+      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10]; // 보여줄 열
+
+      thead.innerHTML = "<tr>" + desiredIndexes.map(i =>
+        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>`
+      ).join("") + "</tr>";
+
+      tbody.innerHTML = "";
+      data.records.forEach(row => {
+        const tr = document.createElement("tr");
+        desiredIndexes.forEach((colIndex, idx) => {
+          const td = document.createElement("td");
+          const cell = row[colIndex];
+          td.textContent = idx === 0 ? formatDate(cell) : cell;
+          td.style.border = "1px solid #ccc";
+          td.style.padding = "6px";
+          td.style.whiteSpace = "nowrap";
+          td.style.textAlign = "center";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("myRecordsModal").style.display = "flex";
+    })
+    .catch(err => {
+      console.error("팀 신청 내역 로딩 오류:", err);
+      alert("❌ 조회 중 오류가 발생했습니다.");
+    });
+});
+
+
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      items = data;
+      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+      Object.keys(items).forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+
+        // ✅ 🔽 여기 이 위치에 바로 넣으세요!
+    const categoryButtonsContainer = document.getElementById("categoryButtons");
+
     Object.keys(items).forEach(cat => {
-      categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      const btn = document.createElement("button");
+      btn.textContent = cat;
+      btn.style.cssText = `
+        font-size: 16px;
+        padding: 12px;
+        border: 1px solid #007bff;
+        background-color: white;
+        color: #007bff;
+        border-radius: 8px;
+        cursor: pointer;
+      `;
+      btn.onclick = () => {
+  categorySelect.value = cat;
+  categorySelect.dispatchEvent(new Event("change")); // ✅ 이 줄 추가 (중요!)
+  document.getElementById("categoryStep").style.display = "none";
+  materialForm.style.display = "flex";
+};
+
+      categoryButtonsContainer.appendChild(btn);
     });
 
     nameInput.value = localStorage.getItem("userInfo") || "";
-
-    // ✅ 처음 로그인 시 폼 대신 메뉴 3개만 표시
-    if (localStorage.getItem("userInfo")) {
-      loginSection.style.display = "none";
-      mainMenu.style.display = "flex";
-    }
-
     console.log("items:", items);
   })
 
@@ -607,24 +683,52 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       console.error("API 로드 에러:", err);
     });
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    alertShown = false;
-    isSubmitting = false;
-    materialForm.reset();
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    categorySelect.disabled = false;
-    subSelect.disabled = false;
-    sizeSelect.disabled = false;
-    quantityInput.disabled = false;
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    msgDiv.textContent = "";
+document.getElementById("resetBtn").addEventListener("click", () => {
+  alertShown = false;
+  isSubmitting = false;
 
-    itemList = [];  // 추가된 항목 초기화
-     document.getElementById("itemListDisplay").innerHTML = "";  // 화면 리스트 초기화
-     document.getElementById("myRecordsSection").style.display = "none";
-     document.getElementById("previewArea").innerHTML = "";
+  // ✅ 썸네일 및 사진 파일 초기화
+  fileArray = [];
+  const oldInput = document.getElementById("photoFiles");
+  oldInput.value = "";  // 파일 목록 초기화
+
+  // ✅ 썸네일 완전 제거
+  const previewArea = document.getElementById("previewArea");
+  while (previewArea.firstChild) {
+    previewArea.removeChild(previewArea.firstChild);
+  }
+
+  // ✅ input 요소 완전 재생성
+  const newInput = document.createElement("input");
+  newInput.type = "file";
+  newInput.id = "photoFiles";
+  newInput.name = "photoFiles";
+  newInput.accept = "image/*";
+  newInput.multiple = true;
+  newInput.style.border = "none";
+  newInput.style.paddingLeft = "0";
+  newInput.addEventListener("change", function () {
+    checkPhotoLimit(this);
+  });
+  oldInput.parentNode.replaceChild(newInput, oldInput);
+
+  // ✅ 폼 내용 초기화
+  materialForm.reset();
+  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
+  categorySelect.disabled = false;
+  subSelect.disabled = false;
+  sizeSelect.disabled = false;
+  quantityInput.disabled = false;
+
+  nameInput.value = localStorage.getItem("userInfo") || "";
+  msgDiv.textContent = "";
+  itemList = [];
+  document.getElementById("itemListDisplay").innerHTML = "";
+  document.getElementById("myRecordsSection").style.display = "none";
 });
+
+
 
   materialForm.addEventListener("submit", function(e) {
     e.preventDefault();
@@ -655,11 +759,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
           alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
         }
 
-        if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-        }
-
-        categorySelect.disabled = true;
+           categorySelect.disabled = true;
         subSelect.disabled = true;
         sizeSelect.disabled = true;
         quantityInput.disabled = true;
@@ -667,9 +767,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
         alertShown = true;
         return; // 제출 중단
       } else {
-        if (!remarksText.includes("지급")) {
-          remarksInput.value = remarksText.length > 0 ? `${remarksText} / ${지급문구}` : `${지급문구}`;
-        }
+       
       }
     } else {
       alertShown = false;
@@ -700,7 +798,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       sizeSelect.disabled = false;
       quantityInput.disabled = false;
 
-      if (data.result === "success") {
+     if (data.result === "success") {
         msgDiv.textContent = "✅ 신청이 저장되었습니다!";
         msgDiv.style.color = "green";
         alert("✅ 신청이 저장되었습니다!");
@@ -721,6 +819,7 @@ document.getElementById("myRecordsBtn").addEventListener("click", () => {
       msgDiv.textContent = "❌ 서버 오류";
       msgDiv.style.color = "red";
     });
+  });
   });
 
 </script>
@@ -768,9 +867,9 @@ document.getElementById("closeModal").addEventListener("click", () => {
 let itemList = [];
 
 document.getElementById("addItemBtn").addEventListener("click", () => {
- const category = document.getElementById("category").value;
-const subcategory = document.getElementById("subcategory").value;
-const size = document.getElementById("size").value;
+  const category = categorySelect.value;
+  const subcategory = subSelect.value;
+  const size = sizeSelect.value;
   const name = nameInput.value;
   const quantity = parseInt(quantityInput.value, 10);
   let remarksText = remarksInput.value.trim();
@@ -789,10 +888,7 @@ const size = document.getElementById("size").value;
   const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
   const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
 
-  if (!remarksText.includes("지급") && !remarksText.includes("구매 요청")) {
-    remarksText = remarksText.length > 0 ? `${remarksText} / ${추가문구}` : `${추가문구}`;
-  }
-
+ 
   if (구매요청수량 > 0) {
     if (currentStock > 0) {
       alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
@@ -900,6 +996,10 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
         remarks: item.remarks
       });
 
+      formData.append("지급수량", 지급수량);
+      formData.append("구매요청수량", 구매요청수량);
+      
+      
       photoData.forEach((img, idx) => {
         formData.append(`base64_${idx + 1}`, img.base64);
         formData.append(`filename_${idx + 1}`, img.filename);
@@ -941,25 +1041,53 @@ document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
 </script>
 
 
-<!-- ✅ 공지사항 모달 -->
-<div id="noticeModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:white; padding:20px 24px 30px; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 10px rgba(0,0,0,0.3); position:relative;">
-    
-    <!-- ❌ X 버튼: 더 위로 올리고 오른쪽으로 이동 -->
-    <span id="closeNotice" style="position:absolute; top:10px; right:10px; font-weight:bold; cursor:pointer; font-size:20px; z-index:1;">
-      ✖
-    </span>
-    
-    <!-- ✅ 공지 텍스트: 좌우 여백 + 줄바꿈 유지 -->
-    <div id="noticeContent" style="white-space:pre-wrap; font-size:15px; color:#333; padding: 10px 5px 0; line-height: 1.6;"></div>
-    
-    <!-- ✅ 오늘 하루 보지 않기 버튼: 가운데 정렬 -->
-    <button id="hideTodayBtn"
-      style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      오늘 하루 이 창 보지 않기
-    </button>
+<!-- ✅ 모달 배경 -->
+<div id="noticeModal" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+  box-sizing: border-box;
+">
+
+  <!-- ✅ 모달 내용 박스 -->
+  <div style="
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 1rem;
+  ">
+    <!-- ✅ 닫기 버튼 -->
+    <button id="closeNotice" style="
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.2rem;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+    ">✖</button>
+
+    <div id="noticeContent" style="white-space: pre-wrap; line-height: 1.5;"></div>
+<!-- ✅ 하루 보지 않기 버튼 -->
+<button id="hideTodayBtn"
+  style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
+  오늘 하루 이 창 보지 않기
+</button>
   </div>
 </div>
+
   <script>
 document.addEventListener("DOMContentLoaded", () => {
   const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
@@ -977,7 +1105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbxQjHag8FtWO90uio5dwt5_aueUObMV-vtKW3lln_tLi0iX5XYa4kiUjb02rv_E29ms/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec?mode=notice")
 
     .then(res => res.json())
     .then(data => {
@@ -998,163 +1126,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 </script>
-<script>
-let selection = { category: "", subcategory: "", size: "" };
-
-const mainMenu = document.getElementById("mainMenu");
-const stepContainer = document.getElementById("stepContainer");
-const stepTitle = document.getElementById("stepTitle");
-const buttonList = document.getElementById("buttonList");
-const backBtn = document.getElementById("backBtn");
-const stepResetBtn = document.getElementById("stepResetBtn");
-
-document.getElementById("startRequestBtn").addEventListener("click", () => {
-  mainMenu.style.display = "none";
-  stepContainer.style.display = "flex";
-  renderCategories();
-});
-
-document.getElementById("viewMyRecordsBtn").addEventListener("click", () => {
-  document.getElementById("myRecordsBtn").click();
-});
-
-stepResetBtn.addEventListener("click", () => {
-  stepContainer.style.display = "none";
-  mainMenu.style.display = "flex";
-  resetStepUI();
-});
-
-backBtn.addEventListener("click", () => {
-  if (selection.size) {
-    selection.size = "";
-    renderSizes(selection.category, selection.subcategory);
-  } else if (selection.subcategory) {
-    selection.subcategory = "";
-    renderSubcategories(selection.category);
-  } else if (selection.category) {
-    selection.category = "";
-    renderCategories();
-  }
-});
-
-function renderCategories() {
-  stepTitle.textContent = "1. 항목 분류를 선택하세요";
-  buttonList.innerHTML = "";
-  backBtn.style.display = "none";
-
-  Object.keys(items).forEach(cat => {
-    const btn = document.createElement("button");
-    btn.textContent = cat;
-    btn.style.padding = "12px";
-    btn.style.border = "1px solid #ccc";
-    btn.style.borderRadius = "6px";
-    btn.style.cursor = "pointer";
-    btn.onclick = () => {
-      selection.category = cat;
-      renderSubcategories(cat);
-    };
-    buttonList.appendChild(btn);
-  });
-}
-
-function renderSubcategories(category) {
-  stepTitle.textContent = "2. 세부 항목을 선택하세요";
-  buttonList.innerHTML = "";
-  backBtn.style.display = "inline-block";
-
-  items[category].types.forEach(type => {
-    const btn = document.createElement("button");
-    btn.textContent = type;
-    btn.style.padding = "12px";
-    btn.style.border = "1px solid #ccc";
-    btn.style.borderRadius = "6px";
-    btn.style.cursor = "pointer";
-    btn.onclick = () => {
-      selection.subcategory = type;
-      renderSizes(category, type);
-    };
-    buttonList.appendChild(btn);
-  });
-}
-
-function renderSizes(category, type) {
-  stepTitle.textContent = "3. 상세 옵션을 선택하세요";
-  buttonList.innerHTML = "";
-  backBtn.style.display = "inline-block";
-
-  const stockMap = items[category].stockMap;
-  const sizes = [];
-
-  for (const key in stockMap) {
-    const [sub, size] = key.split("__");
-    if (sub === type) {
-      sizes.push({ size, stock: stockMap[key] });
-    }
-  }
-
-  sizes.forEach(({ size, stock }) => {
-    const btn = document.createElement("button");
-    btn.innerHTML = `${size} <span style="font-size:12px;">(재고: ${stock || "X"})</span>`;
-    btn.style.padding = "12px";
-    btn.style.border = "1px solid #ccc";
-    btn.style.borderRadius = "6px";
-    btn.style.cursor = "pointer";
-    btn.onclick = () => {
-      selection.size = size;
-
-      // ✅ 드롭다운 값 세팅
-      // ✅ 드롭다운 값 세팅 강제 적용
-  document.getElementById("category").value = selection.category;
-  document.getElementById("subcategory").value = selection.subcategory;
-  document.getElementById("size").value = selection.size;
-
-  updateSubcategoryDropdown(selection.category, selection.subcategory);
-  updateSizeDropdown(selection.category, selection.subcategory, selection.size);
-
-  stepContainer.style.display = "none";
-  document.getElementById("materialForm").style.display = "flex";
-};
-    buttonList.appendChild(btn);
-  });
-}
-
-function updateSubcategoryDropdown(category, subcategory) {
-  const sub = document.getElementById("subcategory");
-  sub.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  items[category].types.forEach(type => {
-    const opt = document.createElement("option");
-    opt.value = type;
-    opt.textContent = type;
-    if (type === subcategory) opt.selected = true;
-    sub.appendChild(opt);
-  });
-}
-
-function updateSizeDropdown(category, subcategory, size) {
-  const sizeSelect = document.getElementById("size");
-  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  const stockMap = items[category].stockMap;
-
-  for (const key in stockMap) {
-    const [sub, sz] = key.split("__");
-    if (sub === subcategory) {
-      const opt = document.createElement("option");
-      opt.value = sz;
-      opt.textContent = `${sz} (재고: ${stockMap[key] || "X"})`;
-      opt.dataset.stock = stockMap[key];
-      if (sz === size) opt.selected = true;
-      sizeSelect.appendChild(opt);
-    }
-  }
-}
-
-function resetStepUI() {
-  selection = { category: "", subcategory: "", size: "" };
-  buttonList.innerHTML = "";
-  backBtn.style.display = "none";
-}
-</script>
-
 
 </body>
 </html>
