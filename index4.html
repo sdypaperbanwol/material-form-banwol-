@@ -636,18 +636,17 @@ function loadItems() {
           selected.category = cat;
           updateSelection(container, btn);
 
-          // ✅ 다음 이동 버튼에 bounce + glow 효과
+          // ✅ 다음 이동 버튼에 bounce + glow + 스크롤 + 포커스
           const nextBtn = document.getElementById('goToTypeBtn');
           nextBtn.classList.add('bounce', 'glow');
+          nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          nextBtn.focus();
           setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
         };
         container.appendChild(btn);
       });
 
-      // "다음 이동" 버튼 보이기
       document.getElementById('goToTypeBtn').style.display = 'inline-block';
-
-      // 로딩 오버레이 해제
       document.getElementById('loadingOverlay').style.display = 'none';
     })
     .catch(error => {
@@ -655,10 +654,6 @@ function loadItems() {
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
-
-
-
-
 
 
 function selectCategory(cat) {
@@ -673,9 +668,11 @@ function selectCategory(cat) {
       selected.type = type;
       updateSelection(container, btn);
 
-      // ✅ 다음 이동 버튼에 bounce + glow 효과
+      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
       const nextBtn = document.querySelector('#step-type .half-btn:nth-child(2)');
       nextBtn.classList.add('bounce', 'glow');
+      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nextBtn.focus();
       setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
     };
     container.appendChild(btn);
@@ -683,6 +680,7 @@ function selectCategory(cat) {
 
   showStep('type');
 }
+
 
 
 
@@ -702,9 +700,11 @@ function selectCategory(cat) {
       selected.size = size;
       updateSelection(container, btn);
 
-      // ✅ 다음 이동 버튼에 bounce + glow 효과
+      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
       const nextBtn = document.querySelector('#step-size .half-btn:nth-child(2)');
       nextBtn.classList.add('bounce', 'glow');
+      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nextBtn.focus();
       setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
     };
     container.appendChild(btn);
@@ -715,8 +715,13 @@ function selectCategory(cat) {
 
 
 
+
   function selectSize(size) {
   showStep('quantity');
+ const quantityBox = document.querySelector('.numpad-container');
+  if (quantityBox) {
+    quantityBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
   document.getElementById("viewPhotos").style.display = "inline-block"; // ✅ 여기 추가
 }
 
@@ -769,11 +774,36 @@ function addItemToList() {
   itemList.push(item);
   renderItemList();
 
-  // ✅ 수량, 비고 입력만 초기화 (화면은 유지)
   quantityValue = "";
   updateQuantityDisplay();
   document.getElementById('remarks').value = '';
+
+  // 리스트 영역 강조
+  const container = document.querySelector('.list-preview-container');
+  container.classList.add('glow');
+  setTimeout(() => container.classList.remove('glow'), 1500);
+
+  // 신청 버튼 강조 + 커서 스크롤 이동
+// 신청 버튼 강조 + 커서 스크롤 이동
+const submitBtn = document.querySelector("button[onclick='submitAllRequests()']");
+if (submitBtn) {
+  submitBtn.classList.add('pulse');
+
+  // DOM 업데이트 이후 안전하게 스크롤
+  setTimeout(() => {
+    submitBtn.classList.remove('pulse');
+    
+    // 강제로 아래 여백을 추가한 뒤 스크롤
+    window.scrollTo({
+      top: submitBtn.getBoundingClientRect().top + window.scrollY - 100,
+      behavior: 'smooth'
+    });
+
+  }, 200); // 100 → 200으로 늘려도 안정적
 }
+}
+
+
 
 
 function renderItemList() {
@@ -1068,41 +1098,7 @@ function formatDate(raw) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function addItemToList() {
-  const quantity = quantityValue;
-  const remarks = document.getElementById('remarks').value;
 
-  if (!quantity || parseInt(quantity) <= 0) {
-    alert("신청 수량을 입력해주세요.");
-    return;
-  }
-
-  const item = {
-    name: `${loginInfo.empId} ${loginInfo.empName}`,
-    category: selected.category,
-    subcategory: selected.type,
-    size: selected.size,
-    quantity,
-    remarks
-  };
-
-  itemList.push(item);
-  renderItemList();
-
-  quantityValue = "";
-  updateQuantityDisplay();
-  document.getElementById('remarks').value = '';
-
-  // 리스트 영역 강조
-  const container = document.querySelector('.list-preview-container');
-  container.classList.add('glow');
-  setTimeout(() => container.classList.remove('glow'), 1500);
-
-  // 신청 버튼 강조
-  const submitBtn = document.querySelector("button[onclick='submitAllRequests()']");
-  submitBtn.classList.add('pulse');
-  setTimeout(() => submitBtn.classList.remove('pulse'), 1200);
-}
 function updateQuantityDisplay() {
   document.getElementById("quantity-display").innerText = quantityValue || "0";
 
