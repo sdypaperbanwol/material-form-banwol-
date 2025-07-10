@@ -72,6 +72,9 @@
   margin: 0.5rem 0 1rem 0;
   flex-wrap: wrap;
 }
+#loadingOverlay {
+  z-index: 10000; /* 기존 9999에서 한 단계 높임 */
+}
 
 
 
@@ -903,50 +906,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function openMyRecords() {
   const empId = loginInfo.empId;
-  document.getElementById('loadingOverlay').style.display = 'flex'; // 🔹 로딩 시작
+  document.getElementById('loadingOverlay').style.display = 'flex';
 
   fetch(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
     .then(res => res.json())
     .then(data => {
       if (data.result !== "success") {
+        document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 먼저 끄고
         alert("❌ 신청 내역을 불러올 수 없습니다.");
         return;
       }
-      renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10, 8]); // 날짜~처리상태
+      renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10, 8]);
     })
     .catch(err => {
+      document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 오류 시도 미리 끄기
       alert("❌ 네트워크 오류: " + err.message);
     })
     .finally(() => {
-      document.getElementById('loadingOverlay').style.display = 'none'; // 🔹 로딩 끝
+      // 이건 성공했을 때만 의미가 있음. 이미 끄고 return 했으면 중복되더라도 무해.
+      document.getElementById('loadingOverlay').style.display = 'none';
     });
 }
 
 
 function openTeamRecords() {
   const empId = loginInfo.empId;
-  document.getElementById('loadingOverlay').style.display = 'flex'; // 🔹 로딩 시작
+  document.getElementById('loadingOverlay').style.display = 'flex'; // ✅ 로딩 표시
 
   fetch(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
     .then(res => res.json())
     .then(data => {
       if (data.result === "forbidden") {
+        document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 먼저 끄고
         alert("⚠️ 팀 내역 조회 권한이 없습니다.");
         return;
       }
+
       if (data.result !== "success") {
+        document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 먼저 끄고
         alert("❌ 팀 신청 내역을 불러올 수 없습니다.");
         return;
       }
-      renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10]); // 팀 내역용
+
+      renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10]); // ✅ 정상 표시
     })
     .catch(err => {
+      document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 먼저 끄고
       alert("❌ 네트워크 오류: " + err.message);
     })
     .finally(() => {
-      document.getElementById('loadingOverlay').style.display = 'none'; // 🔹 로딩 끝
+      document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 로딩 마무리
     });
 }
+
 
 
 function renderRecordsTable(data, colIndexes) {
