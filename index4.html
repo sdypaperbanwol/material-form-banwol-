@@ -718,14 +718,20 @@ function selectCategory(cat) {
 
 
 
-  function selectSize(size) {
+ function selectSize(size) {
   showStep('quantity');
- const quantityBox = document.querySelector('.numpad-container');
+  const quantityBox = document.querySelector('.numpad-container');
   if (quantityBox) {
     quantityBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // ✅ 강조 애니메이션 추가
+    quantityBox.classList.add('glow');
+    setTimeout(() => quantityBox.classList.remove('glow'), 1200);
   }
-  document.getElementById("viewPhotos").style.display = "inline-block"; // ✅ 여기 추가
+
+  document.getElementById("viewPhotos").style.display = "inline-block";
 }
+
 
 
  function showStep(step) {
