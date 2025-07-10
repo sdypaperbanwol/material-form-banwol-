@@ -99,18 +99,6 @@
   min-width: 280px;
 }
 
-
-.list-preview-container {
-  background: white;
-  padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  flex: 1 1 300px;
-  max-width: 400px;
-  min-width: 280px;
-  border: 2px solid #ccc; /* ✅ 기본은 연회색 */
-}
-
  .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -145,12 +133,6 @@
   display: block;
   resize: none;
 }
-
-#login-section button {
-  display: inline-block;
-  margin: 0 auto;
-}
-
 
   /* 하단 버튼 정리 */
   .step button {
@@ -356,20 +338,7 @@
   ⏳ 로딩 중입니다...
 </div>
 <!-- ✅ 기존 위치 (맨 아래)에서 이쪽으로 이동 -->
-<div id="loadingOverlay" style="
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.5);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  color: white;
-  font-size: 1.4rem;
-">
-  ⏳ 로딩 중입니다...
-</div>
+
 
 
 <h2 id="title">🔎 신청·조사 시스템</h2>
@@ -782,11 +751,6 @@ function selectCategory(cat) {
     showStep(step);
   }
 
-  function updateSelection(container, selectedBtn) {
-    Array.from(container.children).forEach(btn => btn.classList.remove('selected'));
-    selectedBtn.classList.add('selected');
-  }
-
   let itemList = [];
 
 function addItemToList() {
@@ -1157,12 +1121,8 @@ function formatDate(raw) {
 
 function updateQuantityDisplay() {
   document.getElementById("quantity-display").innerText = quantityValue || "0";
-
-  if (quantityValue.length > 0) {
-    const remarks = document.getElementById('remarks');
-  
-  }
 }
+
 
 function updateSelection(container, selectedBtn) {
   Array.from(container.children).forEach(btn => btn.classList.remove('selected'));
