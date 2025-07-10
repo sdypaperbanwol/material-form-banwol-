@@ -116,6 +116,28 @@
     border-radius: 6px;
     border: 1px solid #ccc;
   }
+#loginOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4); /* 반투명 검정 배경 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#loginOverlay span {
+  background: white;
+  padding: 1.2rem 2rem;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #333;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
 
   /* 하단 버튼 정리 */
   .step button {
@@ -388,15 +410,15 @@
   let itemData = {};
   let selected = { category: '', type: '', size: '' };
 
-  function handleLogin() {
+function handleLogin() {
   const empId = document.getElementById('empId').value.trim();
   const empName = document.getElementById('empName').value.trim();
   if (!empId || !empName) return alert("사번과 이름을 입력해주세요.");
 
-  // ✅ 로그인 중 문구 표시
-  document.getElementById('loginLoadingText').classList.remove('hidden');
+  // ✅ 로딩 오버레이 표시
+  document.getElementById('loginOverlay').classList.remove('hidden');
 
-  // ✅ 로그인 버튼 숨기기
+  // 로그인 버튼 숨기기
   document.querySelector('#login-section button').style.display = 'none';
 
   fetch(endpoint, {
@@ -406,8 +428,7 @@
   })
   .then(res => res.json())
   .then(data => {
-    // ✅ 로딩 문구 숨김
-    document.getElementById('loginLoadingText').classList.add('hidden');
+    document.getElementById('loginOverlay').classList.add('hidden');
 
     if (data.result === 'success') {
       loginInfo = { empId, empName };
@@ -420,17 +441,16 @@
       loadItems();
     } else {
       document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
-      // ✅ 실패 시 버튼 다시 보이게
       document.querySelector('#login-section button').style.display = 'block';
     }
   })
   .catch(error => {
-    document.getElementById('loginLoadingText').classList.add('hidden');
+    document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
-    // ✅ 오류 시 버튼 다시 보이게
     document.querySelector('#login-section button').style.display = 'block';
   });
 }
+
 
 
 function loadItems() {
@@ -736,8 +756,8 @@ function goToQuantityStep() {
 
 </script>
 <!-- ✅ 신청 중 로딩 오버레이 -->
-<div id="submitOverlay">
-  <span>📤 신청 중입니다...</span>
+<div id="loginOverlay" class="hidden">
+  <span>🔐 로그인 중입니다...</span>
 </div>
 
 </body>
