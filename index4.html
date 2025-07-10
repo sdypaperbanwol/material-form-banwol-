@@ -87,7 +87,7 @@
     margin: 2rem 0;
   }
 
-  .numpad-container {
+ .numpad-container {
   background: white;
   padding: 1rem;
   border-radius: 12px;
@@ -95,6 +95,7 @@
   flex: 1 1 300px;
   max-width: 400px;
   min-width: 280px;
+  border: 2px solid #ff4444; /* 🔴 키패드 빨간 테두리 */
 }
 
 .list-preview-container {
@@ -105,9 +106,7 @@
   flex: 1 1 300px;
   max-width: 400px;
   min-width: 280px;
-
-  /* 🔴 추가: 테두리 강조 */
-  border: 2px solid #ff4444;
+  border: 2px solid #ff4444; /* 🔴 리스트에도 동일 적용 */
 }
 
   .numpad-grid {
@@ -282,6 +281,20 @@
   color: white;
 }
 
+
+.pulse {
+  animation: pulse 0.6s ease-in-out 2;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 0px rgba(255, 0, 0, 0.3); }
+  50% { box-shadow: 0 0 12px rgba(255, 0, 0, 0.7); }
+}
+
+.glow {
+  animation: glow 1.2s ease-in-out 2;
+  border: 2px solid #ff4444 !important;
+}
 </style>
 
 </head>
@@ -822,9 +835,9 @@ async function submitAllRequests() {
 
 let quantityValue = "";
 
-function updateQuantityDisplay() {
-  document.getElementById("quantity-display").innerText = quantityValue || "0";
-}
+
+
+
 
 function appendQuantity(num) {
   if (quantityValue.length < 4) {
@@ -1007,6 +1020,62 @@ function closeMyRecords() {
 function formatDate(raw) {
   const d = new Date(raw);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function addItemToList() {
+  const quantity = quantityValue;
+  const remarks = document.getElementById('remarks').value;
+
+  if (!quantity || parseInt(quantity) <= 0) {
+    alert("신청 수량을 입력해주세요.");
+    return;
+  }
+
+  const item = {
+    name: `${loginInfo.empId} ${loginInfo.empName}`,
+    category: selected.category,
+    subcategory: selected.type,
+    size: selected.size,
+    quantity,
+    remarks
+  };
+
+  itemList.push(item);
+  renderItemList();
+
+  quantityValue = "";
+  updateQuantityDisplay();
+  document.getElementById('remarks').value = '';
+
+  // 리스트 영역 강조
+  const container = document.querySelector('.list-preview-container');
+  container.classList.add('glow');
+  setTimeout(() => container.classList.remove('glow'), 1500);
+
+  // 신청 버튼 강조
+  const submitBtn = document.querySelector("button[onclick='submitAllRequests()']");
+  submitBtn.classList.add('pulse');
+  setTimeout(() => submitBtn.classList.remove('pulse'), 1200);
+}
+function updateQuantityDisplay() {
+  document.getElementById("quantity-display").innerText = quantityValue || "0";
+
+  if (quantityValue.length > 0) {
+    const remarks = document.getElementById('remarks');
+  
+  }
+}
+
+function updateSelection(container, selectedBtn) {
+  Array.from(container.children).forEach(btn => btn.classList.remove('selected'));
+  selectedBtn.classList.add('selected');
+
+  // 🔽 다음 버튼 강조
+  const nextBtn = document.getElementById('goToTypeBtn');
+  if (nextBtn) {
+    nextBtn.classList.add('pulse');
+    setTimeout(() => nextBtn.classList.remove('pulse'), 1000);
+  }
 }
 
 </script>
