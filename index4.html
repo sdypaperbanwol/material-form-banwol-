@@ -252,22 +252,37 @@
 </style>
 
 </head>
-<body>
-
 <h2 id="title">🔐 로그인</h2>
 
 <!-- 로그인 영역 -->
 <div id="login-section">
+<!-- ✅ 공지사항 영역 -->
+  <div id="inlineNoticeBox" style="
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 6px;
+    color: #856404;
+    font-size: 0.9rem;
+    display: none;
+    white-space: pre-wrap;
+  "></div>
+  <h3>로그인</h3>
+
+  
+
+  <p>사번과 이름을 입력하세요</p>
+
   <input id="empId" placeholder="사번" />
   <input id="empName" placeholder="이름" />
-
-
 
   <button onclick="handleLogin()">로그인</button>
   <div id="loginMsg"></div>
 
-<div id="loginLoadingText" class="hidden">🔐 로그인 중입니다...</div>
+  <div id="loginLoadingText" class="hidden">🔐 로그인 중입니다...</div>
 </div>
+
 
 <!-- 신청 폼 시작 -->
 <div id="form-section" class="hidden">
@@ -732,6 +747,22 @@ function goToQuantityStep() {
   }
   selectSize(selected.size);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec?mode=notice")
+    .then(res => res.json())
+    .then(data => {
+      const notice = data.notice?.trim();
+      if (notice) {
+        const box = document.getElementById("inlineNoticeBox");
+        box.textContent = notice;
+        box.style.display = "block";
+      }
+    })
+    .catch(err => {
+      console.warn("공지사항 로딩 실패:", err);
+    });
+});
 
 
 </script>
