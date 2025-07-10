@@ -87,7 +87,9 @@
     margin: 2rem 0;
   }
 
- .numpad-container {
+ .numpad-container,
+.list-preview-container {
+  border: 2px solid #ccc; /* ✅ 기본은 회색 또는 연한 회색 */
   background: white;
   padding: 1rem;
   border-radius: 12px;
@@ -95,8 +97,8 @@
   flex: 1 1 300px;
   max-width: 400px;
   min-width: 280px;
-  border: 2px solid #ff4444; /* 🔴 키패드 빨간 테두리 */
 }
+
 
 .list-preview-container {
   background: white;
@@ -106,7 +108,7 @@
   flex: 1 1 300px;
   max-width: 400px;
   min-width: 280px;
-  border: 2px solid #ff4444; /* 🔴 리스트에도 동일 적용 */
+  border: 2px solid #ccc; /* ✅ 기본은 연회색 */
 }
 
   .numpad-grid {
@@ -778,29 +780,25 @@ function addItemToList() {
   updateQuantityDisplay();
   document.getElementById('remarks').value = '';
 
-  // 리스트 영역 강조
-  const container = document.querySelector('.list-preview-container');
-  container.classList.add('glow');
-  setTimeout(() => container.classList.remove('glow'), 1500);
+  // ✅ 리스트 강조
+  const listBox = document.querySelector('.list-preview-container');
+  listBox.classList.add('glow');
+  setTimeout(() => listBox.classList.remove('glow'), 1200);
 
-  // 신청 버튼 강조 + 커서 스크롤 이동
-// 신청 버튼 강조 + 커서 스크롤 이동
+  // ✅ 신청 버튼 강조 (리스트 강조 끝난 후)
+  // ✅ 신청 버튼 강조 + 스크롤 이동
 const submitBtn = document.querySelector("button[onclick='submitAllRequests()']");
-if (submitBtn) {
-  submitBtn.classList.add('pulse');
+setTimeout(() => {
+  submitBtn.classList.add('glow');
 
-  // DOM 업데이트 이후 안전하게 스크롤
+  // ✅ 강제 스크롤 이동
   setTimeout(() => {
-    submitBtn.classList.remove('pulse');
-    
-    // 강제로 아래 여백을 추가한 뒤 스크롤
-    window.scrollTo({
-      top: submitBtn.getBoundingClientRect().top + window.scrollY - 100,
-      behavior: 'smooth'
-    });
+    submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    submitBtn.focus(); // 모바일 환경 보완용
+  }, 300);
 
-  }, 200); // 100 → 200으로 늘려도 안정적
-}
+  setTimeout(() => submitBtn.classList.remove('glow'), 1200);
+}, 1300);
 }
 
 
@@ -914,12 +912,16 @@ function appendQuantity(num) {
     quantityValue += num;
     updateQuantityDisplay();
 
-    // ✅ 항목 추가 버튼 강조
+    // ✅ 키패드 테두리 제거
+    document.querySelector('.numpad-container').classList.remove('glow');
+
+    // ✅ 항목추가 버튼 강조
     const addBtn = document.querySelector("button[onclick='addItemToList()']");
-    addBtn.classList.add('pulse');
-    setTimeout(() => addBtn.classList.remove('pulse'), 400);
+    addBtn.classList.add('glow');
+    setTimeout(() => addBtn.classList.remove('glow'), 1200);
   }
 }
+
 
 
 function clearQuantity() {
