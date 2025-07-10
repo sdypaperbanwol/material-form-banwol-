@@ -111,12 +111,13 @@
   border: 2px solid #ccc; /* ✅ 기본은 연회색 */
 }
 
-  .numpad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.6rem;
-    margin-top: 1rem;
-  }
+ .numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin: 1rem auto; /* ✅ 중앙 정렬 */
+  width: fit-content;
+}
 
   .numpad-grid button {
     padding: 1rem;
@@ -503,7 +504,7 @@
   
   <!-- 항목 추가 버튼 -->
   <div class="button-row">
-    <button class="half-btn" onclick="addItemToList()">🛒 장바구니 담기</button>
+    <button class="half-btn" onclick="addItemToList()">➕ 항목 추가</button>
   </div>
 
 
@@ -511,15 +512,11 @@
   <div class="list-preview-container" style="margin: 0 auto; text-align: center;">
   <ul id="itemListPreview" style="display: inline-block; text-align: left; font-size: 0.9rem;"></ul>
 </div>
-  
-<p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">
-  🛍 담은 항목을 확인하셨다면 <b>전체 신청하기</b>를 눌러주세요.
-</p>
-  
+
 
   <!-- 신청 -->
   <div class="button-row">
-    <button class="half-btn" onclick="submitAllRequests()">✅ 전체 신청하기</button>
+    <button class="half-btn" onclick="submitAllRequests()">✅ 신청</button>
   </div>
 
   <!-- 다른 물품 추가 -->
