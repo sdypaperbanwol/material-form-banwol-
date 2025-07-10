@@ -87,16 +87,28 @@
     margin: 2rem 0;
   }
 
-  .numpad-container,
-  .list-preview-container {
-    background: white;
-    padding: 1rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    flex: 1 1 300px;
-    max-width: 400px;
-    min-width: 280px;
-  }
+  .numpad-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  flex: 1 1 300px;
+  max-width: 400px;
+  min-width: 280px;
+}
+
+.list-preview-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  flex: 1 1 300px;
+  max-width: 400px;
+  min-width: 280px;
+
+  /* 🔴 추가: 테두리 강조 */
+  border: 2px solid #ff4444;
+}
 
   .numpad-grid {
     display: grid;
@@ -654,12 +666,21 @@ function loadItems() {
 }
 
 
-  function showStep(step) {
-    ['category', 'type', 'size', 'quantity'].forEach(s => {
-      document.getElementById('step-' + s).classList.add('hidden');
-    });
-    document.getElementById('step-' + step).classList.remove('hidden');
+ function showStep(step) {
+  ['category', 'type', 'size', 'quantity'].forEach(s => {
+    document.getElementById('step-' + s).classList.add('hidden');
+  });
+  document.getElementById('step-' + step).classList.remove('hidden');
+
+  // ✅ 대분류 단계에서만 버튼 보이기
+  const recordButtons = document.getElementById('record-buttons');
+  if (step === 'category') {
+    recordButtons.classList.remove('hidden');
+  } else {
+    recordButtons.classList.add('hidden');
   }
+}
+
 
   function goBackTo(step) {
     showStep(step);
