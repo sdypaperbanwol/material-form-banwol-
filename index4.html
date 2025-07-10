@@ -771,12 +771,28 @@ function addItemToList() {
     return;
   }
 
+  const stockKey = `${selected.type}__${selected.size}`;
+  const currentStock = parseInt(itemData[selected.category]?.stockMap?.[stockKey] || "0", 10);
+  const requestedQty = parseInt(quantity, 10);
+
+  const 지급수량 = Math.min(requestedQty, currentStock);
+  const 구매요청수량 = Math.max(0, requestedQty - currentStock);
+
+  // 🔔 재고 부족 알림
+  if (구매요청수량 > 0) {
+    if (currentStock > 0) {
+      alert(`⚠️ 현재 ${currentStock}개만 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
+    } else {
+      alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
+    }
+  }
+
   const item = {
     name: `${loginInfo.empId} ${loginInfo.empName}`,
     category: selected.category,
     subcategory: selected.type,
     size: selected.size,
-    quantity,
+    quantity: requestedQty,
     remarks
   };
 
@@ -787,25 +803,16 @@ function addItemToList() {
   updateQuantityDisplay();
   document.getElementById('remarks').value = '';
 
-  // ✅ 리스트 강조
   const listBox = document.querySelector('.list-preview-container');
   listBox.classList.add('glow');
   setTimeout(() => listBox.classList.remove('glow'), 1200);
 
-  // ✅ 신청 버튼 강조 (리스트 강조 끝난 후)
-  // ✅ 신청 버튼 강조 + 스크롤 이동
-const submitBtn = document.querySelector("button[onclick='submitAllRequests()']");
-setTimeout(() => {
-  submitBtn.classList.add('glow');
-
-  // ✅ 강제 스크롤 이동
+  const submitBtn = document.querySelector("button[onclick='submitAllRequests()']");
   setTimeout(() => {
-    submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    submitBtn.focus(); // 모바일 환경 보완용
-  }, 300);
-
-  setTimeout(() => submitBtn.classList.remove('glow'), 1200);
-}, 1300);
+    submitBtn.classList.add('glow');
+    setTimeout(() => submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    setTimeout(() => submitBtn.classList.remove('glow'), 1200);
+  }, 1300);
 }
 
 
