@@ -371,51 +371,55 @@
 <div id="step-quantity" class="step hidden">
   <h3>4단계: 수량 입력</h3>
 
-  <div class="quantity-flex-wrapper">
-    
-    <!-- 왼쪽: 키패드 -->
-    <div class="numpad-container">
-      <div id="quantity-display">0</div>
-      <div id="numpad" class="numpad-grid">
-        <button onclick="appendQuantity('1')">1</button>
-        <button onclick="appendQuantity('2')">2</button>
-        <button onclick="appendQuantity('3')">3</button>
-        <button onclick="appendQuantity('4')">4</button>
-        <button onclick="appendQuantity('5')">5</button>
-        <button onclick="appendQuantity('6')">6</button>
-        <button onclick="appendQuantity('7')">7</button>
-        <button onclick="appendQuantity('8')">8</button>
-        <button onclick="appendQuantity('9')">9</button>
-        <button onclick="clearQuantity()">C</button>
-        <button onclick="appendQuantity('0')">0</button>
-        <button onclick="backspaceQuantity()">←</button>
-      </div>
-    </div>
-
-    <!-- 오른쪽: 선택된 항목 리스트 -->
-    <div class="list-preview-container">
-      <ul id="itemListPreview" style="text-align: left; font-size: 0.9rem;"></ul>
+  <!-- 숫자 키패드 -->
+  <div class="numpad-container" style="margin: 0 auto;">
+    <div id="quantity-display">0</div>
+    <div id="numpad" class="numpad-grid">
+      <button onclick="appendQuantity('1')">1</button>
+      <button onclick="appendQuantity('2')">2</button>
+      <button onclick="appendQuantity('3')">3</button>
+      <button onclick="appendQuantity('4')">4</button>
+      <button onclick="appendQuantity('5')">5</button>
+      <button onclick="appendQuantity('6')">6</button>
+      <button onclick="appendQuantity('7')">7</button>
+      <button onclick="appendQuantity('8')">8</button>
+      <button onclick="appendQuantity('9')">9</button>
+      <button onclick="clearQuantity()">C</button>
+      <button onclick="appendQuantity('0')">0</button>
+      <button onclick="backspaceQuantity()">←</button>
     </div>
   </div>
 
+  <!-- 항목 추가 버튼 -->
+  <div class="button-row">
+    <button class="half-btn" onclick="addItemToList()">➕ 항목 추가</button>
+  </div>
+
+  <!-- 비고 입력 -->
   <input id="remarks" placeholder="비고 (선택)" />
 
-<!-- ➕ 항목 추가 버튼 -->
-<!-- ✅ 버튼 그룹 1: 항목 추가 / 전체 신청 (같은 줄) -->
-<div class="button-row">
-  <button class="half-btn" onclick="addItemToList()">➕ 항목 추가</button>
-  <button class="half-btn" onclick="submitAllRequests()">✅ 전체 신청</button>
+  <!-- 추가된 항목 리스트 -->
+  <div class="list-preview-container" style="margin: 0 auto; text-align: center;">
+  <ul id="itemListPreview" style="display: inline-block; text-align: left; font-size: 0.9rem;"></ul>
 </div>
 
-<!-- ✅ 버튼 그룹 2: 다른 물품 추가 (단독 줄) -->
-<div class="button-row">
-  <button class="half-btn" onclick="goBackTo('category')">📦 다른 물품 추가</button>
+
+  <!-- 전체 신청 -->
+  <div class="button-row">
+    <button class="half-btn" onclick="submitAllRequests()">✅ 전체 신청</button>
+  </div>
+
+  <!-- 다른 물품 추가 -->
+  <div class="button-row">
+    <button class="half-btn" onclick="goBackTo('category')">📦 다른 물품 추가</button>
+  </div>
+
+  <!-- 뒤로가기 -->
+  <div class="button-row">
+    <button class="half-btn" onclick="goBackTo('size')">⬅ 뒤로가기</button>
+  </div>
 </div>
 
-<!-- ✅ 버튼 그룹 3: 뒤로가기 (단독 줄) -->
-<div class="button-row">
-  <button class="half-btn" onclick="goBackTo('size')">⬅ 뒤로가기</button>
-</div>
 
 
 <!-- ✅ 선택된 항목 리스트 표시 -->
