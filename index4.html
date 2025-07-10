@@ -2,837 +2,684 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>신대양제지반월 신청·조사 시스템</title>
- <style>
-  html { font-size: 16px; }
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>자재 신청</title>
+  <style>
   body {
-    font-size: 1rem;
-    line-height: 1.6;
-    background-color: #f7f7f7;
-    font-family: 'Arial', sans-serif;
-    padding: 1.25rem;
+    font-family: 'sans-serif';
+    background: #f7f7f7;
+    text-align: center;
+    padding: 1rem;
+    margin: 0;
   }
 
-  form, #login-section {
+  .hidden { display: none; }
+  .step { margin-top: 1.5rem; }
+
+  .button-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    max-width: 25rem;
-    margin: 1.25rem auto;
-    background: #fff;
-    padding: 1.25rem;
-    border-radius: 0.625rem;
-    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
-  }
-
-  label {
-    font-weight: bold;
-  }
-
-  select, input, textarea {
-    padding: 0.625rem;
-    font-size: 0.875rem;
-    border-radius: 0.375rem;
-    border: 1px solid #ccc;
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 3.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
   }
 
   button {
-    padding: 0.75rem;
+    padding: 0.6rem 1.2rem;
     font-size: 1rem;
-    background-color: #4CAF50;
-    color: white;
+    border-radius: 6px;
     border: none;
-    border-radius: 0.375rem;
+    background-color: #ddd;
     cursor: pointer;
+    width: 70%;
+    max-width: 300px;
   }
 
-  .message {
-    margin-top: 0.625rem;
+  button:hover {
+    background-color: #4CAF50 !important;
+    color: white;
+  }
+
+  .selected {
+    background-color: #4CAF50 !important;
+    color: white;
     font-weight: bold;
   }
 
-  small {
-    font-size: 0.75rem;
-    color: #666;
-    line-height: 1.4;
+  button:disabled {
+    background-color: #ccc;
+    color: #777;
+    cursor: not-allowed;
   }
 
-  #itemListDisplay {
-    padding-left: 0;
-    margin-left: 0;
-    list-style: none;
+  /* 수량 표시 */
+  #quantity-display {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+  }
+#viewPhotos,
+#goToTypeBtn {
+  display: none;
+}
+
+
+  /* 수량 입력 - 키패드 + 리스트 영역 */
+  .quantity-flex-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
   }
 
-  #itemListDisplay li {
+  .numpad-container,
+  .list-preview-container {
+    background: white;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    flex: 1 1 300px;
+    max-width: 400px;
+    min-width: 280px;
+  }
+
+  .numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .numpad-grid button {
+    padding: 1rem;
+    font-size: 1.5rem;
+    border-radius: 10px;
+    background: #e0e0e0;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .numpad-grid button:hover {
+    background: #ccc;
+  }
+
+  /* 비고 입력 */
+  #remarks {
+    display: block;
+    margin: 1.5rem auto 1rem auto;
+    padding: 0.6rem;
+    font-size: 1rem;
+    width: 80%;
+    max-width: 300px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+
+  /* 하단 버튼 정리 */
+  .step button {
+    margin: 0.25rem;
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    background: #ddd;
+    cursor: pointer;
+  }
+
+  .step button:hover {
+    background: #4CAF50;
+    color: white;
+  }
+
+  button.back-btn {
+    margin-top: 1.5rem;
+  }
+
+  /* 로딩 메시지들 */
+  #loadingText,
+  #loginLoadingText,
+  #submitLoadingText {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    color: #444;
+  }
+#submitOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#submitOverlay span {
+  background: white;
+  padding: 20px 40px;
+  border-radius: 12px;
+  font-size: 1.3rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+
+  /* 입력 필드 기본 스타일 */
+  input {
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin: 0.5rem auto;
+    width: 80%;
+    max-width: 300px;
+    display: block;
+  }
+
+  /* 리스트 영역 */
+  .list-preview-container {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    padding: 1rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+  }
+
+  .list-item-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.375rem;
-    margin-bottom: 0.375rem;
-    border: 1px solid #ddd;
-    border-radius: 0.375rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #e0e0e0;
   }
 
-  #itemListDisplay li .item-text {
+  .list-item-text {
     flex: 1;
     text-align: left;
     word-break: break-word;
-    font-size: 0.875rem;
-    line-height: 1.4;
+    padding-right: 0.5rem;
   }
 
-  #itemListDisplay li .remove-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 0.3125rem;
-    padding: 0.25rem 0.5rem;
-    cursor: pointer;
-    margin-left: 0.625rem;
-    white-space: nowrap;
-    font-size: 0.8125rem;
-  }
+ .delete-btn {
+  font-size: 0.8rem;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  display: flex;               /* 중요! 중앙 정렬 */
+  align-items: center;         /* 수직 정렬 */
+  justify-content: center;     /* 수평 정렬 */
+  border-radius: 50%;
+  transition: background 0.2s;
+  padding: 0;                  /* 안쪽 여백 제거 */
+  box-sizing: border-box;
+}
 
-  #closeModal {
-    position: fixed;
-    top: 1.25rem;
-    right: 1.875rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: white;
-    background-color: rgba(0,0,0,0.6);
-    padding: 0.3125rem 0.625rem;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10000;
-  }
+.delete-btn:hover {
+  background: #ffe5e5;
+  color: #d00;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem auto;
+  flex-wrap: wrap;
+}
+
+.half-btn {
+  flex: 1 1 30%;
+  max-width: 180px;
+  min-width: 140px;
+  padding: 0.6rem 0.8rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #ddd;
+  cursor: pointer;
+}
+
+.half-btn:hover {
+  background: #4CAF50;
+  color: white;
+}
+
 </style>
 
 </head>
 <body>
-  <!-- ✅ 페이지 최상단 회사 로고 + 시스템 이름 -->
-  <div style="text-align: center; margin-bottom: 20px;">
-    <img src="https://raw.githubusercontent.com/sdypaperbanwol/material-form-banwol-/main/신대양제지반월_로고.png" 
-         alt="신대양제지반월 로고" 
-         style="max-width: 140px; margin-bottom: 10px;">
-    <div style="font-size: 20px; font-weight: bold; color: #333;">
-      신청·조사 시스템
-    </div>
-  </div>
 
-  <!-- ✅ 로그인 섹션 전체 -->
-  <div id="login-section">
-    <h3>로그인</h3>
-    <p>사번과 이름을 입력하세요</p>
-    <input type="text" id="empId" placeholder="사번 입력" />
-    <input type="text" id="empName" placeholder="이름 입력" />
-    <button id="verifyBtn">확인</button>
-    <p id="loginMsg" style="color: red; font-weight: bold;"></p>
-  </div>
+<h2 id="title">🔐 로그인</h2>
 
-<div id="categoryStep" style="display: none; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto;">
-  <h3>1. 항목 분류 선택</h3>
-  <div id="categoryButtons" style="display: flex; flex-direction: column; gap: 10px;"></div>
-</div>
-  
-  <!-- ✅ 로그인 후 보이는 신청 폼 -->
-  <form id="materialForm" style="display: none;">
-     <!-- 🔽 여기 추가 -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <h3 style="margin: 0;">📋 신청서 작성 </h3>
-    <!-- 개선 -->
+<!-- 로그인 영역 -->
+<div id="login-section">
+  <input id="empId" placeholder="사번" />
+  <input id="empName" placeholder="이름" />
 
-   <!-- ✅ 버튼 묶음 -->
-<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 10px;">
-  
-  <!-- 📄 신청 내역 버튼 -->
-  <button id="myRecordsBtn" style="
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #007bff;
-    border: 1px solid #007bff;
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    transition: background 0.2s;
-  " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">
-    📄 <span>내 신청 내역</span>
-  </button>
 
-  <!-- 👥 팀 신청 내역 버튼 -->
-  <button id="myTeamRecordsBtn" style="
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #fff;
-    color: #28a745;
-    border: 1px solid #28a745;
-    border-radius: 6px;
-    padding: 6px 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    transition: background 0.2s;
-  " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">
-    👥 <span>팀 신청 내역</span>
-  </button>
 
+  <button onclick="handleLogin()">로그인</button>
+  <div id="loginMsg"></div>
+
+<div id="loginLoadingText" class="hidden">🔐 로그인 중입니다...</div>
 </div>
 
+<!-- 신청 폼 시작 -->
+<div id="form-section" class="hidden">
+
+  <!-- 대분류 선택 영역 -->
+<div id="step-category" class="step">
+  <h3>1단계: 대분류 선택</h3>
+  <div id="category-buttons" class="button-list"></div>
+<!-- 대분류용 항목 사진 보기 버튼 -->
+<button type="button" id="viewPhotosCategory"
+    style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;margin-top:6px;">
+    항목 사진 보기
+</button>
+
+  
+
+  <!-- ✅ 다음 단계 이동 버튼 추가 위치 여기!! -->
+  <button type="button" id="goToTypeBtn" onclick="goToTypeStep()" style="margin-top: 8px;">
+  ➡ 다음 이동
+</button>
+</div>
+
+<div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
+  <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
+    <span id="closeModal" style="position:fixed;top:20px;right:20px;font-size:28px;cursor:pointer;z-index:1000;background:white;padding:4px 10px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">✖</span>
+    <div id="photoContent"></div>
+  </div>
+</div>
+
+<div id="loadingText" class="hidden">⏳ 로딩 중입니다...</div>
+
+  <div id="step-type" class="step hidden">
+  <h3>2단계: 중분류 선택</h3>
+  <div id="type-buttons" class="button-list"></div>
+  
+  <div class="button-row">
+    <button class="half-btn" onclick="goBackTo('category')">⬅ 뒤로가기</button>
+    <button class="half-btn" onclick="goToSizeStep()">➡ 다음 이동</button>
+  </div>
+</div>
+
+
+
+  <div id="step-size" class="step hidden">
+  <h3>3단계: 소분류 선택</h3>
+  <div id="size-buttons" class="button-list"></div>
+
+  <div class="button-row">
+    <button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button>
+    <button class="half-btn" onclick="goToQuantityStep()">➡ 다음 이동</button>
+  </div>
+</div>
+
+
+<div id="step-quantity" class="step hidden">
+  <h3>4단계: 수량 입력</h3>
+
+  <div class="quantity-flex-wrapper">
     
-  </div>
-    <label for="category">1. 항목 분류</label>
-    <select id="category" name="category" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
-
-    <button type="button" id="viewPhotos" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;">항목 사진 보기</button>
-
-    <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
-      <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-        <span id="closeModal">✖</span>
-        <div id="photoContent"></div>
+    <!-- 왼쪽: 키패드 -->
+    <div class="numpad-container">
+      <div id="quantity-display">0</div>
+      <div id="numpad" class="numpad-grid">
+        <button onclick="appendQuantity('1')">1</button>
+        <button onclick="appendQuantity('2')">2</button>
+        <button onclick="appendQuantity('3')">3</button>
+        <button onclick="appendQuantity('4')">4</button>
+        <button onclick="appendQuantity('5')">5</button>
+        <button onclick="appendQuantity('6')">6</button>
+        <button onclick="appendQuantity('7')">7</button>
+        <button onclick="appendQuantity('8')">8</button>
+        <button onclick="appendQuantity('9')">9</button>
+        <button onclick="clearQuantity()">C</button>
+        <button onclick="appendQuantity('0')">0</button>
+        <button onclick="backspaceQuantity()">←</button>
       </div>
     </div>
-    
-    <label for="subcategory">2. 세부 항목</label>
-    <select id="subcategory" name="subcategory" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
 
-    <label for="size">3. 상세 옵션</label>
-    <select id="size" name="size" required>
-      <option value="">-- 선택하세요 --</option>
-    </select>
-
-    <label for="name">4. 작성자</label>
-    <input type="text" id="name" name="name" readonly />
-
-    <label for="quantity">5. 수량(수치)</label>
-    <input type="number" id="quantity" name="quantity" min="1" required />
-
-<!-- ✅ 비고(추가 내용) + 사진 업로드 통합 박스 -->
-<div style="display: flex; flex-direction: column; gap: 6px;">
-  <label for="remarks">6. 추가 내용 및 사진(없을 경우 생략)</label>
-  <textarea id="remarks" name="remarks" placeholder="추가 내용" style="min-height: 60px;"></textarea>
-
-  <div style="display:flex; align-items: center; gap: 10px;">
-    <input type="file" id="photoFiles" name="photoFiles" accept="image/*" multiple onchange="checkPhotoLimit(this)" style="border:none; padding-left:0;">
+    <!-- 오른쪽: 선택된 항목 리스트 -->
+    <div class="list-preview-container">
+      <ul id="itemListPreview" style="text-align: left; font-size: 0.9rem;"></ul>
     </div>
-
-  <!-- 썸네일 영역 -->
-  <div id="previewArea" style="display:flex; gap:8px; margin-top:5px;"></div>
-</div>
-    <small>
-    - 현재 보유 수량내에서 지급, 부족분은 구매 요청 됩니다.<br>
-    - 날짜 선택(오늘·내일 X시 수령/교환 기재) 가능합니다.<br>
-    - 필요한 경우 사진 첨부도 가능합니다(최대 3장).<br>
-    - 과다 요청 시 일부 제한될 수 있습니다.
-    </small>
-
-<!-- 1. textarea 아래에 ➕ 항목 담기 버튼만 먼저 위치 -->
-<button type="button" id="addItemBtn" style="width:100%; margin-top:10px; background:#28a745;">➕ 항목 담기</button>
-
-<!-- 2. 담겨진 항목 리스트 -->
-<div style="width: 100%; margin-top: 10px; padding: 0;">
-  <h4>📝 담겨진 항목 리스트</h4>
-  <ul id="itemListDisplay" style="padding-left: 0; margin: 0;"></ul>
-</div>
-
-<!-- 3. 가장 마지막에 ✅ 신청 버튼 -->
-<button type="button" id="submitAllBtn" style="width:100%; margin-top:15px; background:#007bff;">✅ 신청(제출)</button>
-
-<div id="loadingOverlay" style="
-  display: none;
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: bold;
-  color: white;
-">
-  ⏳ 신청 중입니다...
-</div>
-    
-   <button type="button" id="resetBtn" style="background-color: #999;">처음으로</button>
-<div class="message" id="msg"></div>
-
-<!-- 📄 내 신청 내역 모달 -->
-<div id="myRecordsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999;">
-
-  <!-- ✅ 닫기 X 버튼: 항상 우측 상단 고정 -->
-  <button id="closeRecordsModal" style="
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    font-size: 22px;
-    font-weight: bold;
-    border: none;
-    background: none;
-    cursor: pointer;
-    color: white;
-    z-index: 10000;
-  ">✖</button>
-
-  <!-- ✅ 모달 내용 박스 (스크롤 가능) -->
-  <div style="
-    position: relative;
-    margin: 60px auto 0;
-    background: white;
-    padding: 20px 24px 30px;
-    border-radius: 10px;
-    max-width: 800px;
-    width: 95%;
-    max-height: 80vh;
-    overflow: auto;
-  ">
-    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 신청 내역</h3>
-    <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
-      <thead><tr></tr></thead>
-      <tbody></tbody>
-    </table>
   </div>
+
+  <input id="remarks" placeholder="비고 (선택)" />
+
+<!-- ➕ 항목 추가 버튼 -->
+<!-- ✅ 버튼 그룹 1: 항목 추가 / 전체 신청 (같은 줄) -->
+<div class="button-row">
+  <button class="half-btn" onclick="addItemToList()">➕ 항목 추가</button>
+  <button class="half-btn" onclick="submitAllRequests()">✅ 전체 신청</button>
 </div>
 
- </form>
-    
+<!-- ✅ 버튼 그룹 2: 다른 물품 추가 (단독 줄) -->
+<div class="button-row">
+  <button class="half-btn" onclick="goBackTo('category')">📦 다른 물품 추가</button>
+</div>
+
+<!-- ✅ 버튼 그룹 3: 뒤로가기 (단독 줄) -->
+<div class="button-row">
+  <button class="half-btn" onclick="goBackTo('size')">⬅ 뒤로가기</button>
+</div>
+
+
+<!-- ✅ 선택된 항목 리스트 표시 -->
+<div id="selectedItems" class="step hidden">
+  <h3>📝 선택된 항목 리스트</h3>
+  <ul id="itemListDisplay"></ul>
+</div>
+
+
+
+
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec";
-  let fileArray = [];  // ✅ 이 줄 추가
-const loginSection = document.getElementById("login-section");
-const materialForm = document.getElementById("materialForm");
-const nameInput = document.getElementById("name");
-const loginMsg = document.getElementById("loginMsg");
-  
-function isMobileDevice() {
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
+  const endpoint = 'https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec'; // 실제 Web App 주소로 교체
 
-const saved = localStorage.getItem("userInfo");
-if (saved) {
-    
-  const [empId, empName] = saved.split(" ");
-  fetch(API_URL, {
-    method: "POST",
+  let loginInfo = { empId: '', empName: '' };
+  let itemData = {};
+  let selected = { category: '', type: '', size: '' };
+
+  function handleLogin() {
+  const empId = document.getElementById('empId').value.trim();
+  const empName = document.getElementById('empName').value.trim();
+  if (!empId || !empName) return alert("사번과 이름을 입력해주세요.");
+
+  // ✅ 로그인 중 문구 표시
+  document.getElementById('loginLoadingText').classList.remove('hidden');
+
+  // ✅ 로그인 버튼 숨기기
+  document.querySelector('#login-section button').style.display = 'none';
+
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ empId, empName })
   })
   .then(res => res.json())
   .then(data => {
-    if (data.result === "success") {
-      if (data.active === "Y" && !isMobileDevice()) {
-        alert("⚠️ 이 계정은 모바일에서만 접근할 수 있습니다.");
-        localStorage.removeItem("userInfo");
-        return;
-      }
-      nameInput.value = saved;
-      loginSection.style.display = "none";
-document.getElementById("categoryStep").style.display = "flex";  // ✅ 항목 분류만 보이기
-// materialForm.style.display = "flex"; ← ❌ 이건 주석 처리 또는 삭제
+    // ✅ 로딩 문구 숨김
+    document.getElementById('loginLoadingText').classList.add('hidden');
 
+    if (data.result === 'success') {
+      loginInfo = { empId, empName };
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('form-section').classList.remove('hidden');
+      document.getElementById('title').innerText = "📦 자재 신청";
+
+      document.getElementById('loadingText').innerText = "⏳ 로딩 중입니다...";
+      document.getElementById('loadingText').classList.remove('hidden');
+      loadItems();
     } else {
-      localStorage.removeItem("userInfo");
-      alert("승인이 해제되어 자동 로그아웃됩니다.");
-      location.reload();
+      document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
+      // ✅ 실패 시 버튼 다시 보이게
+      document.querySelector('#login-section button').style.display = 'block';
     }
+  })
+  .catch(error => {
+    document.getElementById('loginLoadingText').classList.add('hidden');
+    document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
+    // ✅ 오류 시 버튼 다시 보이게
+    document.querySelector('#login-section button').style.display = 'block';
   });
 }
 
-function verifyUser() {
-  const empId = document.getElementById("empId").value.trim();
-  const empName = document.getElementById("empName").value.trim();
-  if (!empId || !empName) {
-    loginMsg.textContent = "사번과 이름을 모두 입력하세요.";
-    return;
-  }
-  fetch(API_URL, {
-    method: "POST",
-    body: new URLSearchParams({ empId, empName })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.result === "success") {
-      const fullName = `${empId} ${empName}`;
-      if (data.active === "Y" && !isMobileDevice()) {
-        loginMsg.textContent = "⚠️ 모바일에서만 접근 가능한 계정입니다.";
-        return;
-      }
-      localStorage.setItem("userInfo", fullName);
-      nameInput.value = fullName;
-      loginSection.style.display = "none";
-document.getElementById("categoryStep").style.display = "flex";  // ✅ 항목 분류만 보이기
-// materialForm.style.display = "flex"; ← ❌ 이건 주석 처리 또는 삭제
 
-    } else {
-      loginMsg.textContent = "일치하는 정보가 없습니다.";
-    }
-  })
-  .catch(() => {
-    loginMsg.textContent = "서버 오류 발생. 다시 시도해주세요.";
-  });
-}
+function loadItems() {
+  fetch(endpoint)
+    .then(res => res.json())
+    .then(data => {
+      itemData = data;
+      const container = document.getElementById('category-buttons');
+      container.innerHTML = '';
 
-document.getElementById("verifyBtn").addEventListener("click", verifyUser);
-
-const categorySelect = document.getElementById("category");
-const subSelect = document.getElementById("subcategory");
-const sizeSelect = document.getElementById("size");
-const quantityInput = document.getElementById("quantity");
-const remarksInput = document.getElementById("remarks");
-const msgDiv = document.getElementById("msg");
-
-let items = {};
-// ✅ 이 함수는 여기에 넣으세요
-function readFilesAsBase64(files) {
-  const promises = [];
-  const limit = Math.min(files.length, 3);
-
-  for (let i = 0; i < limit; i++) {
-    const file = files[i];
-    const reader = new FileReader();
-    promises.push(new Promise((resolve, reject) => {
-      reader.onload = () => resolve({
-        base64: reader.result.split(",")[1],
-        filename: file.name
+      Object.keys(data).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.innerText = cat;
+        btn.onclick = () => {
+          selected.category = cat;
+          updateSelection(container, btn);
+        };
+        container.appendChild(btn);
       });
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    }));
+
+      // ✅ 로딩 메시지 숨기고 버튼 보이게
+      document.getElementById('loadingText').classList.add('hidden');
+            document.getElementById('goToTypeBtn').style.display = 'inline-block';
+    })
+    .catch(error => {
+      document.getElementById('loadingText').classList.add('hidden');
+      alert('❌ 항목 목록 불러오기 실패: ' + error.message);
+    });
+}
+
+
+
+ function selectCategory(cat) {
+  const types = itemData[cat].types;
+  const container = document.getElementById('type-buttons');
+  container.innerHTML = '';
+  types.forEach(type => {
+    const btn = document.createElement('button');
+    btn.innerText = type;
+    btn.onclick = () => {
+      selected.type = type;
+      updateSelection(container, btn);
+      // 다음 단계는 버튼으로 진행
+    };
+    container.appendChild(btn);
+  });
+  showStep('type');
+}
+
+
+  function selectType(type) {
+    const container = document.getElementById('size-buttons');
+    container.innerHTML = '';
+    const stockMap = itemData[selected.category].stockMap;
+    const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
+    sizeKeys.forEach(k => {
+      const size = k.split('__')[1];
+      const stock = stockMap[k];
+      const btn = document.createElement('button');
+      btn.innerText = `${size} (재고: ${stock})`;
+      btn.onclick = () => {
+        selected.size = size;
+        updateSelection(container, btn);
+              };
+      container.appendChild(btn);
+    });
+    showStep('size');
   }
 
-  return Promise.all(promises);
+  function selectSize(size) {
+  showStep('quantity');
+  document.getElementById("viewPhotos").style.display = "inline-block"; // ✅ 여기 추가
 }
-function checkPhotoLimit(input) {
-  const preview = document.getElementById("previewArea");
-  preview.innerHTML = "";
 
-  fileArray = Array.from(input.files); // 전역 배열로 복사
 
-  if (fileArray.length > 3) {
-    alert("⚠️ 사진은 최대 3장까지만 업로드할 수 있습니다.");
-    input.value = "";
-    fileArray = [];
+  function showStep(step) {
+    ['category', 'type', 'size', 'quantity'].forEach(s => {
+      document.getElementById('step-' + s).classList.add('hidden');
+    });
+    document.getElementById('step-' + step).classList.remove('hidden');
+  }
+
+  function goBackTo(step) {
+    showStep(step);
+  }
+
+  function updateSelection(container, selectedBtn) {
+    Array.from(container.children).forEach(btn => btn.classList.remove('selected'));
+    selectedBtn.classList.add('selected');
+  }
+
+  let itemList = [];
+
+function addItemToList() {
+  const quantity = quantityValue;
+  const remarks = document.getElementById('remarks').value;
+
+  if (!quantity || parseInt(quantity) <= 0) {
+    alert("신청 수량을 입력해주세요.");
     return;
   }
 
-  fileArray.forEach((file, index) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "relative";
+  const item = {
+    name: `${loginInfo.empId} ${loginInfo.empName}`,
+    category: selected.category,
+    subcategory: selected.type,
+    size: selected.size,
+    quantity,
+    remarks
+  };
 
-      const img = document.createElement("img");
-      img.src = e.target.result;
-      img.style.width = "80px";
-      img.style.height = "80px";
-      img.style.objectFit = "cover";
-      img.style.border = "1px solid #ccc";
-      img.style.borderRadius = "6px";
+  itemList.push(item);
+  renderItemList();
 
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "✖";
-      delBtn.title = "사진 제거";
-      delBtn.style.position = "absolute";
-      delBtn.style.top = "-8px";
-      delBtn.style.right = "-8px";
-      delBtn.style.background = "#dc3545";
-      delBtn.style.color = "white";
-      delBtn.style.border = "none";
-      delBtn.style.borderRadius = "50%";
-      delBtn.style.width = "20px";
-      delBtn.style.height = "20px";
-      delBtn.style.cursor = "pointer";
-      delBtn.style.fontSize = "12px";
+  // ✅ 수량, 비고 입력만 초기화 (화면은 유지)
+  quantityValue = "";
+  updateQuantityDisplay();
+  document.getElementById('remarks').value = '';
+}
 
-      delBtn.onclick = () => {
-        fileArray.splice(index, 1);
-        recreateFileInput(fileArray); // 다시 렌더링
+
+function renderItemList() {
+  const previewContainer = document.getElementById('itemListPreview');
+  previewContainer.innerHTML = '';
+
+  if (itemList.length === 0) {
+    const empty = document.createElement('div');
+    empty.innerText = "➕ 항목을 추가하면 여기에 표시됩니다.";
+    empty.style.textAlign = "center";
+    empty.style.color = "#aaa";
+    empty.style.padding = "1rem";
+    previewContainer.appendChild(empty);
+    return;
+  }
+
+  itemList.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.className = 'list-item-row';
+
+    const text = document.createElement('div');
+    text.className = 'list-item-text';
+    text.innerText = `${item.category} > ${item.subcategory} > ${item.size} - ${item.quantity}개`
+      + (item.remarks ? ` (${item.remarks})` : '');
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delete-btn';
+    delBtn.innerText = '✕';
+    delBtn.onclick = () => {
+      itemList.splice(index, 1);
+      renderItemList();
+    };
+
+    row.appendChild(text);
+    row.appendChild(delBtn);
+    previewContainer.appendChild(row);
+  });
+}
+
+
+
+
+function resetSteps() {
+  quantityValue = "";
+  updateQuantityDisplay();
+  document.getElementById('remarks').value = '';
+  showStep('category');
+}
+
+async function submitAllRequests() {
+  if (itemList.length === 0) {
+    alert("신청 항목이 없습니다.");
+    return;
+  }
+
+  // ✅ 화면 중앙 로딩 표시
+  document.getElementById('submitOverlay').style.display = 'flex';
+
+  try {
+    for (const item of itemList) {
+      const stockKey = `${item.subcategory}__${item.size}`;
+      const stockMap = itemData[item.category]?.stockMap || {};
+      const currentStock = parseInt(stockMap[stockKey]) || 0;
+      const quantity = parseInt(item.quantity);
+      const 지급수량 = Math.min(quantity, currentStock);
+      const 구매요청수량 = Math.max(quantity - currentStock, 0);
+
+      const payload = {
+        name: item.name,
+        category: item.category,
+        subcategory: item.subcategory,
+        size: item.size,
+        quantity,
+        remarks: item.remarks,
+        지급수량,
+        구매요청수량
       };
 
-      wrapper.appendChild(img);
-      wrapper.appendChild(delBtn);
-      preview.appendChild(wrapper);
-    };
-    reader.readAsDataURL(file);
-  });
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(payload)
+      });
+    }
+
+    alert("✅ 모든 항목이 신청되었습니다.");
+    location.reload();
+  } catch (error) {
+    alert("❌ 네트워크 오류: " + error.message);
+  } finally {
+    // ✅ 로딩 오버레이 숨김
+    document.getElementById('submitOverlay').style.display = 'none';
+  }
 }
 
-function recreateFileInput(files) {
-  const dataTransfer = new DataTransfer();
-  files.forEach(file => dataTransfer.items.add(file));
 
-  const input = document.getElementById("photoFiles");
-  input.files = dataTransfer.files;
 
-  checkPhotoLimit(input);
+
+
+let quantityValue = "";
+
+function updateQuantityDisplay() {
+  document.getElementById("quantity-display").innerText = quantityValue || "0";
 }
 
-
-document.addEventListener("DOMContentLoaded", function () {
-  document.getElementById("loadingOverlay").style.display = "none";
-  let isSubmitting = false;
-  let alertShown = false;
-
-  categorySelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-    if (items[cat]) {
-      items[cat].types.forEach(type => {
-        subSelect.innerHTML += `<option value="${type}">${type}</option>`;
-      });
-    }
-  });
-
-  subSelect.addEventListener("change", () => {
-    const cat = categorySelect.value;
-    const type = subSelect.value;
-    sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-
-    if (items[cat]) {
-      const stockMap = items[cat].stockMap;
-
-      for (const [key, stock] of Object.entries(stockMap)) {
-        const [t, size] = key.split("__");
-        if (t === type) {
-          sizeSelect.innerHTML += `<option value="${size}" data-stock="${stock}">${size} (재고: ${stock || "X"})</option>`;
-        }
-      }
-    }
-  });
-
-function formatDate(raw) {
-  const d = new Date(raw);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+function appendQuantity(num) {
+  if (quantityValue.length < 4) {
+    quantityValue += num;
+    updateQuantityDisplay();
+  }
 }
 
-document.getElementById("myRecordsBtn").addEventListener("click", () => {
-  const fullName = localStorage.getItem("userInfo");
-  if (!fullName) {
-    alert("로그인 후 이용 가능합니다.");
-    return;
-  }
+function clearQuantity() {
+  quantityValue = "";
+  updateQuantityDisplay();
+}
 
-  const empId = fullName.split(" ")[0];
-
-  fetch(`${API_URL}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result !== "success") {
-        alert("❌ 신청 내역을 불러오지 못했습니다.");
-        return;
-      }
-
-      const table = document.getElementById("myRecordsTable");
-      const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-
-      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10, 8]; // 날짜~처리완료
-      const headerNames = desiredIndexes.map(i => data.header[i]);
-
-      thead.innerHTML = "<tr>" + headerNames.map((h, i) =>
-        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${h}</th>`
-      ).join("") + "</tr>";
-
-      tbody.innerHTML = "";
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        desiredIndexes.forEach((colIndex, idx) => {
-          const td = document.createElement("td");
-          const cell = row[colIndex];
-          td.textContent = idx === 0 ? formatDate(cell) : cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          td.style.whiteSpace = "nowrap";
-          td.style.textAlign = "center";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("myRecordsModal").style.display = "flex";
-
-      const msgDiv = document.getElementById("msg");
-      if (msgDiv) msgDiv.textContent = "";
-    })
-    .catch(err => {
-      console.error("신청 내역 로딩 오류:", err);
-      alert("❌ 조회 중 오류가 발생했습니다.");
-    });
-});
-
-document.getElementById("myTeamRecordsBtn").addEventListener("click", () => {
-  const fullName = localStorage.getItem("userInfo");
-  if (!fullName) {
-    alert("로그인 후 이용 가능합니다.");
-    return;
-  }
-
-  const empId = fullName.split(" ")[0];
-
-  fetch(`${API_URL}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
-    .then(res => res.json())
-    .then(data => {
-        if (data.result === "forbidden") {
-    alert("⚠️ 팀 내역 조회 권한이 없습니다.");
-    return;
-  }
-      if (data.result !== "success") {
-        alert("❌ 팀 신청 내역을 불러오지 못했습니다.");
-        return;
-      }
-
-      const table = document.getElementById("myRecordsTable");
-      const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-
-      const desiredIndexes = [0, 2, 4, 5, 6, 9, 10]; // 보여줄 열
-
-      thead.innerHTML = "<tr>" + desiredIndexes.map(i =>
-        `<th style="border:1px solid #ccc; background:#f0f0f0; padding:3px; white-space:nowrap; text-align:center;">${data.header[i]}</th>`
-      ).join("") + "</tr>";
-
-      tbody.innerHTML = "";
-      data.records.forEach(row => {
-        const tr = document.createElement("tr");
-        desiredIndexes.forEach((colIndex, idx) => {
-          const td = document.createElement("td");
-          const cell = row[colIndex];
-          td.textContent = idx === 0 ? formatDate(cell) : cell;
-          td.style.border = "1px solid #ccc";
-          td.style.padding = "6px";
-          td.style.whiteSpace = "nowrap";
-          td.style.textAlign = "center";
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById("myRecordsModal").style.display = "flex";
-    })
-    .catch(err => {
-      console.error("팀 신청 내역 로딩 오류:", err);
-      alert("❌ 조회 중 오류가 발생했습니다.");
-    });
-});
-
-
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      categorySelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-      Object.keys(items).forEach(cat => {
-        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-      });
-
-        // ✅ 🔽 여기 이 위치에 바로 넣으세요!
-    const categoryButtonsContainer = document.getElementById("categoryButtons");
-
-    Object.keys(items).forEach(cat => {
-      const btn = document.createElement("button");
-      btn.textContent = cat;
-      btn.style.cssText = `
-        font-size: 16px;
-        padding: 12px;
-        border: 1px solid #007bff;
-        background-color: white;
-        color: #007bff;
-        border-radius: 8px;
-        cursor: pointer;
-      `;
-      btn.onclick = () => {
-  categorySelect.value = cat;
-  categorySelect.dispatchEvent(new Event("change")); // ✅ 이 줄 추가 (중요!)
-  document.getElementById("categoryStep").style.display = "none";
-  materialForm.style.display = "flex";
-};
-
-      categoryButtonsContainer.appendChild(btn);
-    });
-
-    nameInput.value = localStorage.getItem("userInfo") || "";
-    console.log("items:", items);
-  })
-
-    .catch(err => {
-      console.error("API 로드 에러:", err);
-    });
-
-document.getElementById("resetBtn").addEventListener("click", () => {
-  alertShown = false;
-  isSubmitting = false;
-
-  // ✅ 썸네일 및 사진 파일 초기화
-  fileArray = [];
-  const oldInput = document.getElementById("photoFiles");
-  oldInput.value = "";  // 파일 목록 초기화
-
-  // ✅ 썸네일 완전 제거
-  const previewArea = document.getElementById("previewArea");
-  while (previewArea.firstChild) {
-    previewArea.removeChild(previewArea.firstChild);
-  }
-
-  // ✅ input 요소 완전 재생성
-  const newInput = document.createElement("input");
-  newInput.type = "file";
-  newInput.id = "photoFiles";
-  newInput.name = "photoFiles";
-  newInput.accept = "image/*";
-  newInput.multiple = true;
-  newInput.style.border = "none";
-  newInput.style.paddingLeft = "0";
-  newInput.addEventListener("change", function () {
-    checkPhotoLimit(this);
-  });
-  oldInput.parentNode.replaceChild(newInput, oldInput);
-
-  // ✅ 폼 내용 초기화
-  materialForm.reset();
-  subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-  categorySelect.disabled = false;
-  subSelect.disabled = false;
-  sizeSelect.disabled = false;
-  quantityInput.disabled = false;
-
-  nameInput.value = localStorage.getItem("userInfo") || "";
-  msgDiv.textContent = "";
-  itemList = [];
-  document.getElementById("itemListDisplay").innerHTML = "";
-  document.getElementById("myRecordsSection").style.display = "none";
-});
-
-
-
-  materialForm.addEventListener("submit", function(e) {
-    e.preventDefault();
-    if (isSubmitting) return;
-
-    const currentStock = parseInt(sizeSelect.selectedOptions[0]?.dataset.stock || "0", 10);
-    const requestedQty = parseInt(quantityInput.value, 10);
-    let remarksText = remarksInput.value.trim();
-
-    if (requestedQty <= 0) {
-      alert("⚠️ 수량은 최소 1개 이상이어야 합니다. 자동으로 1개로 수정됩니다.");
-      quantityInput.value = 1;
-      return;
-    }
-
-    const 지급수량 = Math.min(requestedQty, currentStock);
-    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-    const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-    const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-    const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
-
-    if (!alertShown) {
-      if (구매요청수량 > 0) {
-        if (currentStock > 0) {
-          alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-          quantityInput.value = currentStock;
-        } else {
-          alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.\n\n[주의] 신청 버튼을 한 번 더 눌러야 접수됩니다.`);
-        }
-
-           categorySelect.disabled = true;
-        subSelect.disabled = true;
-        sizeSelect.disabled = true;
-        quantityInput.disabled = true;
-
-        alertShown = true;
-        return; // 제출 중단
-      } else {
-       
-      }
-    } else {
-      alertShown = false;
-    }
-
-    const formData = new URLSearchParams({
-      category: categorySelect.value,
-      subcategory: subSelect.value,
-      size: sizeSelect.value,
-      name: nameInput.value,
-      quantity: String(quantityInput.value),
-      remarks: remarksInput.value
-    });
-
-    isSubmitting = true;
-
-    fetch(API_URL, {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      isSubmitting = false;
-      alertShown = false;
-
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
-
-     if (data.result === "success") {
-        msgDiv.textContent = "✅ 신청이 저장되었습니다!";
-        msgDiv.style.color = "green";
-        alert("✅ 신청이 저장되었습니다!");
-        location.reload();
-      } else {
-        msgDiv.textContent = "❌ 신청 실패";
-        msgDiv.style.color = "red";
-      }
-    })
-    .catch(err => {
-      console.error("에러:", err);
-      isSubmitting = false;
-      alertShown = false;
-      categorySelect.disabled = false;
-      subSelect.disabled = false;
-      sizeSelect.disabled = false;
-      quantityInput.disabled = false;
-      msgDiv.textContent = "❌ 서버 오류";
-      msgDiv.style.color = "red";
-    });
-  });
-  });
-
-</script>
-
-<script>
-document.getElementById("viewPhotos").addEventListener("click", () => {
-  const category = document.getElementById("category").value.trim();
+function backspaceQuantity() {
+  quantityValue = quantityValue.slice(0, -1);
+  updateQuantityDisplay();
+}
+// 🔽 항목 사진 보기 버튼 동작
+document.getElementById("viewPhotosCategory").addEventListener("click", () => {
+  const category = selected.category;
   if (!category) {
-    alert("물품 종류를 먼저 선택해주세요.");
+    alert("먼저 항목 분류를 선택해주세요.");
     return;
   }
 
-  fetch(API_URL + "?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -840,7 +687,7 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
       container.innerHTML = "";
 
       if (!urls || urls.length === 0) {
-        container.innerHTML = "<p>해당 물품에 대한 사진이 없습니다.</p>";
+        container.innerHTML = "<p>해당 항목의 사진이 없습니다.</p>";
       } else {
         urls.forEach(url => {
           const fileName = url.split("/").pop().split(".")[0];
@@ -858,274 +705,40 @@ document.getElementById("viewPhotos").addEventListener("click", () => {
     });
 });
 
+
+// 🔽 모달 닫기 버튼
 document.getElementById("closeModal").addEventListener("click", () => {
   document.getElementById("photoModal").style.display = "none";
 });
-</script>
 
-<script>
-let itemList = [];
-
-document.getElementById("addItemBtn").addEventListener("click", () => {
-  const category = categorySelect.value;
-  const subcategory = subSelect.value;
-  const size = sizeSelect.value;
-  const name = nameInput.value;
-  const quantity = parseInt(quantityInput.value, 10);
-  let remarksText = remarksInput.value.trim();
-
-  if (!category || !subcategory || !size || !quantity || quantity <= 0) {
-    alert("⚠️ 모든 항목을 선택하고 수량은 1 이상으로 입력하세요.");
+function goToTypeStep() {
+  if (!selected.category) {
+    alert("대분류를 먼저 선택해주세요.");
     return;
   }
-
-  const selectedSizeOption = sizeSelect.selectedOptions[0];
-  const currentStock = selectedSizeOption ? parseInt(selectedSizeOption.dataset.stock || "0", 10) : 0;
-
-  const 지급수량 = Math.min(quantity, currentStock);
-  const 구매요청수량 = Math.max(0, quantity - currentStock);
-  const 지급문구 = 지급수량 > 0 ? `${지급수량}개 지급` : "";
-  const 구매문구 = 구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : "";
-  const 추가문구 = [지급문구, 구매문구].filter(Boolean).join(" / ");
-
- 
-  if (구매요청수량 > 0) {
-    if (currentStock > 0) {
-      alert(`⚠️ 현재 ${currentStock}개 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
-    } else {
-      alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
-    }
-  }
-
-  const item = { category, subcategory, size, name, quantity, remarks: remarksText };
-itemList.push(item);
-
-// ✅ li 요소 만들기
-const li = document.createElement("li");
-
-// ✅ 표시 텍스트 분리 및 중복 제거
-const displayText = [
-  지급수량 > 0 ? `${지급수량}개 지급` : "",
-  구매요청수량 > 0 ? `${구매요청수량}개 구매 요청` : ""
-].filter(Boolean).join(" / ");
-
-// ✅ remarksText에서 displayText 제거
-const cleanedRemarks = remarksText
-  .replace(displayText, "")                 // displayText 제거
-  .replace(/^ *\/+ */, "")                  // 앞쪽 슬래시 제거
-  .replace(/ *\/+ *$/, "")                  // ✅ 뒤쪽 슬래시 제거 추가!
-  .trim();
-
-
-// ✅ HTML 텍스트 구성 (백틱 사용!!)
-li.innerHTML = `
-  <div class="item-text">
-    ${subcategory} (${size}) - [${displayText}]
-    ${cleanedRemarks ? `<br/>${cleanedRemarks}` : ""}
-  </div>
-  <button class="remove-btn">삭제</button>
-`;
-
-// ✅ 삭제 버튼 동작
-const removeBtn = li.querySelector(".remove-btn");
-removeBtn.onclick = () => {
-  const index = itemList.findIndex(i =>
-    i.category === category &&
-    i.subcategory === subcategory &&
-    i.size === size &&
-    i.name === name &&
-    i.quantity === quantity &&
-    i.remarks === remarksText
-  );
-  if (index > -1) {
-    itemList.splice(index, 1);
-  }
-  li.remove();
-};
-
-// ✅ 리스트에 추가
-document.getElementById("itemListDisplay").appendChild(li);
-
-// ✅ 입력 초기화
-categorySelect.value = "";
-subSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-sizeSelect.innerHTML = "<option value=''>-- 선택하세요 --</option>";
-quantityInput.value = "";
-remarksInput.value = "";
-nameInput.value = localStorage.getItem("userInfo") || "";
-}); // ←❗❗❗ 이거 빠졌었음!! 추가 버튼 함수 닫는 괄호!!
-
-
-document.getElementById("submitAllBtn").addEventListener("click", async (e) => {
-  if (!e.isTrusted) return;
-
-  if (itemList.length === 0) {
-    alert("신청할 항목이 없습니다.");
+  selectCategory(selected.category);
+}
+function goToSizeStep() {
+  if (!selected.type) {
+    alert("중분류를 선택해주세요.");
     return;
   }
-
-  // ✅ 이 위치에서 단 한 번만 검사!
-  const photoInput = document.getElementById("photoFiles");
-  if (photoInput.files.length > 0 && itemList.length > 1) {
-    alert("📷 사진을 업로드한 경우 한 품목만 신청할 수 있습니다. 항목을 정리해주세요.");
+  selectType(selected.type);
+}
+function goToQuantityStep() {
+  if (!selected.size) {
+    alert("소분류를 선택해주세요.");
     return;
   }
+  selectSize(selected.size);
+}
 
-  document.getElementById("loadingOverlay").style.display = "flex";
-
-  try {
-    const 완료메시지목록 = [];
-
-    for (const item of itemList) {
-      const stockMap = items[item.category]?.stockMap || {};
-      const key = `${item.subcategory}__${item.size}`;
-      const currentStock = stockMap[key] !== undefined ? Number(stockMap[key]) : 0;
-
-      const 지급수량 = Math.min(item.quantity, currentStock);
-      const 구매요청수량 = Math.max(0, item.quantity - currentStock);
-
-      const files = photoInput.files;
-      const photoData = await readFilesAsBase64(files);
-
-      const formData = new URLSearchParams({
-        category: item.category,
-        subcategory: item.subcategory,
-        size: item.size,
-        name: item.name,
-        quantity: String(item.quantity),
-        remarks: item.remarks
-      });
-
-      formData.append("지급수량", 지급수량);
-      formData.append("구매요청수량", 구매요청수량);
-      
-      
-      photoData.forEach((img, idx) => {
-        formData.append(`base64_${idx + 1}`, img.base64);
-        formData.append(`filename_${idx + 1}`, img.filename);
-      });
-
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      const data = await res.json();
-
-      let msg = `${item.category} > ${item.subcategory} (${item.size}): `;
-      if (지급수량 > 0 && 구매요청수량 > 0) {
-        msg += `${지급수량}개 신청 완료, ${구매요청수량}개 구매 요청 완료`;
-      } else if (지급수량 > 0) {
-        msg += `${지급수량}개 신청 완료`;
-      } else if (구매요청수량 > 0) {
-        msg += `${구매요청수량}개 구매 요청 완료`;
-      }
-
-      완료메시지목록.push(msg);
-    }
-
-    document.getElementById("loadingOverlay").style.display = "none";
-    alert("✅ 모든 신청이 저장되었습니다!\n\n" + 완료메시지목록.join("\n"));
-    itemList = [];
-    document.getElementById("itemListDisplay").innerHTML = "";
-    location.reload();
-
-  } catch (err) {
-    console.error("에러:", err);
-    document.getElementById("loadingOverlay").style.display = "none";
-    alert("❌ 네트워크 오류 또는 서버 응답 실패");
-  }
-});
 
 </script>
-
-
-<!-- ✅ 모달 배경 -->
-<div id="noticeModal" style="
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  padding: 20px;
-  box-sizing: border-box;
-">
-
-  <!-- ✅ 모달 내용 박스 -->
-  <div style="
-    background: white;
-    border-radius: 12px;
-    padding: 16px 20px;
-    max-width: 480px;
-    width: 100%;
-    max-height: 80vh;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    font-size: 1rem;
-  ">
-    <!-- ✅ 닫기 버튼 -->
-    <button id="closeNotice" style="
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: 1.2rem;
-      background: none;
-      border: none;
-      color: #999;
-      cursor: pointer;
-    ">✖</button>
-
-    <div id="noticeContent" style="white-space: pre-wrap; line-height: 1.5;"></div>
-<!-- ✅ 하루 보지 않기 버튼 -->
-<button id="hideTodayBtn"
-  style="margin: 20px auto 0; padding: 10px 16px; font-size: 14px; display: block; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
-  오늘 하루 이 창 보지 않기
-</button>
-  </div>
+<!-- ✅ 신청 중 로딩 오버레이 -->
+<div id="submitOverlay">
+  <span>📤 신청 중입니다...</span>
 </div>
-
-  <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const todayKey = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
-  const hiddenDay = localStorage.getItem("hideNoticeDate");
-
-  if (hiddenDay === todayKey) {
-    console.log("📢 오늘 공지사항 안 보기 설정됨.");
-    return; // 오늘은 안 보이게
-  }
-
-  const closeBtn = document.getElementById("closeRecordsModal");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      document.getElementById("myRecordsModal").style.display = "none";
-    });
-  }
-
-  fetch("https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec?mode=notice")
-
-    .then(res => res.json())
-    .then(data => {
-      const notice = data.notice?.trim();
-      if (notice) {
-        document.getElementById("noticeContent").textContent = notice;
-        document.getElementById("noticeModal").style.display = "flex";
-      }
-    });
-
-  document.getElementById("closeNotice").addEventListener("click", () => {
-    document.getElementById("noticeModal").style.display = "none";
-  });
-
-  document.getElementById("hideTodayBtn").addEventListener("click", () => {
-    localStorage.setItem("hideNoticeDate", todayKey);
-    document.getElementById("noticeModal").style.display = "none";
-  });
-});
-</script>
 
 </body>
 </html>
