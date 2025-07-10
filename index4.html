@@ -252,6 +252,39 @@
 </style>
 
 </head>
+<body>
+<!-- 최상단에 위치 -->
+<div id="initialLoadingOverlay" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  color: white;
+  font-size: 1.4rem;
+">
+  ⏳ 로딩 중입니다...
+</div>
+<!-- ✅ 기존 위치 (맨 아래)에서 이쪽으로 이동 -->
+<div id="loadingOverlay" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  color: white;
+  font-size: 1.4rem;
+">
+  ⏳ 로딩 중입니다...
+</div>
+
+
 <h2 id="title">🔐 로그인</h2>
 
 <!-- 로그인 영역 -->
@@ -268,7 +301,6 @@
     display: none;
     white-space: pre-wrap;
   "></div>
-  <h3>로그인</h3>
 
   
 
@@ -312,7 +344,6 @@
   </div>
 </div>
 
-<div id="loadingText" class="hidden">⏳ 로딩 중입니다...</div>
 
   <div id="step-type" class="step hidden">
   <h3>2단계: 중분류 선택</h3>
@@ -430,8 +461,8 @@
       document.getElementById('form-section').classList.remove('hidden');
       document.getElementById('title').innerText = "📦 자재 신청";
 
-      document.getElementById('loadingText').innerText = "⏳ 로딩 중입니다...";
-      document.getElementById('loadingText').classList.remove('hidden');
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
       loadItems();
     } else {
       document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
@@ -466,15 +497,17 @@ function loadItems() {
         container.appendChild(btn);
       });
 
-      // ✅ 로딩 메시지 숨기고 버튼 보이게
-      document.getElementById('loadingText').classList.add('hidden');
-            document.getElementById('goToTypeBtn').style.display = 'inline-block';
+      document.getElementById('goToTypeBtn').style.display = 'inline-block';
+
+      // ✅ ✅ ✅ 이 시점에만 로딩 오버레이를 끄세요
+      document.getElementById('loadingOverlay').style.display = 'none';
     })
     .catch(error => {
-      document.getElementById('loadingText').classList.add('hidden');
+      document.getElementById('loadingOverlay').style.display = 'none'; // 실패해도 꺼야 함
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
+
 
 
 
@@ -749,18 +782,25 @@ function goToQuantityStep() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const box = document.getElementById("inlineNoticeBox");
+  const loading = document.getElementById("initialLoadingOverlay");
+
+  // 공지사항 fetch
   fetch("https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec?mode=notice")
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
       if (notice) {
-        const box = document.getElementById("inlineNoticeBox");
         box.textContent = notice;
-        box.style.display = "block";
+        box.style.display = "block";  // ✅ 공지 박스 표시
       }
     })
     .catch(err => {
       console.warn("공지사항 로딩 실패:", err);
+      // 실패해도 그냥 넘어감
+    })
+    .finally(() => {
+      loading.style.display = 'none';  // ✅ 오버레이 제거
     });
 });
 
@@ -769,6 +809,20 @@ document.addEventListener("DOMContentLoaded", () => {
 <!-- ✅ 신청 중 로딩 오버레이 -->
 <div id="submitOverlay">
   <span>📤 신청 중입니다...</span>
+</div>
+<div id="loadingOverlay" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  color: white;
+  font-size: 1.4rem;
+">
+  ⏳ 로딩 중입니다...
 </div>
 
 </body>
