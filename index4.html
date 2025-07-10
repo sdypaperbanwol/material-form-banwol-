@@ -106,16 +106,18 @@
   }
 
   /* 비고 입력 */
-  #remarks {
-    display: block;
-    margin: 1.5rem auto 1rem auto;
-    padding: 0.6rem;
-    font-size: 1rem;
-    width: 80%;
-    max-width: 300px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
+ #remarks {
+  width: 100%;
+  max-width: 400px;
+  margin: 1.5rem auto 1rem auto;
+  padding: 0.6rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  display: block;
+  resize: none;
+}
+
 
   /* 하단 버튼 정리 */
   .step button {
@@ -391,7 +393,17 @@
   </div>
 
     <!-- 비고 입력 -->
-  <input id="remarks" placeholder="비고 (선택)" />
+  <textarea id="remarks" placeholder="비고 (선택)" rows="2" style="
+  width: 100%;
+  max-width: 400px;
+  margin: 1.5rem auto 1rem auto;
+  padding: 0.6rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  display: block;
+  resize: none;
+"></textarea>
 
   
   <!-- 항목 추가 버튼 -->
