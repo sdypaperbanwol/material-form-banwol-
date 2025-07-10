@@ -13,7 +13,9 @@
     margin: 0;
   }
 
-  .hidden { display: none; }
+  .hidden {
+  display: none !important;}
+
   .step { margin-top: 1.5rem; }
 
   .button-list {
@@ -63,6 +65,14 @@
 #goToTypeBtn {
   display: none;
 }
+#record-buttons:not(.hidden) {
+  display: flex;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 0.5rem 0 1rem 0;
+  flex-wrap: wrap;
+}
+
 
 
   /* 수량 입력 - 키패드 + 리스트 영역 */
@@ -293,8 +303,40 @@
 </div>
 
 
-<h2 id="title">🔐 로그인</h2>
+<h2 id="title">🔐 신청·조사 시스템</h2>
+<div id="record-buttons" class="hidden">
 
+
+  <button onclick="openMyRecords()" style="
+    font-size: 0.9rem;
+    font-weight: bold;
+    background-color: #fff;
+    color: #007bff;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">📄 내 신청 내역</button>
+
+  <button onclick="openTeamRecords()" style="
+    font-size: 0.9rem;
+    font-weight: bold;
+    background-color: #fff;
+    color: #28a745;
+    border: 1px solid #28a745;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  " onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">👥 팀 신청 내역</button>
+</div>
 <!-- 로그인 영역 -->
 <div id="login-section">
 <!-- ✅ 공지사항 영역 -->
@@ -448,7 +490,37 @@
   <ul id="itemListDisplay"></ul>
 </div>
 
-
+<div id="myRecordsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999;">
+  <button onclick="closeMyRecords()" style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: white;
+    z-index: 10000;
+  ">✖</button>
+  <div style="
+    position: relative;
+    margin: 60px auto 0;
+    background: white;
+    padding: 20px 24px 30px;
+    border-radius: 10px;
+    max-width: 800px;
+    width: 95%;
+    max-height: 80vh;
+    overflow: auto;
+  ">
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 신청 내역</h3>
+    <table id="myRecordsTable" style="width:100%; font-size: 14px; border-collapse: collapse;">
+      <thead><tr></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
 
 
 <script>
@@ -484,7 +556,7 @@
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('form-section').classList.remove('hidden');
       document.getElementById('title').innerText = "📦 자재 신청";
-
+      document.getElementById('record-buttons').classList.remove('hidden');
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       loadItems();
@@ -829,6 +901,78 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+function openMyRecords() {
+  const empId = loginInfo.empId;
+  document.getElementById('loadingOverlay').style.display = 'flex'; // 🔹 로딩 시작
+
+  fetch(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result !== "success") {
+        alert("❌ 신청 내역을 불러올 수 없습니다.");
+        return;
+      }
+      renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10, 8]); // 날짜~처리상태
+    })
+    .catch(err => {
+      alert("❌ 네트워크 오류: " + err.message);
+    })
+    .finally(() => {
+      document.getElementById('loadingOverlay').style.display = 'none'; // 🔹 로딩 끝
+    });
+}
+
+
+function openTeamRecords() {
+  const empId = loginInfo.empId;
+  document.getElementById('loadingOverlay').style.display = 'flex'; // 🔹 로딩 시작
+
+  fetch(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result === "forbidden") {
+        alert("⚠️ 팀 내역 조회 권한이 없습니다.");
+        return;
+      }
+      if (data.result !== "success") {
+        alert("❌ 팀 신청 내역을 불러올 수 없습니다.");
+        return;
+      }
+      renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10]); // 팀 내역용
+    })
+    .catch(err => {
+      alert("❌ 네트워크 오류: " + err.message);
+    })
+    .finally(() => {
+      document.getElementById('loadingOverlay').style.display = 'none'; // 🔹 로딩 끝
+    });
+}
+
+
+function renderRecordsTable(data, colIndexes) {
+  const thead = document.querySelector("#myRecordsTable thead");
+  const tbody = document.querySelector("#myRecordsTable tbody");
+  thead.innerHTML = "<tr>" + colIndexes.map(i =>
+    `<th style="border:1px solid #ccc; background:#f0f0f0; padding:4px; text-align:center;">${data.header[i]}</th>`
+  ).join("") + "</tr>";
+
+  tbody.innerHTML = data.records.map(row => {
+    return "<tr>" + colIndexes.map(i =>
+      `<td style="border:1px solid #ccc; padding:6px; text-align:center;">${i === 0 ? formatDate(row[i]) : row[i]}</td>`
+    ).join("") + "</tr>";
+  }).join("");
+
+  document.getElementById("myRecordsModal").style.display = "flex";
+}
+
+function closeMyRecords() {
+  document.getElementById("myRecordsModal").style.display = "none";
+}
+
+function formatDate(raw) {
+  const d = new Date(raw);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 </script>
 <!-- ✅ 신청 중 로딩 오버레이 -->
