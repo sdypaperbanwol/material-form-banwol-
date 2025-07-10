@@ -416,7 +416,7 @@ function handleLogin() {
   if (!empId || !empName) return alert("사번과 이름을 입력해주세요.");
 
   // ✅ 로딩 오버레이 표시
-  document.getElementById('loginOverlay').classList.remove('hidden');
+ document.getElementById('loginOverlay').style.display = 'flex';
 
   // 로그인 버튼 숨기기
   document.querySelector('#login-section button').style.display = 'none';
@@ -428,8 +428,8 @@ function handleLogin() {
   })
   .then(res => res.json())
   .then(data => {
-    document.getElementById('loginOverlay').classList.add('hidden');
-
+    document.getElementById('loginOverlay').style.display = 'none';
+    
     if (data.result === 'success') {
       loginInfo = { empId, empName };
       document.getElementById('login-section').classList.add('hidden');
@@ -445,7 +445,7 @@ function handleLogin() {
     }
   })
   .catch(error => {
-    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
     document.querySelector('#login-section button').style.display = 'block';
   });
