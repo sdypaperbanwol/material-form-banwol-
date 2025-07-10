@@ -281,6 +281,11 @@
   color: white;
 }
 
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
 
 .pulse {
   animation: pulse 0.6s ease-in-out 2;
@@ -295,6 +300,16 @@
   animation: glow 1.2s ease-in-out 2;
   border: 2px solid #ff4444 !important;
 }
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.bounce {
+  animation: bounce 0.4s ease-in-out 2;
+}
+
 </style>
 
 </head>
@@ -620,17 +635,23 @@ function loadItems() {
         btn.onclick = () => {
           selected.category = cat;
           updateSelection(container, btn);
+
+          // ✅ 다음 이동 버튼에 bounce + glow 효과
+          const nextBtn = document.getElementById('goToTypeBtn');
+          nextBtn.classList.add('bounce', 'glow');
+          setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
         };
         container.appendChild(btn);
       });
 
+      // "다음 이동" 버튼 보이기
       document.getElementById('goToTypeBtn').style.display = 'inline-block';
 
-      // ✅ ✅ ✅ 이 시점에만 로딩 오버레이를 끄세요
+      // 로딩 오버레이 해제
       document.getElementById('loadingOverlay').style.display = 'none';
     })
     .catch(error => {
-      document.getElementById('loadingOverlay').style.display = 'none'; // 실패해도 꺼야 함
+      document.getElementById('loadingOverlay').style.display = 'none';
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
@@ -638,42 +659,61 @@ function loadItems() {
 
 
 
- function selectCategory(cat) {
+
+
+function selectCategory(cat) {
   const types = itemData[cat].types;
   const container = document.getElementById('type-buttons');
   container.innerHTML = '';
+
   types.forEach(type => {
     const btn = document.createElement('button');
     btn.innerText = type;
     btn.onclick = () => {
       selected.type = type;
       updateSelection(container, btn);
-      // 다음 단계는 버튼으로 진행
+
+      // ✅ 다음 이동 버튼에 bounce + glow 효과
+      const nextBtn = document.querySelector('#step-type .half-btn:nth-child(2)');
+      nextBtn.classList.add('bounce', 'glow');
+      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
     };
     container.appendChild(btn);
   });
+
   showStep('type');
 }
 
 
-  function selectType(type) {
-    const container = document.getElementById('size-buttons');
-    container.innerHTML = '';
-    const stockMap = itemData[selected.category].stockMap;
-    const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
-    sizeKeys.forEach(k => {
-      const size = k.split('__')[1];
-      const stock = stockMap[k];
-      const btn = document.createElement('button');
-      btn.innerText = `${size} (재고: ${stock})`;
-      btn.onclick = () => {
-        selected.size = size;
-        updateSelection(container, btn);
-              };
-      container.appendChild(btn);
-    });
-    showStep('size');
-  }
+
+
+ function selectType(type) {
+  const container = document.getElementById('size-buttons');
+  container.innerHTML = '';
+  const stockMap = itemData[selected.category].stockMap;
+  const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
+
+  sizeKeys.forEach(k => {
+    const size = k.split('__')[1];
+    const stock = stockMap[k];
+    const btn = document.createElement('button');
+    btn.innerText = `${size} (재고: ${stock})`;
+    btn.onclick = () => {
+      selected.size = size;
+      updateSelection(container, btn);
+
+      // ✅ 다음 이동 버튼에 bounce + glow 효과
+      const nextBtn = document.querySelector('#step-size .half-btn:nth-child(2)');
+      nextBtn.classList.add('bounce', 'glow');
+      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
+    };
+    container.appendChild(btn);
+  });
+
+  showStep('size');
+}
+
+
 
   function selectSize(size) {
   showStep('quantity');
@@ -843,8 +883,14 @@ function appendQuantity(num) {
   if (quantityValue.length < 4) {
     quantityValue += num;
     updateQuantityDisplay();
+
+    // ✅ 항목 추가 버튼 강조
+    const addBtn = document.querySelector("button[onclick='addItemToList()']");
+    addBtn.classList.add('pulse');
+    setTimeout(() => addBtn.classList.remove('pulse'), 400);
   }
 }
+
 
 function clearQuantity() {
   quantityValue = "";
