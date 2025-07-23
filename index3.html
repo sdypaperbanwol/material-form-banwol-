@@ -1230,8 +1230,36 @@ function submitZ3() {
   closeZ3Modal();
 }
 function openZ1Modal() {
+  const listContainer = document.getElementById("z1-item-list");
+  listContainer.innerHTML = "";
+
+  const stockMap = itemData[selected.category]?.stockMap || {};
+
+  const names = Object.keys(stockMap)
+    .map(k => k.split("__")[0]) // type
+    .filter((v, i, self) => self.indexOf(v) === i); // 중복 제거
+
+  if (names.length === 0) {
+    listContainer.innerHTML = "<p>등록된 항목이 없습니다.</p>";
+    return;
+  }
+
+  names.forEach(name => {
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.justifyContent = "space-between";
+    row.style.marginBottom = "10px";
+    row.innerHTML = `
+      <div style="flex:1;">${name}</div>
+      <input type="number" id="z1_qty_${name}" placeholder="수량" min="0" style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;">
+    `;
+    listContainer.appendChild(row);
+  });
+
   document.getElementById("modalZ1").style.display = "block";
 }
+
 function closeZ1Modal() {
   document.getElementById("modalZ1").style.display = "none";
 }
@@ -1251,41 +1279,53 @@ function closeZ3Modal() {
 }
 // ✅ 장바구니에 추가하지 않고 바로 전송
 async function submitZ1() {
-  const subcategory = document.getElementById("z1-position").value;
-  const quantity = document.getElementById("z1-qty").value;
   const remarks = document.getElementById("z1-remarks").value;
+  const stockMap = itemData[selected.category]?.stockMap || {};
+  const names = Object.keys(stockMap)
+    .map(k => k.split("__")[0])
+    .filter((v, i, self) => self.indexOf(v) === i);
 
-  if (!subcategory || !quantity) {
-    alert("부서 또는 직급과 수량을 입력해주세요.");
+  const itemsToSubmit = [];
+
+  names.forEach(name => {
+    const qtyInput = document.getElementById("z1_qty_" + name);
+    const qty = parseInt(qtyInput?.value || "0");
+    if (qty > 0) {
+      itemsToSubmit.push({
+        name: `${loginInfo.empId} ${loginInfo.empName}`,
+        category: selected.category,
+        subcategory: name,
+        size: "개",
+        quantity: qty,
+        remarks
+      });
+    }
+  });
+
+  if (itemsToSubmit.length === 0) {
+    alert("수량을 1개 이상 입력해주세요.");
     return;
   }
 
-  const item = {
-    name: `${loginInfo.empId} ${loginInfo.empName}`,
-    category: selected.category,
-    subcategory: subcategory,
-    size: "기타",
-    quantity,
-    remarks
-  };
-
-  // ✅ 바로 전송
   document.getElementById('submitOverlay').style.display = 'flex';
+
   try {
-    await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        name: item.name,
-        category: item.category,
-        subcategory: item.subcategory,
-        size: item.size,
-        quantity: item.quantity,
-        remarks: item.remarks,
-        지급수량: item.quantity,
-        구매요청수량: 0
-      })
-    });
+    for (const item of itemsToSubmit) {
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          name: item.name,
+          category: item.category,
+          subcategory: item.subcategory,
+          size: item.size,
+          quantity: item.quantity,
+          remarks: item.remarks,
+          지급수량: item.quantity,
+          구매요청수량: 0
+        })
+      });
+    }
 
     alert("✅ 신청이 완료되었습니다.");
     closeZ1Modal();
@@ -1295,6 +1335,7 @@ async function submitZ1() {
     document.getElementById('submitOverlay').style.display = 'none';
   }
 }
+
 
 </script>
 <!-- ✅ 신청 중 로딩 오버레이 -->
@@ -1316,13 +1357,15 @@ async function submitZ1() {
   ⏳ 로딩 중입니다...
 </div>
 <!-- Z1 모달: 달력/다이어리 -->
+<!-- Z1 모달 (달력/다이어리 전체 리스트 수량 입력) -->
 <div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
-  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:500px;position:relative;">
+  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;position:relative;">
     <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
     <h3>📅 달력 / 다이어리 신청</h3>
-    <input id="z1-position" placeholder="직급 또는 부서" />
-    <input id="z1-qty" type="number" placeholder="신청 수량" />
-    <textarea id="z1-remarks" placeholder="비고" rows="2" style="width:100%;margin-top:10px;"></textarea>
+    
+    <div id="z1-item-list"></div>
+
+    <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
     <button onclick="submitZ1()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
