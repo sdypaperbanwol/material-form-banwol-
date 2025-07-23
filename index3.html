@@ -663,7 +663,6 @@ function loadItems() {
 }
 
 
-
 function selectCategory(cat) {
   const types = itemData[cat].types;
   const container = document.getElementById('type-buttons');
@@ -1155,12 +1154,6 @@ function openZModal(code) {
   if (modalFn) modalFn();
   else alert("❌ 알 수 없는 특수 항목입니다: " + code);
 }
-  function openZ1Modal() {
-  document.getElementById("modalZ1").style.display = "block";
-}
-function closeZ1Modal() {
-  document.getElementById("modalZ1").style.display = "none";
-}
 function submitZ1() {
   const subcategory = document.getElementById("z1-position").value;
   const quantity = document.getElementById("z1-qty").value;
@@ -1186,13 +1179,6 @@ function submitZ1() {
   renderItemList();
   closeZ1Modal();
 }
-
-function openZ2Modal() {
-  document.getElementById("modalZ2").style.display = "block";
-}
-function closeZ2Modal() {
-  document.getElementById("modalZ2").style.display = "none";
-}
 function submitZ2() {
   const subcategory = document.getElementById("z2-name").value;  // 사용자 입력 (표기 이름)
   const size = document.getElementById("z2-role").value;         // 사용자 입력 (직책)
@@ -1216,13 +1202,6 @@ function submitZ2() {
   itemList.push(item);
   renderItemList();
   closeZ2Modal();
-}
-
-function openZ3Modal() {
-  document.getElementById("modalZ3").style.display = "block";
-}
-function closeZ3Modal() {
-  document.getElementById("modalZ3").style.display = "none";
 }
 function submitZ3() {
   const subcategory = document.getElementById("z3-item").value; // 선택한 장비 이름
@@ -1250,7 +1229,6 @@ function submitZ3() {
   renderItemList();
   closeZ3Modal();
 }
-
 
 </script>
 <!-- ✅ 신청 중 로딩 오버레이 -->
