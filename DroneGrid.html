@@ -654,26 +654,22 @@ function getFillRGBA(color) {
   const boxH = (y2 - y1) * scale;
 
   ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 0.7;
   ctx.strokeRect(boxX, boxY, boxW, boxH);
 }
 
 
 
 
-                      function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
-                        const xStart = x1 / cellSize;
-                        const yStart = y1 / cellSize;
-                        const xEnd = xStart + cols - 1;
-                        const yEnd = yStart + rows - 1;
+                    function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
+  const xStart = x1 / cellSize;
+  const yStart = y1 / cellSize;
 
-                        return [
-                          `셀 X=${xStart}~${xEnd}, Y=${yStart}~${yEnd}`,
-                          `${cols}x${rows}칸`,
-                          `${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`,
-                          `${areaM2.toFixed(2)}m² (약 ${areaPy.toFixed(2)}평)`
-                        ];
-                      }
+  return [
+    `X${xStart}, Y${yStart} / ${widthM.toFixed(0)}×${heightM.toFixed(0)}m / ${areaM2.toFixed(0)}m²(${Math.round(areaPy)}평)`
+  ];
+}
+
 
                       function handleStart(e) {
                         const pos = getRelativeCoords(e);
@@ -700,7 +696,7 @@ function getFillRGBA(color) {
 ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
 
 ctx.strokeStyle = currentColor;
-ctx.lineWidth = 3;
+ctx.lineWidth = 0.7;
 ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
 
 
