@@ -1249,6 +1249,52 @@ function openZ3Modal() {
 function closeZ3Modal() {
   document.getElementById("modalZ3").style.display = "none";
 }
+// ✅ 장바구니에 추가하지 않고 바로 전송
+async function submitZ1() {
+  const subcategory = document.getElementById("z1-position").value;
+  const quantity = document.getElementById("z1-qty").value;
+  const remarks = document.getElementById("z1-remarks").value;
+
+  if (!subcategory || !quantity) {
+    alert("부서 또는 직급과 수량을 입력해주세요.");
+    return;
+  }
+
+  const item = {
+    name: `${loginInfo.empId} ${loginInfo.empName}`,
+    category: selected.category,
+    subcategory: subcategory,
+    size: "기타",
+    quantity,
+    remarks
+  };
+
+  // ✅ 바로 전송
+  document.getElementById('submitOverlay').style.display = 'flex';
+  try {
+    await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        name: item.name,
+        category: item.category,
+        subcategory: item.subcategory,
+        size: item.size,
+        quantity: item.quantity,
+        remarks: item.remarks,
+        지급수량: item.quantity,
+        구매요청수량: 0
+      })
+    });
+
+    alert("✅ 신청이 완료되었습니다.");
+    closeZ1Modal();
+  } catch (err) {
+    alert("❌ 신청 실패: " + err.message);
+  } finally {
+    document.getElementById('submitOverlay').style.display = 'none';
+  }
+}
 
 </script>
 <!-- ✅ 신청 중 로딩 오버레이 -->
