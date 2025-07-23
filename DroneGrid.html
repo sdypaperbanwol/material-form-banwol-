@@ -401,9 +401,9 @@
                   function handleLogin() {
                     const id = document.getElementById("login-id").value;
                     const pw = document.getElementById("login-pw").value;
-                    const savedAdminPw = localStorage.getItem("adminPw") || "1234";
+                    const savedAdminPw = localStorage.getItem("adminPw") || "123";
 
-                    if (id === "superadmin" && pw === "master123") {
+                    if (id === "superadmin" && pw === "super123") {
                       localStorage.setItem("auth", "superadmin");
                       document.getElementById("login-screen").style.display = "none";
                       showFactorySelector();
