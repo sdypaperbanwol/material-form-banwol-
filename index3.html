@@ -1267,6 +1267,7 @@ function openZ1Modal() {
   });
 
   document.getElementById("modalZ1").style.display = "block";
+    attachZ1LimitLogic();  // 수량제한 풀고싶으면 이곳 지우면 됨
 }
 
 function closeZ1Modal() {
@@ -1343,6 +1344,43 @@ async function submitZ1() {
   } finally {
     document.getElementById('submitOverlay').style.display = 'none';
   }
+}
+function attachZ1LimitLogic() { // 수량제한 풀고싶으면 이곳 지우면 됨
+  const wallInput = document.getElementById("z1_qty_벽걸이 달력(최대 2개)");
+  const deskInput = document.getElementById("z1_qty_탁상 달력(최대 2개)");
+  const diaryInput = document.getElementById("z1_qty_다이어리(최대 1개)");
+
+  if (!wallInput || !deskInput || !diaryInput) return;
+
+  function limitCalendarInputs() {
+    const wallVal = parseInt(wallInput.value || "0", 10);
+    const deskVal = parseInt(deskInput.value || "0", 10);
+    const sum = wallVal + deskVal;
+
+    if (sum > 2) {
+      if (document.activeElement === wallInput) {
+        deskInput.value = Math.max(0, 2 - wallVal);
+      } else {
+        wallInput.value = Math.max(0, 2 - deskVal);
+      }
+    }
+
+    // 각자 최대 2까지
+    wallInput.max = 2;
+    deskInput.max = 2;
+  }
+
+  function limitDiaryInput() {
+    const val = parseInt(diaryInput.value || "0", 10);
+    if (val > 1) {
+      diaryInput.value = 1;
+    }
+    diaryInput.max = 1;
+  }
+
+  wallInput.addEventListener("input", limitCalendarInputs);
+  deskInput.addEventListener("input", limitCalendarInputs);
+  diaryInput.addEventListener("input", limitDiaryInput);
 }
 
 
