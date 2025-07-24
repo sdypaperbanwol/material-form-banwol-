@@ -1267,8 +1267,7 @@ function openZ1Modal() {
   });
 
   document.getElementById("modalZ1").style.display = "block";
-    attachZ1LimitLogic();  // 수량제한 풀고싶으면 이곳 지우면 됨
-}
+   }
 
 function closeZ1Modal() {
   document.getElementById("modalZ1").style.display = "none";
@@ -1316,30 +1315,7 @@ async function submitZ1() {
     alert("수량을 1개 이상 입력해주세요.");
     return;
   }
- // ✅ ✅ ✅ 여기!! 제출하기 전에 강제 수량 제한 검사를 추가 // 수량제한 풀고싶으면 이곳 지우면 됨
-  const wallName = "벽걸이 달력(최대 2개)";
-  const deskName = "탁상 달력(최대 2개)";
-  const diaryName = "다이어리(최대 1개)";
 
-  const wallQty = parseInt(document.getElementById("z1_qty_" + wallName)?.value || "0", 10);
-  const deskQty = parseInt(document.getElementById("z1_qty_" + deskName)?.value || "0", 10);
-  const diaryQty = parseInt(document.getElementById("z1_qty_" + diaryName)?.value || "0", 10);
-
-  if (wallQty + deskQty > 2) {
-    alert("❌ 벽걸이 달력과 탁상 달력은 합쳐서 최대 2개까지만 신청할 수 있습니다.");
-    return;
-  }
-  if (diaryQty > 1) {
-    alert("❌ 다이어리는 최대 1개까지만 신청할 수 있습니다.");
-    return;
-  }
-
-  // ✅ 최소 하나라도 입력했는지 확인
-  if (itemsToSubmit.length === 0) {
-    alert("수량을 1개 이상 입력해주세요.");
-    return;
-  }
-  // 수량제한 풀고싶으면 이곳 지우면 됨(위에서 아래)
   document.getElementById('submitOverlay').style.display = 'flex';
 
   try {
@@ -1368,43 +1344,6 @@ async function submitZ1() {
     document.getElementById('submitOverlay').style.display = 'none';
   }
 }
-function attachZ1LimitLogic() { // 수량제한 풀고싶으면 이곳 지우면 됨
-  const wallInput = document.getElementById("z1_qty_벽걸이 달력(최대 2개)");
-  const deskInput = document.getElementById("z1_qty_탁상 달력(최대 2개)");
-  const diaryInput = document.getElementById("z1_qty_다이어리(최대 1개)");
-
-  if (!wallInput || !deskInput || !diaryInput) return;
-
-  function limitCalendarInputs() {
-    const wallVal = parseInt(wallInput.value || "0", 10);
-    const deskVal = parseInt(deskInput.value || "0", 10);
-    const sum = wallVal + deskVal;
-
-    if (sum > 2) {
-      if (document.activeElement === wallInput) {
-        deskInput.value = Math.max(0, 2 - wallVal);
-      } else {
-        wallInput.value = Math.max(0, 2 - deskVal);
-      }
-    }
-
-    // 각자 최대 2까지
-    wallInput.max = 2;
-    deskInput.max = 2;
-  }
-
-  function limitDiaryInput() {
-    const val = parseInt(diaryInput.value || "0", 10);
-    if (val > 1) {
-      diaryInput.value = 1;
-    }
-    diaryInput.max = 1;
-  }
-
-  wallInput.addEventListener("input", limitCalendarInputs);
-  deskInput.addEventListener("input", limitCalendarInputs);
-  diaryInput.addEventListener("input", limitDiaryInput);
-}
 
 
 </script>
@@ -1432,8 +1371,10 @@ function attachZ1LimitLogic() { // 수량제한 풀고싶으면 이곳 지우면
   <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;position:relative;">
     <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
     <h3>📅 달력 / 다이어리 신청</h3>
-     <p style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 0.85rem; margin-bottom: 10px;">
-  <b>벽걸이 달력과 탁상 달력의 합계는 최대 2개까지만 신청 가능합니다.</b><br />  
+    <p style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 0.85rem; margin-bottom: 10px;">
+  <b>📌 신청 안내</b><br />
+  벽걸이 달력 + 탁상 달력 = 최대 2개<br />
+  다이어리 = 0개 또는 1개 신청 가능
 </p>
     <div id="z1-item-list"></div>
 
