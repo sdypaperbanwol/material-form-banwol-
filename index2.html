@@ -1263,7 +1263,10 @@ function openZ1Modal() {
   const inputId = `z1_qty_${name}`;
   row.innerHTML = `
     <div style="flex:1;">${name}</div>
-    <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
+    <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1" // → 여기서 max="2" 부분을 삭제하거나, max="99" 정도로 바꿔도 됩니다.
+안 바꿔도 동작에는 큰 영향 없지만, 사용자한테 혼란을 줄 수 있으니 같이 수정하는 게 좋습니다. 
+
+
            style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
            onchange="adjustZ1Counts('${name}')">
   `;
@@ -1368,7 +1371,7 @@ function adjustZ1Counts(changedName) {
     diary.value = 1;
   }
 
-  // 벽걸이 + 탁상 합이 2 초과 → 조정
+  // 벽걸이 + 탁상 합이 2 초과 → 조정, 나중에 숫자 제한 없앨 때 지우면 됨
   if (wallVal + deskVal > 2) {
     if (changedName === "벽걸이 달력") {
       wallVal = Math.min(2, wallVal);         // 혹시 3을 입력했으면 강제 조정
