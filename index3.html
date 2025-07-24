@@ -629,30 +629,38 @@ function loadItems() {
       const container = document.getElementById('category-buttons');
       container.innerHTML = '';
 
-      Object.keys(data).forEach(cat => {
-        const btn = document.createElement('button');
-        btn.innerText = cat;
+    Object.keys(data).forEach(cat => {
+  const btn = document.createElement('button');
+  btn.innerText = cat;
 
-        // ✅ 버튼 클릭 시 일반 항목 vs Z 코드 구분
-        btn.onclick = () => {
-          selected.category = cat;
-          const activationCode = data[cat].activation;  // 예: Y, Z1, Z2 등
+  const activationCode = data[cat].activation;
 
-          if (activationCode?.startsWith("Z")) {
-            openZModal(activationCode);  // 모달 호출
-          } else {
-            updateSelection(container, btn);
+  // ✅ 모달 뜨는 항목만 강조: activation이 Z로 시작할 때
+  if (activationCode?.startsWith("Z")) {
+    btn.style.backgroundColor = "#fff9c4"; // 연노랑
+    btn.style.color = "#f57f17";           // 진한 주황
+    btn.style.fontWeight = "bold";
+    btn.style.border = "1px solid #fbc02d";
+  }
 
-            const nextBtn = document.getElementById('goToTypeBtn');
-            nextBtn.classList.add('bounce', 'glow');
-            nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            nextBtn.focus();
-            setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
-          }
-        };
+  btn.onclick = () => {
+    selected.category = cat;
 
-        container.appendChild(btn);
-      });
+    if (activationCode?.startsWith("Z")) {
+      openZModal(activationCode); // 모달 호출
+    } else {
+      updateSelection(container, btn);
+      const nextBtn = document.getElementById('goToTypeBtn');
+      nextBtn.classList.add('bounce', 'glow');
+      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nextBtn.focus();
+      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
+    }
+  };
+
+  container.appendChild(btn);
+});
+
 
       document.getElementById('goToTypeBtn').style.display = 'inline-block';
       document.getElementById('loadingOverlay').style.display = 'none';
@@ -1364,9 +1372,13 @@ async function submitZ1() {
     <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
     <h3>📅 달력 / 다이어리 신청</h3>
       <p style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 0.85rem; margin-bottom: 10px;">
-      ✅ <b>안내:</b> 벽걸이 달력과 탁상 달력은 <b>합계 2개까지</b>,<br />
-      다이어리는 <b>최대 1개까지</b> 신청 가능합니다. 초과 신청 시 반려될 수 있습니다.
-    </p>
+  ✅ <b>안내:</b><br />
+  - <b>벽걸이 달력</b>: 최대 2개<br />
+  - <b>탁상 달력</b>: 최대 2개<br />
+  <b>단, 벽걸이 + 탁상 합계는 최대 2개까지만 신청 가능</b><br />
+  - <b>다이어리</b>: 최대 1개<br /><br />
+  초과 신청 시 반려될 수 있으니 유의해주세요.
+</p>
     <div id="z1-item-list"></div>
 
     <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
