@@ -1316,7 +1316,30 @@ async function submitZ1() {
     alert("수량을 1개 이상 입력해주세요.");
     return;
   }
+ // ✅ ✅ ✅ 여기!! 제출하기 전에 강제 수량 제한 검사를 추가 // 수량제한 풀고싶으면 이곳 지우면 됨
+  const wallName = "벽걸이 달력(최대 2개)";
+  const deskName = "탁상 달력(최대 2개)";
+  const diaryName = "다이어리(최대 1개)";
 
+  const wallQty = parseInt(document.getElementById("z1_qty_" + wallName)?.value || "0", 10);
+  const deskQty = parseInt(document.getElementById("z1_qty_" + deskName)?.value || "0", 10);
+  const diaryQty = parseInt(document.getElementById("z1_qty_" + diaryName)?.value || "0", 10);
+
+  if (wallQty + deskQty > 2) {
+    alert("❌ 벽걸이 달력과 탁상 달력은 합쳐서 최대 2개까지만 신청할 수 있습니다.");
+    return;
+  }
+  if (diaryQty > 1) {
+    alert("❌ 다이어리는 최대 1개까지만 신청할 수 있습니다.");
+    return;
+  }
+
+  // ✅ 최소 하나라도 입력했는지 확인
+  if (itemsToSubmit.length === 0) {
+    alert("수량을 1개 이상 입력해주세요.");
+    return;
+  }
+  // 수량제한 풀고싶으면 이곳 지우면 됨(위에서 아래)
   document.getElementById('submitOverlay').style.display = 'flex';
 
   try {
