@@ -1351,32 +1351,33 @@ async function submitZ1() {
 function adjustZ1Counts(changedName) {
   const wall = document.getElementById("z1_qty_벽걸이 달력");
   const desk = document.getElementById("z1_qty_탁상 달력");
+  const diary = document.getElementById("z1_qty_다이어리");
 
   let wallVal = parseInt(wall?.value || "0");
   let deskVal = parseInt(desk?.value || "0");
+  let diaryVal = parseInt(diary?.value || "0");
 
-  if (changedName === "벽걸이 달력") {
-    if (wallVal > 2) wallVal = 2;
-    deskVal = 2 - wallVal;
-    wall.value = wallVal;
-    desk.value = deskVal;
-  }
+  if (wallVal < 0) wallVal = 0;
+  if (deskVal < 0) deskVal = 0;
+  if (diaryVal < 0) diaryVal = 0;
 
-  if (changedName === "탁상 달력") {
-    if (deskVal > 2) deskVal = 2;
-    wallVal = 2 - deskVal;
-    desk.value = deskVal;
-    wall.value = wallVal;
-  }
-
-  // 다이어리는 최대 1개 제한만 적용 (고정값 원하면 value=1로 시작)
-  const diary = document.getElementById("z1_qty_다이어리");
-  if (diary) {
-    let diaryVal = parseInt(diary.value || "0");
-    if (diaryVal > 1) {
-      diary.value = 1;
+  // 벽걸이 + 탁상 합이 2를 초과하면 조정
+  if (wallVal + deskVal > 2) {
+    if (changedName === "벽걸이 달력") {
+      deskVal = Math.max(0, 2 - wallVal);
+      desk.value = deskVal;
+    } else if (changedName === "탁상 달력") {
+      wallVal = Math.max(0, 2 - deskVal);
+      wall.value = wallVal;
     }
   }
+
+  // 다이어리는 최대 1개 제한
+  if (diaryVal > 1) {
+    diary.value = 1;
+  }
+}
+
 }
 
 
