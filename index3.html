@@ -5,18 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>자재 신청</title>
   <style>
- body {
-  font-family: 'sans-serif';
-  background: #f7f7f7;
-  text-align: center;
-  padding: 1rem;
-  margin: 0;
-
-  /* 추가된 부분 👇 */
-  font-size: 1.1rem;
-  color: #222;
-}
-
+  body {
+    font-family: 'sans-serif';
+    background: #f7f7f7;
+    text-align: center;
+    padding: 1rem;
+    margin: 0;
+  }
 
   .hidden {
   display: none !important;}
@@ -648,20 +643,17 @@ function loadItems() {
     btn.style.border = "1px solid #fbc02d";
   }
 
-  btn.onclick = () => {
-    selected.category = cat;
+btn.onclick = () => {
+  selected.category = cat;
 
-    if (activationCode?.startsWith("Z")) {
-      openZModal(activationCode); // 모달 호출
-    } else {
-      updateSelection(container, btn);
-      const nextBtn = document.getElementById('goToTypeBtn');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
-    }
-  };
+  if (activationCode?.startsWith("Z")) {
+    openZModal(activationCode); // 특수 항목은 모달 유지
+  } else {
+    updateSelection(container, btn);
+    selectCategory(cat); // 🔁 다음 단계 자동 진입
+  }
+};
+
 
   container.appendChild(btn);
 });
@@ -685,22 +677,12 @@ function selectCategory(cat) {
   types.forEach(type => {
     const btn = document.createElement('button');
     btn.innerText = type;
-    btn.onclick = () => {
-      selected.type = type;
-      updateSelection(container, btn);
+   btn.onclick = () => {
+  selected.type = type;
+  updateSelection(container, btn);
+  selectType(type); // 🔁 다음 단계 자동 진입
+};
 
-      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
-      const nextBtn = document.querySelector('#step-type .half-btn:nth-child(2)');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
-    };
-    container.appendChild(btn);
-  });
-
-  showStep('type');
-}
 
 
 
@@ -718,21 +700,11 @@ function selectCategory(cat) {
     const btn = document.createElement('button');
     btn.innerText = `${size} (재고: ${stock})`;
     btn.onclick = () => {
-      selected.size = size;
-      updateSelection(container, btn);
+  selected.size = size;
+  updateSelection(container, btn);
+  selectSize(size); // 🔁 다음 단계 자동 진입
+};
 
-      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
-      const nextBtn = document.querySelector('#step-size .half-btn:nth-child(2)');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
-    };
-    container.appendChild(btn);
-  });
-
-  showStep('size');
-}
 
 
 
