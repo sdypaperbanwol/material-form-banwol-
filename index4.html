@@ -26,21 +26,23 @@
     margin-bottom: 2rem;
   }
 
-  button {
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: none;
-    background-color: #ddd;
-    cursor: pointer;
-    width: 70%;
-    max-width: 300px;
-  }
+button {
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #b0c4de; /* 연한 선 추가 */
+  background-color: #e6f0ff; /* 연블루 */
+  color: #003366; /* 진한 파랑글씨 */
+  cursor: pointer;
+  width: 70%;
+  max-width: 300px;
+  transition: background 0.2s, color 0.2s;
+}
 
-  button:hover {
-    background-color: #4CAF50 !important;
-    color: white;
-  }
+ button:hover {
+  background-color: #cce5ff;
+  color: #001f3f;
+}
 
   .selected {
     background-color: #4CAF50 !important;
@@ -107,19 +109,20 @@
   width: fit-content;
 }
 
-  .numpad-grid button {
-    padding: 1rem;
-    font-size: 1.5rem;
-    border-radius: 10px;
-    background: #e0e0e0;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
+ .numpad-grid button {
+  padding: 1rem;
+  font-size: 1.5rem;
+  border-radius: 10px;
+  background: #eaf8f0;     /* 밝은 민트톤 */
+  color: #004d33;          /* 짙은 청록글씨 */
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
 
-  .numpad-grid button:hover {
-    background: #ccc;
-  }
+.numpad-grid button:hover {
+  background: #cceedd;     /* hover 시 약간 더 진한 민트톤 */
+}
 
   /* 비고 입력 */
  #remarks {
@@ -172,8 +175,9 @@
   display: none;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 10001; /* 기존 9999 → 더 높게 */
 }
+
 
 #submitOverlay span {
   background: white;
@@ -415,12 +419,7 @@
 
 
   
-
-  <!-- ✅ 다음 단계 이동 버튼 추가 위치 여기!! -->
-  <button type="button" id="goToTypeBtn" onclick="goToTypeStep()" style="margin-top: 8px;">
-  ➡ 다음 이동
-</button>
-</div>
+ </div>
 
 <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
   <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
@@ -442,7 +441,7 @@
 
   <div class="button-row">
     <button class="half-btn" onclick="goBackTo('category')">⬅ 뒤로가기</button>
-    <button class="half-btn" onclick="goToSizeStep()">➡ 다음 이동</button>
+  
   </div>
 </div>
 
@@ -454,7 +453,7 @@
 
   <div class="button-row">
     <button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button>
-    <button class="half-btn" onclick="goToQuantityStep()">➡ 다음 이동</button>
+  
   </div>
 </div>
 
@@ -568,7 +567,7 @@
 
 
 <script>
-  const endpoint = 'https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec'; // 실제 Web App 주소로 교체
+  const endpoint = 'https://script.google.com/macros/s/AKfycbx7dKmFg9tc2JeapPb6zaTtuCHaUFehm1wguWVSssLw9HCK7LXFrVXDcYdYNPVbHL4/exec'; // 실제 Web App 주소로 교체
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -631,28 +630,45 @@ function loadItems() {
       Object.keys(data).forEach(cat => {
         const btn = document.createElement('button');
         btn.innerText = cat;
+
+        const activationCode = data[cat].activation;
+
+        // ✅ 모달 뜨는 항목만 강조: activation이 Z로 시작할 때
+        if (activationCode?.startsWith("Z")) {
+          btn.style.backgroundColor = "#fff9c4"; // 연노랑
+          btn.style.color = "#f57f17";           // 진한 주황
+          btn.style.fontWeight = "bold";
+          btn.style.border = "1px solid #fbc02d";
+        }
+
         btn.onclick = () => {
           selected.category = cat;
-          updateSelection(container, btn);
 
-          // ✅ 다음 이동 버튼에 bounce + glow + 스크롤 + 포커스
-          const nextBtn = document.getElementById('goToTypeBtn');
-          nextBtn.classList.add('bounce', 'glow');
-          nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          nextBtn.focus();
-          setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
+          if (activationCode?.startsWith("Z")) {
+            openZModal(activationCode); // 특수 항목은 모달 유지
+          } else {
+            updateSelection(container, btn);
+            selectCategory(cat); // 🔁 다음 단계 자동 진입
+          }
         };
+
         container.appendChild(btn);
       });
 
-      document.getElementById('goToTypeBtn').style.display = 'inline-block';
-      document.getElementById('loadingOverlay').style.display = 'none';
+      // ✅ '다음으로' 버튼 제거됨 → 이 줄은 삭제 또는 주석 처리
+      // document.getElementById('goToTypeBtn').style.display = 'inline-block';
+
+      // ✅ 안전하게 null 체크 후 오버레이 숨김
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.style.display = 'none';
     })
     .catch(error => {
-      document.getElementById('loadingOverlay').style.display = 'none';
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.style.display = 'none';
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
+
 
 
 function selectCategory(cat) {
@@ -666,19 +682,15 @@ function selectCategory(cat) {
     btn.onclick = () => {
       selected.type = type;
       updateSelection(container, btn);
-
-      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
-      const nextBtn = document.querySelector('#step-type .half-btn:nth-child(2)');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
+      selectType(type);
     };
     container.appendChild(btn);
   });
 
-  showStep('type');
+  showStep('type'); // ✅ 자동 다음 단계 이동
 }
+
+
 
 
 
@@ -698,19 +710,14 @@ function selectCategory(cat) {
     btn.onclick = () => {
       selected.size = size;
       updateSelection(container, btn);
-
-      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
-      const nextBtn = document.querySelector('#step-size .half-btn:nth-child(2)');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
+      selectSize(size);
     };
     container.appendChild(btn);
   });
 
-  showStep('size');
+  showStep('size'); // ✅ 자동 다음 단계 이동
 }
+
 
 
 
@@ -949,7 +956,7 @@ document.getElementById("viewPhotosType").addEventListener("click", () => {
   // ✅ 로딩 오버레이 표시
   document.getElementById("loadingOverlay").style.display = "flex";
 
-  fetch("https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbx7dKmFg9tc2JeapPb6zaTtuCHaUFehm1wguWVSssLw9HCK7LXFrVXDcYdYNPVbHL4/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -1018,7 +1025,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loading = document.getElementById("initialLoadingOverlay");
 
   // 공지사항 fetch
-  fetch("https://script.google.com/macros/s/AKfycbwyHAXzsq1MXMLEe3HCD11FBqWG6awZlktuKcIOR2CPDNru-GcShGKoMT564PpB_6so/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbx7dKmFg9tc2JeapPb6zaTtuCHaUFehm1wguWVSssLw9HCK7LXFrVXDcYdYNPVbHL4/exec?mode=notice")
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
@@ -1135,6 +1142,253 @@ function updateSelection(container, selectedBtn) {
     setTimeout(() => nextBtn.classList.remove('pulse'), 1000);
   }
 }
+function openZModal(code) {
+  const modalMap = {
+    Z1: openZ1Modal,
+    Z2: openZ2Modal,
+    Z3: openZ3Modal,
+  };
+
+  const modalFn = modalMap[code];
+  if (modalFn) modalFn();
+  else alert("❌ 알 수 없는 특수 항목입니다: " + code);
+}
+function submitZ1() {
+  const subcategory = document.getElementById("z1-position").value;
+  const quantity = document.getElementById("z1-qty").value;
+  const remarks = document.getElementById("z1-remarks").value;
+
+  if (!subcategory || !quantity) {
+    alert("부서 또는 직급과 수량을 입력해주세요.");
+    return;
+  }
+
+  const current = itemData[selected.category];
+
+  const item = {
+    name: `${loginInfo.empId} ${loginInfo.empName}`,
+    category: selected.category,        // B열 값
+    subcategory: subcategory || current.type || "",  // 사용자가 입력
+    size: current.size || "기타",       // D열 값 또는 기타
+    quantity,
+    remarks
+  };
+
+  itemList.push(item);
+  renderItemList();
+  closeZ1Modal();
+}
+function submitZ2() {
+  const subcategory = document.getElementById("z2-name").value;  // 사용자 입력 (표기 이름)
+  const size = document.getElementById("z2-role").value;         // 사용자 입력 (직책)
+  const phone = document.getElementById("z2-phone").value;
+  const remarks = document.getElementById("z2-remarks").value;
+
+  if (!subcategory || !size || !phone) {
+    alert("이름, 직책, 전화번호를 모두 입력해주세요.");
+    return;
+  }
+
+  const item = {
+    name: `${loginInfo.empId} ${loginInfo.empName}`,
+    category: selected.category,  // ✅ 시트의 B열
+    subcategory: subcategory,     // ✅ 사용자 입력
+    size: size,                   // ✅ 사용자 입력
+    quantity: 1,
+    remarks: `전화: ${phone}, ${remarks}`
+  };
+
+  itemList.push(item);
+  renderItemList();
+  closeZ2Modal();
+}
+function submitZ3() {
+  const subcategory = document.getElementById("z3-item").value; // 선택한 장비 이름
+  const quantity = document.getElementById("z3-qty").value;
+  const remarks = document.getElementById("z3-remarks").value;
+
+  if (!subcategory || !quantity) {
+    alert("장비명과 수량을 입력해주세요.");
+    return;
+  }
+
+  const current = itemData[selected.category];
+  const size = current?.size || "기본";
+
+  const item = {
+    name: `${loginInfo.empId} ${loginInfo.empName}`,
+    category: selected.category,     // ✅ 시트의 B열
+    subcategory: subcategory,        // ✅ 선택된 장비명
+    size: size,                      // ✅ 시트에서 D열로 기본 설정
+    quantity,
+    remarks
+  };
+
+  itemList.push(item);
+  renderItemList();
+  closeZ3Modal();
+}
+function openZ1Modal() {
+  const listContainer = document.getElementById("z1-item-list");
+  listContainer.innerHTML = "";
+
+  const stockMap = itemData[selected.category]?.stockMap || {};
+
+  const names = Object.keys(stockMap)
+    .map(k => k.split("__")[0]) // type
+    .filter((v, i, self) => self.indexOf(v) === i); // 중복 제거
+
+  if (names.length === 0) {
+    listContainer.innerHTML = "<p>등록된 항목이 없습니다.</p>";
+    return;
+  }
+
+ names.forEach(name => {
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.alignItems = "center";
+  row.style.justifyContent = "space-between";
+  row.style.marginBottom = "10px";
+
+  const inputId = `z1_qty_${name}`;
+ // 👉 사용자 max 수량을 제한하고 싶으면 여기에서 조절
+// max="2" → max="99" 또는 아예 제거 가능
+row.innerHTML = `
+  <div style="flex:1;">${name}</div>
+  <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
+         style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
+         onchange="adjustZ1Counts('${name}')">
+`;
+
+  listContainer.appendChild(row);
+});
+
+  document.getElementById("modalZ1").style.display = "block";
+   }
+
+function closeZ1Modal() {
+  document.getElementById("modalZ1").style.display = "none";
+}
+
+function openZ2Modal() {
+  document.getElementById("modalZ2").style.display = "block";
+}
+function closeZ2Modal() {
+  document.getElementById("modalZ2").style.display = "none";
+}
+
+function openZ3Modal() {
+  document.getElementById("modalZ3").style.display = "block";
+}
+function closeZ3Modal() {
+  document.getElementById("modalZ3").style.display = "none";
+}
+// ✅ 장바구니에 추가하지 않고 바로 전송
+async function submitZ1() {
+  const remarks = document.getElementById("z1-remarks").value;
+  const stockMap = itemData[selected.category]?.stockMap || {};
+  const names = Object.keys(stockMap)
+    .map(k => k.split("__")[0])
+    .filter((v, i, self) => self.indexOf(v) === i);
+
+  const itemsToSubmit = [];
+
+  names.forEach(name => {
+    const qtyInput = document.getElementById("z1_qty_" + name);
+    const qty = parseInt(qtyInput?.value || "0");
+    if (qty > 0) {
+      itemsToSubmit.push({
+        name: `${loginInfo.empId} ${loginInfo.empName}`,
+        category: selected.category,
+        subcategory: name,
+        size: "개",
+        quantity: qty,
+        remarks
+      });
+    }
+  });
+
+  if (itemsToSubmit.length === 0) {
+    alert("수량을 1개 이상 입력해주세요.");
+    return;
+  }
+
+  document.getElementById('submitOverlay').style.display = 'flex';
+
+  try {
+    for (const item of itemsToSubmit) {
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          name: item.name,
+          category: item.category,
+          subcategory: item.subcategory,
+          size: item.size,
+          quantity: item.quantity,
+          remarks: item.remarks,
+          지급수량: item.quantity,
+          구매요청수량: 0
+        })
+      });
+    }
+
+    alert("✅ 신청이 완료되었습니다.");
+    closeZ1Modal();
+  } catch (err) {
+    alert("❌ 신청 실패: " + err.message);
+  } finally {
+    document.getElementById('submitOverlay').style.display = 'none';
+  }
+}
+function adjustZ1Counts(changedName) {
+  const wall = document.getElementById("z1_qty_벽걸이 달력");
+  const desk = document.getElementById("z1_qty_탁상 달력");
+  const diary = document.getElementById("z1_qty_다이어리");
+
+  let wallVal = parseInt(wall?.value || "0");
+  let deskVal = parseInt(desk?.value || "0");
+  let diaryVal = parseInt(diary?.value || "0");
+
+  // 값 정리: 음수나 NaN 방지
+  wallVal = isNaN(wallVal) ? 0 : Math.max(0, wallVal);
+  deskVal = isNaN(deskVal) ? 0 : Math.max(0, deskVal);
+  diaryVal = isNaN(diaryVal) ? 0 : Math.max(0, diaryVal);
+
+  // 다이어리는 1개까지만
+  if (diaryVal > 1) {
+    diaryVal = 1;
+    diary.value = 1;
+  }
+
+  // 벽걸이 + 탁상 합이 2 초과 → 조정, 나중에 숫자 제한 없앨 때 지우면 됨
+  if (wallVal + deskVal > 2) {
+    if (changedName === "벽걸이 달력") {
+      wallVal = Math.min(2, wallVal);         // 혹시 3을 입력했으면 강제 조정
+      deskVal = 2 - wallVal;
+      desk.value = deskVal;
+      wall.value = wallVal;
+    } else if (changedName === "탁상 달력") {
+      deskVal = Math.min(2, deskVal);
+      wallVal = 2 - deskVal;
+      wall.value = wallVal;
+      desk.value = deskVal;
+    }
+  } else {
+    // 2 이하라도 2를 초과한 입력값이 있으면 강제 조정
+    if (wallVal > 2) {
+      wallVal = 2;
+      wall.value = 2;
+    }
+    if (deskVal > 2) {
+      deskVal = 2;
+      desk.value = 2;
+    }
+  }
+}
+
+
+
 
 </script>
 <!-- ✅ 신청 중 로딩 오버레이 -->
@@ -1154,6 +1408,53 @@ function updateSelection(container, selectedBtn) {
   font-size: 1.4rem;
 ">
   ⏳ 로딩 중입니다...
+</div>
+<!-- Z1 모달: 달력/다이어리 -->
+<!-- Z1 모달 (달력/다이어리 전체 리스트 수량 입력) -->
+<div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
+  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;position:relative;">
+    <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
+    <h3>📅 달력 / 다이어리 신청</h3>
+    <p style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 0.85rem; margin-bottom: 10px;">
+  <b>📌 신청 안내</b><br />
+  벽걸이 + 탁상 = 최대 2개<br />
+  다이어리 = 0개 또는 1개 신청 가능
+</p>
+    <div id="z1-item-list"></div>
+
+    <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
+    <button onclick="submitZ1()" style="margin-top:10px;">✅ 신청하기</button>
+  </div>
+</div>
+
+<!-- Z2 모달: 명함 신청 -->
+<div id="modalZ2" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
+  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:500px;position:relative;">
+    <button onclick="closeZ2Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
+    <h3>📇 명함 신청</h3>
+    <input id="z2-name" placeholder="이름 (표기)" />
+    <input id="z2-role" placeholder="직책" />
+    <input id="z2-phone" placeholder="전화번호" />
+    <textarea id="z2-remarks" placeholder="기타 요청사항" rows="2" style="width:100%;margin-top:10px;"></textarea>
+    <button onclick="submitZ2()" style="margin-top:10px;">✅ 신청하기</button>
+  </div>
+</div>
+
+<!-- Z3 모달: 안전장비 신청 -->
+<div id="modalZ3" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
+  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:500px;position:relative;">
+    <button onclick="closeZ3Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
+    <h3>🦺 안전장비 신청</h3>
+    <select id="z3-item" style="width:100%;">
+      <option value="">-- 장비 선택 --</option>
+      <option>안전화</option>
+      <option>귀마개</option>
+      <option>방진마스크</option>
+    </select>
+    <input id="z3-qty" type="number" placeholder="수량" />
+    <textarea id="z3-remarks" placeholder="비고" rows="2" style="width:100%;margin-top:10px;"></textarea>
+    <button onclick="submitZ3()" style="margin-top:10px;">✅ 신청하기</button>
+  </div>
 </div>
 
 </body>
