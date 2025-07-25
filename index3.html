@@ -438,7 +438,7 @@
 
   <div class="button-row">
     <button class="half-btn" onclick="goBackTo('category')">⬅ 뒤로가기</button>
-    <button class="half-btn" onclick="goToSizeStep()">➡ 다음 이동</button>
+  
   </div>
 </div>
 
@@ -450,7 +450,7 @@
 
   <div class="button-row">
     <button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button>
-    <button class="half-btn" onclick="goToQuantityStep()">➡ 다음 이동</button>
+  
   </div>
 </div>
 
@@ -1246,8 +1246,8 @@ function openZ1Modal() {
   const inputId = `z1_qty_${name}`;
   row.innerHTML = `
     <div style="flex:1;">${name}</div>
-    <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1" // → 여기서 max="2" 부분을 삭제하거나, max="99" 정도로 바꿔도 됩니다.
-안 바꿔도 동작에는 큰 영향 없지만, 사용자한테 혼란을 줄 수 있으니 같이 수정하는 게 좋습니다. 
+    <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1" 
+<!-- → 여기서 max="2" 부분을 삭제하거나, max="99" 정도로 바꿔도 됩니다. 안 바꿔도 동작에는 큰 영향 없지만, 사용자한테 혼란을 줄 수 있으니 같이 수정하는 게 좋습니다. -->
 
 
            style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
@@ -1377,7 +1377,7 @@ function adjustZ1Counts(changedName) {
       deskVal = 2;
       desk.value = 2;
     }
-  
+  }
 }
 
 
