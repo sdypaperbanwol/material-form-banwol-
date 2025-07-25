@@ -416,12 +416,7 @@
 
 
   
-
-  <!-- ✅ 다음 단계 이동 버튼 추가 위치 여기!! -->
-  <button type="button" id="goToTypeBtn" onclick="goToTypeStep()" style="margin-top: 8px;">
-  ➡ 다음 이동
-</button>
-</div>
+ </div>
 
 <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
   <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
@@ -677,11 +672,17 @@ function selectCategory(cat) {
   types.forEach(type => {
     const btn = document.createElement('button');
     btn.innerText = type;
-   btn.onclick = () => {
-  selected.type = type;
-  updateSelection(container, btn);
-  selectType(type); // 🔁 다음 단계 자동 진입
-};
+    btn.onclick = () => {
+      selected.type = type;
+      updateSelection(container, btn);
+      selectType(type);
+    };
+    container.appendChild(btn);
+  });
+
+  showStep('type'); // ✅ 자동 다음 단계 이동
+}
+
 
 
 
@@ -700,10 +701,15 @@ function selectCategory(cat) {
     const btn = document.createElement('button');
     btn.innerText = `${size} (재고: ${stock})`;
     btn.onclick = () => {
-  selected.size = size;
-  updateSelection(container, btn);
-  selectSize(size); // 🔁 다음 단계 자동 진입
-};
+      selected.size = size;
+      updateSelection(container, btn);
+      selectSize(size);
+    };
+    container.appendChild(btn);
+  });
+
+  showStep('size'); // ✅ 자동 다음 단계 이동
+}
 
 
 
