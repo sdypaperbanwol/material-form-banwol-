@@ -26,30 +26,27 @@
     margin-bottom: 2rem;
   }
 
-button {
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid #b0c4de; /* 연한 선 */
-  background-color: #e6f0ff; /* 연블루 배경 */
-  color: #003366; /* 진한 파랑글씨 */
-  cursor: pointer;
-  width: 70%;
-  max-width: 300px;
-  transition: background 0.2s, color 0.2s;
-}
+  button {
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    background-color: #ddd;
+    cursor: pointer;
+    width: 70%;
+    max-width: 300px;
+  }
 
-button:hover {
-  background-color: #cce5ff;
-  color: #001f3f;
-}
+  button:hover {
+    background-color: #4CAF50 !important;
+    color: white;
+  }
 
-
- .selected {
-  background-color: #4CAF50 !important;
-  color: white !important;
-  font-weight: bold;
-}
+  .selected {
+    background-color: #4CAF50 !important;
+    color: white;
+    font-weight: bold;
+  }
 
   button:disabled {
     background-color: #ccc;
@@ -110,20 +107,19 @@ button:hover {
   width: fit-content;
 }
 
-.numpad-grid button {
-  padding: 1rem;
-  font-size: 1.5rem;
-  border-radius: 10px;
-  background: #eaf8f0;     /* 밝은 민트 */
-  color: #004d33;          /* 진한 청록 */
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s;
-}
+  .numpad-grid button {
+    padding: 1rem;
+    font-size: 1.5rem;
+    border-radius: 10px;
+    background: #e0e0e0;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
 
-.numpad-grid button:hover {
-  background: #cceedd;     /* hover 시 진한 민트 */
-}
+  .numpad-grid button:hover {
+    background: #ccc;
+  }
 
   /* 비고 입력 */
  #remarks {
@@ -278,15 +274,20 @@ button:hover {
 }
 
 .half-btn {
-  width: 48%;
-  font-size: 0.9rem;
-  padding: 0.5rem;
-  background: #f0f7ff;
-  color: #003366;
+  flex: 1 1 30%;
+  max-width: 180px;
+  min-width: 140px;
+  padding: 0.6rem 0.8rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #ddd;
+  cursor: pointer;
 }
 
 .half-btn:hover {
-  background: #d0e5ff;
+  background: #4CAF50;
+  color: white;
 }
 
 @keyframes pulse {
@@ -318,15 +319,6 @@ button:hover {
   animation: bounce 0.4s ease-in-out 2;
 }
 
-    .confirm-btn {
-  background-color: #4CAF50;
-  color: white;
-  font-weight: bold;
-}
-
-.confirm-btn:hover {
-  background-color: #388E3C;
-}
 </style>
 
 </head>
@@ -1417,14 +1409,26 @@ function adjustZ1Counts(changedName) {
 <!-- Z1 모달: 달력/다이어리 -->
 <!-- Z1 모달 (달력/다이어리 전체 리스트 수량 입력) -->
 <div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
-  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;position:relative;">
-    <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
+  <div style="position: relative; background:white; margin:60px auto; padding:20px; border-radius:10px; max-width:600px;">
+    <!-- 닫기 버튼: 모달 내부의 오른쪽 위에 고정 -->
+    <button onclick="closeZ1Modal()" style="
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    ">✖</button>
+
     <h3>📅 달력 / 다이어리 신청</h3>
     <p style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 0.85rem; margin-bottom: 10px;">
-  <b>📌 신청 안내</b><br />
-  벽걸이 + 탁상 = 최대 2개<br />
-  다이어리 = 0개 또는 1개 신청 가능
-</p>
+      <b>📌 신청 안내</b><br />
+      벽걸이 + 탁상 = 최대 2개<br />
+      다이어리 = 0개 또는 1개 신청 가능
+    </p>
     <div id="z1-item-list"></div>
 
     <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
