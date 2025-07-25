@@ -1248,15 +1248,15 @@ function openZ1Modal() {
   row.style.marginBottom = "10px";
 
   const inputId = `z1_qty_${name}`;
-  row.innerHTML = `
-    <div style="flex:1;">${name}</div>
-    <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1" 
-<!-- → 여기서 max="2" 부분을 삭제하거나, max="99" 정도로 바꿔도 됩니다. 안 바꿔도 동작에는 큰 영향 없지만, 사용자한테 혼란을 줄 수 있으니 같이 수정하는 게 좋습니다. -->
+ // 👉 사용자 max 수량을 제한하고 싶으면 여기에서 조절
+// max="2" → max="99" 또는 아예 제거 가능
+row.innerHTML = `
+  <div style="flex:1;">${name}</div>
+  <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
+         style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
+         onchange="adjustZ1Counts('${name}')">
+`;
 
-
-           style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
-           onchange="adjustZ1Counts('${name}')">
-  `;
   listContainer.appendChild(row);
 });
 
