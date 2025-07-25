@@ -624,44 +624,48 @@ function loadItems() {
       const container = document.getElementById('category-buttons');
       container.innerHTML = '';
 
-    Object.keys(data).forEach(cat => {
-  const btn = document.createElement('button');
-  btn.innerText = cat;
+      Object.keys(data).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.innerText = cat;
 
-  const activationCode = data[cat].activation;
+        const activationCode = data[cat].activation;
 
-  // ✅ 모달 뜨는 항목만 강조: activation이 Z로 시작할 때
-  if (activationCode?.startsWith("Z")) {
-    btn.style.backgroundColor = "#fff9c4"; // 연노랑
-    btn.style.color = "#f57f17";           // 진한 주황
-    btn.style.fontWeight = "bold";
-    btn.style.border = "1px solid #fbc02d";
-  }
+        // ✅ 모달 뜨는 항목만 강조: activation이 Z로 시작할 때
+        if (activationCode?.startsWith("Z")) {
+          btn.style.backgroundColor = "#fff9c4"; // 연노랑
+          btn.style.color = "#f57f17";           // 진한 주황
+          btn.style.fontWeight = "bold";
+          btn.style.border = "1px solid #fbc02d";
+        }
 
-btn.onclick = () => {
-  selected.category = cat;
+        btn.onclick = () => {
+          selected.category = cat;
 
-  if (activationCode?.startsWith("Z")) {
-    openZModal(activationCode); // 특수 항목은 모달 유지
-  } else {
-    updateSelection(container, btn);
-    selectCategory(cat); // 🔁 다음 단계 자동 진입
-  }
-};
+          if (activationCode?.startsWith("Z")) {
+            openZModal(activationCode); // 특수 항목은 모달 유지
+          } else {
+            updateSelection(container, btn);
+            selectCategory(cat); // 🔁 다음 단계 자동 진입
+          }
+        };
 
+        container.appendChild(btn);
+      });
 
-  container.appendChild(btn);
-});
+      // ✅ '다음으로' 버튼 제거됨 → 이 줄은 삭제 또는 주석 처리
+      // document.getElementById('goToTypeBtn').style.display = 'inline-block';
 
-
-      document.getElementById('goToTypeBtn').style.display = 'inline-block';
-      document.getElementById('loadingOverlay').style.display = 'none';
+      // ✅ 안전하게 null 체크 후 오버레이 숨김
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.style.display = 'none';
     })
     .catch(error => {
-      document.getElementById('loadingOverlay').style.display = 'none';
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.style.display = 'none';
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
+
 
 
 function selectCategory(cat) {
