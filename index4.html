@@ -30,8 +30,8 @@ button {
   padding: 0.6rem 1.2rem;
   font-size: 1rem;
   border-radius: 6px;
-  border: 1px solid #b0c4de; /* 연한 선 추가 */
-  background-color: #e6f0ff; /* 연블루 */
+  border: 1px solid #b0c4de; /* 연한 선 */
+  background-color: #e6f0ff; /* 연블루 배경 */
   color: #003366; /* 진한 파랑글씨 */
   cursor: pointer;
   width: 70%;
@@ -39,16 +39,17 @@ button {
   transition: background 0.2s, color 0.2s;
 }
 
- button:hover {
+button:hover {
   background-color: #cce5ff;
   color: #001f3f;
 }
 
-  .selected {
-    background-color: #4CAF50 !important;
-    color: white;
-    font-weight: bold;
-  }
+
+ .selected {
+  background-color: #4CAF50 !important;
+  color: white !important;
+  font-weight: bold;
+}
 
   button:disabled {
     background-color: #ccc;
@@ -109,19 +110,19 @@ button {
   width: fit-content;
 }
 
- .numpad-grid button {
+.numpad-grid button {
   padding: 1rem;
   font-size: 1.5rem;
   border-radius: 10px;
-  background: #eaf8f0;     /* 밝은 민트톤 */
-  color: #004d33;          /* 짙은 청록글씨 */
+  background: #eaf8f0;     /* 밝은 민트 */
+  color: #004d33;          /* 진한 청록 */
   border: none;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .numpad-grid button:hover {
-  background: #cceedd;     /* hover 시 약간 더 진한 민트톤 */
+  background: #cceedd;     /* hover 시 진한 민트 */
 }
 
   /* 비고 입력 */
@@ -277,20 +278,15 @@ button {
 }
 
 .half-btn {
-  flex: 1 1 30%;
-  max-width: 180px;
-  min-width: 140px;
-  padding: 0.6rem 0.8rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 8px;
-  background: #ddd;
-  cursor: pointer;
+  width: 48%;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  background: #f0f7ff;
+  color: #003366;
 }
 
 .half-btn:hover {
-  background: #4CAF50;
-  color: white;
+  background: #d0e5ff;
 }
 
 @keyframes pulse {
@@ -322,6 +318,15 @@ button {
   animation: bounce 0.4s ease-in-out 2;
 }
 
+    .confirm-btn {
+  background-color: #4CAF50;
+  color: white;
+  font-weight: bold;
+}
+
+.confirm-btn:hover {
+  background-color: #388E3C;
+}
 </style>
 
 </head>
