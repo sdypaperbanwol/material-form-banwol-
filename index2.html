@@ -416,12 +416,7 @@
 
 
   
-
-  <!-- ✅ 다음 단계 이동 버튼 추가 위치 여기!! -->
-  <button type="button" id="goToTypeBtn" onclick="goToTypeStep()" style="margin-top: 8px;">
-  ➡ 다음 이동
-</button>
-</div>
+ </div>
 
 <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
   <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
@@ -443,7 +438,7 @@
 
   <div class="button-row">
     <button class="half-btn" onclick="goBackTo('category')">⬅ 뒤로가기</button>
-    <button class="half-btn" onclick="goToSizeStep()">➡ 다음 이동</button>
+  
   </div>
 </div>
 
@@ -455,7 +450,7 @@
 
   <div class="button-row">
     <button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button>
-    <button class="half-btn" onclick="goToQuantityStep()">➡ 다음 이동</button>
+  
   </div>
 </div>
 
@@ -629,47 +624,48 @@ function loadItems() {
       const container = document.getElementById('category-buttons');
       container.innerHTML = '';
 
-    Object.keys(data).forEach(cat => {
-  const btn = document.createElement('button');
-  btn.innerText = cat;
+      Object.keys(data).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.innerText = cat;
 
-  const activationCode = data[cat].activation;
+        const activationCode = data[cat].activation;
 
-  // ✅ 모달 뜨는 항목만 강조: activation이 Z로 시작할 때
-  if (activationCode?.startsWith("Z")) {
-    btn.style.backgroundColor = "#fff9c4"; // 연노랑
-    btn.style.color = "#f57f17";           // 진한 주황
-    btn.style.fontWeight = "bold";
-    btn.style.border = "1px solid #fbc02d";
-  }
+        // ✅ 모달 뜨는 항목만 강조: activation이 Z로 시작할 때
+        if (activationCode?.startsWith("Z")) {
+          btn.style.backgroundColor = "#fff9c4"; // 연노랑
+          btn.style.color = "#f57f17";           // 진한 주황
+          btn.style.fontWeight = "bold";
+          btn.style.border = "1px solid #fbc02d";
+        }
 
-  btn.onclick = () => {
-    selected.category = cat;
+        btn.onclick = () => {
+          selected.category = cat;
 
-    if (activationCode?.startsWith("Z")) {
-      openZModal(activationCode); // 모달 호출
-    } else {
-      updateSelection(container, btn);
-      const nextBtn = document.getElementById('goToTypeBtn');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
-    }
-  };
+          if (activationCode?.startsWith("Z")) {
+            openZModal(activationCode); // 특수 항목은 모달 유지
+          } else {
+            updateSelection(container, btn);
+            selectCategory(cat); // 🔁 다음 단계 자동 진입
+          }
+        };
 
-  container.appendChild(btn);
-});
+        container.appendChild(btn);
+      });
 
+      // ✅ '다음으로' 버튼 제거됨 → 이 줄은 삭제 또는 주석 처리
+      // document.getElementById('goToTypeBtn').style.display = 'inline-block';
 
-      document.getElementById('goToTypeBtn').style.display = 'inline-block';
-      document.getElementById('loadingOverlay').style.display = 'none';
+      // ✅ 안전하게 null 체크 후 오버레이 숨김
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.style.display = 'none';
     })
     .catch(error => {
-      document.getElementById('loadingOverlay').style.display = 'none';
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.style.display = 'none';
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
+
 
 
 function selectCategory(cat) {
@@ -683,19 +679,15 @@ function selectCategory(cat) {
     btn.onclick = () => {
       selected.type = type;
       updateSelection(container, btn);
-
-      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
-      const nextBtn = document.querySelector('#step-type .half-btn:nth-child(2)');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
+      selectType(type);
     };
     container.appendChild(btn);
   });
 
-  showStep('type');
+  showStep('type'); // ✅ 자동 다음 단계 이동
 }
+
+
 
 
 
@@ -715,19 +707,14 @@ function selectCategory(cat) {
     btn.onclick = () => {
       selected.size = size;
       updateSelection(container, btn);
-
-      // ✅ 다음 이동 버튼 강조 + 스크롤 + 포커스
-      const nextBtn = document.querySelector('#step-size .half-btn:nth-child(2)');
-      nextBtn.classList.add('bounce', 'glow');
-      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      nextBtn.focus();
-      setTimeout(() => nextBtn.classList.remove('bounce', 'glow'), 1200);
+      selectSize(size);
     };
     container.appendChild(btn);
   });
 
-  showStep('size');
+  showStep('size'); // ✅ 자동 다음 단계 이동
 }
+
 
 
 
@@ -1261,15 +1248,15 @@ function openZ1Modal() {
   row.style.marginBottom = "10px";
 
   const inputId = `z1_qty_${name}`;
-  row.innerHTML = `
-    <div style="flex:1;">${name}</div>
-    <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1" // → 여기서 max="2" 부분을 삭제하거나, max="99" 정도로 바꿔도 됩니다.
-안 바꿔도 동작에는 큰 영향 없지만, 사용자한테 혼란을 줄 수 있으니 같이 수정하는 게 좋습니다. 
+ // 👉 사용자 max 수량을 제한하고 싶으면 여기에서 조절
+// max="2" → max="99" 또는 아예 제거 가능
+row.innerHTML = `
+  <div style="flex:1;">${name}</div>
+  <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
+         style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
+         onchange="adjustZ1Counts('${name}')">
+`;
 
-
-           style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
-           onchange="adjustZ1Counts('${name}')">
-  `;
   listContainer.appendChild(row);
 });
 
@@ -1421,21 +1408,47 @@ function adjustZ1Counts(changedName) {
 </div>
 <!-- Z1 모달: 달력/다이어리 -->
 <!-- Z1 모달 (달력/다이어리 전체 리스트 수량 입력) -->
-<div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
-  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;position:relative;">
-    <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
+<div id="modalZ1" class="z-modal" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+">
+  <!-- ✖ 닫기 버튼을 여기로 빼고 전체 기준으로 위치 -->
+<div style="
+  background:white;
+  margin:60px auto;
+  padding:20px;
+  border-radius:10px;
+  max-width:600px;
+  width:90%;
+  position: relative;
+">
+  <button onclick="closeZ1Modal()" style="
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 22px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+  ">✖</button>
     <h3>📅 달력 / 다이어리 신청</h3>
     <p style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 0.85rem; margin-bottom: 10px;">
-  <b>📌 신청 안내</b><br />
-  벽걸이 + 탁상 = 최대 2개<br />
-  다이어리 = 0개 또는 1개 신청 가능
-</p>
+      <b>📌 신청 안내</b><br />
+      벽걸이 + 탁상 = 최대 2개<br />
+      다이어리 = 0개 또는 1개 신청 가능
+    </p>
     <div id="z1-item-list"></div>
 
-    <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
+    <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%; margin-top:10px;"></textarea>
     <button onclick="submitZ1()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
+
 
 <!-- Z2 모달: 명함 신청 -->
 <div id="modalZ2" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
@@ -1466,6 +1479,89 @@ function adjustZ1Counts(changedName) {
     <button onclick="submitZ3()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
+<!-- 💬 채팅 버튼 + 채팅창 -->
+<div id="chatButton" style="position:fixed;bottom:20px;right:20px;z-index:9999;">
+  <button onclick="toggleChat()" style="padding:10px 14px;border-radius:50%;background:#4CAF50;color:#fff;font-size:18px;border:none;">💬</button>
+</div>
+
+<div id="chatBox" style="display:none;position:fixed;bottom:80px;right:20px;width:280px;height:350px;background:#fff;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.2);z-index:9999;flex-direction:column;">
+  <div style="background:#4CAF50;color:white;padding:10px;border-top-left-radius:10px;border-top-right-radius:10px;">📨 관리자 채팅</div>
+  <div id="chatMessages" style="flex:1;overflow-y:auto;padding:10px;font-size:0.9rem;max-height:250px;"></div>
+  <div style="display:flex;border-top:1px solid #ccc;">
+    <input id="chatInput" placeholder="메시지 입력" style="flex:1;border:none;padding:8px;font-size:0.9rem;" />
+    <button onclick="sendChat()" style="border:none;padding:8px;background:#4CAF50;color:#fff;">⏎</button>
+  </div>
+</div>
+
+<!-- ✅ Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+  // 🔧 Firebase 설정
+  const firebaseConfig = {
+    apiKey: "AIzaSyC70re6pWc-alR9bi2kFIISdvstfA0udWw",
+    authDomain: "material-from-banwol.firebaseapp.com",
+    databaseURL: "https://material-from-banwol-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "material-from-banwol",
+    storageBucket: "material-from-banwol.firebasestorage.app",
+    messagingSenderId: "98205092596",
+    appId: "1:98205092596:web:f612a80fc0b280f2abeca1",
+    measurementId: "G-RFJZ0MMWK0"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const chatRef = db.ref("chat");
+
+  function toggleChat() {
+    const box = document.getElementById("chatBox");
+    box.style.display = box.style.display === "flex" ? "none" : "flex";
+  }
+
+  function sendChat() {
+    const input = document.getElementById("chatInput");
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+
+    const senderName = loginInfo?.empName || "익명";
+
+    chatRef.push({
+      sender: senderName,
+      message: text,
+      timestamp: Date.now()
+    });
+  }
+
+  chatRef.on("child_added", snap => {
+    const msg = snap.val();
+    displayMessage(msg.sender, msg.message);
+
+    // 다른 사람이 보낸 메시지일 경우 → 알림
+    if (msg.sender !== (loginInfo?.empName || "익명")) {
+      if (Notification.permission === "granted") {
+        new Notification("📩 새 메시지", { body: `${msg.sender}: ${msg.message}` });
+      }
+      new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg").play();
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    }
+  });
+
+  function displayMessage(sender, text) {
+    const chat = document.getElementById("chatMessages");
+    const div = document.createElement("div");
+    div.innerHTML = `<b>${sender}:</b> ${text}`;
+    div.style.marginBottom = "6px";
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // ✅ 알림 권한 요청
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+</script>
 
 </body>
 </html>
