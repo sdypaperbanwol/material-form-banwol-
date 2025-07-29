@@ -723,13 +723,11 @@ function selectCategory(cat) {
     btn.disabled = true; // 선택 자체 막기 원할 경우
   }
 
-  btn.onclick = () => {
-    if (stock > 0) {
-      selected.size = size;
-      updateSelection(container, btn);
-      selectSize(size);
-    }
-  };
+ btn.onclick = () => {
+  selected.size = size;
+  updateSelection(container, btn);
+  selectSize(size); // ✅ 무조건 다음 화면으로 이동
+};
 
   container.appendChild(btn);
 });
