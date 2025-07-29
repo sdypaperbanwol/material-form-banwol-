@@ -704,15 +704,29 @@ function selectCategory(cat) {
     const stock = stockMap[k];
     const btn = document.createElement('button');
     btn.innerText = `${size} (재고: ${stock})`;
+
+    // ✅ 재고에 따른 색상 스타일 적용
+    if (stock > 0) {
+      btn.style.backgroundColor = '#e8f5e9'; // 연한 초록 (재고 있음)
+      btn.style.color = '#1b5e20';
+    } else {
+      btn.style.backgroundColor = '#f0f0f0'; // 연한 회색 (재고 없음)
+      btn.style.color = '#888';
+      btn.disabled = true; // 선택 비활성화 할 수도 있음
+    }
+
     btn.onclick = () => {
-      selected.size = size;
-      updateSelection(container, btn);
-      selectSize(size);
+      if (stock > 0) {
+        selected.size = size;
+        updateSelection(container, btn);
+        selectSize(size);
+      }
     };
+
     container.appendChild(btn);
   });
 
-  showStep('size'); // ✅ 자동 다음 단계 이동
+  showStep('size');
 }
 
 
@@ -1408,21 +1422,47 @@ function adjustZ1Counts(changedName) {
 </div>
 <!-- Z1 모달: 달력/다이어리 -->
 <!-- Z1 모달 (달력/다이어리 전체 리스트 수량 입력) -->
-<div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
-  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;position:relative;">
-    <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:20px;border:none;background:none;cursor:pointer;">✖</button>
+<div id="modalZ1" class="z-modal" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+">
+  <!-- ✖ 닫기 버튼을 여기로 빼고 전체 기준으로 위치 -->
+<div style="
+  background:white;
+  margin:60px auto;
+  padding:20px;
+  border-radius:10px;
+  max-width:600px;
+  width:90%;
+  position: relative;
+">
+  <button onclick="closeZ1Modal()" style="
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 22px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+  ">✖</button>
     <h3>📅 달력 / 다이어리 신청</h3>
     <p style="background: #fff3cd; padding: 10px; border: 1px solid #ffeeba; border-radius: 6px; color: #856404; font-size: 0.85rem; margin-bottom: 10px;">
-  <b>📌 신청 안내</b><br />
-  벽걸이 + 탁상 = 최대 2개<br />
-  다이어리 = 0개 또는 1개 신청 가능
-</p>
+      <b>📌 신청 안내</b><br />
+      벽걸이 + 탁상 = 최대 2개<br />
+      다이어리 = 0개 또는 1개 신청 가능
+    </p>
     <div id="z1-item-list"></div>
 
-    <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
+    <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%; margin-top:10px;"></textarea>
     <button onclick="submitZ1()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
+
 
 <!-- Z2 모달: 명함 신청 -->
 <div id="modalZ2" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
