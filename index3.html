@@ -26,36 +26,21 @@
     margin-bottom: 2rem;
   }
 
- button {
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid #4CAF50;
-  background-color: #c8e6c9; /* ✅ 재고 있음 색상 */
-  color: #1b5e20;
-  cursor: pointer;
-  width: 70%;
-  max-width: 300px;
-  font-weight: bold;
-}
-
+  button {
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    background-color: #ddd;
+    cursor: pointer;
+    width: 70%;
+    max-width: 300px;
+  }
 
   button:hover {
     background-color: #4CAF50 !important;
     color: white;
   }
-
-  .has-stock {
-  background-color: #c8e6c9 !important; /* 더 선명한 연녹색 */
-  color: #1b5e20 !important;
-  font-weight: bold;
-}
-
-.no-stock {
-  background-color: #eeeeee !important; /* 약간 진한 회색 */
-  color: #777 !important;
-  cursor: not-allowed;
-}
 
   .selected {
     background-color: #4CAF50 !important;
@@ -68,6 +53,17 @@
     color: #777;
     cursor: not-allowed;
   }
+ .has-stock {
+  background-color: #c8e6c9 !important; /* 더 선명한 연녹색 */
+  color: #1b5e20 !important;
+  font-weight: bold;
+}
+
+.no-stock {
+  background-color: #eeeeee !important; /* 약간 진한 회색 */
+  color: #777 !important;
+  cursor: not-allowed;
+}
 
   /* 수량 표시 */
   #quantity-display {
@@ -714,7 +710,7 @@ function selectCategory(cat) {
   const stockMap = itemData[selected.category].stockMap;
   const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
 
-sizeKeys.forEach(k => {
+ sizeKeys.forEach(k => {
   const size = k.split('__')[1];
   const stock = stockMap[k];
   const btn = document.createElement('button');
@@ -739,7 +735,7 @@ sizeKeys.forEach(k => {
 });
 
 
-  showStep('size');
+  showStep('size'); // ✅ 자동 다음 단계 이동
 }
 
 
