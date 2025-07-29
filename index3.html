@@ -42,6 +42,16 @@
     color: white;
   }
 
+     .has-stock {
+    background-color: #e8f5e9 !important;
+    color: #1b5e20 !important;
+  }
+
+  .no-stock {
+    background-color: #f0f0f0 !important;
+    color: #999 !important;
+    cursor: not-allowed;
+  }
   .selected {
     background-color: #4CAF50 !important;
     color: white;
@@ -699,32 +709,30 @@ function selectCategory(cat) {
   const stockMap = itemData[selected.category].stockMap;
   const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
 
-  sizeKeys.forEach(k => {
-    const size = k.split('__')[1];
-    const stock = stockMap[k];
-    const btn = document.createElement('button');
-    btn.innerText = `${size} (재고: ${stock})`;
+sizeKeys.forEach(k => {
+  const size = k.split('__')[1];
+  const stock = stockMap[k];
+  const btn = document.createElement('button');
+  btn.innerText = `${size} (재고: ${stock})`;
 
-    // ✅ 재고에 따른 색상 스타일 적용
+  if (stock > 0) {
+    btn.classList.add('has-stock');
+  } else {
+    btn.classList.add('no-stock');
+    btn.disabled = true; // 선택 자체 막기 원할 경우
+  }
+
+  btn.onclick = () => {
     if (stock > 0) {
-      btn.style.backgroundColor = '#e8f5e9'; // 연한 초록 (재고 있음)
-      btn.style.color = '#1b5e20';
-    } else {
-      btn.style.backgroundColor = '#f0f0f0'; // 연한 회색 (재고 없음)
-      btn.style.color = '#888';
-      btn.disabled = true; // 선택 비활성화 할 수도 있음
+      selected.size = size;
+      updateSelection(container, btn);
+      selectSize(size);
     }
+  };
 
-    btn.onclick = () => {
-      if (stock > 0) {
-        selected.size = size;
-        updateSelection(container, btn);
-        selectSize(size);
-      }
-    };
+  container.appendChild(btn);
+});
 
-    container.appendChild(btn);
-  });
 
   showStep('size');
 }
