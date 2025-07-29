@@ -716,21 +716,24 @@ function selectCategory(cat) {
   const btn = document.createElement('button');
   btn.innerText = `${size} (재고: ${stock})`;
 
+  // ✅ 재고 상태별 스타일만 적용
   if (stock > 0) {
     btn.classList.add('has-stock');
   } else {
-    btn.classList.add('no-stock');
-    btn.disabled = true; // 선택 자체 막기 원할 경우
+    btn.classList.add('no-stock');  // 시각적 구분만
+    // ✅ 절대 disabled 금지!
   }
 
- btn.onclick = () => {
-  selected.size = size;
-  updateSelection(container, btn);
-  selectSize(size); // ✅ 무조건 다음 화면으로 이동
-};
+  // ✅ 재고와 상관없이 항상 선택 가능
+  btn.onclick = () => {
+    selected.size = size;
+    updateSelection(container, btn);
+    selectSize(size);  // 수량 입력 단계로 이동
+  };
 
   container.appendChild(btn);
 });
+
 
 
   showStep('size'); // ✅ 자동 다음 단계 이동
