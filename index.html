@@ -53,6 +53,17 @@
     color: #777;
     cursor: not-allowed;
   }
+ .has-stock {
+  background-color: #c8e6c9 !important; /* 더 선명한 연녹색 */
+  color: #1b5e20 !important;
+  font-weight: bold;
+}
+
+.no-stock {
+  background-color: #eeeeee !important; /* 약간 진한 회색 */
+  color: #777 !important;
+  cursor: not-allowed;
+}
 
   /* 수량 표시 */
   #quantity-display {
@@ -444,15 +455,20 @@
 
 
 
-  <div id="step-size" class="step hidden">
+ <div id="step-size" class="step hidden">
   <h3>3단계: 소분류 선택</h3>
+     <!-- ✅ 안내 문구 추가 -->
+ <p style="font-size: 0.85rem; color: #666; margin: 0.5rem 0;">
+  ⚠️ 재고가 없어도 신청하시면 <b>구매요청</b>으로 자동 처리됩니다.
+</p>
+
   <div id="size-buttons" class="button-list"></div>
 
   <div class="button-row">
     <button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button>
-  
   </div>
 </div>
+
 
 
 <div id="step-quantity" class="step hidden">
@@ -699,18 +715,31 @@ function selectCategory(cat) {
   const stockMap = itemData[selected.category].stockMap;
   const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
 
-  sizeKeys.forEach(k => {
-    const size = k.split('__')[1];
-    const stock = stockMap[k];
-    const btn = document.createElement('button');
-    btn.innerText = `${size} (재고: ${stock})`;
-    btn.onclick = () => {
-      selected.size = size;
-      updateSelection(container, btn);
-      selectSize(size);
-    };
-    container.appendChild(btn);
-  });
+ sizeKeys.forEach(k => {
+  const size = k.split('__')[1];
+  const stock = stockMap[k];
+  const btn = document.createElement('button');
+  btn.innerText = `${size} (재고: ${stock})`;
+
+  // ✅ 재고 상태별 스타일만 적용
+  if (stock > 0) {
+    btn.classList.add('has-stock');
+  } else {
+    btn.classList.add('no-stock');  // 시각적 구분만
+    // ✅ 절대 disabled 금지!
+  }
+
+  // ✅ 재고와 상관없이 항상 선택 가능
+  btn.onclick = () => {
+    selected.size = size;
+    updateSelection(container, btn);
+    selectSize(size);  // 수량 입력 단계로 이동
+  };
+
+  container.appendChild(btn);
+});
+
+
 
   showStep('size'); // ✅ 자동 다음 단계 이동
 }
