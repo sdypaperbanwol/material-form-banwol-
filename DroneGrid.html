@@ -361,6 +361,7 @@
     <button id="addTempBtn">➕ 좌표 추가</button>
     <button id="saveBtn">📌 좌표 저장</button>
     <button id="resetBtn">♻️ 초기화</button>
+    <button id="toggleGridBtn">🔲 격자 숨기기</button>
     <button id="backBtn">🔙 공장 선택</button>
   </div>
 
@@ -492,7 +493,8 @@
                       let dragStartY = 0;
                       let hasMoved = false;
                       let selections = [];
-let currentColor = "yellow"; // 기본 색상
+                      let currentColor = "yellow"; // 기본 색상
+                      let showGrid = true;         // ✅ 격자 보이기 기본값 추가
 
 function setColor(color) {
   currentColor = color;
@@ -549,39 +551,46 @@ function setColor(color) {
                         };
                       }
 
-                      function drawGrid() {
-                        const scale = getScale();
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.strokeStyle = "rgba(0,0,0,0.3)";
-                        ctx.lineWidth = 1;
+                  function drawGrid() {
+  if (!showGrid) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // 격자 안 그리기
+    drawScaleBar();  // 그래도 스케일바는 유지
+    return;
+  }
 
-                        const step = cellSize * scale;
-                        const fontSize = Math.max(14 * scale, 11);
-                        ctx.font = `${fontSize}px sans-serif`;
-                        ctx.fillStyle = "yellow";
-                        ctx.textAlign = "center";
-                        ctx.textBaseline = "top";
+  const scale = getScale();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "rgba(0,0,0,0.3)";
+  ctx.lineWidth = 1;
 
-                        for (let x = 0, i = 0; x <= canvas.width; x += step, i++) {
-                          ctx.beginPath();
-                          ctx.moveTo(x, 0);
-                          ctx.lineTo(x, canvas.height);
-                          ctx.stroke();
-                          ctx.fillText(i, x + step / 2, 0);
-                        }
+  const step = cellSize * scale;
+  const fontSize = Math.max(14 * scale, 11);
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.fillStyle = "yellow";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
 
-                        ctx.textAlign = "left";
-                        ctx.textBaseline = "middle";
-                        for (let y = 0, j = 0; y <= canvas.height; y += step, j++) {
-                          ctx.beginPath();
-                          ctx.moveTo(0, y);
-                          ctx.lineTo(canvas.width, y);
-                          ctx.stroke();
-                          ctx.fillText(j, 0, y + step / 2);
-                        }
+  for (let x = 0, i = 0; x <= canvas.width; x += step, i++) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+    ctx.fillText(i, x + step / 2, 0);
+  }
 
-                        drawScaleBar();
-                      }
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  for (let y = 0, j = 0; y <= canvas.height; y += step, j++) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+    ctx.fillText(j, 0, y + step / 2);
+  }
+
+  drawScaleBar();
+}
+
 
                       function drawScaleBar() {
                         const scale = getScale();
@@ -816,6 +825,14 @@ ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
                           cadImg.style.display = cadVisible ? "block" : "none";
                           toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
                         });
+document.getElementById("toggleGridBtn").addEventListener("click", () => {
+  showGrid = !showGrid;
+  drawGrid();
+  drawAllSelections();  // 격자 없이 선택 영역 다시 그림
+
+  const btn = document.getElementById("toggleGridBtn");
+  btn.textContent = showGrid ? "🔲 격자 숨기기" : "🔳 격자 보이기";
+});
 
 saveBtn.addEventListener("click", () => {
   if (selections.length === 0) return;
