@@ -580,7 +580,7 @@
 
 
 <script>
-  const endpoint = 'https://script.google.com/macros/s/AKfycbz3fKe4m57og8j3S4iJB743uuhQ2E1ORFG9qkEVt_7sasIAszMibpzmPsZt4lWv6Bpp/exec'; // 실제 Web App 주소로 교체
+  const endpoint = 'https://script.google.com/macros/s/AKfycbxmEcSwc2llO6j1-_SEAYc-rHe0fO8fZLlbc5NZoA7CBxhnWtHftrKAFtOvOUxDS87x/exec'; // 실제 Web App 주소로 교체
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -985,7 +985,7 @@ document.getElementById("viewPhotosType").addEventListener("click", () => {
   // ✅ 로딩 오버레이 표시
   document.getElementById("loadingOverlay").style.display = "flex";
 
-  fetch("https://script.google.com/macros/s/AKfycbz3fKe4m57og8j3S4iJB743uuhQ2E1ORFG9qkEVt_7sasIAszMibpzmPsZt4lWv6Bpp/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbxmEcSwc2llO6j1-_SEAYc-rHe0fO8fZLlbc5NZoA7CBxhnWtHftrKAFtOvOUxDS87x/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -1054,7 +1054,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loading = document.getElementById("initialLoadingOverlay");
 
   // 공지사항 fetch
-  fetch("https://script.google.com/macros/s/AKfycbz3fKe4m57og8j3S4iJB743uuhQ2E1ORFG9qkEVt_7sasIAszMibpzmPsZt4lWv6Bpp/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbxmEcSwc2llO6j1-_SEAYc-rHe0fO8fZLlbc5NZoA7CBxhnWtHftrKAFtOvOUxDS87x/exec?mode=notice")
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
