@@ -1,162 +1,567 @@
+
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>드론 지도 음영 시스템</title>
-  <style>
-  body {
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0 0 100px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  #map-container {
-    position: relative;
-    width: 90%;
-    max-width: 1000px;
-    border: 1px solid #ccc;
-    margin-top: 20px;
-  }
-  #map {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-  #overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 10;
-    pointer-events: auto;
-  }
-#cad {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: auto;
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 5;
+  <head>
+    <meta charset="UTF-8" />
+    <title>드론 지도 음영 시스템</title>
+    <style>
+          body {
+            font-family: sans-serif;
+            margin: 0;
+            padding-bottom: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+
+          #header {
+            text-align: center;
+            margin-top: 20px;
+          }
+
+          #header img {
+            height: 80px;
+            margin-bottom: 10px;
+          }
+
+       #factory-selector {
+        display: flex;
+        flex-direction: column;         /* ✅ 세로 정렬 유지 */
+        align-items: center;
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        padding: 40px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        background: #fafafa;
+        margin: 40px 0;
+        gap: 24px;
+        font-size: 1.25rem;
+        transform: scale(1.15);         /* ✅ 전체 크기 15% 확대 */
+        transform-origin: center top;
+
+        /* ✅ fade-in 효과 준비 */
+        opacity: 0;
+        transition: opacity 0.6s ease;
+      }
+
+      #factory-selector.show {
+        opacity: 1; /* ✅ fade-in 대상 클래스 */
+      }
+
+      #factory-selector button {
+        width: 320px;
+        padding: 16px 20px;
+        font-size: 1rem;
+        line-height: 1.5;
+        text-align: center;
+        border: 1px solid #aaa;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      #factory-selector button:hover {
+        background: #f0f0f0;
+      }
+
+      /* ✅ 모바일에서 버튼 간격 키우기 */
+       @media (max-width: 600px) {
+            #factory-selector button {
+              margin-bottom: 20px;
+              padding: 20px;
+              font-size: 1.1rem;
+            }
+          }
+
+
+
+          #main-app {
+            display: none;
+            width: 100%;
+          }
+
+          #map-container {
+            position: relative;
+            width: 90%;
+            max-width: 1000px;
+            border: 1px solid #ccc;
+            margin: 20px auto 0;
+          }
+
+          #map {
+            display: block;
+            width: 100%;
+            height: auto;
+          }
+
+          #cad {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 5;
+          }
+
+          #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: auto;
+          }
+
+
+
+          #controls {
+  margin: 30px auto 100px;
+  width: 90%;
+  max-width: 1000px;   /* ← 수정 */
 }
 
-  #controls {
-    margin-top: 30px;
-    margin-bottom: 100px;
-    width: 90%;
-    max-width: 800px;
-  }
+          #coords {
+            font-family: monospace;
+            margin-bottom: 10px;
+          }
+
+         #saved {
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  background: #f8f8f8;
+  border: 1px solid #ccc;
+  padding: 14px;
+  min-height: 120px;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.5;
+  
+  /* ✅ 추가 */
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
 
 
-  #coords {
-    font-family: monospace;
-    margin-bottom: 10px;
-  }
-  #saved {
-    font-family: monospace;
-    font-size: 13px;
-    white-space: pre-wrap;
-    background: #f8f8f8;
-    border: 1px solid #ccc;
-    padding: 14px;
-    min-height: 120px;
-    max-height: 300px;
-    overflow-y: auto;
-    line-height: 1.5;
-  }
- /* ⬇️ 이거 새로 추가해도 됨 */
-    #saved div {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+          #saved div {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
 
-    #saved div:hover {
-      background: #eef;
-    }
-  button {
-    margin-bottom: 10px;
-    padding: 8px 16px;
-    font-size: 15px;
-  }
-</style>
+          #saved div:hover {
+            background: #eef;
+          }
 
-</head>
-<body>
+          button {
+            margin-bottom: 10px;
+            padding: 8px 16px;
+            font-size: 15px;
+          }
+      #saved .entry {
+        background: #eef7ff;
+        border: 1px solid #bcd;
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
 
-<h3>🧽 드론 지도 음영 시스템 (Canvas)</h3>
+      #saved .entry .text {
+        font-size: 14px;
+        word-break: keep-all;
+      }
 
-<div id="map-container">
-  <img id="map" src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_드론.png" />
-  <img id="cad" 
-       src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_도면.png" 
-       style="display:none; position:absolute; top:0; left:0; width:100%; height:auto; z-index:5; opacity:0.5;" />
-  <canvas id="overlay"></canvas>
+      #saved .entry .buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      #saved .entry .buttons button {
+        font-size: 13px;
+        padding: 5px 10px;
+      }
+
+      #header {
+        text-align: center;
+        margin-top: 10px; /* 또는 0 */
+      }
+#instruction {
+  margin: 20px auto;
+  font-size: 1.05rem;
+  color: #333;
+  text-align: center;
+  background: #f9f9f9;
+  border: 1px dashed #aaa;
+  border-radius: 8px;
+  padding: 12px;
+  width: 90%;
+  max-width: 1000px;   /* ← 수정 */
+}
+     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  </head>
+  <body>
+    <!-- 로그인 창 -->
+    <!-- 로그인 창 -->
+    <div
+      id="login-screen"
+      style="
+  display: none;                /* 기본은 숨김 */
+  position: absolute;          /* 위에 고정되게 */
+  top: 150px;                  /* 로고 아래로 내려오게 조정 */
+  left: 0;
+  right: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 100;
+"
+    >
+      <h2>🔒 로그인</h2>
+      <input
+        type="text"
+        id="login-id"
+        placeholder="아이디"
+        style="padding: 8px; font-size: 1rem;"
+      /><br /><br />
+      <input
+        type="password"
+        id="login-pw"
+        placeholder="비밀번호"
+        style="padding: 8px; font-size: 1rem;"
+      /><br /><br />
+      <button id="loginBtn" style="padding: 10px 20px;">로그인</button>
+    </div>
+
+    <!-- ✅ 상단 회사 로고 + 제목 -->
+    <div id="header">
+      <img
+        src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_로고.png"
+        alt="회사 로고"
+      />
+      <h2>🏭 공장 부지 음영 관리 도구</h2>
+    </div>
+
+    <!-- ✅ 공장 선택 버튼 -->
+    <!-- ✅ 공장 선택 화면 -->
+    <div id="factory-selector" style="display: none;">
+      <h3 style="margin-bottom: 30px; font-size: 1.3em;">
+        📍 공장을 선택해주세요
+      </h3>
+
+      <!-- ✅ 본공장 -->
+      <div
+        style="display: flex; align-items: center; gap: 20px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px 24px; margin-bottom: 30px; max-width: 700px;"
+      >
+        <!-- 왼쪽: 버튼 설명 -->
+        <div style="flex: 1;">
+          <button
+            onclick="loadFactory(1)"
+            style="width: 100%; padding: 16px; border-radius: 8px; border: 1px solid #aaa; font-size: 1rem; background: #f9f9f9; cursor: pointer;"
+          >
+            🏭 신대양제지반월 본공장<br />
+            <small style="color:gray;"
+              >(본공장 / 경기도 안산시 단원구 목내로 29)</small
+            >
+          </button>
+        </div>
+        <!-- 오른쪽: 이미지 썸네일 -->
+        <img
+          src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론3.png"
+          style="width: 240px; border-radius: 8px;"
+        />
+      </div>
+
+      <!-- ✅ 2공장 -->
+      <div
+        style="display: flex; align-items: center; gap: 20px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px 24px; margin-bottom: 30px; max-width: 700px;"
+      >
+        <div style="flex: 1;">
+          <button
+            onclick="loadFactory(2)"
+            style="width: 100%; padding: 16px; border-radius: 8px; border: 1px solid #aaa; font-size: 1rem; background: #f9f9f9; cursor: pointer;"
+          >
+            🏭 신대양제지반월 2공장<br />
+            <small style="color:gray;"
+              >(2공장 / 경기도 안산시 단원구 별망로 408)</small
+            >
+          </button>
+        </div>
+        <img
+          src="https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_드론.png"
+          style="width: 240px; border-radius: 8px;"
+        />
+      </div>
+    </div>
+
+    <div
+      id="admin-password-panel"
+      style="display: none; margin-top: 20px; text-align: center;"
+    >
+      <h3>🛠️ admin 비밀번호 변경</h3>
+      <input
+        type="password"
+        id="new-admin-pw"
+        placeholder="새 비밀번호"
+        style="padding: 8px; font-size: 1rem;"
+      />
+      <button
+        onclick="changeAdminPassword()"
+        style="padding: 8px 16px; margin-left: 10px;"
+      >
+        변경
+      </button>
+      <p style="font-size: 0.9rem; color: gray; margin-top: 8px;">
+        ※ admin 계정으로 로그인할 때 사용됩니다.
+      </p>
+    </div>
+
+    <!-- ✅ 메인 시스템 영역 -->
+    <div id="main-app">
+      <!-- 공장 이름 표시 -->
+      <div
+        id="currentFactory"
+        style="margin: 0 auto 10px; text-align: center; font-weight: bold;"
+      ></div>
+
+      <!-- 지도 및 오버레이 영역 -->
+      <div id="map-container">
+        <img id="map" />
+        <img id="cad" style="display: none;" />
+        <canvas id="overlay"></canvas>
+      </div>
+<div id="instruction" style="margin-top: 20px; font-size: 1rem; color: #444; text-align: center;">
+※ 원하는 영역을 드래그한 뒤 <strong>좌표 추가</strong> 및 <strong>좌표 저장</strong>을 누르면, 공유 링크 생성과 PDF 저장(PC만 가능)이 가능합니다.<br>
+<small style="color: gray;">※ 표시된 면적은 기준 해상도 기반으로 계산되며, 실제 면적과 소폭 차이가 있을 수 있습니다.</small>
+
 </div>
-<div id="controls">
-  <div id="coords">좌표: </div>
-  <button id="saveBtn">📌 선택 좌표 저장</button>
-<button id="toggleCadBtn">🟢 CAD 보기 끄기</button>
- <div style="margin: 8px 0;">
-    <label>CAD 투명도:
-      <input type="range" id="cadOpacity" min="0" max="100" value="50">
-    </label>
+
+
+      <!-- 컨트롤 패널 -->
+      <div id="controls">
+        <!-- ✅ 버튼 3개 한 줄 정렬 -->
+   <!-- 기존 버튼들 -->
+<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; justify-content: space-between; align-items: center;">
+  <!-- 좌측 버튼 묶음 -->
+  <div style="display: flex; gap: 10px;">
+    <button id="addTempBtn">➕ 좌표 추가</button>
+    <button id="saveBtn">📌 좌표 저장</button>
+    <button id="resetBtn">♻️ 초기화</button>
+    <button id="toggleGridBtn">🔲 격자 숨기기</button>
+    <button id="backBtn">🔙 공장 선택</button>
   </div>
 
-
-  <div id="saved">저장된 좌표 없음</div>
+  <!-- 우측 CAD 묶음 -->
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <button id="toggleCadBtn">🔴 CAD 보기 켜기</button>
+    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+      투명도:
+      <input type="range" id="cadOpacity" min="0" max="100" value="50" />
+    </label>
+  </div>
+</div>
+<!-- 색상 선택은 따로 한 줄 더 아래 -->
+<div id="color-selector" style="margin: 10px 0; display: flex; gap: 10px; align-items: center;">
+  <span>색상 선택:</span>
+  <button onclick="setColor('yellow')" data-color="yellow" style="background: yellow;">&nbsp;</button>
+  <button onclick="setColor('blue')" data-color="blue" style="background: lightblue;">&nbsp;</button>
+  <button onclick="setColor('red')" data-color="red" style="background: lightcoral;">&nbsp;</button>
+  <button onclick="setColor('green')" data-color="green" style="background: lightgreen;">&nbsp;</button>
+  <button onclick="setColor('magenta')" data-color="magenta" style="background: magenta;">&nbsp;</button>
 </div>
 
-<script>
-const map = document.getElementById("map");
-const canvas = document.getElementById("overlay");
-const ctx = canvas.getContext("2d");
-const coordsDiv = document.getElementById("coords");
-const saveBtn = document.getElementById("saveBtn");
-const savedDiv = document.getElementById("saved");
 
-let cellSize = 20;
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let hasMoved = false;
-let lastSelection = null;
 
-function getMetersPerPixel() {
-  return 0.15;
+        <div id="coords">좌표:</div>
+       <div id="temp-count" style="color: gray; font-size: 0.9rem;">좌표 추가 0건</div>
+
+
+
+
+        <!-- 저장된 좌표 목록 -->
+        <div id="saved">목록</div>
+      </div>
+    </div>
+
+    <!-- ✅ 통합 스크립트 -->
+    <script>
+                  function handleLogin() {
+                    const id = document.getElementById("login-id").value;
+                    const pw = document.getElementById("login-pw").value;
+                    const savedAdminPw = localStorage.getItem("adminPw") || "123";
+
+                    if (id === "superadmin" && pw === "super123") {
+                      localStorage.setItem("auth", "superadmin");
+                      document.getElementById("login-screen").style.display = "none";
+                      showFactorySelector();
+                      document.getElementById("admin-password-panel").style.display = "block";
+                    } else if (id === "admin" && pw === savedAdminPw) {
+                      localStorage.setItem("auth", "admin");
+                      document.getElementById("login-screen").style.display = "none";
+                      showFactorySelector();
+                      document.getElementById("admin-password-panel").style.display = "none";
+                    } else {
+                      alert("❌ 아이디 또는 비밀번호가 잘못되었습니다.");
+                    }
+                  }
+
+                  window.handleLogin = handleLogin;  // ✅ 꼭 있어야 HTML에서 호출 가능
+
+                  function showFactorySelector() {
+                    const selector = document.getElementById("factory-selector");
+                    selector.style.display = "flex";
+                    // 💡 1프레임 지연 후 클래스 추가
+                    requestAnimationFrame(() => {
+                      selector.classList.add("show");
+                    });
+                  }
+
+
+                      const FACTORY_DATA = {
+                        1: {
+                          map: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_드론3.png",
+                          cad: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월_도면3.png"
+                        },
+                        2: {
+                          map: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_드론.png",
+                          cad: "https://sdypaperbanwol.github.io/material-form-banwol-/신대양제지반월2공장_도면.png"
+                        }
+                      };
+
+                  const factoryNames = {
+                    1: "신대양제지반월 본공장",
+                    2: "신대양제지반월 2공장"
+                  };
+
+                      let selectedFactory = null;
+                  let isInitialized = false;
+
+                  function loadFactory(factoryNum) {
+                    selectedFactory = factoryNum;
+                    const factory = FACTORY_DATA[factoryNum];
+                    if (!factory) return;
+
+                    document.getElementById("factory-selector").style.display = "none";
+                    document.getElementById("main-app").style.display = "block";
+
+                    const mapEl = document.getElementById("map");
+                    const cadEl = document.getElementById("cad");
+
+                    mapEl.src = factory.map;
+                    cadEl.src = factory.cad;
+
+                    document.getElementById("currentFactory").innerText = `■ 현재 공장: ${factoryNames[factoryNum]}`;
+
+                    const finishInit = () => {
+                      resizeCanvas();
+                      if (!isInitialized) {
+                        initSystem();
+                        isInitialized = true;
+                      }
+                    };
+
+                    if (mapEl.complete) {
+                      finishInit();
+                    } else {
+                      mapEl.onload = finishInit;
+                    }
+                  }
+
+
+                  window.loadFactory = loadFactory;
+
+
+                      // ✅ 아래는 기존 시스템 스크립트 전체 삽입
+                      // 단, map.onload에서 resizeCanvas()만 호출하면 됨
+                      let cellSize = 10;
+                      let isDragging = false;
+                      let dragStartX = 0;
+                      let dragStartY = 0;
+                      let hasMoved = false;
+                      let selections = [];
+                      let currentColor = "yellow"; // 기본 색상
+                      let showGrid = true;         // ✅ 격자 보이기 기본값 추가
+
+function setColor(color) {
+  currentColor = color;
+
+  const colorButtons = document.querySelectorAll('#color-selector button');
+  colorButtons.forEach(btn => {
+    btn.style.outline = "none";
+    btn.style.border = "1px solid #ccc";
+  });
+
+  const selectedBtn = [...colorButtons].find(btn => btn.dataset.color === color);
+  if (selectedBtn) {
+    selectedBtn.style.outline = "2px solid #333";
+    selectedBtn.style.border = "2px solid #333";
+  }
 }
 
-function resizeCanvas() {
-  canvas.width = map.clientWidth;
-  canvas.height = map.clientHeight;
-  drawGrid();
-}
 
-function getScale() {
-  return canvas.width / map.naturalWidth;
-}
 
-function getRelativeCoords(e) {
-  const rect = canvas.getBoundingClientRect();
-  const scale = getScale();
-  return {
-    x: (e.clientX - rect.left) / scale,
-    y: (e.clientY - rect.top) / scale
-  };
-}
 
-function drawGrid() {
+                      const map = document.getElementById("map");
+                      const canvas = document.getElementById("overlay");
+                      const ctx = canvas.getContext("2d");
+                      const coordsDiv = document.getElementById("coords");
+                      const saveBtn = document.getElementById("saveBtn");
+                      const savedDiv = document.getElementById("saved");
+                      const cadImg = document.getElementById("cad");
+                      const toggleCadBtn = document.getElementById("toggleCadBtn");
+                      const cadOpacity = document.getElementById("cadOpacity");
+
+                      let cadVisible = false;
+                      toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
+
+                      function getMetersPerPixel() {
+                        return 0.15;
+                      }
+
+                      function resizeCanvas() {
+                        canvas.width = map.clientWidth;
+                        canvas.height = map.clientHeight;
+                        drawGrid();
+                      }
+
+                      function getScale() {
+                        return canvas.width / map.naturalWidth;
+                      }
+
+                      function getRelativeCoords(e) {
+                        const rect = canvas.getBoundingClientRect();
+                        const scale = getScale();
+                        return {
+                          x: (e.clientX - rect.left) / scale,
+                          y: (e.clientY - rect.top) / scale
+                        };
+                      }
+
+                  function drawGrid() {
+  if (!showGrid) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // 격자 안 그리기
+    drawScaleBar();  // 그래도 스케일바는 유지
+    return;
+  }
+
   const scale = getScale();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.strokeStyle = "rgba(0,0,0,0.3)";
-  ctx.lineWidth = 0.5;
+  ctx.lineWidth = 1;
 
   const step = cellSize * scale;
   const fontSize = Math.max(14 * scale, 11);
@@ -165,16 +570,14 @@ function drawGrid() {
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  // X축 숫자 인덱스 (상단)
   for (let x = 0, i = 0; x <= canvas.width; x += step, i++) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvas.height);
     ctx.stroke();
-    ctx.fillText(i, x + step / 2, 0); // 인덱스 숫자
+    ctx.fillText(i, x + step / 2, 0);
   }
 
-  // Y축 숫자 인덱스 (좌측)
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   for (let y = 0, j = 0; y <= canvas.height; y += step, j++) {
@@ -182,90 +585,120 @@ function drawGrid() {
     ctx.moveTo(0, y);
     ctx.lineTo(canvas.width, y);
     ctx.stroke();
-    ctx.fillText(j, 0, y + step / 2); // 인덱스 숫자
+    ctx.fillText(j, 0, y + step / 2);
   }
- drawScaleBar();
-}
 
-function drawScaleBar() {
-  const scale = getScale();
-  const metersPerPixel = getMetersPerPixel();
-  const canvasWidth = canvas.width;
-
-  const maxBarPx = canvasWidth * 0.25; // 화면 너비의 25% 이내로 제한
-  const maxMeters = maxBarPx / metersPerPixel;
-
-  // 보기 좋은 단위 선택 (예: 1, 2, 5, 10, 20, 50, 100...)
-  const niceSteps = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
-  let chosenLengthM = niceSteps.find(step => step <= maxMeters) || niceSteps[niceSteps.length - 1];
-  const barLengthPx = chosenLengthM / metersPerPixel;
-
-  const x = canvas.width - barLengthPx - 20;
-  const y = canvas.height - 20;
-
-  // 선 그리기
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + barLengthPx, y);
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // 텍스트
-  ctx.fillStyle = "white";
-  ctx.font = "12px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(`약 ${chosenLengthM} m`, x + barLengthPx / 2, y - 10);
+  drawScaleBar();
 }
 
 
+                      function drawScaleBar() {
+                        const scale = getScale();
+                        const metersPerPixel = getMetersPerPixel();
+                        const canvasWidth = canvas.width;
 
-function drawShadedArea(x1, y1, x2, y2) {
+                        const maxBarPx = canvasWidth * 0.25;
+                        const niceSteps = [1, 2, 5, 10, 20, 50, 100, 200];
+                        const maxMeters = maxBarPx / metersPerPixel;
+                        let chosen = niceSteps.find(m => m <= maxMeters) || niceSteps[niceSteps.length - 1];
+                        const barPx = chosen / metersPerPixel;
+
+                        const x = canvasWidth - barPx - 20;
+                        const y = canvas.height - 20;
+
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + barPx, y);
+                        ctx.strokeStyle = "white";
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+
+                        ctx.fillStyle = "white";
+                        ctx.font = "12px sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.fillText(`약 ${chosen} m`, x + barPx / 2, y - 10);
+                      }
+
+                      function drawMultilineLabel(x, y, lines) {
+                        const scale = getScale();
+                        const fontSize = Math.max(13 * scale, 11);
+                        ctx.font = `bold ${fontSize}px sans-serif`;  // ✅ bold 추가
+                  ctx.fillStyle = "black";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "top";
+
+                        const totalHeight = lines.length * (fontSize + 2);
+                        const startY = y * scale - totalHeight / 2;
+
+                        lines.forEach((line, i) => {
+                          ctx.fillText(line, x * scale, startY + i * (fontSize + 2));
+                        });
+                      }
+
+
+function getFillRGBA(color) {
+  const rgbaMap = {
+    yellow: "rgba(255,255,0,0.3)",
+    blue: "rgba(0,128,255,0.3)",
+    red: "rgba(255,0,0,0.3)",
+    green: "rgba(0,200,0,0.3)",
+    magenta: "rgba(255,0,255,0.3)"
+  };
+  return rgbaMap[color] || "rgba(255,255,0,0.3)";
+}
+
+               function drawShadedArea(x1, y1, x2, y2, color = currentColor) {
   const scale = getScale();
-  ctx.fillStyle = "rgba(0,0,255,0.2)";  // ← 드래그 중과 같은 파란색으로
+
+  ctx.fillStyle = getFillRGBA(color);
   for (let y = y1; y < y2; y += cellSize) {
     for (let x = x1; x < x2; x += cellSize) {
       ctx.fillRect(x * scale, y * scale, cellSize * scale, cellSize * scale);
     }
   }
+
+  const boxX = x1 * scale;
+  const boxY = y1 * scale;
+  const boxW = (x2 - x1) * scale;
+  const boxH = (y2 - y1) * scale;
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 0.7;
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
 }
 
 
-function drawLabel(x, y, text) {
-  const scale = getScale();
-  const fontSize = Math.max(14 * scale, 12);
-  ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = "yellow";
-  ctx.fillText(text, x * scale, y * scale);
+
+
+              function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
+  const xStart = x1 / cellSize;
+  const yStart = y1 / cellSize;
+
+  const formattedM2 = areaM2.toLocaleString(undefined, { maximumFractionDigits: 0 });  // 1,234 형식
+  const formattedPy = areaPy.toFixed(1);  // 373.5 형식
+
+  return [
+    `X${xStart}, Y${yStart}`,
+    `${widthM.toFixed(0)}×${heightM.toFixed(0)}m`,
+    `${formattedM2}m² (약 ${formattedPy}평)`
+  ];
 }
 
-function drawMultilineLabel(x, y, lines) {
-  const scale = getScale();
-  const fontSize = Math.max(13 * scale, 11);
-  ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = "yellow";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
 
-  const totalHeight = lines.length * (fontSize + 2);
-  const startY = y * scale - totalHeight / 2;
 
-  lines.forEach((line, i) => {
-    ctx.fillText(line, x * scale, startY + i * (fontSize + 2));
-  });
-}
 
-function handleStart(e) {
-  const pos = getRelativeCoords(e);
-  dragStartX = pos.x;
-  dragStartY = pos.y;
-  isDragging = true;
-  hasMoved = false;
-}
+                      function handleStart(e) {
+                        const pos = getRelativeCoords(e);
+                        dragStartX = pos.x;
+                        dragStartY = pos.y;
+                        isDragging = true;
+                        hasMoved = false;
+                      }
 
-function handleMove(e) {
+                    function handleMove(e) {
   if (!isDragging) return;
   hasMoved = true;
+
   const pos = getRelativeCoords(e);
   const x = Math.min(dragStartX, pos.x);
   const y = Math.min(dragStartY, pos.y);
@@ -273,35 +706,38 @@ function handleMove(e) {
   const h = Math.abs(dragStartY - pos.y);
 
   drawGrid();
-  ctx.fillStyle = "rgba(0,0,255,0.2)";
-  ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
+  drawAllSelections(); // ✅ 추가: 기존 좌표 추가 다시 그림
 
-  const x1 = Math.floor(x / cellSize) * cellSize;
-  const y1 = Math.floor(y / cellSize) * cellSize;
-  const x2 = Math.ceil((x + w) / cellSize) * cellSize;
-  const y2 = Math.ceil((y + h) / cellSize) * cellSize;
+  ctx.fillStyle = getFillRGBA(currentColor);
+ctx.fillRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
 
-  const pixelWidth = x2 - x1;
-  const pixelHeight = y2 - y1;
-  const cols = pixelWidth / cellSize;
-  const rows = pixelHeight / cellSize;
-  const metersPerPixel = getMetersPerPixel();
-  const widthM = pixelWidth * metersPerPixel;
-  const heightM = pixelHeight * metersPerPixel;
+ctx.strokeStyle = currentColor;
+ctx.lineWidth = 0.7;
+ctx.strokeRect(x * getScale(), y * getScale(), w * getScale(), h * getScale());
+
+
+  const x1 = Math.floor(Math.min(dragStartX, pos.x) / cellSize) * cellSize;
+  const y1 = Math.floor(Math.min(dragStartY, pos.y) / cellSize) * cellSize;
+  const x2 = Math.ceil(Math.max(dragStartX, pos.x) / cellSize) * cellSize;
+  const y2 = Math.ceil(Math.max(dragStartY, pos.y) / cellSize) * cellSize;
+
+  const cols = (x2 - x1) / cellSize;
+  const rows = (y2 - y1) / cellSize;
+  const widthM = (x2 - x1) * getMetersPerPixel();
+  const heightM = (y2 - y1) * getMetersPerPixel();
   const areaM2 = widthM * heightM;
   const areaPy = areaM2 / 3.3058;
 
-   drawMultilineLabel(
-  x1 + (x2 - x1) / 2,
-  y1 + (y2 - y1) / 2,
-  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-);
-
-
-
+  drawMultilineLabel(
+    x1 + (x2 - x1) / 2,
+    y1 + (y2 - y1) / 2,
+    formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+  );
 }
 
-function handleEnd(e) {
+
+
+             function handleEnd(e) {
   const pos = getRelativeCoords(e);
   let x1 = Math.floor(Math.min(dragStartX, pos.x) / cellSize) * cellSize;
   let y1 = Math.floor(Math.min(dragStartY, pos.y) / cellSize) * cellSize;
@@ -323,177 +759,544 @@ function handleEnd(e) {
   const areaM2 = widthM * heightM;
   const areaPy = areaM2 / 3.3058;
 
-  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy, color: currentColor };
 
   drawGrid();
+  drawAllSelections(); // ✅ 추가: 기존 selection 유지하며 다시 그림
   drawShadedArea(x1, y1, x2, y2);
- drawMultilineLabel(
-  x1 + (x2 - x1) / 2,
-  y1 + (y2 - y1) / 2,
-  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-);
+  drawMultilineLabel(
+    x1 + (x2 - x1) / 2,
+    y1 + (y2 - y1) / 2,
+    formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+  );
 
   coordsDiv.innerText =
-  `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
-  `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
+    `좌표: 셀 X=${x1 / cellSize}, Y=${y1 / cellSize} (픽셀 X=${x1}, Y=${y1})\n` +
+    `크기: ${cols}×${rows}칸, 약 ${widthM.toFixed(2)}m × ${heightM.toFixed(2)}m`;
 
   isDragging = false;
   hasMoved = false;
 }
 
+
+
+                      function initSystem() {
+                        map.onload = resizeCanvas;
+                        window.addEventListener("resize", resizeCanvas);
+
+                   // ✅ CAD 초기 상태 보장
+                    cadImg.style.display = "none";
+                    cadVisible = false;
+                    toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
+
+                        canvas.addEventListener("mousedown", handleStart);
+                        canvas.addEventListener("mousemove", handleMove);
+                        canvas.addEventListener("mouseup", handleEnd);
+
+                  // ✅ 모바일 터치 대응 이벤트
+                  canvas.addEventListener("touchstart", e => {
+                    if (e.touches.length === 1) {
+                      e.preventDefault(); // 스크롤 방지
+                      handleStart(e.touches[0]);
+                    }
+                  }, { passive: false });
+
+                  canvas.addEventListener("touchmove", e => {
+                    if (e.touches.length === 1) {
+                      e.preventDefault();
+                      handleMove(e.touches[0]);
+                    }
+                  }, { passive: false });
+
+                  canvas.addEventListener("touchend", e => {
+                    if (e.changedTouches.length === 1) {
+                      e.preventDefault();
+                      handleEnd(e.changedTouches[0]);
+                    }
+                  }, { passive: false });
+
+
+                        cadOpacity.addEventListener("input", () => {
+                          cadImg.style.opacity = cadOpacity.value / 100;
+                        });
+
+                        toggleCadBtn.addEventListener("click", () => {
+                          cadVisible = !cadVisible;
+                          cadImg.style.display = cadVisible ? "block" : "none";
+                          toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
+                        });
+document.getElementById("toggleGridBtn").addEventListener("click", () => {
+  showGrid = !showGrid;
+  drawGrid();
+  drawAllSelections();  // 격자 없이 선택 영역 다시 그림
+
+  const btn = document.getElementById("toggleGridBtn");
+  btn.textContent = showGrid ? "🔲 격자 숨기기" : "🔳 격자 보이기";
+});
+
 saveBtn.addEventListener("click", () => {
-  if (!lastSelection) return;
+  if (selections.length === 0) return;
 
-  const { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy } = lastSelection;
-const text = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy).join(" / ");
+ const entry = document.createElement("div");
+entry.className = "entry";
 
+  // ✅ 여기에 추가
+entry.addEventListener("click", () => {
+  drawGrid();
+  drawAllSelections();
 
-
-
-  const entry = document.createElement("div");
-  entry.style.marginBottom = "6px";
-  entry.style.cursor = "pointer";
-  entry.dataset.x1 = x1;
-  entry.dataset.y1 = y1;
-  entry.dataset.x2 = x2;
-  entry.dataset.y2 = y2;
-
-  const span = document.createElement("span");
-  span.textContent = text;
-  span.style.whiteSpace = "pre-wrap";
-
-  const del = document.createElement("button");
-del.textContent = "❌";
-del.style.marginLeft = "8px";
-del.style.fontSize = "12px";
-del.style.padding = "2px 4px";
-del.style.lineHeight = "1";
-del.style.border = "none";
-del.style.background = "transparent";
-del.style.cursor = "pointer";
-
-del.onclick = (e) => {
-  e.stopPropagation(); // ✅ 필수!
-  savedDiv.removeChild(entry);
-};
-// ✅ 🔗 링크 복사 버튼 추가 위치
-const linkBtn = document.createElement("button");
-linkBtn.textContent = "🔗 링크 복사";
-linkBtn.style.fontSize = "12px";
-linkBtn.style.marginLeft = "8px";
-linkBtn.style.padding = "2px 4px";
-linkBtn.style.lineHeight = "1";
-linkBtn.style.border = "none";
-linkBtn.style.background = "transparent";
-linkBtn.style.cursor = "pointer";
-
-linkBtn.onclick = () => {
-  const url = new URL(location.href);
-  url.searchParams.set("x1", x1);
-  url.searchParams.set("y1", y1);
-  url.searchParams.set("x2", x2);
-  url.searchParams.set("y2", y2);
-  navigator.clipboard.writeText(url.toString());
-  alert("✅ 공유 링크가 복사되었습니다!");
-};
-
-
-  entry.appendChild(span);
-  entry.appendChild(del);
-entry.appendChild(linkBtn); // ✅ 이 줄을 꼭 추가해야 함
-
-
-  entry.onclick = (e) => {
-    if (e.target.tagName === "BUTTON") return;
-    drawGrid();
-    drawShadedArea(x1, y1, x2, y2);
-   drawMultilineLabel(
-  x1 + (x2 - x1) / 2,
-  y1 + (y2 - y1) / 2,
-  formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
-);
-
-  };
-
-  if (savedDiv.textContent.trim() === "저장된 좌표 없음") savedDiv.innerHTML = "";
-  savedDiv.appendChild(entry);
-});
-
-canvas.addEventListener("mousedown", handleStart);
-canvas.addEventListener("mousemove", handleMove);
-canvas.addEventListener("mouseup", handleEnd);
-
-canvas.addEventListener("touchstart", e => {
-  if (e.touches.length === 1) handleStart(e.touches[0]);
-});
-canvas.addEventListener("touchmove", e => {
-  e.preventDefault();
-  if (e.touches.length === 1) handleMove(e.touches[0]);
-}, { passive: false });
-canvas.addEventListener("touchend", e => {
-  if (e.changedTouches.length === 1) handleEnd(e.changedTouches[0]);
-});
-
-map.onload = resizeCanvas;
-window.addEventListener("resize", resizeCanvas);
-
-function formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy) {
-  const xStart = x1 / cellSize;
-  const yStart = y1 / cellSize;
-
-  return [
-    X${xStart}, Y${yStart} / ${widthM.toFixed(0)}×${heightM.toFixed(0)}m / ${areaM2.toFixed(0)}m²(${Math.round(areaPy)}평)
-  ];
-}
-// CAD 보기 on/off 토글
-const cadImg = document.getElementById("cad");
-const toggleCadBtn = document.getElementById("toggleCadBtn");
-let cadVisible = false;  // ✅ 처음부터 꺼짐 상태
-toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
-
-toggleCadBtn.addEventListener("click", () => {
-  cadVisible = !cadVisible;
-  cadImg.style.display = cadVisible ? "block" : "none";
-  toggleCadBtn.textContent = cadVisible ? "🟢 CAD 보기 끄기" : "🔴 CAD 보기 켜기";
-});
-
-// ✅ CAD 투명도 슬라이더 연결
-const cadOpacity = document.getElementById("cadOpacity");
-
-cadOpacity.addEventListener("input", () => {
-  const value = cadOpacity.value; // 0~100
-  cadImg.style.opacity = value / 100;
-});
-
-// ✅ 여기에 삽입
-window.addEventListener("load", () => {
-  const params = new URLSearchParams(location.search);
-  const x1 = parseInt(params.get("x1"));
-  const y1 = parseInt(params.get("y1"));
-  const x2 = parseInt(params.get("x2"));
-  const y2 = parseInt(params.get("y2"));
-  if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
-    drawGrid();
-    drawShadedArea(x1, y1, x2, y2);
-
+  coordsData.forEach(str => {
+    const [x1, y1, x2, y2, color] = str.split(",");
     const cols = (x2 - x1) / cellSize;
     const rows = (y2 - y1) / cellSize;
-    const metersPerPixel = getMetersPerPixel();
-    const widthM = (x2 - x1) * metersPerPixel;
-    const heightM = (y2 - y1) * metersPerPixel;
+    const widthM = (x2 - x1) * getMetersPerPixel();
+    const heightM = (y2 - y1) * getMetersPerPixel();
     const areaM2 = widthM * heightM;
     const areaPy = areaM2 / 3.3058;
 
+    drawShadedArea(Number(x1), Number(y1), Number(x2), Number(y2), color);
     drawMultilineLabel(
-      x1 + (x2 - x1) / 2,
-      y1 + (y2 - y1) / 2,
-      formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy)
+      Number(x1) + (Number(x2) - Number(x1)) / 2,
+      Number(y1) + (Number(y2) - Number(y1)) / 2,
+      formatLabel(Number(x1), Number(y1), cols, rows, widthM, heightM, areaM2, areaPy)
     );
-  // 🔽 이 줄 추가!
-  lastSelection = { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy };
+  });
+});
+
+  
+let combinedLabel = "";
+const coordsData = [];
+let totalArea = 0;
+
+selections.forEach((sel, idx) => {
+  const { x1, y1, x2, y2, cols, rows, widthM, heightM, areaM2, areaPy } = sel;
+  const lines = formatLabel(x1, y1, cols, rows, widthM, heightM, areaM2, areaPy);
+  const label = `📌 영역 ${idx + 1}: ${lines.join(" / ")}`;
+  combinedLabel += label + "\n";
+  coordsData.push([x1, y1, x2, y2, sel.color || "yellow"].join(","));
+  totalArea += areaM2;
+});
+
+const totalPy = totalArea / 3.3058;
+combinedLabel += `\n🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)\n`;
+
+const textDiv = document.createElement("div");
+textDiv.className = "text";
+textDiv.textContent = combinedLabel;
+
+
+  const title = selections.length === 1 ? "영역 1건" : `영역 ${selections.length}건`;
+  const encoded = btoa(coordsData.join(";") + "|" + selectedFactory + "|1|" + encodeURIComponent(title));
+
+  const linkBtn = document.createElement("button");
+  linkBtn.textContent = "🔗 링크 복사";
+  linkBtn.onclick = () => {
+    const url = new URL(location.href);
+    url.searchParams.set("code", encoded);
+    navigator.clipboard.writeText(url.toString());
+    alert("✅ 공유 링크가 복사되었습니다!");
+  };
+
+  const pdfBtn = document.createElement("button");
+  pdfBtn.textContent = "📄 PDF 저장";
+ pdfBtn.onclick = () => {
+  const tempSelections = coordsData.map(str => {
+    const [x1, y1, x2, y2, color] = str.split(",");
+    const cols = (x2 - x1) / cellSize;
+    const rows = (y2 - y1) / cellSize;
+    const widthM = (x2 - x1) * getMetersPerPixel();
+    const heightM = (y2 - y1) * getMetersPerPixel();
+    const areaM2 = widthM * heightM;
+    const areaPy = areaM2 / 3.3058;
+
+    return {
+      x1: Number(x1), y1: Number(y1),
+      x2: Number(x2), y2: Number(y2),
+      cols, rows, widthM, heightM, areaM2, areaPy, color
+    };
+  });
+
+  drawGrid();
+  for (const sel of tempSelections) {
+    drawShadedArea(sel.x1, sel.y1, sel.x2, sel.y2, sel.color);
+    drawMultilineLabel(
+      sel.x1 + (sel.x2 - sel.x1) / 2,
+      sel.y1 + (sel.y2 - sel.y1) / 2,
+      formatLabel(sel.x1, sel.y1, sel.cols, sel.rows, sel.widthM, sel.heightM, sel.areaM2, sel.areaPy)
+    );
+  }
+
+  const { jsPDF } = window.jspdf;
+  const mapImg = document.getElementById("map");
+  const canvas = document.getElementById("overlay");
+
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+
+  tempCtx.drawImage(mapImg, 0, 0, tempCanvas.width, tempCanvas.height);
+  tempCtx.drawImage(canvas, 0, 0);
+
+  // PDF 생성
+const imgData = tempCanvas.toDataURL("image/png");
+const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+pdf.addImage(imgData, 'PNG', 10, 10, 277, 190);
+
+// ✅ 총 면적 계산
+let totalArea = 0;
+tempSelections.forEach(sel => {
+  totalArea += sel.areaM2;
+});
+const totalPy = totalArea / 3.3058;
+const totalText = `Total Area: ${totalArea.toFixed(2)} m² (approx. ${totalPy.toFixed(2)} py)`;
+
+
+// ✅ PDF 하단 중앙에 텍스트 삽입
+pdf.setFontSize(12);
+pdf.setTextColor(0, 0, 0);
+pdf.text(`Total Area: ${totalArea.toFixed(2)} m² (approx. ${totalPy.toFixed(2)} py)`, 148.5, 207, { align: "center" });
+// PDF 열기
+const pdfUrl = pdf.output('dataurlstring');
+const a = document.createElement('a');
+a.href = pdfUrl;
+a.download = "선택영역.pdf";
+a.target = "_blank";
+a.click();
+
+
+  // ✅ 추가 안내 (iOS 사용자 친절 메시지)
+  if (/iPhone|iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document) {
+    alert("📄 PDF가 새 창에서 열렸습니다. Safari 메뉴에서 '공유' 또는 '파일에 저장'을 선택하세요.");
+  }
+};
+
+
+
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "❌";
+  delBtn.onclick = () => {
+    savedDiv.removeChild(entry);
+    if (savedDiv.childElementCount === 0) {
+      savedDiv.textContent = "목록";
+    }
+  };
+
+  // ✅ 여기에 넣어야 보입니다!
+  entry.appendChild(textDiv);
+  const buttonsDiv = document.createElement("div");
+  buttonsDiv.className = "buttons";
+  buttonsDiv.appendChild(linkBtn);
+  buttonsDiv.appendChild(pdfBtn);
+  buttonsDiv.appendChild(delBtn);
+  entry.appendChild(buttonsDiv);
+
+  savedDiv.appendChild(entry);
+
+  // 초기화
+  selections = [];
+  drawAllSelections();
+  coordsDiv.innerText = "좌표: ";
+  updateTempCount();
+});
+
+
+
+                      }
+
+                  document.getElementById("backBtn").addEventListener("click", () => {
+                    document.getElementById("main-app").style.display = "none";
+                    const selectorDiv = document.getElementById("factory-selector");
+                    selectorDiv.style.display = "flex";                   // ✅ 필수: flex 유지
+                    selectorDiv.style.flexDirection = "column";           // ✅ 세로 정렬 복구
+                    selectorDiv.style.alignItems = "center";              // ✅ 중앙 정렬 복구
+
+                    // 상태 초기화
+                    savedDiv.innerHTML = "목록";
+                    coordsDiv.innerText = "좌표: ";
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    lastSelection = null;
+                  });
+                  document.getElementById("currentFactory").innerText = "";
+document.getElementById("resetBtn").addEventListener("click", () => {
+  selections = [];
+  lastSelection = null;
+  drawAllSelections(); // ✅ 전체 그리기 초기화
+  coordsDiv.innerText = "좌표: ";
+  updateTempCount();
+  savedDiv.innerHTML = "목록";
+
+  // ✅ CAD 보기 상태도 초기화
+  cadVisible = false;
+  cadImg.style.display = "none";
+  toggleCadBtn.textContent = "🔴 CAD 보기 켜기";
+// ✅ CAD 투명도 초기화
+  cadOpacity.value = 50;
+  cadImg.style.opacity = 0.5;
+ // ✅ 색상 선택 초기화
+  currentColor = "yellow";
+
+  const colorButtons = document.querySelectorAll('#color-selector button');
+  colorButtons.forEach(btn => {
+    btn.style.outline = "none";
+    btn.style.border = "1px solid #ccc";
+  });
+
+  const yellowBtn = [...colorButtons].find(btn => btn.style.background.includes("yellow"));
+  if (yellowBtn) {
+    yellowBtn.style.outline = "2px solid #333";
+    yellowBtn.style.border = "2px solid #333";
   }
 });
-</script>
 
-</body>
+
+
+document.getElementById("addTempBtn").addEventListener("click", () => {
+  if (!lastSelection) {
+    alert("먼저 드래그하여 영역을 선택하세요.");
+    return;
+  }
+
+  selections.push(lastSelection);
+  drawAllSelections(); // 기존 전체 그리기 호출
+
+  // ✅ 브라우저 프레임 안에서 다시 그리기 (깜빡임 방지)
+  requestAnimationFrame(() => {
+    drawShadedArea(lastSelection.x1, lastSelection.y1, lastSelection.x2, lastSelection.y2);
+    drawMultilineLabel(
+      lastSelection.x1 + (lastSelection.x2 - lastSelection.x1) / 2,
+      lastSelection.y1 + (lastSelection.y2 - lastSelection.y1) / 2,
+      formatLabel(
+        lastSelection.x1,
+        lastSelection.y1,
+        lastSelection.cols,
+        lastSelection.rows,
+        lastSelection.widthM,
+        lastSelection.heightM,
+        lastSelection.areaM2,
+        lastSelection.areaPy
+      )
+    );
+
+    updateTempCount();
+    lastSelection = null;
+  });
+});
+
+
+
+
+                  window.loadFactory = loadFactory;
+
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const viewOnly = params.get("view") === "1";
+
+  // ✅ 안내문 숨기기: 공유 링크 또는 보기 모드인 경우
+  const instructionDiv = document.getElementById("instruction");
+  if ((code || viewOnly) && instructionDiv) {
+    instructionDiv.style.display = "none";
+  }
+
+  // ✅ 공유 링크가 아니고, viewOnly가 아닌 경우만 로그인 요구
+  if (!code && !viewOnly) {
+    localStorage.removeItem("auth"); // 매번 로그인 하도록
+    const isLoggedIn = localStorage.getItem("auth") === "ok";
+
+    if (!isLoggedIn) {
+      document.getElementById("login-screen").style.display = "block";
+
+      // ✅ 로그인 버튼에 이벤트 등록
+      const loginBtn = document.getElementById("loginBtn");
+      if (loginBtn) {
+        loginBtn.addEventListener("click", handleLogin);
+      }
+
+      return; // 로그인 창 보여준 후 종료
+    }
+  } else {
+    // ✅ 공유 링크 등으로 접속한 경우 로그인창 숨기기
+    document.getElementById("login-screen").style.display = "none";
+  }
+
+                    // ✅ 공유 링크 있는 경우 (code 파라미터 있을 때 처리)
+                    if (code) {
+                      try {
+                        const decoded = atob(code);
+const parts = decoded.split("|");
+
+const coordsList = parts[0].split(";").map(str => {
+  const [x1, y1, x2, y2, color] = str.split(",");
+  return {
+    x1: Number(x1),
+    y1: Number(y1),
+    x2: Number(x2),
+    y2: Number(y2),
+    color: color || "yellow"
+  };
+});
+
+const factoryParam = Number(parts[1]);
+const viewFlag = Number(parts[2]);
+const labelText = parts[3] ? decodeURIComponent(parts[3]) : "";
+
+if (!coordsList.length || isNaN(factoryParam)) throw new Error("Invalid data");
+
+loadFactory(factoryParam);
+
+document.getElementById("map").onload = () => {
+  resizeCanvas();
+  if (!isInitialized) {
+    initSystem();
+    isInitialized = true;
+  }
+
+  setTimeout(() => {
+    selections = [];
+
+coordsList.forEach((coord, idx) => {
+  const { x1, y1, x2, y2, color } = coord;
+  const cols = (x2 - x1) / cellSize;
+  const rows = (y2 - y1) / cellSize;
+  const widthM = (x2 - x1) * getMetersPerPixel();
+  const heightM = (y2 - y1) * getMetersPerPixel();
+  const areaM2 = widthM * heightM;
+  const areaPy = areaM2 / 3.3058;
+
+  const selection = {
+    x1, y1, x2, y2,
+    cols, rows,
+    widthM, heightM,
+    areaM2, areaPy,
+    color
+  };
+
+  selections.push(selection);
+});
+
+
+    drawAllSelections();
+    updateTempCount();
+
+    // ✅ 총 면적도 함께 표시
+let totalArea = 0;
+selections.forEach(sel => {
+  totalArea += sel.areaM2;
+});
+const totalPy = totalArea / 3.3058;
+
+const summaryDiv = document.createElement("div");
+summaryDiv.style.margin = "10px auto";
+summaryDiv.style.textAlign = "center";
+summaryDiv.style.fontSize = "1rem";
+summaryDiv.style.color = "#444";
+summaryDiv.innerHTML = `🧮 총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`;
+
+document.getElementById("main-app").insertBefore(summaryDiv, document.getElementById("controls"));
+
+
+    const first = selections[0];
+    coordsDiv.innerText =
+      `좌표: 셀 X=${first.x1 / cellSize}, Y=${first.y1 / cellSize} (픽셀 X=${first.x1}, Y=${first.y1})\n` +
+      `크기: ${first.cols}×${first.rows}칸, 약 ${first.widthM.toFixed(2)}m × ${first.heightM.toFixed(2)}m`;
+
+    if (labelText) {
+      const labelDiv = document.createElement("div");
+      labelDiv.innerHTML = `<span style="color:green; font-weight:bold;">📌 공유 제목: ${labelText}</span>`;
+      labelDiv.style.margin = "10px auto 20px";
+      labelDiv.style.textAlign = "center";
+      document.getElementById("main-app").insertBefore(labelDiv, document.getElementById("map-container"));
+    }
+
+    if (viewFlag === 1) {
+      document.getElementById("controls").style.display = "none";
+      canvas.style.pointerEvents = "none";
+    }
+  }, 0); // 💡 0ms지만 다음 이벤트 루프로 밀어 canvas 초기화 이후 실행
+};
+
+  updateTempCount();
+
+  const first = selections[0];
+  coordsDiv.innerText =
+    `좌표: 셀 X=${first.x1 / cellSize}, Y=${first.y1 / cellSize} (픽셀 X=${first.x1}, Y=${first.y1})\n` +
+    `크기: ${first.cols}×${first.rows}칸, 약 ${first.widthM.toFixed(2)}m × ${first.heightM.toFixed(2)}m`;
+
+  if (labelText) {
+    const labelDiv = document.createElement("div");
+    labelDiv.innerHTML = `<span style="color:green; font-weight:bold;">📌 공유 제목: ${labelText}</span>`;
+    labelDiv.style.margin = "10px auto 20px";
+    labelDiv.style.textAlign = "center";
+    document.getElementById("main-app").insertBefore(labelDiv, document.getElementById("map-container"));
+  }
+
+  if (viewFlag === 1) {
+    document.getElementById("controls").style.display = "none";
+    canvas.style.pointerEvents = "none";
+  }
+
+                      } catch (e) {
+                                                                    }
+                    } else {
+                      showFactorySelector(); // 기본 진입
+                    }
+                  });
+
+                  function changeAdminPassword() {
+                    const newPw = document.getElementById("new-admin-pw").value.trim();
+                    if (!newPw) {
+                      alert("새 비밀번호를 입력하세요.");
+                      return;
+                    }
+                    localStorage.setItem("adminPw", newPw);
+                    alert("✅ admin 비밀번호가 변경되었습니다.");
+                    document.getElementById("new-admin-pw").value = "";
+                  }
+
+                  function drawAllSelections() {
+                    drawGrid();
+                    for (const sel of selections) {
+                      drawShadedArea(sel.x1, sel.y1, sel.x2, sel.y2, sel.color);
+
+                      drawMultilineLabel(
+                        sel.x1 + (sel.x2 - sel.x1) / 2,
+                        sel.y1 + (sel.y2 - sel.y1) / 2,
+                        formatLabel(sel.x1, sel.y1, sel.cols, sel.rows, sel.widthM, sel.heightM, sel.areaM2, sel.areaPy)
+                      );
+                    }
+                  }
+function updateTempCount() {
+  document.getElementById("temp-count").innerText = `좌표 추가 ${selections.length}건`;
+
+  // ✅ 총 면적 계산
+  let totalArea = 0;
+  for (const sel of selections) {
+    totalArea += sel.areaM2;
+  }
+
+  const totalPy = totalArea / 3.3058;
+  const summary = selections.length > 0
+    ? `총 면적: ${totalArea.toFixed(2)}m² (약 ${totalPy.toFixed(2)}평)`
+    : "";
+
+  // ✅ 기존 요소가 없으면 추가f
+  let totalDiv = document.getElementById("total-area");
+  if (!totalDiv) {
+    totalDiv = document.createElement("div");
+    totalDiv.id = "total-area";
+    totalDiv.style.marginTop = "4px";
+    totalDiv.style.fontSize = "0.95rem";
+    totalDiv.style.color = "#444";
+    document.getElementById("temp-count").after(totalDiv);
+  }
+
+  totalDiv.textContent = summary;
+}
+
+
+
+
+    </script>
+  </body>
 </html>
