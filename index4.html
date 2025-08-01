@@ -633,19 +633,24 @@
 
 
 function loadItems() {
-  const normalFetch = fetch(endpoint); // 신청 리스트 관리
-  const regularFetch = fetch(endpoint + "?list=regular"); // 정기 신청 리스트
+  const normalFetch = fetch(endpoint);
+  const regularFetch = fetch(endpoint + "?list=regular");
 
   Promise.all([normalFetch, regularFetch])
     .then(responses => Promise.all(responses.map(r => r.json())))
     .then(([normalData, regularData]) => {
-      // 두 데이터를 병합
-      itemData = { ...normalData, ...regularData };
+      // 두 데이터 병합
+      itemData = { ...regularData, ...normalData }; // 내용은 다 저장
 
       const container = document.getElementById('category-buttons');
       container.innerHTML = '';
 
-      Object.keys(itemData).forEach(cat => {
+      // ✅ 순서를 정기 → 일반 순서로 강제 구성
+      const regularKeys = Object.keys(regularData);
+      const normalKeys = Object.keys(normalData);
+      const sortedKeys = [...regularKeys, ...normalKeys];
+
+      sortedKeys.forEach(cat => {
         const btn = document.createElement('button');
         btn.innerText = cat;
 
@@ -660,6 +665,7 @@ function loadItems() {
 
         btn.onclick = () => {
           selected.category = cat;
+
           if (activationCode?.startsWith("Z")) {
             openZModal(activationCode);
           } else {
@@ -680,6 +686,7 @@ function loadItems() {
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
+
 
 
 
