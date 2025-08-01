@@ -633,7 +633,7 @@
 
 
 function loadItems() {
-  fetch(endpoint)
+  fetch(endpoint + "?list=regular")  // ✅ 정기 신청 리스트 사용
     .then(res => res.json())
     .then(data => {
       itemData = data;
@@ -646,10 +646,10 @@ function loadItems() {
 
         const activationCode = data[cat].activation;
 
-        // ✅ 모달 뜨는 항목만 강조: activation이 Z로 시작할 때
+        // ✅ Z1/Z2/Z3 항목 시각적으로 강조
         if (activationCode?.startsWith("Z")) {
-          btn.style.backgroundColor = "#fff9c4"; // 연노랑
-          btn.style.color = "#f57f17";           // 진한 주황
+          btn.style.backgroundColor = "#fff9c4";
+          btn.style.color = "#f57f17";
           btn.style.fontWeight = "bold";
           btn.style.border = "1px solid #fbc02d";
         }
@@ -658,20 +658,16 @@ function loadItems() {
           selected.category = cat;
 
           if (activationCode?.startsWith("Z")) {
-            openZModal(activationCode); // 특수 항목은 모달 유지
+            openZModal(activationCode); // ✅ 모달 열기
           } else {
             updateSelection(container, btn);
-            selectCategory(cat); // 🔁 다음 단계 자동 진입
+            selectCategory(cat); // ✅ 다음 단계로 이동
           }
         };
 
         container.appendChild(btn);
       });
 
-      // ✅ '다음으로' 버튼 제거됨 → 이 줄은 삭제 또는 주석 처리
-      // document.getElementById('goToTypeBtn').style.display = 'inline-block';
-
-      // ✅ 안전하게 null 체크 후 오버레이 숨김
       const overlay = document.getElementById('loadingOverlay');
       if (overlay) overlay.style.display = 'none';
     })
@@ -681,6 +677,7 @@ function loadItems() {
       alert('❌ 항목 목록 불러오기 실패: ' + error.message);
     });
 }
+
 
 
 
