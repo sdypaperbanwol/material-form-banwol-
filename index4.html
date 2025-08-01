@@ -1281,11 +1281,9 @@ function openZ1Modal() {
 // max="2" → max="99" 또는 아예 제거 가능
 row.innerHTML = `
   <div style="flex:1;">${name}</div>
-  <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
-         style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;"
-         onchange="adjustZ1Counts('${name}')">
+  <input type="number" id="${inputId}" placeholder="수량" min="0" value="1"
+         style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;">
 `;
-
   listContainer.appendChild(row);
 });
 
@@ -1367,50 +1365,7 @@ async function submitZ1() {
     document.getElementById('submitOverlay').style.display = 'none';
   }
 }
-function adjustZ1Counts(changedName) {
-  const wall = document.getElementById("z1_qty_벽걸이 달력");
-  const desk = document.getElementById("z1_qty_탁상 달력");
-  const diary = document.getElementById("z1_qty_다이어리");
 
-  let wallVal = parseInt(wall?.value || "0");
-  let deskVal = parseInt(desk?.value || "0");
-  let diaryVal = parseInt(diary?.value || "0");
-
-  // 값 정리: 음수나 NaN 방지
-  wallVal = isNaN(wallVal) ? 0 : Math.max(0, wallVal);
-  deskVal = isNaN(deskVal) ? 0 : Math.max(0, deskVal);
-  diaryVal = isNaN(diaryVal) ? 0 : Math.max(0, diaryVal);
-
-  // 다이어리는 1개까지만
-  if (diaryVal > 1) {
-    diaryVal = 1;
-    diary.value = 1;
-  }
-
-  // 벽걸이 + 탁상 합이 2 초과 → 조정, 나중에 숫자 제한 없앨 때 지우면 됨
-  if (wallVal + deskVal > 2) {
-    if (changedName === "벽걸이 달력") {
-      wallVal = Math.min(2, wallVal);         // 혹시 3을 입력했으면 강제 조정
-      deskVal = 2 - wallVal;
-      desk.value = deskVal;
-      wall.value = wallVal;
-    } else if (changedName === "탁상 달력") {
-      deskVal = Math.min(2, deskVal);
-      wallVal = 2 - deskVal;
-      wall.value = wallVal;
-      desk.value = deskVal;
-    }
-  } else {
-    // 2 이하라도 2를 초과한 입력값이 있으면 강제 조정
-    if (wallVal > 2) {
-      wallVal = 2;
-      wall.value = 2;
-    }
-    if (deskVal > 2) {
-      deskVal = 2;
-      desk.value = 2;
-    }
-  }
 }
 
 
