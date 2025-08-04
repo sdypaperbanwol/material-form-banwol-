@@ -580,7 +580,7 @@
 
 
 <script>
-  const endpoint = 'https://script.google.com/macros/s/AKfycbyt3r-jXId7uCtaHuH_prvk9XfWUX_TjOEQ-B8jbVeje5RVRVa8jODRTQVVCIvlW2Lo/exec'; // 실제 Web App 주소로 교체
+  const endpoint = 'https://script.google.com/macros/s/AKfycbxi98kIcy9_LPGo-aOhqUXasBm-xUjBm52lYaxOi2iF_DumXzVe3YsGIMzac_d_4nTp/exec'; // 실제 Web App 주소로 교체
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -990,7 +990,7 @@ document.getElementById("viewPhotosType").addEventListener("click", () => {
   // ✅ 로딩 오버레이 표시
   document.getElementById("loadingOverlay").style.display = "flex";
 
-  fetch("https://script.google.com/macros/s/AKfycbyt3r-jXId7uCtaHuH_prvk9XfWUX_TjOEQ-B8jbVeje5RVRVa8jODRTQVVCIvlW2Lo/exec?mode=photo")
+  fetch("https://script.google.com/macros/s/AKfycbxi98kIcy9_LPGo-aOhqUXasBm-xUjBm52lYaxOi2iF_DumXzVe3YsGIMzac_d_4nTp/exec?mode=photo")
     .then(res => res.json())
     .then(photoMap => {
       const urls = photoMap[category];
@@ -1059,7 +1059,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loading = document.getElementById("initialLoadingOverlay");
 
   // 공지사항 fetch
-  fetch("https://script.google.com/macros/s/AKfycbyt3r-jXId7uCtaHuH_prvk9XfWUX_TjOEQ-B8jbVeje5RVRVa8jODRTQVVCIvlW2Lo/exec?mode=notice")
+  fetch("https://script.google.com/macros/s/AKfycbxi98kIcy9_LPGo-aOhqUXasBm-xUjBm52lYaxOi2iF_DumXzVe3YsGIMzac_d_4nTp/exec?mode=notice")
     .then(res => res.json())
     .then(data => {
       const notice = data.notice?.trim();
@@ -1263,6 +1263,7 @@ function submitZ3() {
   closeZ3Modal();
 }
 function openZ1Modal() {
+ loadZinfo("Z1"); // ✅ 시트에서 제목·설명·조건 불러오기
   const listContainer = document.getElementById("z1-item-list");
   listContainer.innerHTML = "";
 
@@ -1315,6 +1316,28 @@ function openZ3Modal() {
 function closeZ3Modal() {
   document.getElementById("modalZ3").style.display = "none";
 }
+async function loadZinfo(code) {
+  try {
+    const res = await fetch(`${endpoint}?mode=zinfo`);
+    const data = await res.json();
+    const info = data[code];
+
+    if (info) {
+      if (code === "Z1") {
+        document.querySelector("#modalZ1 h3").innerText = "📅 " + info.title;
+        document.querySelector("#modalZ1 p").innerHTML = `<b>📌 신청 안내</b><br>${info.description}`;
+        document.querySelector("#modalZ1").setAttribute("data-condition", info.condition || "");
+      } else if (code === "Z2") {
+        document.querySelector("#modalZ2 h3").innerText = "📇 " + info.title;
+      } else if (code === "Z3") {
+        document.querySelector("#modalZ3 h3").innerText = "🦺 " + info.title;
+      }
+    }
+  } catch (err) {
+    console.warn("Z 항목 설명 불러오기 실패:", err);
+  }
+}
+  
 // ✅ 장바구니에 추가하지 않고 바로 전송
 async function submitZ1() {
   const remarks = document.getElementById("z1-remarks").value;
