@@ -1412,24 +1412,18 @@ function adjustZ1Counts(changedName) {
     }
   }
 }
-
 async function loadZinfo(code) {
-  try {
-    const res = await fetch(`${endpoint}?mode=zinfo`);
-    const data = await res.json();
-    const info = data[code];
+  const res = await fetch(`${endpoint}?mode=zinfo`);
+  const data = await res.json();
+  const info = data[code];
 
-    if (info) {
-      // 제목 및 설명 적용
-      const modal = document.querySelector(`#modal${code}`);
-      modal.querySelector("h3").innerText = "📅 " + info.title;
-      modal.querySelector("p").innerHTML = `<b>📌 신청 안내</b><br>${info.description}`;
-      modal.setAttribute("data-condition", info.condition || "");
-    }
-  } catch (err) {
-    console.error("Z정보 로드 실패:", err);
+  if (info) {
+    document.querySelector(`#modal${code} h3`).innerText = "📅 " + info.title;
+    document.querySelector(`#modal${code} p`).innerHTML = `<b>📌 신청 안내</b><br>${info.description}`;
+    document.querySelector(`#modal${code}`).setAttribute("data-condition", info.condition); // 수량 조건 등
   }
 }
+
 
 
 
@@ -1482,7 +1476,7 @@ async function loadZinfo(code) {
     cursor: pointer;
     line-height: 1;
   ">✖</button>
-  
+ 
     <div id="z1-item-list"></div>
 
     <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%; margin-top:10px;"></textarea>
