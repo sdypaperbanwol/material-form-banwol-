@@ -28,6 +28,20 @@
     }
     textarea{min-height:110px;resize:vertical}
     @media print{ .no-print, .toolbar{display:none !important} body{background:#fff} .wrap{max-width:900px} }
+    /* ▼ 모바일에서 라벨/입력을 세로로 쌓기 */
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;   /* 한 열로 */
+    gap: 6px;                     /* 라벨-입력 간격 줄임 */
+  }
+  .row label {
+    padding-top: 0;               /* 위쪽 여백 제거 */
+  }
+  .row > * + * {
+    margin-top: 2px;              /* 라벨 밑에 입력칸 여백 */
+  }
+}
+
 
     /* ▼ 추가: 버스 대절 O/X 토글 */
     .chip-group{display:flex;gap:8px;align-items:center}
