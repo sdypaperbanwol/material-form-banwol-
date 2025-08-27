@@ -141,27 +141,35 @@
         .catch(()=>prompt('아래 링크를 수동 복사하세요', url.toString()));
     });
     document.getElementById('btnCopyText').addEventListener('click', ()=>{
-      const d = collect();
-      const lines = [];
-      const dateStr = d.date ? weekdayKR(d.date) : '-';
-      lines.push(`${d.title||d.team+"반 야유회 안내"}`);
-      lines.push('');
-      lines.push(`[일자] ${dateStr}`);
-      lines.push('[일정 요약]');
-      lines.push(...(d.schedule||'').split('\n').filter(Boolean));
-      lines.push(`[장소] ${d.place||'-'}`);
-      if((d.notes||'').trim()){
-        lines.push('[특이사항]');
-        lines.push(...d.notes.split('\n').filter(Boolean));
-      }
-      lines.push(`[문의처] ${d.contact||'-'}`);
-      const text = lines.join('\n');
-      navigator.clipboard.writeText(text).then(()=>{
-        alert('텍스트가 복사되었습니다.');
-      }).catch(()=>{
-        prompt('복사 실패. 아래 내용을 수동 복사하세요.', text);
-      });
-    });
+  const d = collect();
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+
+  const lines = [];
+  lines.push(`📌 ${d.title||d.team+"반 야유회 안내"}`);
+  lines.push("━━━━━━━━━━━━━━");
+  lines.push(`📅 일자: ${dateStr}`);
+  lines.push("");
+  lines.push("🚌 일정 요약");
+  lines.push(...(d.schedule||'').split('\n').map(s=>"- "+s));
+  lines.push("");
+  lines.push(`📍 장소: ${d.place||'-'}`);
+  if((d.notes||'').trim()){
+    lines.push("");
+    lines.push("ℹ️ 특이사항");
+    lines.push(...d.notes.split('\n').map(s=>"- "+s));
+  }
+  lines.push("");
+  lines.push(`☎ 문의처: ${d.contact||'-'}`);
+  lines.push("━━━━━━━━━━━━━━");
+
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    alert('예쁘게 포맷된 텍스트가 복사되었습니다.');
+  }).catch(()=>{
+    prompt('복사 실패. 아래 내용을 수동 복사하세요.', text);
+  });
+});
+
 
     (function init(){
       const p = new URLSearchParams(location.search);
