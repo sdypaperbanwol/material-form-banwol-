@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>반별 안내문</title>
+  <title>반별 야유회 안내문 생성기</title>
   <style>
     :root{
       --brand:#e53935; --ink:#222; --muted:#666; --line:#ddd; --bg:#f7f7f9;
@@ -28,20 +28,34 @@
     }
     textarea{min-height:110px;resize:vertical}
     @media print{ .no-print, .toolbar{display:none !important} body{background:#fff} .wrap{max-width:900px} }
+
+    /* ▼ 추가: 버스 대절 O/X 토글 */
+    .chip-group{display:flex;gap:8px;align-items:center}
+    .chip{
+      border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;
+      padding:6px 14px;font-weight:700;min-width:44px;text-align:center;user-select:none;
+      box-shadow:0 1px 2px rgba(0,0,0,.04);
+    }
+    .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
+    /* ▼ 추가: 스크롤 시 우하단 배지 */
+    #busBadge{
+      position:fixed; right:16px; bottom:16px; z-index:9999;
+      background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px 10px;
+      font-weight:800; box-shadow:0 4px 12px rgba(0,0,0,.12); display:none;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="toolbar no-print">
-  <button id="btnShare">임시 저장(짧은 링크)</button>
-  <button id="btnCopyText">텍스트 복사</button>
-  <button id="btnSubmit">전송(인사지원팀)</button>
-  <!-- ▼ 여기에 공유 링크 표시 -->
-  <input id="shareLink" readonly 
-         style="flex:1; min-width:260px; max-width:560px; padding:6px 10px; border:1px solid #ddd; border-radius:6px;" 
-         placeholder="공유 링크가 여기 표시됩니다" />
-</div>
-
+      <button id="btnShare">임시 저장(짧은 링크)</button>
+      <button id="btnCopyText">텍스트 복사</button>
+      <button id="btnSubmit">전송(인사지원팀)</button>
+      <!-- ▼ 공유 링크 표시 -->
+      <input id="shareLink" readonly
+            style="flex:1; min-width:260px; max-width:560px; padding:6px 10px; border:1px solid #ddd; border-radius:6px;"
+            placeholder="공유 링크가 여기 표시됩니다" />
+    </div>
 
     <div class="grid">
       <div class="card no-print">
@@ -74,6 +88,20 @@
 12:30 점심 식사
 15:00 귀가"></textarea>
             </div>
+
+            <!-- ▼ 추가: 버스 대절 O/X -->
+            <div class="row">
+              <label>버스 대절</label>
+              <div>
+                <input id="bus" type="hidden" value="" />
+                <div class="chip-group" id="busChips">
+                  <div class="chip" data-val="O">O</div>
+                  <div class="chip" data-val="X">X</div>
+                </div>
+                <small style="color:var(--muted)">버스 대절 여부를 선택하세요 (O/X)</small>
+              </div>
+            </div>
+
             <div class="row">
               <label for="place">장소</label>
               <input id="place" type="text" placeholder="예) XXX (주소는 선택사항)" />
@@ -96,11 +124,15 @@
     </div>
   </div>
 
-  <!-- LZ-String: URI용 압축/복원 -->
+  <!-- 스크롤 배지 -->
+  <div id="busBadge" aria-hidden="true">버스: <span id="busBadgeVal">-</span></div>
+
+  <!-- LZ-String: URI용 압축/복원 (구 공유코드 호환용) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
- <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx0qC64Lol4OaYFd61NUo9kNGqw1o1gNghFG8Xr0Ivmxqhk_z3PmjDLw2LKCTqkreM/exec';
+  <script>
+  // ⚠️ 최신 /exec URL로 교체해 사용
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZVROE3X1C1LywBB1jfrOC6yxCKTVIPmuZ_yA3V-c84Q1DBXIrLc2parM_gsHJLAY/exec';
 
   function weekdayKR(dateStr){
     if(!dateStr) return '';
@@ -115,6 +147,7 @@
       title: document.getElementById('title').value,
       date: document.getElementById('date').value,
       schedule: document.getElementById('schedule').value,
+      bus: document.getElementById('bus').value,         // ▼ 추가
       place: document.getElementById('place').value,
       notes: document.getElementById('notes').value,
       contact: document.getElementById('contact').value,
@@ -131,20 +164,65 @@
     catch(e){ alert('공유 코드 해석 실패'); return null }
   }
 
+  // ▼ 버스 토글/배지
+  function setBus(val){
+    const hidden = document.getElementById('bus');
+    const chips = document.querySelectorAll('#busChips .chip');
+    hidden.value = val || '';
+    chips.forEach(c => c.classList.toggle('selected', c.getAttribute('data-val') === val));
+    document.getElementById('busBadgeVal').textContent = hidden.value || '-';
+    // 배지 표시 상태 갱신
+    updateBusBadgeVisibility();
+  }
+
+  // 스크롤 시 배지 노출 제어
+  const showAfter = 200; // px
+  function updateBusBadgeVisibility(){
+    const badge = document.getElementById('busBadge');
+    if(window.scrollY > showAfter){
+      const v = document.getElementById('bus').value || '';
+      badge.style.display = v ? 'block' : 'none';
+    }else{
+      badge.style.display = 'none';
+    }
+  }
+  window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
+  window.addEventListener('resize', updateBusBadgeVisibility);
+
+  // 버스 칩 바인딩
+  (function bindBusChips(){
+    const group = document.getElementById('busChips');
+    if(!group) return;
+    group.addEventListener('click', (e)=>{
+      const target = e.target.closest('.chip');
+      if(!target) return;
+      setBus(target.getAttribute('data-val'));
+    });
+  })();
+
   // 임시 저장: GAS에 data 저장 → key 발급 → ?k= 로 짧은 링크 생성
   document.getElementById('btnShare').addEventListener('click', async ()=>{
     try{
       const res = await fetch(GAS_URL, {
         method:'POST',
-        
         body: JSON.stringify({ mode:'share', data: collect() })
       });
-      const json = await res.json();
+      let json;
+      try{ json = await res.json(); }
+      catch{
+        const t = await res.text();
+        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+      }
       if(res.ok && json.status==='ok' && json.key){
         const url = new URL(location.href);
         url.searchParams.delete('code'); // 구방식 제거
         url.searchParams.set('k', json.key); // 신방식 추가
         history.replaceState(null, '', url.toString());
+
+        // ▼ 공유 링크 입력창 채움 + 복사
+        const shareEl = document.getElementById('shareLink');
+        if (shareEl) shareEl.value = url.toString();
+
         await navigator.clipboard.writeText(url.toString());
         alert('짧은 공유 링크가 복사되었습니다.');
       }else{
@@ -165,6 +243,7 @@
     lines.push(`[일자] ${dateStr}`);
     lines.push('[일정 요약]');
     lines.push(...(d.schedule||'').split('\n').filter(Boolean));
+    if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`); // ▼ 추가
     lines.push(`[장소] ${d.place||'-'}`);
     if((d.notes||'').trim()){
       lines.push('[특이사항]');
@@ -179,7 +258,7 @@
     });
   });
 
-  // 제출(전송): 반드시 JSON 응답 받도록
+  // 제출(전송)
   async function submitToSheet(){
     try{
       const data = collect();
@@ -189,16 +268,10 @@
 
       const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
 
-      const res = await fetch(GAS_URL, {
-        method:'POST',
-        
-        body: JSON.stringify(payload)
-      });
-
+      const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
       let json;
-      try{
-        json = await res.json();
-      }catch{
+      try{ json = await res.json(); }
+      catch{
         const t = await res.text();
         throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
       }
@@ -218,13 +291,20 @@
   async function loadByKey(k){
     const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
     const res = await fetch(url);
-    const json = await res.json();
+    let json;
+    try{ json = await res.json(); }
+    catch{
+      const t = await res.text();
+      throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+    }
     if(json.status === 'ok' && json.data){
       const data = json.data;
       document.getElementById('team').value = data.team||'A';
       document.getElementById('title').value = data.title||'';
       document.getElementById('date').value = data.date||'';
       document.getElementById('schedule').value = data.schedule||'';
+      document.getElementById('bus').value = data.bus || '';          // ▼ 추가
+      setBus(document.getElementById('bus').value || '');             // ▼ 추가
       document.getElementById('place').value = data.place||'';
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
@@ -247,6 +327,8 @@
         document.getElementById('title').value = data.title||'';
         document.getElementById('date').value = data.date||'';
         document.getElementById('schedule').value = data.schedule||'';
+        document.getElementById('bus').value = data.bus || '';        // ▼ 추가
+        setBus(document.getElementById('bus').value || '');           // ▼ 추가
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
@@ -254,8 +336,9 @@
     }else{
       document.getElementById('title').value = 'A반 야유회 안내';
     }
+    // 최초 배지 상태 갱신
+    updateBusBadgeVisibility();
   })();
-</script>
-
+  </script>
 </body>
 </html>
