@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>반별 야유회 안내문 생성기</title>
+  <style>
+    :root{
+      --brand:#e53935;
+      --ink:#222;
+      --muted:#666;
+      --line:#ddd;
+      --bg:#f7f7f9;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
+    .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .toolbar button{
+      border:1px solid var(--line);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer;
+      box-shadow:0 1px 2px rgba(0,0,0,.06);
+    }
+    .toolbar button.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+
+    .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+    .card h2{margin:0;padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+    .card .body{padding:18px}
+
+    .f{display:grid;gap:12px}
+    .row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:start}
+    .row label{font-weight:700;padding-top:6px}
+    input[type=text], input[type=date], textarea, select{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none
+    }
+    textarea{min-height:110px;resize:vertical}
+
+    @media print{
+      .no-print, .toolbar{display:none !important}
+      body{background:#fff}
+      .wrap{max-width:900px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="toolbar no-print">
+      <button id="btnShare">임시 저장</button>
+      <button id="btnCopyText">텍스트 복사</button>
+      <button id="btnSubmit">전송(인사지원팀)</button>
+    </div>
+
+    <div class="grid">
+      <div class="card no-print">
+        <h2>입력 폼</h2>
+        <div class="body">
+          <div class="f">
+            <div class="row">
+              <label for="team">반 선택</label>
+              <select id="team">
+                <option value="A">A반</option>
+                <option value="B">B반</option>
+                <option value="C">C반</option>
+                <option value="D">D반</option>
+              </select>
+            </div>
+            <div class="row">
+              <label for="title">제목(선택)</label>
+              <input id="title" type="text" placeholder="예) A반 야유회 안내" />
+            </div>
+            <div class="row">
+              <label for="date">일자</label>
+              <input id="date" type="date" />
+            </div>
+            <div class="row">
+              <label for="schedule">일정 요약</label>
+              <textarea id="schedule" placeholder="예시)
+06:00 화랑유원지 집결
+06:30 버스 출발
+11:00 광명동굴 관람 시작
+12:30 점심 식사
+15:00 귀가"></textarea>
+            </div>
+            <div class="row">
+              <label for="place">장소</label>
+              <input id="place" type="text" placeholder="예) XXX (주소는 선택사항)" />
+            </div>
+            <div class="row">
+              <label for="notes">특이사항</label>
+              <textarea id="notes" placeholder="예) 
+· 편한 복장 및 운동화 권장
+· 개인 물/우의 등 준비
+· 전세버스 대절 (개별 집결 없음)
+· 일부 구간은 도보 이동 예정"></textarea>
+            </div>
+            <div class="row">
+              <label for="contact">문의처</label>
+              <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzeSLqsWxeC54kO1O-HsSfZBdgMPWgMg2GQ20x3tR2ho9LBbc1SDH2HhhSAHqVMbfkf/exec';
+    function weekdayKR(dateStr){
+      if(!dateStr) return '';
+      const d = new Date(dateStr+'T00:00:00');
+      const yo = ['일','월','화','수','목','금','토'][d.getDay()];
+      return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
+    }
+    function collect(){
+      return {
+        team: document.getElementById('team').value,
+        title: document.getElementById('title').value,
+        date: document.getElementById('date').value,
+        schedule: document.getElementById('schedule').value,
+        place: document.getElementById('place').value,
+        notes: document.getElementById('notes').value,
+        contact: document.getElementById('contact').value,
+      };
+    }
+    function encodeShare(obj){
+      const json = JSON.stringify(obj);
+      return btoa(unescape(encodeURIComponent(json)));
+    }
+    function decodeShare(b64){
+      try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
+      catch(e){ alert('공유 코드 해석 실패'); return null }
+    }
+
+    document.getElementById('btnShare').addEventListener('click', ()=>{
+      const code = encodeShare(collect());
+      const url = new URL(window.location.href);
+      url.searchParams.set('code', code);
+      navigator.clipboard.writeText(url.toString())
+        .then(()=>alert('공유 링크가 클립보드에 복사되었습니다.'))
+        .catch(()=>prompt('아래 링크를 수동 복사하세요', url.toString()));
+    });
+    document.getElementById('btnCopyText').addEventListener('click', ()=>{
+      const d = collect();
+      const lines = [];
+      const dateStr = d.date ? weekdayKR(d.date) : '-';
+      lines.push(`${d.title||d.team+"반 야유회 안내"}`);
+      lines.push('');
+      lines.push(`[일자] ${dateStr}`);
+      lines.push('[일정 요약]');
+      lines.push(...(d.schedule||'').split('\n').filter(Boolean));
+      lines.push(`[장소] ${d.place||'-'}`);
+      if((d.notes||'').trim()){
+        lines.push('[특이사항]');
+        lines.push(...d.notes.split('\n').filter(Boolean));
+      }
+      lines.push(`[문의처] ${d.contact||'-'}`);
+      const text = lines.join('\n');
+      navigator.clipboard.writeText(text).then(()=>{
+        alert('텍스트가 복사되었습니다.');
+      }).catch(()=>{
+        prompt('복사 실패. 아래 내용을 수동 복사하세요.', text);
+      });
+    });
+
+    (function init(){
+      const p = new URLSearchParams(location.search);
+      const code = p.get('code');
+      if(code){
+        const data = decodeShare(code);
+        if(data){
+          document.getElementById('team').value = data.team||'A';
+          document.getElementById('title').value = data.title||'';
+          document.getElementById('date').value = data.date||'';
+          document.getElementById('schedule').value = data.schedule||'';
+          document.getElementById('place').value = data.place||'';
+          document.getElementById('notes').value = data.notes||'';
+          document.getElementById('contact').value = data.contact||'';
+        }
+      }else{
+        document.getElementById('title').value = 'A반 야유회 안내';
+      }
+    })();
+
+    async function submitToSheet(){
+      try{
+        const data = collect();
+        if(!data.date){ alert('일자를 입력해주세요.'); return; }
+        if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
+        if(!data.contact){ alert('문의처를 입력해주세요.'); return; }
+        const payload = {
+          ...data,
+          submitted_at: new Date().toISOString(),
+          mode: 'append'
+        };
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: {'Content-Type': 'text/plain;charset=utf-8'},
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(()=>({}));
+        if(res.ok && (json.status==='ok' || json.result==='ok')){
+          alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
+        }else{
+          alert(`제출 실패: ${json.error||res.status}`);
+        }
+      }catch(err){
+        alert('제출 중 오류: '+ err.message);
+      }
+    }
+    document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
+  </script>
+</body>
+</html>
