@@ -99,175 +99,163 @@
   <!-- LZ-String: URI용 압축/복원 -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
-  <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycby6_HAA7IWUjn-E5Qg2Tqqz8V54Di51KNwamYcPGP_giUS1rU3ruzeBfsluC8kcYpYf/exec';
+ <script>
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_mwRmWNA8DJHYAh5CwWJUgzELaJpir0rj6DHEt1Q6JB4Od0NiEs57c2lvv__AgSs_/exec';
 
-    function weekdayKR(dateStr){
-      if(!dateStr) return '';
-      const d = new Date(dateStr+'T00:00:00');
-      const yo = ['일','월','화','수','목','금','토'][d.getDay()];
-      return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
-    }
-    function collect(){
-      return {
-        team: document.getElementById('team').value,
-        title: document.getElementById('title').value,
-        date: document.getElementById('date').value,
-        schedule: document.getElementById('schedule').value,
-        place: document.getElementById('place').value,
-        notes: document.getElementById('notes').value,
-        contact: document.getElementById('contact').value,
-      };
-    }
-    function decodeShare(b64){
-      try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
-      catch(e){ alert('공유 코드 해석 실패'); return null }
-    }
+  function weekdayKR(dateStr){
+    if(!dateStr) return '';
+    const d = new Date(dateStr+'T00:00:00');
+    const yo = ['일','월','화','수','목','금','토'][d.getDay()];
+    return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
+  }
 
-    // ▼ 공유(임시 저장): LZ-String으로 압축해 URL 파라미터에 담기
+  function collect(){
+    return {
+      team: document.getElementById('team').value,
+      title: document.getElementById('title').value,
+      date: document.getElementById('date').value,
+      schedule: document.getElementById('schedule').value,
+      place: document.getElementById('place').value,
+      notes: document.getElementById('notes').value,
+      contact: document.getElementById('contact').value,
+    };
+  }
+
+  // (구방식) base64 인코딩/디코딩 유지 호환
+  function encodeShare(obj){
+    const json = JSON.stringify(obj);
+    return btoa(unescape(encodeURIComponent(json)));
+  }
+  function decodeShare(b64){
+    try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
+    catch(e){ alert('공유 코드 해석 실패'); return null }
+  }
+
+  // 임시 저장: GAS에 data 저장 → key 발급 → ?k= 로 짧은 링크 생성
   document.getElementById('btnShare').addEventListener('click', async ()=>{
-  try{
-    const data = collect();
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ mode:'share', data })
-    });
-    const json = await res.json();
-  if (json.status === 'ok' && json.key) {
-  const url = new URL(window.location.href);
-  url.searchParams.delete('code');
-  url.searchParams.delete('c');
-  url.searchParams.set('k', json.key);
-
-  history.replaceState(null, '', url.toString());
-
-  // ★ 여기 추가
-  document.getElementById('shareLink').value = url.toString();
-
-  await navigator.clipboard.writeText(url.toString());
-  alert('짧은 공유 링크가 복사되었습니다.');
-}
-
-
-
-    // ▼ 예쁘게 포맷된 텍스트 복사
-    document.getElementById('btnCopyText').addEventListener('click', ()=>{
-      const d = collect();
-      const dateStr = d.date ? weekdayKR(d.date) : '-';
-
-      const lines = [];
-      lines.push(`📌 ${d.title||d.team+"반 야유회 안내"}`);
-      lines.push("━━━━━━━━━━━━━━");
-      lines.push(`📅 일자: ${dateStr}`);
-      lines.push("");
-      lines.push("🚌 일정 요약");
-      lines.push(...(d.schedule||'').split('\n').map(s=>"- "+s));
-      lines.push("");
-      lines.push(`📍 장소: ${d.place||'-'}`);
-      if((d.notes||'').trim()){
-        lines.push("");
-        lines.push("ℹ️ 특이사항");
-        lines.push(...d.notes.split('\n').map(s=>"- "+s));
-      }
-      lines.push("");
-      lines.push(`☎ 문의처: ${d.contact||'-'}`);
-      lines.push("━━━━━━━━━━━━━━");
-
-      const text = lines.join('\n');
-      navigator.clipboard.writeText(text).then(()=>{
-        alert('예쁘게 포맷된 텍스트가 복사되었습니다.');
-      }).catch(()=>{
-        prompt('복사 실패. 아래 내용을 수동 복사하세요.', text);
+    try{
+      const res = await fetch(GAS_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json; charset=utf-8'},
+        body: JSON.stringify({ mode:'share', data: collect() })
       });
-    });
-
-    // ▼ 진짜 제출(시트로 전송)
-    async function submitToSheet(){
-      try{
-        const data = collect();
-        if(!data.date){ alert('일자를 입력해주세요.'); return; }
-        if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
-        if(!data.contact){ alert('문의처를 입력해주세요.'); return; }
-        const payload = { ...data, submitted_at: new Date().toISOString(), mode: 'append' };
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: {'Content-Type': 'text/plain;charset=utf-8'},
-          body: JSON.stringify(payload)
-        });
-        const json = await res.json().catch(()=>({}));
-        if (json.status === 'ok' || json.result === 'ok'){
-          alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
-        }else{
-          alert(`제출 실패: ${json.error||'unknown'}`);
-        }
-      }catch(err){
-        alert('제출 중 오류: '+ err.message);
+      const json = await res.json();
+      if(res.ok && json.status==='ok' && json.key){
+        const url = new URL(location.href);
+        url.searchParams.delete('code'); // 구방식 제거
+        url.searchParams.set('k', json.key); // 신방식 추가
+        history.replaceState(null, '', url.toString());
+        await navigator.clipboard.writeText(url.toString());
+        alert('짧은 공유 링크가 복사되었습니다.');
+      }else{
+        alert('임시 저장 실패: ' + (json.error || res.status));
       }
+    }catch(err){
+      alert('임시 저장 중 오류: ' + err.message);
     }
-    document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
+  });
 
-    // ▼ 초기 로딩: c(압축 링크) 우선, 없으면 code(base64) 하위호환
-(function init(){
-  const p = new URLSearchParams(location.search);
-  const k = p.get('k');     // ★ 새 방식
-  const c = p.get('c');     // 압축 방식
-  const code = p.get('code'); // 구버전 base64
+  // 텍스트 복사
+  document.getElementById('btnCopyText').addEventListener('click', ()=>{
+    const d = collect();
+    const lines = [];
+    const dateStr = d.date ? weekdayKR(d.date) : '-';
+    lines.push(`${d.title||d.team+"반 야유회 안내"}`);
+    lines.push('');
+    lines.push(`[일자] ${dateStr}`);
+    lines.push('[일정 요약]');
+    lines.push(...(d.schedule||'').split('\n').filter(Boolean));
+    lines.push(`[장소] ${d.place||'-'}`);
+    if((d.notes||'').trim()){
+      lines.push('[특이사항]');
+      lines.push(...d.notes.split('\n').filter(Boolean));
+    }
+    lines.push(`[문의처] ${d.contact||'-'}`);
+    const text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(()=>{
+      alert('텍스트가 복사되었습니다.');
+    }).catch(()=>{
+      prompt('복사 실패. 아래 내용을 수동 복사하세요.', text);
+    });
+  });
 
-  if (k) {
-    // ★ 짧은 키 방식: GAS에서 불러오기
-    fetch(`${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`)
-      .then(r=>r.json()).then(json=>{
-        if (json.status==='ok' && json.data) {
-          const d = json.data;
-          document.getElementById('team').value     = d.team||'A';
-          document.getElementById('title').value    = d.title||'';
-          document.getElementById('date').value     = d.date||'';
-          document.getElementById('schedule').value = d.schedule||'';
-          document.getElementById('place').value    = d.place||'';
-          document.getElementById('notes').value    = d.notes||'';
-          document.getElementById('contact').value  = d.contact||'';
-        } else {
-          alert('공유 데이터를 불러올 수 없어요.');
-        }
-      }).catch(()=>alert('네트워크 오류로 공유 데이터를 불러오지 못했습니다.'));
-    return; // ★ 여기서 끝냄
+  // 제출(전송): 반드시 JSON 응답 받도록
+  async function submitToSheet(){
+    try{
+      const data = collect();
+      if(!data.date){ alert('일자를 입력해주세요.'); return; }
+      if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
+      if(!data.contact){ alert('문의처를 입력해주세요.'); return; }
+
+      const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
+
+      const res = await fetch(GAS_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json; charset=utf-8'},
+        body: JSON.stringify(payload)
+      });
+
+      let json;
+      try{
+        json = await res.json();
+      }catch{
+        const t = await res.text();
+        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+      }
+
+      if(res.ok && (json.status==='ok' || json.result==='ok')){
+        alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
+      }else{
+        alert(`제출 실패: ${json.error||res.status}`);
+      }
+    }catch(err){
+      alert('제출 중 오류: '+ err.message);
+    }
   }
+  document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
-  if (c && window.LZString) {
-    try {
-      const data = JSON.parse(LZString.decompressFromEncodedURIComponent(c) || '{}');
-      document.getElementById('team').value     = data.team||'A';
-      document.getElementById('title').value    = data.title||'';
-      document.getElementById('date').value     = data.date||'';
+  // ?k=키 → GAS에서 불러오기 / ?code=…(구방식)도 호환
+  async function loadByKey(k){
+    const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if(json.status === 'ok' && json.data){
+      const data = json.data;
+      document.getElementById('team').value = data.team||'A';
+      document.getElementById('title').value = data.title||'';
+      document.getElementById('date').value = data.date||'';
       document.getElementById('schedule').value = data.schedule||'';
-      document.getElementById('place').value    = data.place||'';
-      document.getElementById('notes').value    = data.notes||'';
-      document.getElementById('contact').value  = data.contact||'';
-    } catch(e) {
-      alert('공유 데이터 해석 실패(c): '+e.message);
+      document.getElementById('place').value = data.place||'';
+      document.getElementById('notes').value = data.notes||'';
+      document.getElementById('contact').value = data.contact||'';
+    }else{
+      alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
     }
-    return;
   }
 
-  if (code) {
-    const data = decodeShare(code);
-    if (data) {
-      document.getElementById('team').value     = data.team||'A';
-      document.getElementById('title').value    = data.title||'';
-      document.getElementById('date').value     = data.date||'';
-      document.getElementById('schedule').value = data.schedule||'';
-      document.getElementById('place').value    = data.place||'';
-      document.getElementById('notes').value    = data.notes||'';
-      document.getElementById('contact').value  = data.contact||'';
+  (async function init(){
+    const p = new URLSearchParams(location.search);
+    const k = p.get('k');
+    const code = p.get('code');
+    if(k){
+      try{ await loadByKey(k); }
+      catch(e){ alert('불러오기 오류: ' + e.message); }
+    }else if(code){
+      const data = decodeShare(code);
+      if(data){
+        document.getElementById('team').value = data.team||'A';
+        document.getElementById('title').value = data.title||'';
+        document.getElementById('date').value = data.date||'';
+        document.getElementById('schedule').value = data.schedule||'';
+        document.getElementById('place').value = data.place||'';
+        document.getElementById('notes').value = data.notes||'';
+        document.getElementById('contact').value = data.contact||'';
+      }
+    }else{
+      document.getElementById('title').value = 'A반 야유회 안내';
     }
-    return;
-  }
+  })();
+</script>
 
-  // 아무 파라미터도 없을 때 기본값
-  document.getElementById('title').value = 'A반 야유회 안내';
-})();
-
-  </script>
 </body>
 </html>
