@@ -36,6 +36,9 @@
       <button id="btnShare">임시 저장(짧은 링크)</button>
       <button id="btnCopyText">텍스트 복사</button>
       <button id="btnSubmit">전송(인사지원팀)</button>
+      <input id="shareLink" readonly 
+         style="flex:1; min-width:260px; max-width:560px; padding:6px 10px; border:1px solid #ddd; border-radius:6px;" 
+         placeholder="공유 링크가 여기 표시됩니다" />
     </div>
 
     <div class="grid">
@@ -65,7 +68,7 @@
               <textarea id="schedule" placeholder="예시)
 06:00 화랑유원지 집결
 06:30 버스 출발
-11:00 광명동굴 관람 시작
+11:00 XX 관람 시작
 12:30 점심 식사
 15:00 귀가"></textarea>
             </div>
@@ -120,7 +123,7 @@
     }
 
     // ▼ 공유(임시 저장): LZ-String으로 압축해 URL 파라미터에 담기
-   document.getElementById('btnShare').addEventListener('click', async ()=>{
+  document.getElementById('btnShare').addEventListener('click', async ()=>{
   try{
     const data = collect();
     const res = await fetch(GAS_URL, {
@@ -131,11 +134,18 @@
     const json = await res.json();
     if (json.status === 'ok' && json.key) {
       const url = new URL(window.location.href);
-      url.searchParams.delete('code'); // 예전 긴 방식 제거
-      url.searchParams.delete('c');    // LZString 방식 제거
-      url.searchParams.set('k', json.key); // ★ 짧은 키만!
-      await navigator.clipboard.writeText(url.toString());
-      alert('짧은 공유 링크가 복사되었습니다.');
+      url.searchParams.delete('code');
+      url.searchParams.delete('c');
+      url.searchParams.set('k', json.key);
+
+      // ★ 주소창을 짧은 링크로 교체
+      history.replaceState(null, '', url.toString());
+
+       // ★ 여기 추가
+  document.getElementById('shareLink').value = url.toString();
+
+      // ★ 페이지에도 바로 보여주기(프롬프트)
+      prompt('공유 링크', url.toString());
     } else {
       alert('임시 저장 실패: '+(json.error||'unknown'));
     }
@@ -143,6 +153,7 @@
     alert('임시 저장 에러: '+err.message);
   }
 });
+
 
     // ▼ 예쁘게 포맷된 텍스트 복사
     document.getElementById('btnCopyText').addEventListener('click', ()=>{
