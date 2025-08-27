@@ -33,13 +33,15 @@
 <body>
   <div class="wrap">
     <div class="toolbar no-print">
-      <button id="btnShare">임시 저장(짧은 링크)</button>
-      <button id="btnCopyText">텍스트 복사</button>
-      <button id="btnSubmit">전송(인사지원팀)</button>
-      <input id="shareLink" readonly 
+  <button id="btnShare">임시 저장(짧은 링크)</button>
+  <button id="btnCopyText">텍스트 복사</button>
+  <button id="btnSubmit">전송(인사지원팀)</button>
+  <!-- ▼ 여기에 공유 링크 표시 -->
+  <input id="shareLink" readonly 
          style="flex:1; min-width:260px; max-width:560px; padding:6px 10px; border:1px solid #ddd; border-radius:6px;" 
          placeholder="공유 링크가 여기 표시됩니다" />
-    </div>
+</div>
+
 
     <div class="grid">
       <div class="card no-print">
@@ -132,27 +134,21 @@
       body: JSON.stringify({ mode:'share', data })
     });
     const json = await res.json();
-    if (json.status === 'ok' && json.key) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('code');
-      url.searchParams.delete('c');
-      url.searchParams.set('k', json.key);
+  if (json.status === 'ok' && json.key) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('code');
+  url.searchParams.delete('c');
+  url.searchParams.set('k', json.key);
 
-      // ★ 주소창을 짧은 링크로 교체
-      history.replaceState(null, '', url.toString());
+  history.replaceState(null, '', url.toString());
 
-       // ★ 여기 추가
+  // ★ 여기 추가
   document.getElementById('shareLink').value = url.toString();
 
-      // ★ 페이지에도 바로 보여주기(프롬프트)
-      prompt('공유 링크', url.toString());
-    } else {
-      alert('임시 저장 실패: '+(json.error||'unknown'));
-    }
-  }catch(err){
-    alert('임시 저장 에러: '+err.message);
-  }
-});
+  await navigator.clipboard.writeText(url.toString());
+  alert('짧은 공유 링크가 복사되었습니다.');
+}
+
 
 
     // ▼ 예쁘게 포맷된 텍스트 복사
