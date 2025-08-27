@@ -95,7 +95,7 @@
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx51dcp7bZGoHCbjUJmMFL234kTtbD7_T93V8td2zddhmJbvd7pyfsgUcIAmQuESy5N/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycby6_HAA7IWUjn-E5Qg2Tqqz8V54Di51KNwamYcPGP_giUS1rU3ruzeBfsluC8kcYpYf/exec';
 
     function weekdayKR(dateStr){
       if(!dateStr) return '';
@@ -120,20 +120,29 @@
     }
 
     // ▼ 공유(임시 저장): LZ-String으로 압축해 URL 파라미터에 담기
-    document.getElementById('btnShare').addEventListener('click', ()=>{
-      const data = collect();
-      try{
-        const code = LZString.compressToEncodedURIComponent(JSON.stringify(data)); // 훨씬 짧아짐
-        const url = new URL(window.location.href);
-        url.searchParams.delete('code'); // 구버전 제거
-        url.searchParams.set('c', code); // 새로운 압축 파라미터
-        navigator.clipboard.writeText(url.toString())
-          .then(()=>alert('짧아진 공유 링크가 클립보드에 복사되었습니다.'))
-          .catch(()=>prompt('아래 링크를 수동 복사하세요', url.toString()));
-      }catch(err){
-        alert('압축/공유 중 오류: '+err.message);
-      }
+   document.getElementById('btnShare').addEventListener('click', async ()=>{
+  try{
+    const data = collect();
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ mode:'share', data })
     });
+    const json = await res.json();
+    if (json.status === 'ok' && json.key) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('code'); // 예전 긴 방식 제거
+      url.searchParams.delete('c');    // LZString 방식 제거
+      url.searchParams.set('k', json.key); // ★ 짧은 키만!
+      await navigator.clipboard.writeText(url.toString());
+      alert('짧은 공유 링크가 복사되었습니다.');
+    } else {
+      alert('임시 저장 실패: '+(json.error||'unknown'));
+    }
+  }catch(err){
+    alert('임시 저장 에러: '+err.message);
+  }
+});
 
     // ▼ 예쁘게 포맷된 텍스트 복사
     document.getElementById('btnCopyText').addEventListener('click', ()=>{
@@ -192,38 +201,66 @@
     document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
     // ▼ 초기 로딩: c(압축 링크) 우선, 없으면 code(base64) 하위호환
-    (function init(){
-      const p = new URLSearchParams(location.search);
-      const c = p.get('c');
-      const code = p.get('code'); // legacy
-      if (c && window.LZString) {
-        try{
-          const data = JSON.parse(LZString.decompressFromEncodedURIComponent(c) || '{}');
-          document.getElementById('team').value     = data.team||'A';
-          document.getElementById('title').value    = data.title||'';
-          document.getElementById('date').value     = data.date||'';
-          document.getElementById('schedule').value = data.schedule||'';
-          document.getElementById('place').value    = data.place||'';
-          document.getElementById('notes').value    = data.notes||'';
-          document.getElementById('contact').value  = data.contact||'';
-        }catch(e){
-          alert('공유 데이터 해석 실패(c): '+e.message);
+(function init(){
+  const p = new URLSearchParams(location.search);
+  const k = p.get('k');     // ★ 새 방식
+  const c = p.get('c');     // 압축 방식
+  const code = p.get('code'); // 구버전 base64
+
+  if (k) {
+    // ★ 짧은 키 방식: GAS에서 불러오기
+    fetch(`${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`)
+      .then(r=>r.json()).then(json=>{
+        if (json.status==='ok' && json.data) {
+          const d = json.data;
+          document.getElementById('team').value     = d.team||'A';
+          document.getElementById('title').value    = d.title||'';
+          document.getElementById('date').value     = d.date||'';
+          document.getElementById('schedule').value = d.schedule||'';
+          document.getElementById('place').value    = d.place||'';
+          document.getElementById('notes').value    = d.notes||'';
+          document.getElementById('contact').value  = d.contact||'';
+        } else {
+          alert('공유 데이터를 불러올 수 없어요.');
         }
-      } else if (code) {
-        const data = decodeShare(code);
-        if (data){
-          document.getElementById('team').value     = data.team||'A';
-          document.getElementById('title').value    = data.title||'';
-          document.getElementById('date').value     = data.date||'';
-          document.getElementById('schedule').value = data.schedule||'';
-          document.getElementById('place').value    = data.place||'';
-          document.getElementById('notes').value    = data.notes||'';
-          document.getElementById('contact').value  = data.contact||'';
-        }
-      } else {
-        document.getElementById('title').value = 'A반 야유회 안내';
-      }
-    })();
+      }).catch(()=>alert('네트워크 오류로 공유 데이터를 불러오지 못했습니다.'));
+    return; // ★ 여기서 끝냄
+  }
+
+  if (c && window.LZString) {
+    try {
+      const data = JSON.parse(LZString.decompressFromEncodedURIComponent(c) || '{}');
+      document.getElementById('team').value     = data.team||'A';
+      document.getElementById('title').value    = data.title||'';
+      document.getElementById('date').value     = data.date||'';
+      document.getElementById('schedule').value = data.schedule||'';
+      document.getElementById('place').value    = data.place||'';
+      document.getElementById('notes').value    = data.notes||'';
+      document.getElementById('contact').value  = data.contact||'';
+    } catch(e) {
+      alert('공유 데이터 해석 실패(c): '+e.message);
+    }
+    return;
+  }
+
+  if (code) {
+    const data = decodeShare(code);
+    if (data) {
+      document.getElementById('team').value     = data.team||'A';
+      document.getElementById('title').value    = data.title||'';
+      document.getElementById('date').value     = data.date||'';
+      document.getElementById('schedule').value = data.schedule||'';
+      document.getElementById('place').value    = data.place||'';
+      document.getElementById('notes').value    = data.notes||'';
+      document.getElementById('contact').value  = data.contact||'';
+    }
+    return;
+  }
+
+  // 아무 파라미터도 없을 때 기본값
+  document.getElementById('title').value = 'A반 야유회 안내';
+})();
+
   </script>
 </body>
 </html>
