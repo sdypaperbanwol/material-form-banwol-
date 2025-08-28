@@ -169,6 +169,15 @@
     };
   }
 
+    function makeShareTitle(d){
+  const team = d.team ? `${d.team}반` : '';
+  const dateTxt = d.date ? weekdayKR(d.date) : '';
+  const t = (d.title || '').trim();
+  if (t) return t; // 사용자가 직접 입력한 제목 우선
+  // 미입력 시 기본 형태: "YYYY년 M월 D일(요일) A반 야유회"
+  return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
+}
+
   // (구방식) base64 인코딩/디코딩 유지 호환
   function encodeShare(obj){
     const json = JSON.stringify(obj);
@@ -228,25 +237,25 @@
         const t = await res.text();
         throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
       }
-      if(res.ok && json.status==='ok' && json.key){
-        const url = new URL(location.href);
-        url.searchParams.delete('code'); // 구방식 제거
-        url.searchParams.set('k', json.key); // 신방식 추가
-        history.replaceState(null, '', url.toString());
+    if(res.ok && json.status==='ok' && json.key){
+  const url = new URL(location.href);
+  url.searchParams.delete('code');    // 구방식 제거
+  url.searchParams.set('k', json.key); // 신방식 키만 유지 (t 파라미터는 안붙임)
 
-        // ▼ 공유 링크 입력창 채움 + 복사
-        const shareEl = document.getElementById('shareLink');
-        if (shareEl) shareEl.value = url.toString();
+  history.replaceState(null, '', url.toString());
 
-        await navigator.clipboard.writeText(url.toString());
-        alert('짧은 공유 링크가 복사되었습니다.');
-      }else{
-        alert('임시 저장 실패: ' + (json.error || res.status));
-      }
-    }catch(err){
-      alert('임시 저장 중 오류: ' + err.message);
-    }
-  });
+  // 표시용 예쁜 문자열: "제목 — URL"
+  const titleText = makeShareTitle(collect());
+  const shareEl = document.getElementById('shareLink');
+  if (shareEl) shareEl.value = `${titleText} — ${url.toString()}`;
+
+  // 복사 문자열은 "제목\nURL" (메신저 가독성 ↑)
+  await navigator.clipboard.writeText(`${titleText}\n${url.toString()}`);
+  alert('짧은 공유 링크가 복사되었습니다.');
+}else{
+  alert('임시 저장 실패: ' + (json.error || res.status));
+}
+
 
   // 텍스트 복사
   document.getElementById('btnCopyText').addEventListener('click', ()=>{
@@ -352,8 +361,23 @@
       document.getElementById('title').value = '야유회 안내';
     }
     // 최초 배지 상태 갱신
-    updateBusBadgeVisibility();
-  })();
+     // 최초 배지 상태 갱신
+  updateBusBadgeVisibility();
+
+  // ▼ 추가: 로드 완료 후 shareLink 표시에 "제목 — URL" 세팅
+  try{
+    const shareEl = document.getElementById('shareLink');
+    if (shareEl) {
+      const urlNow = new URL(location.href);
+      // k가 있을 때만 표시(= 임시 저장 한 뒤)
+      if (urlNow.searchParams.get('k')) {
+        const titleText = makeShareTitle(collect());
+        shareEl.value = `${titleText} — ${urlNow.toString()}`;
+      }
+    }
+  }catch(_){}
+})();
+
   </script>
 </body>
 </html>
