@@ -29,14 +29,14 @@
     textarea{min-height:110px;resize:vertical}
     @media print{ .no-print, .toolbar{display:none !important} body{background:#fff} .wrap{max-width:900px} }
 
-    /* ▼ 모바일에서 라벨/입력을 세로로 쌓기 */
+    /* 모바일 라벨/입력 세로 정렬 */
     @media (max-width: 640px) {
       .row { grid-template-columns: 1fr; gap: 6px; }
       .row label { padding-top: 0; }
       .row > * + * { margin-top: 2px; }
     }
 
-    /* ▼ 버스 대절 O/X 토글 */
+    /* 버스 대절 O/X 토글 */
     .chip-group{display:flex;gap:8px;align-items:center}
     .chip{
       border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;
@@ -45,14 +45,14 @@
     }
     .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
 
-    /* ▼ 스크롤 시 우하단 배지 */
+    /* 우하단 배지 */
     #busBadge{
       position:fixed; right:16px; bottom:16px; z-index:9999;
       background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px 10px;
       font-weight:800; box-shadow:0 4px 12px rgba(0,0,0,.12); display:none;
     }
 
-    /* ▼ 로딩 오버레이 */
+    /* 로딩 오버레이 */
     #loadingOverlay{
       position:fixed; inset:0; background:rgba(255,255,255,.7); z-index:10000;
       display:none; align-items:center; justify-content:center; flex-direction:column; gap:14px;
@@ -67,18 +67,47 @@
     .loading-text{font-weight:700; color:#333}
     .loading-sub{font-size:12px; color:#777}
     .toolbar [disabled]{opacity:.6; cursor:not-allowed}
+
+    /* 인앱 안내 배너 */
+    #iabBanner{
+      display:none; background:#fff3cd; color:#8a6d3b; border:1px solid #ffeeba; border-radius:10px;
+      padding:10px 12px; margin:8px 0;
+    }
+    #openInChrome{
+      margin-left:8px; padding:6px 10px; border:1px solid #f0c36d; border-radius:8px; background:#fff; cursor:pointer;
+    }
+
+    /* 수동 복사 박스 */
+    #copySheetBox{
+      display:none; margin:8px 0; padding:12px; border:1px dashed #ccc; border-radius:10px; background:#fafafa;
+    }
+    #copySheetTa{
+      width:100%; min-height:120px; padding:8px; border:1px solid #ddd; border-radius:8px;
+      font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
+    <!-- 인앱 안내 배너 -->
+    <div id="iabBanner" class="no-print">
+      카카오톡 인앱 브라우저에선 자동 복사/공유가 제한될 수 있어요.
+      <button id="openInChrome">외부 브라우저로 열기</button>
+    </div>
+
     <div class="toolbar no-print">
       <button id="btnShare">임시 저장(링크 주소)</button>
       <button id="btnCopyText">공유(텍스트)</button>
       <button id="btnSubmit">전송(인사지원팀)</button>
-      <!-- ▼ 공유 링크 표시 -->
       <input id="shareLink" readonly
             style="flex:1; min-width:260px; max-width:560px; padding:6px 10px; border:1px solid #ddd; border-radius:6px;"
             placeholder="공유 링크가 여기 표시됩니다" />
+    </div>
+
+    <!-- 수동 복사용 박스 -->
+    <div id="copySheetBox" class="no-print">
+      <div style="font-weight:700;margin-bottom:6px;">아래 내용을 길게 눌러 복사하세요.</div>
+      <textarea id="copySheetTa"></textarea>
     </div>
 
     <div class="grid">
@@ -117,7 +146,7 @@
 - 15:00 귀가"></textarea>
             </div>
 
-            <!-- ▼ 버스 대절 O/X -->
+            <!-- 버스 대절 O/X -->
             <div class="row">
               <label>버스 대절</label>
               <div>
@@ -162,19 +191,18 @@
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
   <script>
-  // ⚠️ 최신 /exec URL로 교체해 사용
+  // 최신 /exec URL로 교체해 사용
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZVROE3X1C1LywBB1jfrOC6yxCKTVIPmuZ_yA3V-c84Q1DBXIrLc2parM_gsHJLAY/exec';
 
-  /* ===== 로딩 오버레이 유틸 ===== */
+  /* ===== 로딩 오버레이 ===== */
   let loadingCount = 0;
   let loadingTimer = null;
 
   function setToolbarDisabled(disabled){
     document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
     document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
-    document.querySelectorAll('select').forEach(el => el.disabled = disabled); // select는 readOnly 미지원
+    document.querySelectorAll('select').forEach(el => el.disabled = disabled);
   }
-
   function showLoading(main='진행 중…', sub='잠시만 기다려주세요', minMs=500){
     loadingCount++;
     const ov = document.getElementById('loadingOverlay');
@@ -182,9 +210,8 @@
     document.getElementById('loadingSub').textContent = sub;
     ov.style.display = 'flex';
     setToolbarDisabled(true);
-
     clearTimeout(loadingTimer);
-    loadingTimer = setTimeout(()=>{ loadingTimer = null; }, minMs); // 최소 노출 시간
+    loadingTimer = setTimeout(()=>{ loadingTimer = null; }, minMs);
   }
   function hideLoading(){
     if (loadingCount > 0) loadingCount--;
@@ -195,15 +222,45 @@
       }
     };
     if (loadingTimer){
-      const waitMore = 120;
-      setTimeout(()=>finish(), waitMore);
+      setTimeout(()=>finish(), 120);
       loadingTimer = null;
     }else{
       finish();
     }
   }
 
-  /* ===== 모바일 친화적 공유/복사 유틸 ===== */
+  /* ===== 인앱 브라우저 처리 & 외부 열기 ===== */
+  function isInAppBrowser(){
+    const ua = navigator.userAgent || '';
+    return /(KAKAOTALK|FB_IAB|Instagram|NAVER|DaumApp|Line|Whale)/i.test(ua);
+  }
+  function openInChrome(){
+    try{
+      const href = location.href.replace(/^https?:\/\//,'');
+      const intent = `intent://${href}#Intent;scheme=https;package=com.android.chrome;end`;
+      location.href = intent;
+    }catch(_){
+      window.open(location.href, '_blank');
+    }
+  }
+
+  /* ===== 수동 복사 박스 ===== */
+  function showCopySheet(text){
+    const box = document.getElementById('copySheetBox');
+    const ta  = document.getElementById('copySheetTa');
+    if (!box || !ta) return;
+    box.style.display = 'block';
+    ta.value = text;
+    // 자동 선택 (모바일에서도 길게 눌러 복사 안내와 함께)
+    ta.focus();
+    ta.select();
+  }
+  function hideCopySheet(){
+    const box = document.getElementById('copySheetBox');
+    if (box) box.style.display = 'none';
+  }
+
+  /* ===== 모바일 친화적 공유/복사 ===== */
   function isMobile(){
     return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   }
@@ -212,9 +269,7 @@
       try{
         await navigator.share({ title, text, url });
         return true;
-      }catch(e){
-        return false; // 사용자 취소 등
-      }
+      }catch(_){ return false; }
     }
     return false;
   }
@@ -227,40 +282,49 @@
       ta.style.top = '-9999px';
       ta.style.opacity = '0';
       document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
+      ta.focus(); ta.select();
       const ok = document.execCommand('copy');
       document.body.removeChild(ta);
       return ok;
-    }catch(_){
-      return false;
-    }
+    }catch(_){ return false; }
   }
-  async function safeDistribute({title='', text='', url=''}) {
-    const shareFirst = isMobile(); // 모바일에선 공유 시트 우선
-    const sharePayload = { title, text, url };
 
-    if (shareFirst) {
-      const shared = await tryWebShare(sharePayload);
+  async function safeDistribute({title='', text='', url=''}) {
+    const toCopy = [title && text ? (title + '\n') : '', text, url ? (text ? ('\n' + url) : url) : ''].join('');
+
+    // 인앱 + Web Share 미지원이면 바로 수동 복사 박스
+    if (isInAppBrowser() && !navigator.share){
+      showCopySheet(toCopy);
+      return { method:'manual' };
+    }
+
+    // 모바일 공통: Web Share 우선
+    if (isMobile()){
+      const shared = await tryWebShare({title, text, url});
       if (shared) return { method:'share' };
     }
 
-    const toCopy = [title && text ? (title + '\n') : '', text, url ? (text ? ('\n' + url) : url) : ''].join('');
-
+    // 클립보드 API
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try{
         await navigator.clipboard.writeText(toCopy);
+        hideCopySheet();
         return { method:'clipboard' };
       }catch(_){}
     }
 
-    const ok = legacyCopy(toCopy);
-    if (ok) return { method:'legacy' };
+    // 레거시 복사
+    if (legacyCopy(toCopy)) {
+      hideCopySheet();
+      return { method:'legacy' };
+    }
 
-    prompt('자동 복사에 실패했습니다. 아래 내용을 길게 눌러 복사하세요.', toCopy);
-    return { method:'prompt' };
+    // 최종: 수동 복사 박스
+    showCopySheet(toCopy);
+    return { method:'manual' };
   }
 
+  /* ===== 날짜 포맷 ===== */
   function weekdayKR(dateStr){
     if(!dateStr) return '';
     const d = new Date(dateStr+'T00:00:00');
@@ -268,6 +332,7 @@
     return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
   }
 
+  /* ===== 폼 수집 ===== */
   function collect(){
     return {
       team: document.getElementById('team').value,
@@ -281,7 +346,7 @@
     };
   }
 
-  // (구방식) base64 인코딩/디코딩 유지 호환
+  // (구방식) base64 인코딩/디코딩
   function encodeShare(obj){
     const json = JSON.stringify(obj);
     return btoa(unescape(encodeURIComponent(json)));
@@ -291,7 +356,7 @@
     catch(e){ alert('공유 코드 해석 실패'); return null }
   }
 
-  // ▼ 버스 토글/배지
+  /* ===== 버스 토글/배지 ===== */
   function setBus(val){
     const hidden = document.getElementById('bus');
     const chips = document.querySelectorAll('#busChips .chip');
@@ -300,9 +365,7 @@
     document.getElementById('busBadgeVal').textContent = hidden.value || '-';
     updateBusBadgeVisibility();
   }
-
-  // 스크롤 시 배지 노출 제어
-  const showAfter = 200; // px
+  const showAfter = 200;
   function updateBusBadgeVisibility(){
     const badge = document.getElementById('busBadge');
     if(window.scrollY > showAfter){
@@ -314,8 +377,6 @@
   }
   window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
   window.addEventListener('resize', updateBusBadgeVisibility);
-
-  // 버스 칩 바인딩
   (function bindBusChips(){
     const group = document.getElementById('busChips');
     if(!group) return;
@@ -326,7 +387,7 @@
     });
   })();
 
-  // 제목 생성
+  /* ===== 제목 생성 ===== */
   function makeShareTitle(d){
     const team = d.team ? `${d.team}반` : '';
     const dateTxt = d.date ? weekdayKR(d.date) : '';
@@ -335,7 +396,7 @@
     return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
   }
 
-  // 임시 저장(링크)
+  /* ===== 버튼: 임시 저장(링크) ===== */
   document.getElementById('btnShare').addEventListener('click', async ()=>{
     showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
     try{
@@ -351,24 +412,20 @@
       }
       if(res.ok && json.status==='ok' && json.key){
         const url = new URL(location.href);
-        url.searchParams.delete('code'); // 구방식 제거
-        url.searchParams.set('k', json.key); // 신방식 키
+        url.searchParams.delete('code');
+        url.searchParams.set('k', json.key);
         history.replaceState(null, '', url.toString());
 
         const titleText = makeShareTitle(collect());
         const shareEl = document.getElementById('shareLink');
         if (shareEl) shareEl.value = `${titleText} — ${url.toString()}`;
 
-        const dist = await safeDistribute({
-          title: titleText,
-          text: titleText,
-          url: url.toString()
-        });
+        const dist = await safeDistribute({ title: titleText, text: titleText, url: url.toString() });
         if (dist.method === 'share') {
           alert('공유 시트로 전송했습니다.');
         } else if (dist.method === 'clipboard' || dist.method === 'legacy') {
           alert('짧은 공유 링크가 복사되었습니다.');
-        } // prompt는 내부에서 안내됨
+        } // manual은 별도 안내 없음(복사 박스가 보임)
       }else{
         alert('임시 저장 실패: ' + (json.error || res.status));
       }
@@ -379,7 +436,7 @@
     }
   });
 
-  // 공유(텍스트)
+  /* ===== 버튼: 공유(텍스트) ===== */
   document.getElementById('btnCopyText').addEventListener('click', async ()=>{
     showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
     try{
@@ -400,22 +457,19 @@
       lines.push(`[문의처] ${d.contact||'-'}`);
       const text = lines.join('\n');
 
-      const dist2 = await safeDistribute({
-        title: header,
-        text,
-        url: '' // 텍스트만 공유
-      });
+      const dist2 = await safeDistribute({ title: header, text, url: '' });
       if (dist2.method === 'share') {
         alert('공유 시트로 전송했습니다.');
       } else if (dist2.method === 'clipboard' || dist2.method === 'legacy') {
         alert('텍스트가 복사되었습니다.');
       }
+      // manual은 복사 박스가 이미 보임
     }finally{
       hideLoading();
     }
   });
 
-  // 제출(전송)
+  /* ===== 제출(전송) ===== */
   async function submitToSheet(){
     showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
     try{
@@ -447,7 +501,7 @@
   }
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
-  // ?k=키 → GAS에서 불러오기 / ?code=…(구방식)도 호환
+  /* ===== 저장값 불러오기 ===== */
   async function loadByKey(k){
     showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
     try{
@@ -478,7 +532,18 @@
     }
   }
 
+  /* ===== init ===== */
   (async function init(){
+    // 인앱 안내 배너 동작
+    try{
+      if (isInAppBrowser()){
+        const banner = document.getElementById('iabBanner');
+        if (banner) banner.style.display = 'block';
+        const btn = document.getElementById('openInChrome');
+        if (btn) btn.addEventListener('click', openInChrome);
+      }
+    }catch(_){}
+
     const p = new URLSearchParams(location.search);
     const k = p.get('k');
     const code = p.get('code');
@@ -503,7 +568,7 @@
       document.getElementById('title').value = '야유회 안내';
     }
 
-    // 최초 배지 상태 갱신
+    // 배지 상태 갱신
     updateBusBadgeVisibility();
 
     // 로드 완료 후 shareLink 표시에 "제목 — URL" 세팅 (k가 있을 때만)
