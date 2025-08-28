@@ -89,32 +89,40 @@
     #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
     #btnSubmit:hover { background:#ffcdd2; }
 
-    /* 수동 복사 박스 */
-  #copySheetBox {
-  display: none;
-  margin: 8px 0;
-  padding: 12px;
-  border: 1px dashed #ccc;
-  border-radius: 10px;
-  background: #fafafa;
-  overscroll-behavior: contain;   /* 부모 스크롤 방지 */
-}
+    /* 페이지 스크롤 잠금용 */
+    body.no-scroll {
+      position: fixed;
+      overflow: hidden;
+      width: 100%;
+    }
 
-#copySheetTa {
-  width: 100%;
-  height: 200px;                  /* 기본 높이 고정 */
-  max-height: 400px;              /* 최대 크기 제한 */
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font: 14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, 
-        Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, sans-serif;
-  resize: vertical;               /* 직접 세로 크기 조절 가능 */
-  overflow-y: auto;               /* 내부 스크롤 */
-  overscroll-behavior: contain;   /* 바깥으로 스크롤 전파 안되게 */
-  -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
-}
-    
+    /* 수동 복사 박스 (부모 스크롤 전파 방지) */
+    #copySheetBox{
+      display:none; margin:8px 0; padding:12px; border:1px dashed #ccc; border-radius:10px; background:#fafafa;
+      overscroll-behavior: contain;
+    }
+    /* 힌트 문구 */
+    .copy-hint {
+      display: none;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #888;
+    }
+    /* textarea: 내부 스크롤 + 직접 조절 가능 */
+    #copySheetTa{
+      width: 100%;
+      height: 200px;                 /* 기본 높이 */
+      max-height: 400px;             /* 최대 높이 */
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font: 14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
+      resize: vertical;              /* 직접 세로 크기 조절 가능 */
+      overflow-y: auto;              /* 내용 많으면 내부 스크롤 */
+      overscroll-behavior: contain;  /* 부모로 스크롤 전파 방지 */
+      -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+    }
+
     /* 프린트 강화 */
     @media print{
       .no-print, .toolbar, #copySheetBox, #busBadge, #loadingOverlay { display:none !important; }
@@ -203,6 +211,7 @@
     <div id="copySheetBox" class="no-print" style="margin-bottom:24px">
       <div style="font-weight:700;margin-bottom:6px;">아래 내용을 길게 눌러 복사하세요.</div>
       <textarea id="copySheetTa"></textarea>
+      <div id="copyHint" class="copy-hint">내용이 길면 이 상자 안을 스크롤하세요 ↕</div>
     </div>
   </div>
 
@@ -216,7 +225,6 @@
     <div class="loading-sub" id="loadingSub">잠시만 기다려주세요</div>
   </div>
 
-  <!-- LZ-String: URI용 압축/복원 (구 공유코드 호환용) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
   <script>
@@ -279,15 +287,39 @@
   function showCopySheet(text){
     const box = document.getElementById('copySheetBox');
     const ta  = document.getElementById('copySheetTa');
+    const hint = document.getElementById('copyHint');
     if (!box || !ta) return;
+
     box.style.display = 'block';
     ta.value = text;
-    ta.focus();
-    ta.select();
+
+    // 페이지 스크롤 잠금
+    document.body.classList.add('no-scroll');
+
+    // 초기 높이 200~400 사이로 보정
+    ta.style.height = 'auto';
+    const targetH = Math.max(200, Math.min(400, ta.scrollHeight));
+    ta.style.height = targetH + 'px';
+
+    // 포커스/선택 → 내부 스크롤 활성화에 도움
+    setTimeout(()=>{
+      ta.focus();
+      ta.select();
+    }, 0);
+
+    // 스크롤 가능 여부에 따라 힌트 표시
+    if (hint) hint.style.display = (ta.scrollHeight > ta.clientHeight) ? 'block' : 'none';
+
+    // 스크롤 시작하면 힌트 숨김
+    ta.addEventListener('scroll', () => {
+      if (hint) hint.style.display = 'none';
+    }, { passive: true });
   }
   function hideCopySheet(){
     const box = document.getElementById('copySheetBox');
     if (box) box.style.display = 'none';
+    // 페이지 스크롤 잠금 해제
+    document.body.classList.remove('no-scroll');
   }
 
   /* ===== 모바일 친화적 공유/복사 ===== */
@@ -379,16 +411,6 @@
     };
   }
 
-  // (구방식) base64 인코딩/디코딩
-  function encodeShare(obj){
-    const json = JSON.stringify(obj);
-    return btoa(unescape(encodeURIComponent(json)));
-  }
-  function decodeShare(b64){
-    try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
-    catch(e){ alert('공유 코드 해석 실패'); return null }
-  }
-
   /* ===== 버스 토글/배지 ===== */
   function setBus(val){
     const hidden = document.getElementById('bus');
@@ -422,57 +444,39 @@
 
   /* ===== 제목 생성 ===== */
   function makeShareTitle(d){
-    const team = d.team ? `${d.team}반` : '';
+    const teamLabel = d.team ? `${d.team}반` : '';
     const dateTxt = d.date ? weekdayKR(d.date) : '';
-    const t = (d.title || '').trim();
-    if (t) return t;
-    return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
+    const rawTitle = (d.title || '').trim();
+    if (rawTitle) return rawTitle;                 // 제목은 자유 입력
+    return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
   }
 
- /* ===== 버튼: 안내문(공유용 텍스트) ===== */
-document.getElementById('btnCopyText').addEventListener('click', async ()=>{
-  showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
-  try{
+  /* ===== 공유용 텍스트 생성 (요청 순서 + [반] 추가) ===== */
+  function buildShareText(){
     const d = collect();
     const lines = [];
-
     const dateStr = d.date ? weekdayKR(d.date) : '-';
-    const header = makeShareTitle(d) || (d.team + '반 안내문');
+    const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
 
-    // 제목
     lines.push(header, '');
 
-    // 반 정보 추가
-    if (d.team) {
-      lines.push(`[반] ${d.team}`);
-    }
+    // [반] 추가
+    if (d.team) lines.push(`[반] ${d.team}`);
 
-    // 나머지 순서: 일자 → 장소 → 일정 요약 → 버스 대절 → 특이사항 → 문의처
+    // 1) 일자 → 2) 장소 → 3) 일정요약 → 4) 버스대절 → 5) 특이사항 → 6) 문의처
     lines.push(`[일자] ${dateStr}`);
-    lines.push(`[장소] ${d.place||'-'}`);
+    lines.push(`[장소] ${d.place || '-'}`);
     lines.push('[일정 요약]');
-    lines.push(...(d.schedule||'').split('\n').filter(Boolean));
-    if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`);
-    if((d.notes||'').trim()){
+    lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+    if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
+    if ((d.notes || '').trim()){
       lines.push('[특이사항]');
       lines.push(...d.notes.split('\n').filter(Boolean));
     }
-    lines.push(`[문의처] ${d.contact||'-'}`);
+    lines.push(`[문의처] ${d.contact || '-'}`);
 
-    const text = lines.join('\n');
-
-    const dist2 = await safeDistribute({ title: '', text, url: '' });
-    if (dist2.method === 'share') {
-      alert('공유 시트로 전송했습니다.');
-    } else if (dist2.method === 'clipboard' || dist2.method === 'legacy') {
-      alert('텍스트가 복사되었습니다.');
-    }
-  }finally{
-    hideLoading();
+    return lines.join('\n');
   }
-});
-
-
 
   /* ===== 버튼: 임시저장(수정용 링크) ===== */
   document.getElementById('btnShare').addEventListener('click', async ()=>{
@@ -595,7 +599,7 @@ document.getElementById('btnCopyText').addEventListener('click', async ()=>{
     }
   }
 
-  /* ===== 오늘 이전 날짜 금지 ===== */
+  /* ===== 오늘 이전 날짜 금지(선택) ===== */
   (function lockPastDate(){
     const el = document.getElementById('date');
     if(!el) return;
@@ -615,18 +619,19 @@ document.getElementById('btnCopyText').addEventListener('click', async ()=>{
     if(k){
       try{ await loadByKey(k); }catch(_){}
     }else if(code){
-      const data = decodeShare(code);
-      if(data){
-        document.getElementById('team').value = data.team||'A';
-        document.getElementById('title').value = data.title||'';
-        document.getElementById('date').value = data.date||'';
-        document.getElementById('schedule').value = data.schedule||'';
-        document.getElementById('bus').value = data.bus || '';
+      const data = decodeURIComponent(escape(atob(code)));
+      try{
+        const parsed = JSON.parse(data);
+        document.getElementById('team').value = parsed.team||'A';
+        document.getElementById('title').value = parsed.title||'';
+        document.getElementById('date').value = parsed.date||'';
+        document.getElementById('schedule').value = parsed.schedule||'';
+        document.getElementById('bus').value = parsed.bus || '';
         setBus(document.getElementById('bus').value || '');
-        document.getElementById('place').value = data.place||'';
-        document.getElementById('notes').value = data.notes||'';
-        document.getElementById('contact').value = data.contact||'';
-      }
+        document.getElementById('place').value = parsed.place||'';
+        document.getElementById('notes').value = parsed.notes||'';
+        document.getElementById('contact').value = parsed.contact||'';
+      }catch(_){}
     }else{
       document.getElementById('title').value = '야유회 안내';
     }
