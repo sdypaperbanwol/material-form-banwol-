@@ -169,12 +169,11 @@
   let loadingCount = 0;
   let loadingTimer = null;
 
- function setToolbarDisabled(disabled){
-  document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
-  document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
-  document.querySelectorAll('select').forEach(el => el.disabled = disabled); // ← 추가
-}
-
+  function setToolbarDisabled(disabled){
+    document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
+    document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
+    document.querySelectorAll('select').forEach(el => el.disabled = disabled); // select는 readOnly 미지원
+  }
 
   function showLoading(main='진행 중…', sub='잠시만 기다려주세요', minMs=500){
     loadingCount++;
@@ -184,9 +183,8 @@
     ov.style.display = 'flex';
     setToolbarDisabled(true);
 
-    // 최소 노출 시간 확보 (짧은 작업도 깜빡임 방지)
     clearTimeout(loadingTimer);
-    loadingTimer = setTimeout(()=>{ loadingTimer = null; }, minMs);
+    loadingTimer = setTimeout(()=>{ loadingTimer = null; }, minMs); // 최소 노출 시간
   }
   function hideLoading(){
     if (loadingCount > 0) loadingCount--;
@@ -196,14 +194,71 @@
         setToolbarDisabled(false);
       }
     };
-    // 최소 노출 시간 보장
     if (loadingTimer){
-      const waitMore = 120; // 약간의 여유
+      const waitMore = 120;
       setTimeout(()=>finish(), waitMore);
       loadingTimer = null;
     }else{
       finish();
     }
+  }
+
+  /* ===== 모바일 친화적 공유/복사 유틸 ===== */
+  function isMobile(){
+    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+  async function tryWebShare({title, text, url}){
+    if (navigator.share) {
+      try{
+        await navigator.share({ title, text, url });
+        return true;
+      }catch(e){
+        return false; // 사용자 취소 등
+      }
+    }
+    return false;
+  }
+  function legacyCopy(text){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }catch(_){
+      return false;
+    }
+  }
+  async function safeDistribute({title='', text='', url=''}) {
+    const shareFirst = isMobile(); // 모바일에선 공유 시트 우선
+    const sharePayload = { title, text, url };
+
+    if (shareFirst) {
+      const shared = await tryWebShare(sharePayload);
+      if (shared) return { method:'share' };
+    }
+
+    const toCopy = [title && text ? (title + '\n') : '', text, url ? (text ? ('\n' + url) : url) : ''].join('');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try{
+        await navigator.clipboard.writeText(toCopy);
+        return { method:'clipboard' };
+      }catch(_){}
+    }
+
+    const ok = legacyCopy(toCopy);
+    if (ok) return { method:'legacy' };
+
+    prompt('자동 복사에 실패했습니다. 아래 내용을 길게 눌러 복사하세요.', toCopy);
+    return { method:'prompt' };
   }
 
   function weekdayKR(dateStr){
@@ -227,16 +282,14 @@
   }
 
   // (구방식) base64 인코딩/디코딩 유지 호환
- // (구방식) base64 인코딩/디코딩 유지 호환
-function encodeShare(obj){
-  const json = JSON.stringify(obj);
-  return btoa(unescape(encodeURIComponent(json)));
-}
-function decodeShare(b64){
-  try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
-  catch(e){ alert('공유 코드 해석 실패'); return null }
-}
-
+  function encodeShare(obj){
+    const json = JSON.stringify(obj);
+    return btoa(unescape(encodeURIComponent(json)));
+  }
+  function decodeShare(b64){
+    try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
+    catch(e){ alert('공유 코드 해석 실패'); return null }
+  }
 
   // ▼ 버스 토글/배지
   function setBus(val){
@@ -273,7 +326,7 @@ function decodeShare(b64){
     });
   })();
 
-  // ▼ 표시만 예쁘게: 제목 생성
+  // 제목 생성
   function makeShareTitle(d){
     const team = d.team ? `${d.team}반` : '';
     const dateTxt = d.date ? weekdayKR(d.date) : '';
@@ -282,7 +335,7 @@ function decodeShare(b64){
     return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
   }
 
-  // 임시 저장
+  // 임시 저장(링크)
   document.getElementById('btnShare').addEventListener('click', async ()=>{
     showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
     try{
@@ -298,16 +351,24 @@ function decodeShare(b64){
       }
       if(res.ok && json.status==='ok' && json.key){
         const url = new URL(location.href);
-        url.searchParams.delete('code');
-        url.searchParams.set('k', json.key);
+        url.searchParams.delete('code'); // 구방식 제거
+        url.searchParams.set('k', json.key); // 신방식 키
         history.replaceState(null, '', url.toString());
 
         const titleText = makeShareTitle(collect());
         const shareEl = document.getElementById('shareLink');
         if (shareEl) shareEl.value = `${titleText} — ${url.toString()}`;
 
-        await navigator.clipboard.writeText(`${titleText}\n${url.toString()}`);
-        alert('짧은 공유 링크가 복사되었습니다.');
+        const dist = await safeDistribute({
+          title: titleText,
+          text: titleText,
+          url: url.toString()
+        });
+        if (dist.method === 'share') {
+          alert('공유 시트로 전송했습니다.');
+        } else if (dist.method === 'clipboard' || dist.method === 'legacy') {
+          alert('짧은 공유 링크가 복사되었습니다.');
+        } // prompt는 내부에서 안내됨
       }else{
         alert('임시 저장 실패: ' + (json.error || res.status));
       }
@@ -318,14 +379,14 @@ function decodeShare(b64){
     }
   });
 
-  // 텍스트 복사
+  // 공유(텍스트)
   document.getElementById('btnCopyText').addEventListener('click', async ()=>{
-    showLoading('텍스트 복사 중…', '공유용 문장을 정리합니다', 400);
+    showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
     try{
       const d = collect();
       const lines = [];
       const dateStr = d.date ? weekdayKR(d.date) : '-';
-      const header = makeShareTitle(d) || (d.team+"반 야유회");
+      const header = makeShareTitle(d) || (d.team + '반 야유회');
       lines.push(header, '');
       lines.push(`[일자] ${dateStr}`);
       lines.push('[일정 요약]');
@@ -338,24 +399,17 @@ function decodeShare(b64){
       }
       lines.push(`[문의처] ${d.contact||'-'}`);
       const text = lines.join('\n');
-      await navigator.clipboard.writeText(text);
-      alert('텍스트가 복사되었습니다.');
-    }catch(_){
-      // prompt는 로딩 가리므로 먼저 숨기고 안내
-      hideLoading();
-      const d = collect();
-      const fallback = (()=>{
-        const dateStr = d.date ? weekdayKR(d.date) : '-';
-        const header = makeShareTitle(d) || (d.team+"반 야유회");
-        const arr = [header,'',`[일자] ${dateStr}`,'[일정 요약]',...(d.schedule||'').split('\n').filter(Boolean)];
-        if ((d.bus||'').trim()) arr.push(`[버스 대절] ${d.bus}`);
-        arr.push(`[장소] ${d.place||'-'}`);
-        if((d.notes||'').trim()){ arr.push('[특이사항]', ...d.notes.split('\n').filter(Boolean)); }
-        arr.push(`[문의처] ${d.contact||'-'}`);
-        return arr.join('\n');
-      })();
-      prompt('클립보드 복사에 실패했습니다. 아래 내용을 수동 복사하세요.', fallback);
-      return; // 이미 hideLoading 호출
+
+      const dist2 = await safeDistribute({
+        title: header,
+        text,
+        url: '' // 텍스트만 공유
+      });
+      if (dist2.method === 'share') {
+        alert('공유 시트로 전송했습니다.');
+      } else if (dist2.method === 'clipboard' || dist2.method === 'legacy') {
+        alert('텍스트가 복사되었습니다.');
+      }
     }finally{
       hideLoading();
     }
@@ -425,7 +479,6 @@ function decodeShare(b64){
   }
 
   (async function init(){
-    // 초기 로딩 표시(특히 ?k= 로 진입 시 네트워크 딜레이가 있을 수 있음)
     const p = new URLSearchParams(location.search);
     const k = p.get('k');
     const code = p.get('code');
@@ -434,7 +487,6 @@ function decodeShare(b64){
       try{ await loadByKey(k); }
       catch(e){ alert('불러오기 오류: ' + e.message); hideLoading(); }
     }else if(code){
-      // 구방식: 네트워크 호출 없이 즉시 세팅이므로 로딩 불필요
       const data = decodeShare(code);
       if(data){
         document.getElementById('team').value = data.team||'A';
