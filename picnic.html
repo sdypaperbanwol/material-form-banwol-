@@ -141,12 +141,20 @@
           <div class="f">
             <div class="row">
               <label for="team">반 선택</label>
-              <select id="team">
-                <option value="A">A반</option>
-                <option value="B">B반</option>
-                <option value="C">C반</option>
-                <option value="D">D반</option>
-              </select>
+             <div class="row">
+  <label>반 선택</label>
+  <div>
+    <input id="team" type="hidden" value="">
+    <div class="chip-group" id="teamChips" role="group" aria-label="반 선택">
+      <div class="chip" data-val="A">A반</div>
+      <div class="chip" data-val="B">B반</div>
+      <div class="chip" data-val="C">C반</div>
+      <div class="chip" data-val="D">D반</div>
+    </div>
+    <small style="color:var(--muted)">여러 반을 선택할 수 있어요 (토글)</small>
+  </div>
+</div>
+
             </div>
             <div class="row">
               <label for="title">제목(선택)</label>
@@ -485,6 +493,44 @@
       alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
     }
 
+function parseTeams(str){
+  return (str || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+function teamsToString(arr){
+  return Array.from(new Set(arr)).join(',');
+}
+function getTeamsArray(){
+  return parseTeams(document.getElementById('team').value);
+}
+function setTeamHiddenFromArray(arr){
+  document.getElementById('team').value = teamsToString(arr);
+}
+function renderTeamChips(){
+  const selected = new Set(getTeamsArray());
+  document.querySelectorAll('#teamChips .chip').forEach(chip=>{
+    chip.classList.toggle('selected', selected.has(chip.dataset.val));
+  });
+}
+function toggleTeam(val){
+  const arr = getTeamsArray();
+  const i = arr.indexOf(val);
+  if (i >= 0) arr.splice(i,1);
+  else arr.push(val);
+  setTeamHiddenFromArray(arr);
+  renderTeamChips();
+}
+
+(function bindTeamChips(){
+  const group = document.getElementById('teamChips');
+  if(!group) return;
+  group.addEventListener('click', e=>{
+    const chip = e.target.closest('.chip');
+    if(!chip) return;
+    toggleTeam(chip.dataset.val);
+  });
+})();
+
+    
     function showToast(){
       if (!toast) return;
       toast.classList.add('show');
