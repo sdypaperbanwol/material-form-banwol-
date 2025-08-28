@@ -11,6 +11,7 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
     .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
+
     .grid{display:grid;grid-template-columns:1fr;gap:16px}
     .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
     .card h2{margin:0;padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
@@ -81,6 +82,7 @@
       transition: all .2s;
       border:1px solid var(--line);
       background:#fff;
+      cursor:pointer;
     }
     #btnShare { border-color:#90caf9; background:#e3f2fd; color:#1565c0; }
     #btnShare:hover { background:#bbdefb; }
@@ -89,34 +91,41 @@
     #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
     #btnSubmit:hover { background:#ffcdd2; }
 
-    /* 수동 복사 박스 */
-    #copySheetBox{
-      display:none; margin:8px 0; padding:12px; border:1px dashed #ccc; border-radius:10px; background:#fafafa;
-      overscroll-behavior: contain; /* 부모로 스크롤 전파 방지 */
+    /* ▼ 공유 미리보기 모달 */
+    #previewModal[hidden] { display: none; }
+    #previewModal {
+      position: fixed; inset: 0; z-index: 20000;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.45);
+      padding: 20px;
     }
-    .copy-hint {
-      display: none;
-      margin-top: 6px;
-      font-size: 12px;
-      color: #888;
+    .preview-card{
+      width: min(720px, 94vw);
+      background:#fff; border:1px solid var(--line); border-radius:16px;
+      box-shadow:0 12px 30px rgba(0,0,0,.18);
+      display:flex; flex-direction:column; gap:12px; padding:16px;
     }
-    #copySheetTa{
-      width: 100%;
-      height: 200px;                 /* 기본 높이 */
-      max-height: 400px;             /* 최대 높이 */
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font: 14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
-      resize: vertical;              /* 직접 세로 크기 조절 가능 */
-      overflow-y: auto;              /* 내용 많으면 내부 스크롤 */
-      overscroll-behavior: contain;  /* 부모로 스크롤 전파 방지 */
-      -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+    .preview-head{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
     }
+    .preview-head h3{ margin:0; font-size:18px }
+    .preview-actions{ display:flex; gap:8px; justify-content:flex-end }
+    .preview-actions button{
+      border:1px solid var(--line); background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer;
+    }
+    #previewTa{
+      width:100%; min-height:220px; max-height:420px;
+      padding:10px; border:1px solid #ddd; border-radius:10px;
+      font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
+      resize:vertical; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+    }
+    .preview-hint{ font-size:12px; color:#777 }
+    .preview-toast{ display:none; align-self:flex-start; font-size:12px; color:#2e7d32; font-weight:700; }
+    .preview-toast.show{ display:inline-block; }
 
     /* 프린트 강화 */
     @media print{
-      .no-print, .toolbar, #copySheetBox, #busBadge, #loadingOverlay { display:none !important; }
+      .no-print, .toolbar, #busBadge, #loadingOverlay, #previewModal { display:none !important; }
       body{ background:#fff }
       .wrap{ max-width:900px }
       pre, textarea { font-family: inherit; font-size: 14px; }
@@ -197,16 +206,6 @@
       <button id="btnCopyText">안내문(공유용 텍스트)</button>
       <button id="btnSubmit">제출(인사지원팀)</button>
     </div>
-
-    <!-- 수동 복사용 박스 -->
-    <div id="copySheetBox" class="no-print" style="margin-bottom:24px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-weight:700;">아래 내용을 길게 눌러 복사하세요.</div>
-        <button id="copySheetClose" style="border:1px solid #ddd;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;">닫기</button>
-      </div>
-      <textarea id="copySheetTa"></textarea>
-      <div id="copyHint" class="copy-hint">내용이 길면 이 상자 안을 스크롤하세요 ↕</div>
-    </div>
   </div>
 
   <!-- 스크롤 배지 -->
@@ -219,6 +218,24 @@
     <div class="loading-sub" id="loadingSub">잠시만 기다려주세요</div>
   </div>
 
+  <!-- 공유 텍스트 미리보기 모달 -->
+  <div id="previewModal" hidden role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+    <div class="preview-card" role="document">
+      <div class="preview-head">
+        <h3 id="previewTitle">안내문 미리보기</h3>
+        <button type="button" id="previewClose" aria-label="닫기">닫기</button>
+      </div>
+      <textarea id="previewTa"></textarea>
+      <div class="preview-hint">내용이 길면 이 상자 안을 스크롤하거나, 아래 모서리를 드래그해 크기를 조절하세요.</div>
+      <div class="preview-actions">
+        <span id="previewToast" class="preview-toast">복사되었습니다!</span>
+        <button type="button" id="previewCopy">복사하기</button>
+        <button type="button" id="previewClose2">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
   <script>
@@ -235,7 +252,6 @@
   /* ===== 로딩 오버레이 ===== */
   let loadingCount = 0;
   let loadingTimer = null;
-
   function setToolbarDisabled(disabled){
     document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
     document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
@@ -263,53 +279,14 @@
     else { finish(); }
   }
 
-  /* ===== 인앱 감지 ===== */
+  /* ===== 인앱 감지(링크 공유에서만 쓰일 수 있음) ===== */
   function isInAppBrowser(){
     const ua = navigator.userAgent || '';
     return /(KAKAOTALK|FB_IAB|Instagram|NAVER|DaumApp|Line|Whale)/i.test(ua);
   }
-
-  /* ===== 수동 복사 박스 ===== */
-  function showCopySheet(text){
-    const box = document.getElementById('copySheetBox');
-    const ta  = document.getElementById('copySheetTa');
-    const hint = document.getElementById('copyHint');
-    if (!box || !ta) return;
-
-    box.style.display = 'block';
-    ta.value = text;
-
-    // 초기 높이 200~400 사이로 보정
-    ta.style.height = 'auto';
-    const targetH = Math.max(200, Math.min(400, ta.scrollHeight));
-    ta.style.height = targetH + 'px';
-
-    // 포커스/선택 → 내부 스크롤 활성화에 도움
-    setTimeout(()=>{
-      ta.focus();
-      ta.select();
-    }, 0);
-
-    // 스크롤 가능 여부에 따라 힌트 표시
-    if (hint) hint.style.display = (ta.scrollHeight > ta.clientHeight) ? 'block' : 'none';
-
-    // 스크롤 시작하면 힌트 숨김
-    ta.addEventListener('scroll', () => {
-      if (hint) hint.style.display = 'none';
-    }, { passive: true });
-  }
-  function hideCopySheet(){
-    const box = document.getElementById('copySheetBox');
-    if (box) box.style.display = 'none';
-  }
-  document.getElementById('copySheetClose')?.addEventListener('click', hideCopySheet);
-
-  /* ===== 모바일 친화적 공유/복사 ===== */
   function isMobile(){ return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-  async function tryWebShare({title, text, url}){
-    if (navigator.share) { try{ await navigator.share({ title, text, url }); return true; } catch(_){ return false; } }
-    return false;
-  }
+
+  /* ===== 수동/클립보드 복사 유틸 (링크 공유 등에서 사용) ===== */
   function legacyCopy(text){
     try{
       const ta = document.createElement('textarea');
@@ -326,49 +303,44 @@
     }catch(_){ return false; }
   }
 
-  // 기존 safeDistribute 대체
-async function safeDistribute({title='', text='', url='', pureText=false, forceManual=false}) {
-  const toCopy =
-    text
-      ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
-      : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
+  async function safeDistribute({title='', text='', url='', pureText=false, forceManual=false}) {
+    const toCopy =
+      text
+        ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
+        : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
 
-  // <<<< 여기: 강제 수동 모드면 즉시 수동 복사 박스만
-  if (forceManual) {
-    showCopySheet(toCopy);
-    return { method: 'manual-forced' };
-  }
+    // 강제 수동 모드: 즉시 모달/박스 등으로 처리하고 반환 (현재는 텍스트 미리보기에만 사용)
+    if (forceManual) {
+      openPreviewModal(toCopy);
+      return { method: 'manual-forced' };
+    }
 
-  // (나머지는 기존 로직 유지 — 링크 공유에서 사용)
-  const shouldSkipWebShare = pureText === true;
+    // 모바일 Web Share (링크 공유에서만 사용됨)
+    const shouldSkipWebShare = pureText === true;
+    if (!shouldSkipWebShare && isMobile() && navigator.share) {
+      try {
+        const payload = {};
+        if (title) payload.title = title;
+        if (text)  payload.text  = text;
+        if (url)   payload.url   = url; // 빈 문자열은 제외
+        await navigator.share(payload);
+        return { method:'share' };
+      } catch(_) {}
+    }
 
-  if (isInAppBrowser() && !navigator.share){
-    showCopySheet(toCopy);
+    // 클립보드 API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try{ await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; }
+      catch(_){}
+    }
+
+    // 레거시 복사
+    if (legacyCopy(toCopy)) { return { method:'legacy' }; }
+
+    // 최종: 안내만 (여기선 모달 없음)
+    alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
     return { method:'manual' };
   }
-
-  if (!shouldSkipWebShare && isMobile() && navigator.share) {
-    try {
-      const payload = {};
-      if (title) payload.title = title;
-      if (text)  payload.text  = text;
-      if (url)   payload.url   = url; // 빈 문자열은 넣지 않음
-      await navigator.share(payload);
-      return { method:'share' };
-    } catch(_) {}
-  }
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    try { await navigator.clipboard.writeText(toCopy); hideCopySheet(); return { method:'clipboard' }; }
-    catch(_) {}
-  }
-
-  if (legacyCopy(toCopy)) { hideCopySheet(); return { method:'legacy' }; }
-
-  showCopySheet(toCopy);
-  return { method:'manual' };
-}
-
 
   /* ===== 날짜 포맷 ===== */
   function weekdayKR(dateStr){
@@ -390,6 +362,12 @@ async function safeDistribute({title='', text='', url='', pureText=false, forceM
       notes: document.getElementById('notes').value,
       contact: document.getElementById('contact').value,
     };
+  }
+
+  // (구방식) base64 인코딩/디코딩 (호환만 유지)
+  function decodeShare(b64){
+    try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
+    catch(e){ alert('공유 코드 해석 실패'); return null }
   }
 
   /* ===== 버스 토글/배지 ===== */
@@ -423,16 +401,14 @@ async function safeDistribute({title='', text='', url='', pureText=false, forceM
     });
   })();
 
-  /* ===== 제목 생성 ===== */
+  /* ===== 제목/공유 텍스트 생성 ===== */
   function makeShareTitle(d){
     const teamLabel = d.team ? `${d.team}반` : '';
     const dateTxt = d.date ? weekdayKR(d.date) : '';
     const rawTitle = (d.title || '').trim();
-    if (rawTitle) return rawTitle;                 // 제목은 자유 입력
+    if (rawTitle) return rawTitle; // 자유 입력 제목 우선
     return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
   }
-
-  /* ===== 공유용 텍스트 생성 ===== */
   function buildShareText(){
     const d = collect();
     const lines = [];
@@ -454,6 +430,88 @@ async function safeDistribute({title='', text='', url='', pureText=false, forceM
 
     return lines.join('\n');
   }
+
+  /* ===== 미리보기 모달 ===== */
+  (function setupPreviewModal(){
+    const modal = document.getElementById('previewModal');
+    const ta = document.getElementById('previewTa');
+    const btnClose = document.getElementById('previewClose');
+    const btnClose2 = document.getElementById('previewClose2');
+    const btnCopy = document.getElementById('previewCopy');
+    const toast = document.getElementById('previewToast');
+
+    function openPreviewModal(text){
+      if (!modal || !ta) return;
+      ta.value = text || '';
+      // 높이 초기 보정 (220~420)
+      ta.style.height = 'auto';
+      ta.style.height = Math.max(220, Math.min(420, ta.scrollHeight)) + 'px';
+
+      modal.hidden = false;
+
+      // 포커스/선택
+      setTimeout(()=>{ ta.focus(); ta.select(); }, 0);
+
+      // ESC 닫기
+      document.addEventListener('keydown', onEsc, { once: true });
+      // 배경 클릭 닫기 (카드 바깥 클릭)
+      modal.addEventListener('click', onBackdropClick);
+    }
+
+    function closePreviewModal(){
+      if (!modal) return;
+      modal.hidden = true;
+      modal.removeEventListener('click', onBackdropClick);
+    }
+
+    function onBackdropClick(e){
+      if (e.target === modal) closePreviewModal();
+    }
+
+    function onEsc(e){
+      if (e.key === 'Escape') closePreviewModal();
+    }
+
+    async function copyPreviewText(){
+      const text = ta.value || '';
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        try{ await navigator.clipboard.writeText(text); showToast(); return; }
+        catch(_){}
+      }
+      try{
+        ta.select();
+        const ok = document.execCommand('copy');
+        if (ok) { showToast(); return; }
+      }catch(_){}
+      alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
+    }
+
+    function showToast(){
+      if (!toast) return;
+      toast.classList.add('show');
+      setTimeout(()=> toast.classList.remove('show'), 1500);
+    }
+
+    // 외부에서 사용
+    window.openPreviewModal = openPreviewModal;
+    window.closePreviewModal = closePreviewModal;
+
+    btnCopy?.addEventListener('click', copyPreviewText);
+    btnClose?.addEventListener('click', closePreviewModal);
+    btnClose2?.addEventListener('click', closePreviewModal);
+  })();
+
+  /* ===== 버튼: 안내문(공유용 텍스트) — 모달만 띄움 ===== */
+  document.getElementById('btnCopyText').addEventListener('click', async ()=>{
+    showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 300);
+    try{
+      const text = buildShareText();
+      // 크롬/카톡 모두 모달로 통일 (URL 절대 포함 X)
+      openPreviewModal(text);
+    }finally{
+      hideLoading();
+    }
+  });
 
   /* ===== 버튼: 임시저장(수정용 링크) ===== */
   document.getElementById('btnShare').addEventListener('click', async ()=>{
@@ -481,9 +539,11 @@ async function safeDistribute({title='', text='', url='', pureText=false, forceM
           alert('공유 시트로 전송했습니다.');
         } else if (dist.method === 'clipboard' || dist.method === 'legacy') {
           alert('짧은 공유 링크가 복사되었습니다.');
+        } else {
+          // manual 안내만
         }
       }else{
-        alert('임시 저장 실패: ' + (json.error || res.status));
+        alert('임시 저장 실패: ' ' + (json.error || res.status));
       }
     }catch(err){
       const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
@@ -492,25 +552,6 @@ async function safeDistribute({title='', text='', url='', pureText=false, forceM
       hideLoading();
     }
   });
-
-  /* ===== 버튼: 안내문(공유용 텍스트) ===== */
-  document.getElementById('btnCopyText').addEventListener('click', async ()=>{
-  showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
-  try{
-    const text = buildShareText();
-    // 무조건 수동 복사 박스만 띄움 (카톡/크롬 동일 동작, URL 절대 포함 X)
-    await safeDistribute({
-      title: '',
-      text,
-      url: '',           // 주소 포함 금지
-      pureText: true,    // Web Share 우회
-      forceManual: true  // <<<< 핵심: 무조건 아래 복사 박스
-    });
-    // 별도 alert 불필요—복사 박스 자체가 안내 역할
-  }finally{
-    hideLoading();
-  }
-});
 
   /* ===== 제출(인사지원팀) ===== */
   async function submitToSheet(){
@@ -538,7 +579,7 @@ async function safeDistribute({title='', text='', url='', pureText=false, forceM
       }
     }catch(err){
       const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('제출 중 오류: ' + msg);
+      alert('전송 중 오류: ' + msg);
     }finally{
       hideLoading();
     }
@@ -599,18 +640,18 @@ async function safeDistribute({title='', text='', url='', pureText=false, forceM
     if(k){
       try{ await loadByKey(k); }catch(_){}
     }else if(code){
-      try{
-        const parsed = JSON.parse(decodeURIComponent(escape(atob(code))));
-        document.getElementById('team').value = parsed.team||'A';
-        document.getElementById('title').value = parsed.title||'';
-        document.getElementById('date').value = parsed.date||'';
-        document.getElementById('schedule').value = parsed.schedule||'';
-        document.getElementById('bus').value = parsed.bus || '';
+      const data = decodeShare(code);
+      if(data){
+        document.getElementById('team').value = data.team||'A';
+        document.getElementById('title').value = data.title||'';
+        document.getElementById('date').value = data.date||'';
+        document.getElementById('schedule').value = data.schedule||'';
+        document.getElementById('bus').value = data.bus || '';
         setBus(document.getElementById('bus').value || '');
-        document.getElementById('place').value = parsed.place||'';
-        document.getElementById('notes').value = parsed.notes||'';
-        document.getElementById('contact').value = parsed.contact||'';
-      }catch(_){}
+        document.getElementById('place').value = data.place||'';
+        document.getElementById('notes').value = data.notes||'';
+        document.getElementById('contact').value = data.contact||'';
+      }
     }else{
       document.getElementById('title').value = '야유회 안내';
     }
