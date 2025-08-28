@@ -412,40 +412,49 @@
     return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
   }
 
-  /* ===== 공유용 텍스트 생성 ===== */
- // 공유용 텍스트 생성(교체)
-function buildShareText(){
-  const d = collect();
-  const lines = [];
-  const dateStr = d.date ? weekdayKR(d.date) : '-';
-  const header = makeShareTitle(d) || (d.team ? `${d.team}반 야유회` : '야유회');
+ /* ===== 버튼: 안내문(공유용 텍스트) ===== */
+document.getElementById('btnCopyText').addEventListener('click', async ()=>{
+  showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
+  try{
+    const d = collect();
+    const lines = [];
 
-  lines.push(header, '');
+    const dateStr = d.date ? weekdayKR(d.date) : '-';
+    const header = makeShareTitle(d) || (d.team + '반 안내문');
 
-  // 1) 일자
-  lines.push(`[일자] ${dateStr}`);
+    // 제목
+    lines.push(header, '');
 
-  // 2) 장소
-  lines.push(`[장소] ${d.place || '-'}`);
+    // 반 정보 추가
+    if (d.team) {
+      lines.push(`[반] ${d.team}`);
+    }
 
-  // 3) 일정요약
-  lines.push('[일정 요약]');
-  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+    // 나머지 순서: 일자 → 장소 → 일정 요약 → 버스 대절 → 특이사항 → 문의처
+    lines.push(`[일자] ${dateStr}`);
+    lines.push(`[장소] ${d.place||'-'}`);
+    lines.push('[일정 요약]');
+    lines.push(...(d.schedule||'').split('\n').filter(Boolean));
+    if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`);
+    if((d.notes||'').trim()){
+      lines.push('[특이사항]');
+      lines.push(...d.notes.split('\n').filter(Boolean));
+    }
+    lines.push(`[문의처] ${d.contact||'-'}`);
 
-  // 4) 버스대절
-  if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
+    const text = lines.join('\n');
 
-  // 5) 특이사항
-  if ((d.notes || '').trim()) {
-    lines.push('[특이사항]');
-    lines.push(...d.notes.split('\n').filter(Boolean));
+    const dist2 = await safeDistribute({ title: '', text, url: '' });
+    if (dist2.method === 'share') {
+      alert('공유 시트로 전송했습니다.');
+    } else if (dist2.method === 'clipboard' || dist2.method === 'legacy') {
+      alert('텍스트가 복사되었습니다.');
+    }
+  }finally{
+    hideLoading();
   }
+});
 
-  // 6) 문의처
-  lines.push(`[문의처] ${d.contact || '-'}`);
-
-  return lines.join('\n');
-}
 
 
   /* ===== 버튼: 임시저장(수정용 링크) ===== */
