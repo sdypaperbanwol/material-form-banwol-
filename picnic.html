@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>반별 야유회 안내문 생성기</title>
+  <title>반별 안내문</title>
   <style>
     :root{
       --brand:#e53935; --ink:#222; --muted:#666; --line:#ddd; --bg:#f7f7f9;
@@ -420,7 +420,7 @@
         const shareEl = document.getElementById('shareLink');
         if (shareEl) shareEl.value = `${titleText} — ${url.toString()}`;
 
-        const dist = await safeDistribute({ title: titleText, text: titleText, url: url.toString() });
+      + const dist = await safeDistribute({title: titleText,text: '', url: url.toString() });
         if (dist.method === 'share') {
           alert('공유 시트로 전송했습니다.');
         } else if (dist.method === 'clipboard' || dist.method === 'legacy') {
@@ -457,7 +457,7 @@
       lines.push(`[문의처] ${d.contact||'-'}`);
       const text = lines.join('\n');
 
-      const dist2 = await safeDistribute({ title: header, text, url: '' });
+      + const dist2 = await safeDistribute({title: '', text, url: ''});
       if (dist2.method === 'share') {
         alert('공유 시트로 전송했습니다.');
       } else if (dist2.method === 'clipboard' || dist2.method === 'legacy') {
