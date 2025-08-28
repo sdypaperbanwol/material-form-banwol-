@@ -89,26 +89,17 @@
     #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
     #btnSubmit:hover { background:#ffcdd2; }
 
-    /* 페이지 스크롤 잠금용 */
-    body.no-scroll {
-      position: fixed;
-      overflow: hidden;
-      width: 100%;
-    }
-
-    /* 수동 복사 박스 (부모 스크롤 전파 방지) */
+    /* 수동 복사 박스 */
     #copySheetBox{
       display:none; margin:8px 0; padding:12px; border:1px dashed #ccc; border-radius:10px; background:#fafafa;
-      overscroll-behavior: contain;
+      overscroll-behavior: contain; /* 부모로 스크롤 전파 방지 */
     }
-    /* 힌트 문구 */
     .copy-hint {
       display: none;
       margin-top: 6px;
       font-size: 12px;
       color: #888;
     }
-    /* textarea: 내부 스크롤 + 직접 조절 가능 */
     #copySheetTa{
       width: 100%;
       height: 200px;                 /* 기본 높이 */
@@ -209,7 +200,10 @@
 
     <!-- 수동 복사용 박스 -->
     <div id="copySheetBox" class="no-print" style="margin-bottom:24px">
-      <div style="font-weight:700;margin-bottom:6px;">아래 내용을 길게 눌러 복사하세요.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-weight:700;">아래 내용을 길게 눌러 복사하세요.</div>
+        <button id="copySheetClose" style="border:1px solid #ddd;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;">닫기</button>
+      </div>
       <textarea id="copySheetTa"></textarea>
       <div id="copyHint" class="copy-hint">내용이 길면 이 상자 안을 스크롤하세요 ↕</div>
     </div>
@@ -234,12 +228,8 @@
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
     const controller = new AbortController();
     const timer = setTimeout(()=>controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, {...opts, signal: controller.signal});
-      return res;
-    } finally {
-      clearTimeout(timer);
-    }
+    try { return await fetch(url, {...opts, signal: controller.signal}); }
+    finally { clearTimeout(timer); }
   }
 
   /* ===== 로딩 오버레이 ===== */
@@ -269,12 +259,8 @@
         setToolbarDisabled(false);
       }
     };
-    if (loadingTimer){
-      setTimeout(()=>finish(), 120);
-      loadingTimer = null;
-    }else{
-      finish();
-    }
+    if (loadingTimer){ setTimeout(()=>finish(), 120); loadingTimer = null; }
+    else { finish(); }
   }
 
   /* ===== 인앱 감지 ===== */
@@ -292,9 +278,6 @@
 
     box.style.display = 'block';
     ta.value = text;
-
-    // 페이지 스크롤 잠금
-    document.body.classList.add('no-scroll');
 
     // 초기 높이 200~400 사이로 보정
     ta.style.height = 'auto';
@@ -318,21 +301,13 @@
   function hideCopySheet(){
     const box = document.getElementById('copySheetBox');
     if (box) box.style.display = 'none';
-    // 페이지 스크롤 잠금 해제
-    document.body.classList.remove('no-scroll');
   }
+  document.getElementById('copySheetClose')?.addEventListener('click', hideCopySheet);
 
   /* ===== 모바일 친화적 공유/복사 ===== */
-  function isMobile(){
-    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }
+  function isMobile(){ return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
   async function tryWebShare({title, text, url}){
-    if (navigator.share) {
-      try{
-        await navigator.share({ title, text, url });
-        return true;
-      }catch(_){ return false; }
-    }
+    if (navigator.share) { try{ await navigator.share({ title, text, url }); return true; } catch(_){ return false; } }
     return false;
   }
   function legacyCopy(text){
@@ -358,10 +333,7 @@
         : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
 
     // 인앱 + Web Share 미지원이면 바로 수동 복사 박스
-    if (isInAppBrowser() && !navigator.share){
-      showCopySheet(toCopy);
-      return { method:'manual' };
-    }
+    if (isInAppBrowser() && !navigator.share){ showCopySheet(toCopy); return { method:'manual' }; }
 
     // 모바일 공통: Web Share 우선
     if (isMobile()){
@@ -371,18 +343,12 @@
 
     // 클립보드 API
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      try{
-        await navigator.clipboard.writeText(toCopy);
-        hideCopySheet();
-        return { method:'clipboard' };
-      }catch(_){}
+      try{ await navigator.clipboard.writeText(toCopy); hideCopySheet(); return { method:'clipboard' }; }
+      catch(_){}
     }
 
     // 레거시 복사
-    if (legacyCopy(toCopy)) {
-      hideCopySheet();
-      return { method:'legacy' };
-    }
+    if (legacyCopy(toCopy)) { hideCopySheet(); return { method:'legacy' }; }
 
     // 최종: 수동 복사 박스
     showCopySheet(toCopy);
@@ -451,7 +417,7 @@
     return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
   }
 
-  /* ===== 공유용 텍스트 생성 (요청 순서 + [반] 추가) ===== */
+  /* ===== 공유용 텍스트 생성 ===== */
   function buildShareText(){
     const d = collect();
     const lines = [];
@@ -459,11 +425,7 @@
     const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
 
     lines.push(header, '');
-
-    // [반] 추가
     if (d.team) lines.push(`[반] ${d.team}`);
-
-    // 1) 일자 → 2) 장소 → 3) 일정요약 → 4) 버스대절 → 5) 특이사항 → 6) 문의처
     lines.push(`[일자] ${dateStr}`);
     lines.push(`[장소] ${d.place || '-'}`);
     lines.push('[일정 요약]');
@@ -619,9 +581,8 @@
     if(k){
       try{ await loadByKey(k); }catch(_){}
     }else if(code){
-      const data = decodeURIComponent(escape(atob(code)));
       try{
-        const parsed = JSON.parse(data);
+        const parsed = JSON.parse(decodeURIComponent(escape(atob(code))));
         document.getElementById('team').value = parsed.team||'A';
         document.getElementById('title').value = parsed.title||'';
         document.getElementById('date').value = parsed.date||'';
