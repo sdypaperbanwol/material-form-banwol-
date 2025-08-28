@@ -28,22 +28,15 @@
     }
     textarea{min-height:110px;resize:vertical}
     @media print{ .no-print, .toolbar{display:none !important} body{background:#fff} .wrap{max-width:900px} }
+
     /* ▼ 모바일에서 라벨/입력을 세로로 쌓기 */
-@media (max-width: 640px) {
-  .row {
-    grid-template-columns: 1fr;   /* 한 열로 */
-    gap: 6px;                     /* 라벨-입력 간격 줄임 */
-  }
-  .row label {
-    padding-top: 0;               /* 위쪽 여백 제거 */
-  }
-  .row > * + * {
-    margin-top: 2px;              /* 라벨 밑에 입력칸 여백 */
-  }
-}
+    @media (max-width: 640px) {
+      .row { grid-template-columns: 1fr; gap: 6px; }
+      .row label { padding-top: 0; }
+      .row > * + * { margin-top: 2px; }
+    }
 
-
-    /* ▼ 추가: 버스 대절 O/X 토글 */
+    /* ▼ 버스 대절 O/X 토글 */
     .chip-group{display:flex;gap:8px;align-items:center}
     .chip{
       border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;
@@ -51,7 +44,8 @@
       box-shadow:0 1px 2px rgba(0,0,0,.04);
     }
     .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
-    /* ▼ 추가: 스크롤 시 우하단 배지 */
+
+    /* ▼ 스크롤 시 우하단 배지 */
     #busBadge{
       position:fixed; right:16px; bottom:16px; z-index:9999;
       background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px 10px;
@@ -93,7 +87,7 @@
               <label for="date">일자</label>
               <input id="date" type="date" />
             </div>
-             <div class="row">
+            <div class="row">
               <label for="place">장소</label>
               <input id="place" type="text" placeholder="예) XXX (주소는 선택사항)" />
             </div>
@@ -107,7 +101,7 @@
 - 15:00 귀가"></textarea>
             </div>
 
-            <!-- ▼ 추가: 버스 대절 O/X -->
+            <!-- ▼ 버스 대절 O/X -->
             <div class="row">
               <label>버스 대절</label>
               <div>
@@ -120,7 +114,6 @@
               </div>
             </div>
 
-           
             <div class="row">
               <label for="notes">특이사항</label>
               <textarea id="notes" placeholder="예) 
@@ -162,21 +155,12 @@
       title: document.getElementById('title').value,
       date: document.getElementById('date').value,
       schedule: document.getElementById('schedule').value,
-      bus: document.getElementById('bus').value,         // ▼ 추가
+      bus: document.getElementById('bus').value,
       place: document.getElementById('place').value,
       notes: document.getElementById('notes').value,
       contact: document.getElementById('contact').value,
     };
   }
-
-    function makeShareTitle(d){
-  const team = d.team ? `${d.team}반` : '';
-  const dateTxt = d.date ? weekdayKR(d.date) : '';
-  const t = (d.title || '').trim();
-  if (t) return t; // 사용자가 직접 입력한 제목 우선
-  // 미입력 시 기본 형태: "YYYY년 M월 D일(요일) A반 야유회"
-  return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
-}
 
   // (구방식) base64 인코딩/디코딩 유지 호환
   function encodeShare(obj){
@@ -224,6 +208,16 @@
     });
   })();
 
+  // ▼ 표시만 예쁘게(방법 2): 제목 생성 유틸
+  function makeShareTitle(d){
+    const team = d.team ? `${d.team}반` : '';
+    const dateTxt = d.date ? weekdayKR(d.date) : '';
+    const t = (d.title || '').trim();
+    if (t) return t; // 사용자가 직접 입력한 제목 우선
+    // 미입력 시 기본 형태: "YYYY년 M월 D일(요일) A반 야유회"
+    return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
+  }
+
   // 임시 저장: GAS에 data 저장 → key 발급 → ?k= 로 짧은 링크 생성
   document.getElementById('btnShare').addEventListener('click', async ()=>{
     try{
@@ -237,37 +231,41 @@
         const t = await res.text();
         throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
       }
-    if(res.ok && json.status==='ok' && json.key){
-  const url = new URL(location.href);
-  url.searchParams.delete('code');    // 구방식 제거
-  url.searchParams.set('k', json.key); // 신방식 키만 유지 (t 파라미터는 안붙임)
+      if(res.ok && json.status==='ok' && json.key){
+        const url = new URL(location.href);
+        url.searchParams.delete('code'); // 구방식 제거
+        url.searchParams.set('k', json.key); // 신방식 키만 유지 (t 파라미터는 안붙임)
 
-  history.replaceState(null, '', url.toString());
+        history.replaceState(null, '', url.toString());
 
-  // 표시용 예쁜 문자열: "제목 — URL"
-  const titleText = makeShareTitle(collect());
-  const shareEl = document.getElementById('shareLink');
-  if (shareEl) shareEl.value = `${titleText} — ${url.toString()}`;
+        // 표시용 예쁜 문자열: "제목 — URL"
+        const titleText = makeShareTitle(collect());
+        const shareEl = document.getElementById('shareLink');
+        if (shareEl) shareEl.value = `${titleText} — ${url.toString()}`;
 
-  // 복사 문자열은 "제목\nURL" (메신저 가독성 ↑)
-  await navigator.clipboard.writeText(`${titleText}\n${url.toString()}`);
-  alert('짧은 공유 링크가 복사되었습니다.');
-}else{
-  alert('임시 저장 실패: ' + (json.error || res.status));
-}
-
+        // 복사 문자열은 "제목\nURL" (메신저 가독성 ↑)
+        await navigator.clipboard.writeText(`${titleText}\n${url.toString()}`);
+        alert('짧은 공유 링크가 복사되었습니다.');
+      }else{
+        alert('임시 저장 실패: ' + (json.error || res.status));
+      }
+    }catch(err){
+      alert('임시 저장 중 오류: ' + err.message);
+    }
+  });
 
   // 텍스트 복사
   document.getElementById('btnCopyText').addEventListener('click', ()=>{
     const d = collect();
     const lines = [];
     const dateStr = d.date ? weekdayKR(d.date) : '-';
-    lines.push(`${d.title||d.team+"반 야유회 안내"}`);
+    const header = makeShareTitle(d) || (d.team+"반 야유회");
+    lines.push(header);
     lines.push('');
     lines.push(`[일자] ${dateStr}`);
     lines.push('[일정 요약]');
     lines.push(...(d.schedule||'').split('\n').filter(Boolean));
-    if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`); // ▼ 추가
+    if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`);
     lines.push(`[장소] ${d.place||'-'}`);
     if((d.notes||'').trim()){
       lines.push('[특이사항]');
@@ -327,8 +325,8 @@
       document.getElementById('title').value = data.title||'';
       document.getElementById('date').value = data.date||'';
       document.getElementById('schedule').value = data.schedule||'';
-      document.getElementById('bus').value = data.bus || '';          // ▼ 추가
-      setBus(document.getElementById('bus').value || '');             // ▼ 추가
+      document.getElementById('bus').value = data.bus || '';
+      setBus(document.getElementById('bus').value || '');
       document.getElementById('place').value = data.place||'';
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
@@ -351,8 +349,8 @@
         document.getElementById('title').value = data.title||'';
         document.getElementById('date').value = data.date||'';
         document.getElementById('schedule').value = data.schedule||'';
-        document.getElementById('bus').value = data.bus || '';        // ▼ 추가
-        setBus(document.getElementById('bus').value || '');           // ▼ 추가
+        document.getElementById('bus').value = data.bus || '';
+        setBus(document.getElementById('bus').value || '');
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
@@ -360,24 +358,23 @@
     }else{
       document.getElementById('title').value = '야유회 안내';
     }
+
     // 최초 배지 상태 갱신
-     // 최초 배지 상태 갱신
-  updateBusBadgeVisibility();
+    updateBusBadgeVisibility();
 
-  // ▼ 추가: 로드 완료 후 shareLink 표시에 "제목 — URL" 세팅
-  try{
-    const shareEl = document.getElementById('shareLink');
-    if (shareEl) {
-      const urlNow = new URL(location.href);
-      // k가 있을 때만 표시(= 임시 저장 한 뒤)
-      if (urlNow.searchParams.get('k')) {
-        const titleText = makeShareTitle(collect());
-        shareEl.value = `${titleText} — ${urlNow.toString()}`;
+    // ▼ 추가: 로드 완료 후 shareLink 표시에 "제목 — URL" 세팅
+    try{
+      const shareEl = document.getElementById('shareLink');
+      if (shareEl) {
+        const urlNow = new URL(location.href);
+        // k가 있을 때만 표시(= 임시 저장 한 뒤)
+        if (urlNow.searchParams.get('k')) {
+          const titleText = makeShareTitle(collect());
+          shareEl.value = `${titleText} — ${urlNow.toString()}`;
+        }
       }
-    }
-  }catch(_){}
-})();
-
+    }catch(_){ }
+  })();
   </script>
 </body>
 </html>
