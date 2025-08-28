@@ -290,7 +290,11 @@
   }
 
   async function safeDistribute({title='', text='', url=''}) {
-    const toCopy = [title && text ? (title + '\n') : '', text, url ? (text ? ('\n' + url) : url) : ''].join('');
+    const toCopy =
+  text
+    ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
+    : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
+
 
     // 인앱 + Web Share 미지원이면 바로 수동 복사 박스
     if (isInAppBrowser() && !navigator.share){
