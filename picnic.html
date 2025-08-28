@@ -326,34 +326,49 @@
     }catch(_){ return false; }
   }
 
-  async function safeDistribute({title='', text='', url=''}) {
-    const toCopy =
-      text
-        ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
-        : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
+  // 기존 safeDistribute 대체
+async function safeDistribute({title='', text='', url='', pureText=false, forceManual=false}) {
+  const toCopy =
+    text
+      ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
+      : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
 
-    // 인앱 + Web Share 미지원이면 바로 수동 복사 박스
-    if (isInAppBrowser() && !navigator.share){ showCopySheet(toCopy); return { method:'manual' }; }
+  // <<<< 여기: 강제 수동 모드면 즉시 수동 복사 박스만
+  if (forceManual) {
+    showCopySheet(toCopy);
+    return { method: 'manual-forced' };
+  }
 
-    // 모바일 공통: Web Share 우선
-    if (isMobile()){
-      const shared = await tryWebShare({title, text, url});
-      if (shared) return { method:'share' };
-    }
+  // (나머지는 기존 로직 유지 — 링크 공유에서 사용)
+  const shouldSkipWebShare = pureText === true;
 
-    // 클립보드 API
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      try{ await navigator.clipboard.writeText(toCopy); hideCopySheet(); return { method:'clipboard' }; }
-      catch(_){}
-    }
-
-    // 레거시 복사
-    if (legacyCopy(toCopy)) { hideCopySheet(); return { method:'legacy' }; }
-
-    // 최종: 수동 복사 박스
+  if (isInAppBrowser() && !navigator.share){
     showCopySheet(toCopy);
     return { method:'manual' };
   }
+
+  if (!shouldSkipWebShare && isMobile() && navigator.share) {
+    try {
+      const payload = {};
+      if (title) payload.title = title;
+      if (text)  payload.text  = text;
+      if (url)   payload.url   = url; // 빈 문자열은 넣지 않음
+      await navigator.share(payload);
+      return { method:'share' };
+    } catch(_) {}
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(toCopy); hideCopySheet(); return { method:'clipboard' }; }
+    catch(_) {}
+  }
+
+  if (legacyCopy(toCopy)) { hideCopySheet(); return { method:'legacy' }; }
+
+  showCopySheet(toCopy);
+  return { method:'manual' };
+}
+
 
   /* ===== 날짜 포맷 ===== */
   function weekdayKR(dateStr){
@@ -480,19 +495,22 @@
 
   /* ===== 버튼: 안내문(공유용 텍스트) ===== */
   document.getElementById('btnCopyText').addEventListener('click', async ()=>{
-    showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
-    try{
-      const text = buildShareText();
-      const dist2 = await safeDistribute({ title: '', text, url: '' });
-      if (dist2.method === 'share') {
-        alert('공유 시트로 전송했습니다.');
-      } else if (dist2.method === 'clipboard' || dist2.method === 'legacy') {
-        alert('텍스트가 복사되었습니다.');
-      }
-    }finally{
-      hideLoading();
-    }
-  });
+  showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
+  try{
+    const text = buildShareText();
+    // 무조건 수동 복사 박스만 띄움 (카톡/크롬 동일 동작, URL 절대 포함 X)
+    await safeDistribute({
+      title: '',
+      text,
+      url: '',           // 주소 포함 금지
+      pureText: true,    // Web Share 우회
+      forceManual: true  // <<<< 핵심: 무조건 아래 복사 박스
+    });
+    // 별도 alert 불필요—복사 박스 자체가 안내 역할
+  }finally{
+    hideLoading();
+  }
+});
 
   /* ===== 제출(인사지원팀) ===== */
   async function submitToSheet(){
