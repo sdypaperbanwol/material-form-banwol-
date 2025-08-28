@@ -87,7 +87,7 @@
             </div>
             <div class="row">
               <label for="title">제목(선택)</label>
-              <input id="title" type="text" placeholder="예) A반 야유회 안내" />
+              <input id="title" type="text" placeholder="예) 야유회 안내" />
             </div>
             <div class="row">
               <label for="date">일자</label>
@@ -96,11 +96,11 @@
             <div class="row">
               <label for="schedule">일정 요약</label>
               <textarea id="schedule" placeholder="예시)
-06:00 화랑유원지 집결
-06:30 버스 출발
-11:00 XX 관람 시작
-12:30 점심 식사
-15:00 귀가"></textarea>
+- 06:00 화랑유원지 집결
+- 06:30 버스 출발
+- 11:00 XX 관람 시작
+- 12:30 점심 식사
+- 15:00 귀가"></textarea>
             </div>
 
             <!-- ▼ 추가: 버스 대절 O/X -->
@@ -123,10 +123,10 @@
             <div class="row">
               <label for="notes">특이사항</label>
               <textarea id="notes" placeholder="예) 
-· 편한 복장 및 운동화 권장
-· 개인 물/우의 등 준비
-· 전세버스 대절 (개별 집결 없음)
-· 일부 구간은 도보 이동 예정"></textarea>
+- 편한 복장 및 운동화 권장
+- 개인 물/우의 등 준비
+- 전세버스 대절 (개별 집결 없음)
+- 일부 구간은 도보 이동 예정"></textarea>
             </div>
             <div class="row">
               <label for="contact">문의처</label>
@@ -348,7 +348,7 @@
         document.getElementById('contact').value = data.contact||'';
       }
     }else{
-      document.getElementById('title').value = 'A반 야유회 안내';
+      document.getElementById('title').value = '야유회 안내';
     }
     // 최초 배지 상태 갱신
     updateBusBadgeVisibility();
