@@ -11,7 +11,7 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
     .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
     .toolbar button{
       border:1px solid var(--line);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer;
       box-shadow:0 1px 2px rgba(0,0,0,.06);
@@ -68,14 +68,8 @@
     .loading-sub{font-size:12px; color:#777}
     .toolbar [disabled]{opacity:.6; cursor:not-allowed}
 
-    /* 인앱 안내 배너 */
-    #iabBanner{
-      display:none; background:#fff3cd; color:#8a6d3b; border:1px solid #ffeeba; border-radius:10px;
-      padding:10px 12px; margin:8px 0;
-    }
-    #openInChrome{
-      margin-left:8px; padding:6px 10px; border:1px solid #f0c36d; border-radius:8px; background:#fff; cursor:pointer;
-    }
+    /* (선택) 인앱 안내 배너 스타일(현재 미사용) */
+    #iabBanner{display:none}
 
     /* 수동 복사 박스 */
     #copySheetBox{
@@ -89,26 +83,7 @@
 </head>
 <body>
   <div class="wrap">
-  <!-- 인앱 안내 배너 
-  <div id="iabBanner" class="no-print">
-    카카오톡 인앱 브라우저에선 자동 복사/공유가 제한될 수 있어요.
-    <button id="openInChrome">외부 브라우저로 열기</button>
-  </div>
-  -->
-    <div class="toolbar no-print">
-      <button id="btnShare">저장(링크)</button>
-      <button id="btnCopyText">저장(텍스트)</button>
-      <button id="btnSubmit">전송(인사지원팀)</button>
-      <input id="shareLink" readonly
-            style="flex:1; min-width:260px; max-width:560px; padding:6px 10px; border:1px solid #ddd; border-radius:6px;"
-            placeholder="공유 링크가 여기 표시됩니다" />
-    </div>
-
-    <!-- 수동 복사용 박스 -->
-    <div id="copySheetBox" class="no-print">
-      <div style="font-weight:700;margin-bottom:6px;">아래 내용을 길게 눌러 복사하세요.</div>
-      <textarea id="copySheetTa"></textarea>
-    </div>
+    <!-- 상단 배너 제거됨 -->
 
     <div class="grid">
       <div class="card no-print">
@@ -175,6 +150,19 @@
         </div>
       </div>
     </div>
+
+    <!-- 하단 툴바 -->
+    <div class="toolbar no-print">
+      <button id="btnShare">저장(링크)</button>
+      <button id="btnCopyText">저장(텍스트)</button>
+      <button id="btnSubmit">전송(인사지원팀)</button>
+    </div>
+
+    <!-- 수동 복사용 박스 (툴바 바로 아래) -->
+    <div id="copySheetBox" class="no-print" style="margin-bottom:24px">
+      <div style="font-weight:700;margin-bottom:6px;">아래 내용을 길게 눌러 복사하세요.</div>
+      <textarea id="copySheetTa"></textarea>
+    </div>
   </div>
 
   <!-- 스크롤 배지 -->
@@ -191,7 +179,6 @@
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
   <script>
-  // 최신 /exec URL로 교체해 사용
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZVROE3X1C1LywBB1jfrOC6yxCKTVIPmuZ_yA3V-c84Q1DBXIrLc2parM_gsHJLAY/exec';
 
   /* ===== 로딩 오버레이 ===== */
@@ -229,19 +216,10 @@
     }
   }
 
-  /* ===== 인앱 브라우저 처리 & 외부 열기 ===== */
+  /* ===== 인앱 감지 ===== */
   function isInAppBrowser(){
     const ua = navigator.userAgent || '';
     return /(KAKAOTALK|FB_IAB|Instagram|NAVER|DaumApp|Line|Whale)/i.test(ua);
-  }
-  function openInChrome(){
-    try{
-      const href = location.href.replace(/^https?:\/\//,'');
-      const intent = `intent://${href}#Intent;scheme=https;package=com.android.chrome;end`;
-      location.href = intent;
-    }catch(_){
-      window.open(location.href, '_blank');
-    }
   }
 
   /* ===== 수동 복사 박스 ===== */
@@ -251,7 +229,6 @@
     if (!box || !ta) return;
     box.style.display = 'block';
     ta.value = text;
-    // 자동 선택 (모바일에서도 길게 눌러 복사 안내와 함께)
     ta.focus();
     ta.select();
   }
@@ -291,10 +268,9 @@
 
   async function safeDistribute({title='', text='', url=''}) {
     const toCopy =
-  text
-    ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
-    : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
-
+      text
+        ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
+        : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
 
     // 인앱 + Web Share 미지원이면 바로 수동 복사 박스
     if (isInAppBrowser() && !navigator.share){
@@ -400,7 +376,7 @@
     return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
   }
 
-  /* ===== 버튼: 임시 저장(링크) ===== */
+  /* ===== 버튼: 저장(링크) ===== */
   document.getElementById('btnShare').addEventListener('click', async ()=>{
     showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
     try{
@@ -421,15 +397,12 @@
         history.replaceState(null, '', url.toString());
 
         const titleText = makeShareTitle(collect());
-        const shareEl = document.getElementById('shareLink');
-        if (shareEl) shareEl.value = `${titleText} — ${url.toString()}`;
-
-       const dist = await safeDistribute({ title: titleText, text: '', url: url.toString() });
+        const dist = await safeDistribute({ title: titleText, text: '', url: url.toString() });
         if (dist.method === 'share') {
           alert('공유 시트로 전송했습니다.');
         } else if (dist.method === 'clipboard' || dist.method === 'legacy') {
           alert('짧은 공유 링크가 복사되었습니다.');
-        } // manual은 별도 안내 없음(복사 박스가 보임)
+        }
       }else{
         alert('임시 저장 실패: ' + (json.error || res.status));
       }
@@ -440,7 +413,7 @@
     }
   });
 
-  /* ===== 버튼: 공유(텍스트) ===== */
+  /* ===== 버튼: 저장(텍스트) ===== */
   document.getElementById('btnCopyText').addEventListener('click', async ()=>{
     showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
     try{
@@ -467,7 +440,6 @@
       } else if (dist2.method === 'clipboard' || dist2.method === 'legacy') {
         alert('텍스트가 복사되었습니다.');
       }
-      // manual은 복사 박스가 이미 보임
     }finally{
       hideLoading();
     }
@@ -538,16 +510,6 @@
 
   /* ===== init ===== */
   (async function init(){
-    // 인앱 안내 배너 동작
-    try{
-      if (isInAppBrowser()){
-        const banner = document.getElementById('iabBanner');
-        if (banner) banner.style.display = 'block';
-        const btn = document.getElementById('openInChrome');
-        if (btn) btn.addEventListener('click', openInChrome);
-      }
-    }catch(_){}
-
     const p = new URLSearchParams(location.search);
     const k = p.get('k');
     const code = p.get('code');
@@ -572,20 +534,7 @@
       document.getElementById('title').value = '야유회 안내';
     }
 
-    // 배지 상태 갱신
     updateBusBadgeVisibility();
-
-    // 로드 완료 후 shareLink 표시에 "제목 — URL" 세팅 (k가 있을 때만)
-    try{
-      const shareEl = document.getElementById('shareLink');
-      if (shareEl) {
-        const urlNow = new URL(location.href);
-        if (urlNow.searchParams.get('k')) {
-          const titleText = makeShareTitle(collect());
-          shareEl.value = `${titleText} — ${urlNow.toString()}`;
-        }
-      }
-    }catch(_){ }
   })();
   </script>
 </body>
