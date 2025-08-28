@@ -90,24 +90,29 @@
     #btnSubmit:hover { background:#ffcdd2; }
 
     /* 수동 복사 박스 */
-    #copySheetBox{
-      display:none; margin:8px 0; padding:12px; border:1px dashed #ccc; border-radius:10px; background:#fafafa;
-    }
-    #copySheetTa{
-      width:100%; min-height:120px; padding:8px; border:1px solid #ddd; border-radius:8px;
-      font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
-    }
+  #copySheetBox {
+  display: none;
+  margin: 8px 0;
+  padding: 12px;
+  border: 1px dashed #ccc;
+  border-radius: 10px;
+  background: #fafafa;
+  overscroll-behavior: contain;   /* 부모 스크롤 방지 */
+}
+
 #copySheetTa {
   width: 100%;
-  min-height: 200px;   /* 기본 크기 */
-  max-height: 400px;   /* 최대 크기 */
+  height: 200px;                  /* 기본 높이 고정 */
+  max-height: 400px;              /* 최대 크기 제한 */
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font: 14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, 
         Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, sans-serif;
-  resize: vertical;    /* 직접 세로 크기 조절 가능 */
-  overflow-y: auto;    /* 내용 많으면 내부 스크롤 */
+  resize: vertical;               /* 직접 세로 크기 조절 가능 */
+  overflow-y: auto;               /* 내부 스크롤 */
+  overscroll-behavior: contain;   /* 바깥으로 스크롤 전파 안되게 */
+  -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
 }
     
     /* 프린트 강화 */
