@@ -11,11 +11,6 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
     .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
-    .toolbar button{
-      border:1px solid var(--line);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer;
-      box-shadow:0 1px 2px rgba(0,0,0,.06);
-    }
     .grid{display:grid;grid-template-columns:1fr;gap:16px}
     .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
     .card h2{margin:0;padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
@@ -27,7 +22,6 @@
       width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none
     }
     textarea{min-height:110px;resize:vertical}
-    @media print{ .no-print, .toolbar{display:none !important} body{background:#fff} .wrap{max-width:900px} }
 
     /* 모바일 라벨/입력 세로 정렬 */
     @media (max-width: 640px) {
@@ -68,18 +62,7 @@
     .loading-sub{font-size:12px; color:#777}
     .toolbar [disabled]{opacity:.6; cursor:not-allowed}
 
-    /* (선택) 인앱 안내 배너 스타일(현재 미사용) */
-    #iabBanner{display:none}
-
-    /* 수동 복사 박스 */
-    #copySheetBox{
-      display:none; margin:8px 0; padding:12px; border:1px dashed #ccc; border-radius:10px; background:#fafafa;
-    }
-    #copySheetTa{
-      width:100%; min-height:120px; padding:8px; border:1px solid #ddd; border-radius:8px;
-      font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
-    }
- /* === 버튼 꾸밈 추가 === */
+    /* 하단 툴바를 카드처럼 + 세로 버튼 */
     .toolbar {
       display: grid;
       gap: 12px;
@@ -90,40 +73,42 @@
       background: #fff;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
-    .toolbar button {
+    .toolbar button{
       padding: 14px;
       font-size: 15px;
       font-weight: 700;
       border-radius: 12px;
       transition: all .2s;
+      border:1px solid var(--line);
+      background:#fff;
     }
-    #btnShare {
-      border: 1px solid #90caf9;
-      background: #e3f2fd;
-      color: #1565c0;
-    }
+    #btnShare { border-color:#90caf9; background:#e3f2fd; color:#1565c0; }
     #btnShare:hover { background:#bbdefb; }
-
-    #btnCopyText {
-      border: 1px solid #a5d6a7;
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
+    #btnCopyText { border-color:#a5d6a7; background:#e8f5e9; color:#2e7d32; }
     #btnCopyText:hover { background:#c8e6c9; }
-
-    #btnSubmit {
-      border: 1px solid #ef9a9a;
-      background: #ffebee;
-      color: #c62828;
-    }
+    #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
     #btnSubmit:hover { background:#ffcdd2; }
-    
+
+    /* 수동 복사 박스 */
+    #copySheetBox{
+      display:none; margin:8px 0; padding:12px; border:1px dashed #ccc; border-radius:10px; background:#fafafa;
+    }
+    #copySheetTa{
+      width:100%; min-height:120px; padding:8px; border:1px solid #ddd; border-radius:8px;
+      font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
+    }
+
+    /* 프린트 강화 */
+    @media print{
+      .no-print, .toolbar, #copySheetBox, #busBadge, #loadingOverlay { display:none !important; }
+      body{ background:#fff }
+      .wrap{ max-width:900px }
+      pre, textarea { font-family: inherit; font-size: 14px; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- 상단 배너 제거됨 -->
-
     <div class="grid">
       <div class="card no-print">
         <h2>아래 항목을 작성해주세요</h2>
@@ -165,9 +150,9 @@
               <label>버스 대절</label>
               <div>
                 <input id="bus" type="hidden" value="" />
-                <div class="chip-group" id="busChips">
-                  <div class="chip" data-val="O">O</div>
-                  <div class="chip" data-val="X">X</div>
+                <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
+                  <div class="chip" role="radio" tabindex="0" aria-checked="false" data-val="O">O</div>
+                  <div class="chip" role="radio" tabindex="-1" aria-checked="false" data-val="X">X</div>
                 </div>
                 <small style="color:var(--muted)">버스 대절 여부를 선택하세요 (O/X)</small>
               </div>
@@ -178,7 +163,7 @@
               <textarea id="notes" placeholder="예) 
 - 편한 복장 및 운동화 권장
 - 개인 물/우의 등 준비
-- 전세버스 대절 (또는 개별로 집결)
+- 전세버스 대절 (개별 집결 없음)
 - 일부 구간은 도보 이동 예정"></textarea>
             </div>
             <div class="row">
@@ -186,6 +171,14 @@
               <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- (5) 안내문 미리보기 -->
+      <div id="previewCard" class="card no-print" style="display:none; margin-top:4px;">
+        <h2>안내문 미리보기</h2>
+        <div class="body">
+          <pre id="previewText" style="white-space:pre-wrap;margin:0"></pre>
         </div>
       </div>
     </div>
@@ -219,6 +212,18 @@
 
   <script>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZVROE3X1C1LywBB1jfrOC6yxCKTVIPmuZ_yA3V-c84Q1DBXIrLc2parM_gsHJLAY/exec';
+
+  /* ===== (6) fetch 타임아웃 유틸 ===== */
+  async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {...opts, signal: controller.signal});
+      return res;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   /* ===== 로딩 오버레이 ===== */
   let loadingCount = 0;
@@ -383,6 +388,8 @@
     chips.forEach(c => c.classList.toggle('selected', c.getAttribute('data-val') === val));
     document.getElementById('busBadgeVal').textContent = hidden.value || '-';
     updateBusBadgeVisibility();
+    // 미리보기 즉시 갱신
+    updatePreview();
   }
   const showAfter = 200;
   function updateBusBadgeVisibility(){
@@ -403,8 +410,22 @@
       const target = e.target.closest('.chip');
       if(!target) return;
       setBus(target.getAttribute('data-val'));
+      // 접근성: aria 상태 업데이트
+      updateA11yBusChips();
     });
   })();
+
+  // 접근성(버스칩) - 간단 버전
+  function updateA11yBusChips(){
+    const group = document.getElementById('busChips');
+    if(!group) return;
+    const val = document.getElementById('bus').value || '';
+    [...group.querySelectorAll('.chip')].forEach((c,i)=>{
+      const selected = c.getAttribute('data-val')===val;
+      c.setAttribute('aria-checked', selected?'true':'false');
+      c.tabIndex = selected?0:-1;
+    });
+  }
 
   /* ===== 제목 생성 ===== */
   function makeShareTitle(d){
@@ -415,11 +436,38 @@
     return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
   }
 
-  /* ===== 버튼: 저장(링크) ===== */
+  /* ===== (5) 안내문 미리보기 빌드 & 갱신 ===== */
+  function buildShareText(){
+    const d = collect();
+    const lines = [];
+    const dateStr = d.date ? weekdayKR(d.date) : '-';
+    const header = makeShareTitle(d) || (d.team + '반 야유회');
+    lines.push(header, '');
+    lines.push(`[일자] ${dateStr}`);
+    lines.push('[일정 요약]');
+    lines.push(...(d.schedule||'').split('\n').filter(Boolean));
+    if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`);
+    lines.push(`[장소] ${d.place||'-'}`);
+    if((d.notes||'').trim()){
+      lines.push('[특이사항]');
+      lines.push(...d.notes.split('\n').filter(Boolean));
+    }
+    lines.push(`[문의처] ${d.contact||'-'}`);
+    return lines.join('\n');
+  }
+  function updatePreview(){
+    const txt = buildShareText();
+    const card = document.getElementById('previewCard');
+    const pre = document.getElementById('previewText');
+    pre.textContent = txt;
+    card.style.display = 'block';
+  }
+
+  /* ===== 버튼: 임시저장(수정용 링크) ===== */
   document.getElementById('btnShare').addEventListener('click', async ()=>{
     showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
     try{
-      const res = await fetch(GAS_URL, {
+      const res = await fetchWithTimeout(GAS_URL, {
         method:'POST',
         body: JSON.stringify({ mode:'share', data: collect() })
       });
@@ -446,33 +494,18 @@
         alert('임시 저장 실패: ' + (json.error || res.status));
       }
     }catch(err){
-      alert('임시 저장 중 오류: ' + err.message);
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('임시 저장 중 오류: ' + msg);
     }finally{
       hideLoading();
     }
   });
 
-  /* ===== 버튼: 저장(텍스트) ===== */
+  /* ===== 버튼: 안내문(공유용 텍스트) ===== */
   document.getElementById('btnCopyText').addEventListener('click', async ()=>{
     showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 400);
     try{
-      const d = collect();
-      const lines = [];
-      const dateStr = d.date ? weekdayKR(d.date) : '-';
-      const header = makeShareTitle(d) || (d.team + '반 야유회');
-      lines.push(header, '');
-      lines.push(`[일자] ${dateStr}`);
-      lines.push('[일정 요약]');
-      lines.push(...(d.schedule||'').split('\n').filter(Boolean));
-      if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`);
-      lines.push(`[장소] ${d.place||'-'}`);
-      if((d.notes||'').trim()){
-        lines.push('[특이사항]');
-        lines.push(...d.notes.split('\n').filter(Boolean));
-      }
-      lines.push(`[문의처] ${d.contact||'-'}`);
-      const text = lines.join('\n');
-
+      const text = buildShareText();
       const dist2 = await safeDistribute({ title: '', text, url: '' });
       if (dist2.method === 'share') {
         alert('공유 시트로 전송했습니다.');
@@ -484,7 +517,7 @@
     }
   });
 
-  /* ===== 제출(전송) ===== */
+  /* ===== 제출(인사지원팀) ===== */
   async function submitToSheet(){
     showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
     try{
@@ -495,7 +528,7 @@
 
       const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
 
-      const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
+      const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
       let json;
       try{ json = await res.json(); }
       catch{
@@ -509,7 +542,8 @@
         alert(`제출 실패: ${json.error||res.status}`);
       }
     }catch(err){
-      alert('제출 중 오류: '+ err.message);
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('제출 중 오류: ' + msg);
     }finally{
       hideLoading();
     }
@@ -521,7 +555,7 @@
     showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
     try{
       const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url);
       let json;
       try{ json = await res.json(); }
       catch{
@@ -539,13 +573,35 @@
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
+        updatePreview();
       }else{
         alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
       }
+    } catch(err){
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('불러오기 오류: ' + msg);
     } finally{
       hideLoading();
     }
   }
+
+  /* ===== (3) 오늘 이전 날짜 금지 ===== */
+  (function lockPastDate(){
+    const el = document.getElementById('date');
+    if(!el) return;
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const dd = String(today.getDate()).padStart(2,'0');
+    el.min = `${yyyy}-${mm}-${dd}`;
+  })();
+
+  /* ===== 입력 변화 시 미리보기 갱신 ===== */
+  ['team','title','date','schedule','place','notes','contact'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', updatePreview);
+  });
 
   /* ===== init ===== */
   (async function init(){
@@ -555,7 +611,7 @@
 
     if(k){
       try{ await loadByKey(k); }
-      catch(e){ alert('불러오기 오류: ' + e.message); hideLoading(); }
+      catch(e){ /* 에러는 loadByKey에서 안내함 */ }
     }else if(code){
       const data = decodeShare(code);
       if(data){
@@ -569,11 +625,14 @@
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
       }
+      updatePreview();
     }else{
       document.getElementById('title').value = '야유회 안내';
+      updatePreview();
     }
 
     updateBusBadgeVisibility();
+    updateA11yBusChips();
   })();
   </script>
 </body>
