@@ -543,7 +543,7 @@
           // manual 안내만
         }
       }else{
-        alert('임시 저장 실패: ' ' + (json.error || res.status));
+        alert('임시 저장 실패: ' + (json.error || res.status));
       }
     }catch(err){
       const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
@@ -554,36 +554,52 @@
   });
 
   /* ===== 제출(인사지원팀) ===== */
-  async function submitToSheet(){
-    showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
-    try{
-      const data = collect();
-      if(!data.date){ alert('일자를 입력해주세요.'); return; }
-      if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
-      if(!data.contact){ alert('문의처를 입력해주세요.'); return; }
+ async function submitToSheet(){
+  showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
+  try {
+    const data = collect();
+    const todayStr = new Date().toISOString().slice(0,10);
 
-      const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
-
-      const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
-      let json;
-      try{ json = await res.json(); }
-      catch{
-        const t = await res.text();
-        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
-      }
-
-      if(res.ok && (json.status==='ok' || json.result==='ok')){
-        alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
-      }else{
-        alert(`제출 실패: ${json.error||res.status}`);
-      }
-    }catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('전송 중 오류: ' + msg);
-    }finally{
-      hideLoading();
+    // 날짜 유효성 검사
+    if (data.date && data.date < todayStr) {
+      alert('오늘 이후 날짜만 선택 가능합니다.');
+      return;
     }
+    if(!data.date){ 
+      alert('일자를 입력해주세요.'); 
+      return; 
+    }
+    if(!(data.schedule||'').trim()){ 
+      alert('일정 요약을 입력해주세요.'); 
+      return; 
+    }
+    if(!data.contact){ 
+      alert('문의처를 입력해주세요.'); 
+      return; 
+    }
+
+    const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
+
+    const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
+    let json;
+    try{ json = await res.json(); }
+    catch{
+      const t = await res.text();
+      throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+    }
+
+    if(res.ok && (json.status==='ok' || json.result==='ok')){
+      alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
+    }else{
+      alert(`제출 실패: ${json.error||res.status}`);
+    }
+  }catch(err){
+    alert('제출 중 오류: '+ err.message);
+  }finally{
+    hideLoading();
   }
+}
+
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
   /* ===== 저장값 불러오기 ===== */
