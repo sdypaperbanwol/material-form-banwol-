@@ -413,24 +413,40 @@
   }
 
   /* ===== 공유용 텍스트 생성 ===== */
-  function buildShareText(){
-    const d = collect();
-    const lines = [];
-    const dateStr = d.date ? weekdayKR(d.date) : '-';
-    const header = makeShareTitle(d) || (d.team + '반 야유회');
-    lines.push(header, '');
-    lines.push(`[일자] ${dateStr}`);
-    lines.push('[일정 요약]');
-    lines.push(...(d.schedule||'').split('\n').filter(Boolean));
-    if ((d.bus||'').trim()) lines.push(`[버스 대절] ${d.bus}`);
-    lines.push(`[장소] ${d.place||'-'}`);
-    if((d.notes||'').trim()){
-      lines.push('[특이사항]');
-      lines.push(...d.notes.split('\n').filter(Boolean));
-    }
-    lines.push(`[문의처] ${d.contact||'-'}`);
-    return lines.join('\n');
+ // 공유용 텍스트 생성(교체)
+function buildShareText(){
+  const d = collect();
+  const lines = [];
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const header = makeShareTitle(d) || (d.team ? `${d.team}반 야유회` : '야유회');
+
+  lines.push(header, '');
+
+  // 1) 일자
+  lines.push(`[일자] ${dateStr}`);
+
+  // 2) 장소
+  lines.push(`[장소] ${d.place || '-'}`);
+
+  // 3) 일정요약
+  lines.push('[일정 요약]');
+  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+
+  // 4) 버스대절
+  if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
+
+  // 5) 특이사항
+  if ((d.notes || '').trim()) {
+    lines.push('[특이사항]');
+    lines.push(...d.notes.split('\n').filter(Boolean));
   }
+
+  // 6) 문의처
+  lines.push(`[문의처] ${d.contact || '-'}`);
+
+  return lines.join('\n');
+}
+
 
   /* ===== 버튼: 임시저장(수정용 링크) ===== */
   document.getElementById('btnShare').addEventListener('click', async ()=>{
