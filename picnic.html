@@ -169,10 +169,12 @@
   let loadingCount = 0;
   let loadingTimer = null;
 
-  function setToolbarDisabled(disabled){
-    document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
-    document.querySelectorAll('input, textarea, select').forEach(el => el.readOnly = disabled);
-  }
+ function setToolbarDisabled(disabled){
+  document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
+  document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
+  document.querySelectorAll('select').forEach(el => el.disabled = disabled); // ← 추가
+}
+
 
   function showLoading(main='진행 중…', sub='잠시만 기다려주세요', minMs=500){
     loadingCount++;
@@ -225,14 +227,16 @@
   }
 
   // (구방식) base64 인코딩/디코딩 유지 호환
-  function encodeShare(obj){
-    const json = JSON.stringify(obj);
-    return btoa(unescape(encodeURIComponent(json));
-  }
-  function decodeShare(b64){
-    try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
-    catch(e){ alert('공유 코드 해석 실패'); return null }
-  }
+ // (구방식) base64 인코딩/디코딩 유지 호환
+function encodeShare(obj){
+  const json = JSON.stringify(obj);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+function decodeShare(b64){
+  try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
+  catch(e){ alert('공유 코드 해석 실패'); return null }
+}
+
 
   // ▼ 버스 토글/배지
   function setBus(val){
