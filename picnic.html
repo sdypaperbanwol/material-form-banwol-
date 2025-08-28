@@ -173,14 +173,6 @@
           </div>
         </div>
       </div>
-
-      <!-- (5) 안내문 미리보기 -->
-      <div id="previewCard" class="card no-print" style="display:none; margin-top:4px;">
-        <h2>안내문 미리보기</h2>
-        <div class="body">
-          <pre id="previewText" style="white-space:pre-wrap;margin:0"></pre>
-        </div>
-      </div>
     </div>
 
     <!-- 하단 툴바 -->
@@ -190,7 +182,7 @@
       <button id="btnSubmit">제출(인사지원팀)</button>
     </div>
 
-    <!-- 수동 복사용 박스 (툴바 바로 아래) -->
+    <!-- 수동 복사용 박스 -->
     <div id="copySheetBox" class="no-print" style="margin-bottom:24px">
       <div style="font-weight:700;margin-bottom:6px;">아래 내용을 길게 눌러 복사하세요.</div>
       <textarea id="copySheetTa"></textarea>
@@ -213,7 +205,7 @@
   <script>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZVROE3X1C1LywBB1jfrOC6yxCKTVIPmuZ_yA3V-c84Q1DBXIrLc2parM_gsHJLAY/exec';
 
-  /* ===== (6) fetch 타임아웃 유틸 ===== */
+  /* ===== fetch 타임아웃 유틸 ===== */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
     const controller = new AbortController();
     const timer = setTimeout(()=>controller.abort(), timeoutMs);
@@ -388,8 +380,6 @@
     chips.forEach(c => c.classList.toggle('selected', c.getAttribute('data-val') === val));
     document.getElementById('busBadgeVal').textContent = hidden.value || '-';
     updateBusBadgeVisibility();
-    // 미리보기 즉시 갱신
-    updatePreview();
   }
   const showAfter = 200;
   function updateBusBadgeVisibility(){
@@ -410,22 +400,8 @@
       const target = e.target.closest('.chip');
       if(!target) return;
       setBus(target.getAttribute('data-val'));
-      // 접근성: aria 상태 업데이트
-      updateA11yBusChips();
     });
   })();
-
-  // 접근성(버스칩) - 간단 버전
-  function updateA11yBusChips(){
-    const group = document.getElementById('busChips');
-    if(!group) return;
-    const val = document.getElementById('bus').value || '';
-    [...group.querySelectorAll('.chip')].forEach((c,i)=>{
-      const selected = c.getAttribute('data-val')===val;
-      c.setAttribute('aria-checked', selected?'true':'false');
-      c.tabIndex = selected?0:-1;
-    });
-  }
 
   /* ===== 제목 생성 ===== */
   function makeShareTitle(d){
@@ -436,7 +412,7 @@
     return [dateTxt, team, '야유회'].filter(Boolean).join(' ');
   }
 
-  /* ===== (5) 안내문 미리보기 빌드 & 갱신 ===== */
+  /* ===== 공유용 텍스트 생성 ===== */
   function buildShareText(){
     const d = collect();
     const lines = [];
@@ -454,13 +430,6 @@
     }
     lines.push(`[문의처] ${d.contact||'-'}`);
     return lines.join('\n');
-  }
-  function updatePreview(){
-    const txt = buildShareText();
-    const card = document.getElementById('previewCard');
-    const pre = document.getElementById('previewText');
-    pre.textContent = txt;
-    card.style.display = 'block';
   }
 
   /* ===== 버튼: 임시저장(수정용 링크) ===== */
@@ -573,7 +542,6 @@
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
-        updatePreview();
       }else{
         alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
       }
@@ -585,7 +553,7 @@
     }
   }
 
-  /* ===== (3) 오늘 이전 날짜 금지 ===== */
+  /* ===== 오늘 이전 날짜 금지 ===== */
   (function lockPastDate(){
     const el = document.getElementById('date');
     if(!el) return;
@@ -596,13 +564,6 @@
     el.min = `${yyyy}-${mm}-${dd}`;
   })();
 
-  /* ===== 입력 변화 시 미리보기 갱신 ===== */
-  ['team','title','date','schedule','place','notes','contact'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('input', updatePreview);
-  });
-
   /* ===== init ===== */
   (async function init(){
     const p = new URLSearchParams(location.search);
@@ -610,8 +571,7 @@
     const code = p.get('code');
 
     if(k){
-      try{ await loadByKey(k); }
-      catch(e){ /* 에러는 loadByKey에서 안내함 */ }
+      try{ await loadByKey(k); }catch(_){}
     }else if(code){
       const data = decodeShare(code);
       if(data){
@@ -625,14 +585,11 @@
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
       }
-      updatePreview();
     }else{
       document.getElementById('title').value = '야유회 안내';
-      updatePreview();
     }
 
     updateBusBadgeVisibility();
-    updateA11yBusChips();
   })();
   </script>
 </body>
