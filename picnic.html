@@ -79,6 +79,45 @@
       width:100%; min-height:120px; padding:8px; border:1px solid #ddd; border-radius:8px;
       font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
     }
+ /* === 버튼 꾸밈 추가 === */
+    .toolbar {
+      display: grid;
+      gap: 12px;
+      margin: 24px 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .toolbar button {
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 12px;
+      transition: all .2s;
+    }
+    #btnShare {
+      border: 1px solid #90caf9;
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    #btnShare:hover { background:#bbdefb; }
+
+    #btnCopyText {
+      border: 1px solid #a5d6a7;
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    #btnCopyText:hover { background:#c8e6c9; }
+
+    #btnSubmit {
+      border: 1px solid #ef9a9a;
+      background: #ffebee;
+      color: #c62828;
+    }
+    #btnSubmit:hover { background:#ffcdd2; }
+    
   </style>
 </head>
 <body>
@@ -139,7 +178,7 @@
               <textarea id="notes" placeholder="예) 
 - 편한 복장 및 운동화 권장
 - 개인 물/우의 등 준비
-- 전세버스 대절 (개별 집결 없음)
+- 전세버스 대절 (또는 개별로 집결)
 - 일부 구간은 도보 이동 예정"></textarea>
             </div>
             <div class="row">
@@ -153,9 +192,9 @@
 
     <!-- 하단 툴바 -->
     <div class="toolbar no-print">
-      <button id="btnShare">저장(링크)</button>
-      <button id="btnCopyText">저장(텍스트)</button>
-      <button id="btnSubmit">전송(인사지원팀)</button>
+      <button id="btnShare">임시저장(수정용 링크)</button>
+      <button id="btnCopyText">안내문(공유용 텍스트)</button>
+      <button id="btnSubmit">제출(인사지원팀)</button>
     </div>
 
     <!-- 수동 복사용 박스 (툴바 바로 아래) -->
