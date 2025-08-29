@@ -205,7 +205,7 @@
             </div>
 
             <div class="row">
-              <label>버스 대절</label>
+             <label for="bus">버스 대절 <span class="badge-req">필수</span></label>
               <div>
                 <input id="bus" type="hidden" value="" />
                 <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
@@ -654,33 +654,43 @@
   });
 
   async function submitToSheet(){
-    showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
-    try{
-      const data = collect();
-      const todayStr = new Date().toISOString().slice(0,10);
-      if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); return; }
-      if(!data.date){ alert('일자를 입력해주세요.'); return; }
-      if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
-      if(!data.contact){ alert('문의처를 입력해주세요.'); return; }
+  showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
+  try{
+    const data = collect();
+    const todayStr = new Date().toISOString().slice(0,10);
 
-      const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
-      const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
-      let json;
-      try{ json = await res.json(); }
-      catch{
-        const t = await res.text();
-        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
-      }
-      if(res.ok && (json.status==='ok' || json.result==='ok')){
-        alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
-      }else{
-        alert(`제출 실패: ${json.error||res.status}`);
-      }
-    }catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('전송 중 오류: ' + msg);
-    }finally{ hideLoading(); }
+    // 필수 체크
+    if(!data.team) { alert('반을 선택해주세요.'); return; }
+    if(!data.title.trim()) { alert('제목을 입력해주세요.'); return; }
+    if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); return; }
+    if(!data.date){ alert('일자를 입력해주세요.'); return; }
+    if(!data.place.trim()) { alert('장소를 입력해주세요.'); return; }
+    if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
+    if(!data.bus) { alert('버스 대절 여부를 선택해주세요.'); return; }
+    if(!(data.notes||'').trim()) { alert('특이사항을 입력해주세요.'); return; }
+    if(!data.contact.trim()){ alert('문의처를 입력해주세요.'); return; }
+
+    const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
+    const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
+    let json;
+    try{ json = await res.json(); }
+    catch{
+      const t = await res.text();
+      throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+    }
+    if(res.ok && (json.status==='ok' || json.result==='ok')){
+      alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
+    }else{
+      alert(`제출 실패: ${json.error||res.status}`);
+    }
+  }catch(err){
+    const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+    alert('전송 중 오류: ' + msg);
+  }finally{
+    hideLoading();
   }
+}
+
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
   /* ===== 저장값 불러오기 ===== */
