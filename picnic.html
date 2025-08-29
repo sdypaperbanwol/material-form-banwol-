@@ -233,17 +233,24 @@
 - 15:00 귀가"></textarea>
             </div>
 
-            <div class="row">
-              <label for="bus">버스 대절 <span class="badge-req">필수</span></label>
-              <div>
-                <input id="bus" type="hidden" value="" />
-                <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
-                  <div class="chip" role="radio" tabindex="0" aria-checked="false" data-val="O">O</div>
-                  <div class="chip" role="radio" tabindex="-1" aria-checked="false" data-val="X">X</div>
-                </div>
-                <small style="color:var(--muted)">버스 대절 여부를 선택하세요 (O/X)</small>
-              </div>
-            </div>
+          <div class="row">
+  <label for="bus">버스 대절 <span class="badge-req">필수</span></label>
+  <div>
+    <input id="bus" type="hidden" value="" />
+    <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
+      <div class="chip" role="radio" tabindex="0" aria-checked="false" data-val="O">O</div>
+      <div class="chip" role="radio" tabindex="-1" aria-checked="false" data-val="X">X</div>
+    </div>
+    <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+      <label style="display:inline-flex; align-items:center; gap:6px; font-weight:700; color:#243b6b;">
+        <input id="busShow" type="checkbox" checked />
+        안내문에 버스 대절 표시
+      </label>
+      <small style="color:var(--muted)">체크 해제 시 텍스트/이미지 안내문에서만 숨김 (제출에는 포함)</small>
+    </div>
+    <small style="color:var(--muted)">버스 대절 여부를 선택하세요 (O/X)</small>
+  </div>
+</div>
 
             <div class="row">
               <label for="notes">특이사항</label>
@@ -628,17 +635,18 @@
 
   /* ===== 폼 수집 ===== */
   function collect(){
-    return {
-      team: document.getElementById('team').value,
-      title: document.getElementById('title').value,
-      date: document.getElementById('date').value,
-      schedule: document.getElementById('schedule').value,
-      bus: document.getElementById('bus').value,
-      place: document.getElementById('place').value,
-      notes: document.getElementById('notes').value,
-      contact: document.getElementById('contact').value,
-    };
-  }
+  return {
+    team: document.getElementById('team').value,
+    title: document.getElementById('title').value,
+    date: document.getElementById('date').value,
+    schedule: document.getElementById('schedule').value,
+    bus: document.getElementById('bus').value,
+    place: document.getElementById('place').value,
+    notes: document.getElementById('notes').value,
+    contact: document.getElementById('contact').value,
+    busShow: document.getElementById('busShow')?.checked ? 1 : 0,   // ✅ 추가
+  };
+}
 
   // (구방식) base64 디코딩 (호환)
   function decodeShare(b64){
@@ -658,33 +666,38 @@
     return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
   }
   function buildShareText(){
-    const d = collect();
-    const lines = [];
-    const dateStr = d.date ? weekdayKR(d.date) : '-';
-    const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
+  const d = collect();
+  const lines = [];
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
 
-    lines.push(header, '');
+  lines.push(header, '');
 
-    // [반] 줄에서 '기타:' 제거
-    if (d.team) {
-      const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
-      const teamLabel = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
-      lines.push(`[반] ${teamLabel}`);
-    }
-
-    lines.push(`[일자] ${dateStr}`);
-    lines.push(`[장소] ${d.place || '-'}`);
-    lines.push('[일정 요약]');
-    lines.push(...(d.schedule || '').split('\n').filter(Boolean));
-    if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
-    if ((d.notes || '').trim()){
-      lines.push('[특이사항]');
-      lines.push(...d.notes.split('\n').filter(Boolean));
-    }
-    lines.push(`[문의처] ${d.contact || '-'}`);
-
-    return lines.join('\n');
+  if (d.team) {
+    const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
+    const teamLabel = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
+    lines.push(`[반] ${teamLabel}`);
   }
+
+  lines.push(`[일자] ${dateStr}`);
+  lines.push(`[장소] ${d.place || '-'}`);
+  lines.push('[일정 요약]');
+  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+
+  // ✅ 체크박스가 켜져 있을 때만 버스 표기
+  if ((d.bus||'').trim() && d.busShow) {
+    lines.push(`[버스 대절] ${d.bus}`);
+  }
+
+  if ((d.notes || '').trim()){
+    lines.push('[특이사항]');
+    lines.push(...d.notes.split('\n').filter(Boolean));
+  }
+  lines.push(`[문의처] ${d.contact || '-'}`);
+
+  return lines.join('\n');
+}
+
 
   /* ===== 미리보기 모달 ===== */
   (function setupPreviewModal(){
@@ -876,6 +889,7 @@
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
+        document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
       }
     }else{
       document.getElementById('title').value = '야유회 안내';
@@ -913,6 +927,8 @@
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
+        document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
+
       }else{
         alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
       }
@@ -961,7 +977,7 @@
         <div><b>반</b> ${teamLine || '-'}</div>
         <div><b>일자</b> ${dateStr}</div>
         <div><b>장소</b> ${d.place || '-'}</div>
-        ${ (d.bus||'').trim() ? `<div><b>버스</b> ${d.bus}</div>` : '' }
+       ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${d.bus}</div>` : '' }
         <div><b>문의</b> ${d.contact || '-'}</div>
       </div>
 
