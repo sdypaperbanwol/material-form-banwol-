@@ -240,7 +240,6 @@
     <div class="toolbar no-print">
       <button id="btnShare">임시 저장하기</button>
       <button id="btnCopyText">안내문(텍스트)</button>
-      <button id="btnExportPDF">안내문(PDF)</button>
       <button id="btnExportIMG">안내문(이미지)</button>
       <button id="btnSubmit">인사지원팀 제출</button>
     </div>
@@ -966,24 +965,6 @@
     } finally { hideLoading(); }
   }
 
-  async function exportAsPDF(){
-    showLoading('PDF 생성 중…', '잠시만 기다려주세요');
-    try{
-      fillExportDom();
-      const target = document.getElementById('exportDoc');
-      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({orientation:'p', unit:'mm', format:'a4'});
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const imgW = pageWidth;
-      const imgH = (canvas.height / canvas.width) * imgW;
-
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
-      pdf.save((collect().title || '안내문') + '.pdf');
-    } finally { hideLoading(); }
-  }
 
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
   document.getElementById('btnExportPDF')?.addEventListener('click', exportAsPDF);
