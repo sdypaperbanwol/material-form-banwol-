@@ -763,20 +763,20 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
   // 대상
   const target = formatTarget(d.team);
   if (target) { 
-    lines.push(`[대상] ${target}`, ''); 
+    lines.push(`🎯 [대상] ${target}`, ''); 
   }
 
   // 일자
-  lines.push(`[일자] ${dateStr}`, '');
+  lines.push(`📅 [일자] ${dateStr}`, '');
 
   // 장소
-  lines.push(`[장소] ${d.place || '-'}`, '');
-  if (d.placeAddr) lines.push(`       (주소) ${d.placeAddr}`, '');
-  if (d.placeTel)  lines.push(`       (전화) ${d.placeTel}`, '');
-  if (d.placeLink) lines.push(`       (네이버) ${d.placeLink}`, '');
+  lines.push(`📍 [장소] ${d.place || '-'}`, '');
+  if (d.placeAddr) lines.push(`🏠 (주소) ${d.placeAddr}`, '');
+  if (d.placeTel)  lines.push(`☎️ (전화) ${d.placeTel}`, '');
+  if (d.placeLink) lines.push(`🔗 (네이버) ${d.placeLink}`, '');
 
   // 일정 요약
-  lines.push('[일정 요약]');
+  lines.push('📝 [일정 요약]');
   const schedule = (d.schedule || '').split('\n').filter(Boolean);
   if (schedule.length) {
     lines.push(...schedule);
@@ -787,18 +787,18 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
 
   // 버스
   if ((d.bus||'').trim() && d.busShow) {
-    lines.push(`[버스 대절] ${d.bus}`, '');
+    lines.push(`🚌 [버스 대절] ${d.bus}`, '');
   }
 
   // 특이사항
   if ((d.notes || '').trim()){
-    lines.push('[특이사항]');
+    lines.push('⚠️ [특이사항]');
     lines.push(...d.notes.split('\n').filter(Boolean));
     lines.push('');
   }
 
   // 문의처
-  lines.push(`[문의처] ${d.contact || '-'}`);
+  lines.push(`📞 [문의처] ${d.contact || '-'}`);
 
   return lines.join('\n');
 }
