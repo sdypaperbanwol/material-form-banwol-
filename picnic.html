@@ -216,6 +216,18 @@
               <label for="place">장소 <span class="badge-req">필수</span></label>
               <input id="place" type="text" placeholder="예) XXX (주소는 선택사항)" />
             </div>
+            <div id="placeTools" style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+  <button type="button" id="openMapSearch" style="padding:6px 10px; border:1px solid #ccd; border-radius:8px; background:#f7f9ff; font-weight:700; cursor:pointer;">
+    네이버 지도에서 검색
+  </button>
+  <label style="display:inline-flex; align-items:center; gap:6px; font-weight:700; color:#243b6b;">
+    <input id="includeSearchLinks" type="checkbox" />
+    (옵션) 검색 링크도 포함
+  </label>
+  <input id="placeUrl" type="text" placeholder="확정 지점의 네이버지도 URL 붙여넣기(선택)"
+         style="flex:1; min-width:260px; padding:8px 10px; border:1px solid #ccd; border-radius:8px;" />
+</div>
+
           </div>
 
           <!-- 운영 정보 -->
@@ -595,8 +607,25 @@ function buildMapSearchLinks(place){
       notes: document.getElementById('notes').value,
       contact: document.getElementById('contact').value,
       busShow: document.getElementById('busShow')?.checked ? 1 : 0,
+         placeUrl: (document.getElementById('placeUrl')?.value || '').trim(),
+    includeSearchLinks: document.getElementById('includeSearchLinks')?.checked ? 1 : 0,
     };
   }
+function buildNaverSearchLink(q){
+  const raw = (q || '').trim();
+  if (!raw) return '';
+  return `https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(raw)}`;
+}
+
+document.getElementById('openMapSearch')?.addEventListener('click', ()=>{
+  const place = document.getElementById('place')?.value || '';
+  const url = buildNaverSearchLink(place);
+  if (!url){ alert('장소를 먼저 입력해 주세요.'); document.getElementById('place')?.focus(); return; }
+  window.open(url, '_blank', 'noopener,noreferrer');
+});
+
+// 사용자가 place에 URL을 넣었다면 자동 검색 링크는 쓰지 않도록 보호
+function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
 
   /* 공유 텍스트 */
   function decodeShare(b64){
@@ -610,30 +639,38 @@ function buildMapSearchLinks(place){
     if (rawTitle) return rawTitle;
     return [dateTxt, target, '야유회'].filter(Boolean).join(' ');
   }
-  function buildShareText(){
-    const d = collect();
-    const lines = [];
-    const dateStr = d.date ? weekdayKR(d.date) : '-';
-    const header = makeShareTitle(d) || '안내문';
-    lines.push(header, '');
-    const target = formatTarget(d.team);
-    if (target) lines.push(`[대상] ${target}`);
-    lines.push(`[일자] ${dateStr}`);
-    lines.push(`[장소] ${d.place || '-'}`);
-     const links = buildMapSearchLinks(d.place);
-  if (links) {
-    lines.push(`[지도] 네이버: ${links.naver}`);
+ function buildShareText(){
+  const d = collect();
+  const lines = [];
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const header = makeShareTitle(d) || '안내문';
+  lines.push(header, '');
+  const target = formatTarget(d.team);
+  if (target) lines.push(`[대상] ${target}`);
+  lines.push(`[일자] ${dateStr}`);
+  lines.push(`[장소] ${d.place || '-'}`);
+
+  // === 지도 링크 정책 ===
+  const placeLooksURL = isURL(d.place);
+  if ((d.placeUrl||'').trim()){
+    lines.push(`[지도] 네이버: ${d.placeUrl.trim()}`);
+  } else if (d.includeSearchLinks && !placeLooksURL && (d.place||'').trim()){
+    const search = buildNaverSearchLink(d.place);
+    if (search) lines.push(`[지도] 네이버: ${search}`);
   }
-    lines.push('[일정 요약]');
-    lines.push(...(d.schedule || '').split('\n').filter(Boolean));
-    if ((d.bus||'').trim() && d.busShow) lines.push(`[버스 대절] ${d.bus}`);
-    if ((d.notes || '').trim()){
-      lines.push('[특이사항]');
-      lines.push(...d.notes.split('\n').filter(Boolean));
-    }
-    lines.push(`[문의처] ${d.contact || '-'}`);
-    return lines.join('\n');
+  // ======================
+
+  lines.push('[일정 요약]');
+  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+  if ((d.bus||'').trim() && d.busShow) lines.push(`[버스 대절] ${d.bus}`);
+  if ((d.notes || '').trim()){
+    lines.push('[특이사항]');
+    lines.push(...d.notes.split('\n').filter(Boolean));
   }
+  lines.push(`[문의처] ${d.contact || '-'}`);
+  return lines.join('\n');
+}
+
 
   /* 미리보기 모달 */
   (function setupPreviewModal(){
@@ -873,14 +910,20 @@ function buildMapSearchLinks(place){
         <div><b>일자</b> ${dateStr}</div>
         <div><b>장소</b> ${d.place || '-'}</div>
           <!-- === 지도 링크 추가 === -->
-    ${(()=>{
-      const links = buildMapSearchLinks(d.place);
-      return links ? `
-        <div style="margin-top:6px;font-size:12px;color:#333">
-          <b>지도</b>
-          <a href="${links.naver}">네이버</a> · 
-        </div>` : '';
-    })()}
+  ${(()=>{
+  const d2 = collect();
+  const placeLooksURL = isURL(d2.place);
+  const url = (d2.placeUrl||'').trim();
+  const search = (!url && d2.includeSearchLinks && !placeLooksURL && (d2.place||'').trim())
+    ? buildNaverSearchLink(d2.place) : '';
+  if (url){
+    return `<div style="margin-top:6px;font-size:12px;"><b>지도</b> <a href="${url}">네이버</a></div>`;
+  } else if (search){
+    return `<div style="margin-top:6px;font-size:12px;"><b>지도</b> <a href="${search}">네이버(검색)</a></div>`;
+  }
+  return '';
+})()}
+
     <!-- ===================== -->
         ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${d.bus}</div>` : '' }
         <div><b>문의</b> ${d.contact || '-'}</div>
