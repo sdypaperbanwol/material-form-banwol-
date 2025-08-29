@@ -1071,56 +1071,70 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
   </div>
 
   <script>
-  function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]) ); }
+ function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]) ); }
 
   function buildExportHTML(){
     const d = collect();
-    const dateStr = d.date ? weekdayKR(d.date) : '-';
-    const teamLine = formatTarget(d.team);
+    const dateStr   = d.date ? weekdayKR(d.date) : '-';
+    const teamLine  = formatTarget(d.team);
     const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
     const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
     const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine), '야유회'].filter(Boolean).join(' '));
 
-  const link = resolvedMapLink(d); // 네이버 지도 링크
-const showQR  = document.getElementById('exportShowQR')?.checked;
-const qrHtml = (showQR && link)
-  ? `<div style="margin-top:8px; display:flex; align-items:center; gap:10px">
-       <img src="${makeQrSrc(link)}" alt="지도 QR" width="120" height="120" crossorigin="anonymous">
-       <div style="font-size:12px;color:#555">네이버 지도에서 위치 확인</div>
-     </div>`
-  : '';
+    // ✅ 토글값 읽기
+    const showURL = document.getElementById('exportShowURL')?.checked;
+    const showQR  = document.getElementById('exportShowQR')?.checked;
+
+    // ✅ 최종 지도 링크(텍스트/QR 둘 다 이 값 기준)
+    const link = resolvedMapLink(d);
+
+    // ✅ QR 블럭(체크되고 링크가 있을 때만)
+    const qrHtml = (showQR && link)
+      ? `<div style="margin-top:8px; display:flex; align-items:center; gap:10px">
+           <img src="${makeQrSrc(link)}" alt="지도 QR" width="120" height="120" crossorigin="anonymous">
+           <div style="font-size:12px;color:#555">네이버 지도에서 위치 확인</div>
+         </div>`
+      : '';
 
     return `
-      <div class="export-title">${title}</div>
-     <div class="export-meta">
-  <div><b>대상</b> ${teamLine || '-'}</div>
-  <div><b>일자</b> ${dateStr}</div>
-  <div><b>장소</b> ${d.place || '-'}</div>
+      <div class="export-title">${escapeHTML(title)}</div>
+      <div class="export-meta">
+        <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
+        <div><b>일자</b> ${escapeHTML(dateStr)}</div>
+        <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
 
-  <!-- ▼ 이미지에 주소/전화 텍스트로 출력 -->
-  ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
-  ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`  : '' }
-  <!-- 링크는 클릭이 안 되니 굳이 안 넣어도 되고,
-       필요하면 문자 그대로 노출은 가능 -->
-  ${ d.placeLink ? `<div style="font-size:12px;color:#555"><b>네이버</b> ${escapeHTML(d.placeLink)}</div>` : '' }
-  <!-- ▲ -->
+        ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
+        ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`  : '' }
 
-  ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${d.bus}</div>` : '' }
-  <div><b>문의</b> ${d.contact || '-'}</div>
-</div>
+        <!-- ✅ URL 토글 반영: 체크된 경우에만 출력 -->
+        ${ (showURL && link)
+            ? `<div style="font-size:12px;color:#555"><b>네이버</b> ${escapeHTML(link)}</div>`
+            : '' }
+
+        ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${escapeHTML(d.bus)}</div>` : '' }
+        <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
+
+        <!-- ✅ QR 블럭 실제 삽입 -->
+        ${qrHtml}
+      </div>
 
       <div class="export-sec-title">일정 요약</div>
-      ${scheduleLines.length
-        ? `<ul class="export-list">${scheduleLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
-        : `<div style="color:#999">-</div>`}
+      ${ scheduleLines.length
+          ? `<ul class="export-list">${scheduleLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+          : `<div style="color:#999">-</div>` }
 
-      ${notesLines.length
-        ? `<div class="export-sec-title">특이사항</div>
-           <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
-        : '' }
+      ${ notesLines.length
+          ? `<div class="export-sec-title">특이사항</div>
+             <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+          : '' }
     `;
   }
-  function fillExportDom(){ const inner = document.getElementById('exportInner'); if(!inner) return; inner.innerHTML = buildExportHTML(); }
+
+  function fillExportDom(){
+    const inner = document.getElementById('exportInner');
+    if(!inner) return;
+    inner.innerHTML = buildExportHTML();
+  }
 
   async function exportAsImage(){
     showLoading('이미지 생성 중…', '잠시만 기다려주세요');
