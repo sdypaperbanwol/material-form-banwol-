@@ -430,17 +430,35 @@ function setSelectedPlace(item){
     else { input.style.display='none'; input.value=''; }
     renderTeamChips();
   }
-    function resolveNaverLink(item){
-  if(item.link && item.link.includes('/entry/place/')){
-    return item.link; // 네이버 플레이스 공식 링크
+    function isNaverPlaceUrl(u){
+  try{
+    const url = new URL(u);
+    const host = url.hostname;
+    const path = url.pathname || '';
+    // naver.me(공유 단축) 허용
+    if (/naver\.me$/.test(host)) return true;
+    // naver 지도/플레이스 도메인만 허용
+    if (!/(^|\.)naver\.com$/.test(host)) return false;
+    // 지도/플레이스 관련 경로만 허용
+    return /^(\/v5|\/p\/entry|\/entry\/place|\/map|\/place)/.test(path);
+  }catch(_){ return false; }
+}
+
+ function resolveNaverLink(item){
+  const link = item.link || item.url || '';
+  if (link && isNaverPlaceUrl(link)) {
+    return link; // 네이버 지도/플레이스/단축만 통과
   }
-  // 좌표 기반 지도 URL (mapx, mapy가 있으면 활용)
-  if(item.mapx && item.mapy){
+  // 좌표가 있으면 v5 좌표 링크 우선
+  if (item.mapx && item.mapy) {
     return `https://map.naver.com/v5/?c=${item.mapx},${item.mapy},15,0,0,0,dh`;
   }
-  // fallback: 그냥 검색 링크
-  return buildNaverSearchLink(item.title || '');
+  // 마지막 안전장치: 검색 링크 (이름+주소 조합이 있으면 더 정확)
+  const q = [item.title || '', item.roadAddress || item.address || '']
+              .filter(Boolean).join(' ');
+  return buildNaverSearchLink(q || (item.title || ''));
 }
+
 
   (function bindCustomTeam(){
     const chips = document.getElementById('teamChips'); const customInput = document.getElementById('teamCustom');
@@ -519,13 +537,14 @@ function setSelectedPlace(item){
         if(!res.ok) throw new Error(json && json.error || ('HTTP '+res.status));
         const rows = Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
         if(!rows.length){ this.listEl.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>'; return; }
-       // placeModal.search() 안의 mapRow 부분 교체
-const mapRow = (r)=>({
+      const mapRow = (r) => ({
   name: r.name || r.title || r.place_name || '',
   road: r.roadAddress || r.road_address || r.road || '',
   jibun: r.jibunAddress || r.jibun_address || r.address || '',
   tel : r.telephone || r.tel || '',
-  url : r.mapUrl || r.link || r.url || ''
+  url : r.mapUrl || r.link || r.url || '',
+  mapx: r.mapx || r.x || r.lng || '',
+  mapy: r.mapy || r.y || r.lat || ''
 });
 
        // this.listEl.innerHTML 생성 부분 교체
@@ -537,11 +556,14 @@ this.listEl.innerHTML = rows.map(r=>{
               data-name="${encodeURIComponent(x.name)}"
               data-addr="${encodeURIComponent(addr)}"
               data-tel="${encodeURIComponent(x.tel)}"
-              data-link="${encodeURIComponent(x.url)}">
+              data-link="${encodeURIComponent(x.url)}"
+              data-x="${encodeURIComponent(x.mapx)}"
+              data-y="${encodeURIComponent(x.mapy)}">
             <b>${escapeHTML(x.name)}</b>
             <small>${escapeHTML(addr)}</small>
           </div>`;
 }).join('');
+
 
        // this.listEl.querySelectorAll('.place-item').forEach(...) 내부 교체
 this.listEl.querySelectorAll('.place-item').forEach(el=>{
@@ -549,23 +571,35 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
     const name = decodeURIComponent(el.getAttribute('data-name')||'');
     const addr = decodeURIComponent(el.getAttribute('data-addr')||'');
     const tel  = decodeURIComponent(el.getAttribute('data-tel')||'');
-    const link = decodeURIComponent(el.getAttribute('data-link')||'');
-    const finalUrl = link || buildNaverSearchLink(name || q);
+    const raw  = decodeURIComponent(el.getAttribute('data-link')||'');
+    const mapx = decodeURIComponent(el.getAttribute('data-x')||'');
+    const mapy = decodeURIComponent(el.getAttribute('data-y')||'');
+
+    // 블로그/기타 URL은 버리고 → 좌표/검색 기반 네이버 링크로 강제 정정
+    const finalUrl = resolveNaverLink({
+      title: name,
+      roadAddress: addr,
+      address: addr,
+      telephone: tel,
+      link: raw,
+      mapx, mapy
+    });
 
     // hidden들 채우기
     setSelectedPlace({
       title: name,
-      roadAddress: addr,   // setSelectedPlace에서 roadAddress 우선 사용
+      roadAddress: addr,
       address: addr,
       telephone: tel,
-      link: finalUrl
+      link: finalUrl,
+      mapx, mapy
     });
 
-    // 화면 미리보기/버튼 링크 갱신
+    // 미리보기 박스에도 정정된 링크 사용
     setPickedPlaceLink(finalUrl, name || '지도열기');
 
-    // 입력창에도 상호명 세팅
-    if(name){ document.getElementById('place').value = name; }
+    // 입력창 상호명
+    if (name) document.getElementById('place').value = name;
 
     this.close();
   });
