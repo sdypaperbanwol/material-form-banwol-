@@ -28,7 +28,7 @@
       display:inline-block;padding:6px 12px;
     }
 
-    /* === 폼 로우(라벨/필드) === */
+    /* === 폼 로우 === */
     .row{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:start;
       padding:10px;border:1px dashed #eee;border-radius:12px;background:#fafbff}
     .row + .row{margin-top:8px}
@@ -45,7 +45,7 @@
     }
     textarea{min-height:110px;resize:vertical}
 
-    /* 포커스/에러 가독성 */
+    /* 포커스/에러 */
     .row:focus-within{
       background:#ffffff;border-color:#cfd8ff; box-shadow:0 0 0 3px rgba(63,81,181,.08);
     }
@@ -53,21 +53,26 @@
       border-color:#9fa8da;box-shadow:0 0 0 2px rgba(63,81,181,.12) inset;
     }
 
-   .chip{
-  border:1px solid var(--line);
-  background:#fff;
-  border-radius:8px;        /* 살짝 둥근 네모 */
-  cursor:pointer;
-  padding:10px 14px;
-  font-weight:700;
-  min-width:44px;
-  text-align:left;          /* ← 왼쪽 정렬 */
-  user-select:none;
-  line-height:1.4;
-  box-shadow:0 1px 2px rgba(0,0,0,.04);
-  white-space:normal;       /* 2줄 허용 */
-}
+    /* 칩 공통 (반, 버스) */
+    .chip-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .chip{
+      border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;
+      padding:6px 14px;font-weight:700;min-width:44px;text-align:center;user-select:none;
+      box-shadow:0 1px 2px rgba(0,0,0,.04);
+    }
+    .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
 
+    /* 특이사항 칩 전용 스타일 (네모, 좌측 정렬, 항상 2줄 높이) */
+    #notesPresets .chip{
+      border-radius:8px;
+      padding:10px 14px;
+      text-align:left;
+      line-height:1.4;
+      white-space:normal;
+      min-height:44px;
+      display:flex;
+      align-items:center;
+    }
 
     /* 우하단 배지 */
     #busBadge{
@@ -92,7 +97,7 @@
     .loading-sub{font-size:12px; color:#777}
     .toolbar [disabled]{opacity:.6; cursor:not-allowed}
 
-    /* 하단 툴바(세로 버튼) */
+    /* 하단 툴바 */
     .toolbar {
       display: grid; gap: 12px; margin: 24px 0; padding: 16px;
       border: 1px solid var(--line); border-radius: 16px; background: #fff;
@@ -374,9 +379,10 @@
     }
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      try{ await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; }
-      catch(_){}
-}
+      try { await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; }
+      catch(_) {}
+    } // ← 누락되었던 닫는 중괄호 보완
+
     if (legacyCopy(toCopy)) { return { method:'legacy' }; }
 
     alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
@@ -392,30 +398,17 @@
   }
 
   /* ===== 팀 칩 유틸 ===== */
-  function parseTeams(str){
-    return (str || '').split(',').map(s => s.trim()).filter(Boolean);
-  }
-  function teamsToString(arr){
-    return Array.from(new Set(arr)).join(',');
-  }
-  function getTeamsArray(){
-    return parseTeams(document.getElementById('team').value);
-  }
-  function setTeamHiddenFromArray(arr){
-    document.getElementById('team').value = teamsToString(arr);
-  }
-  function hasAnyCustomTeam(){
-    return getTeamsArray().some(v => v==='기타' || v.startsWith('기타:'));
-  }
+  function parseTeams(str){ return (str || '').split(',').map(s => s.trim()).filter(Boolean); }
+  function teamsToString(arr){ return Array.from(new Set(arr)).join(','); }
+  function getTeamsArray(){ return parseTeams(document.getElementById('team').value); }
+  function setTeamHiddenFromArray(arr){ document.getElementById('team').value = teamsToString(arr); }
+  function hasAnyCustomTeam(){ return getTeamsArray().some(v => v==='기타' || v.startsWith('기타:')); }
   function renderTeamChips(){
     const arr = getTeamsArray();
     document.querySelectorAll('#teamChips .chip').forEach(chip=>{
       const val = chip.dataset.val;
-      if(val === '기타'){
-        chip.classList.toggle('selected', hasAnyCustomTeam());
-      }else{
-        chip.classList.toggle('selected', arr.includes(val));
-      }
+      if(val === '기타'){ chip.classList.toggle('selected', hasAnyCustomTeam()); }
+      else { chip.classList.toggle('selected', arr.includes(val)); }
     });
   }
   function toggleTeam(val){
@@ -427,7 +420,7 @@
     renderTeamChips();
   }
 
-  /* 리스트형 칩(일반 반들) */
+  /* 일반 반 칩 클릭 */
   (function bindTeamChips(){
     const group = document.getElementById('teamChips');
     if(!group) return;
@@ -440,9 +433,7 @@
   })();
 
   /* ===== 기타 직접입력 ===== */
-  function removeAllCustomTeamFromArray(arr){
-    return (arr||[]).filter(v => v!=='기타' && !v.startsWith('기타:'));
-  }
+  function removeAllCustomTeamFromArray(arr){ return (arr||[]).filter(v => v!=='기타' && !v.startsWith('기타:')); }
   function restoreCustomTeamFromTeamValue(){
     const arr = getTeamsArray();
     const custom = arr.find(v => v.startsWith('기타:'));
@@ -466,14 +457,11 @@
       const chip = e.target.closest('.chip');
       if(!chip) return;
       if(chip.dataset.val === '기타'){
-        // 토글: 열기/닫기
         const opening = (customInput.style.display === 'none' || customInput.style.display === '');
         if(opening){
           customInput.style.display = 'inline-block';
-          // '기타' 토글을 team 값에 직접 추가하지는 않음 (입력값으로만 관리)
           customInput.focus();
         }else{
-          // 닫을 때는 모든 기타 관련값 제거
           const arr = removeAllCustomTeamFromArray(getTeamsArray());
           setTeamHiddenFromArray(arr);
           customInput.value = '';
@@ -486,9 +474,7 @@
     customInput.addEventListener('input', ()=>{
       const val = customInput.value.trim();
       let arr = removeAllCustomTeamFromArray(getTeamsArray());
-      if(val){
-        arr.push('기타:'+val);
-      }
+      if(val){ arr.push('기타:'+val); }
       setTeamHiddenFromArray(arr);
       renderTeamChips();
     });
@@ -527,12 +513,11 @@
 
   /* ===== 특이사항 템플릿(칩) ===== */
   const NOTES_PRESETS = [
-  '- 편한 복장과 개인 물·우의 등을 준비해 주세요.',
-  '- 버스 대절 관계로 조금 여유 있게 집결해 주세요.',
-  '- 자차·대중교통을 이용해 개별 집결해 주세요.',
-  '- 자차 이용 시, 인근 공영·노상 주차장을 이용해 주세요.',
-  '- 장소에 따라 내부 주차장이 마련되어 있습니다.'
-
+    '- 편한 복장과 개인 물·우의 등을 준비해 주세요.',
+    '- 버스 대절 관계로 원활한 출출을 위해 여유 있게 집결해 주세요.'.replace('출출','출발'), // 오타 방지
+    '- 자차·대중교통을 이용해 개별 집결해 주세요.',
+    '- 자차 이용 시, 인근 공영·노상 주차장을 이용해 주세요.',
+    '- 장소에 따라 내부 주차장이 마련되어 있습니다.',
   ];
   function getNotesLines(){
     const raw = (document.getElementById('notes').value || '')
@@ -619,38 +604,34 @@
     if (rawTitle) return rawTitle;
     return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
   }
-function buildShareText(){
-  const d = collect();
-  const lines = [];
-  const dateStr = d.date ? weekdayKR(d.date) : '-';
-  const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
+  function buildShareText(){
+    const d = collect();
+    const lines = [];
+    const dateStr = d.date ? weekdayKR(d.date) : '-';
+    const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
 
-  lines.push(header, '');
+    lines.push(header, '');
 
-  if (d.team) {
-    // team 값 분해 → '기타:xxx'면 접두어 빼고 출력
-    const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
-    const teamLabel = arr.map(v=>{
-      if(v.startsWith('기타:')) return v.replace(/^기타:/,'');
-      return v;
-    }).join(', ');
-    lines.push(`[반] ${teamLabel}`);
+    // [반] 줄에서 '기타:' 접두어 제거해서 출력
+    if (d.team) {
+      const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
+      const teamLabel = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
+      lines.push(`[반] ${teamLabel}`);
+    }
+
+    lines.push(`[일자] ${dateStr}`);
+    lines.push(`[장소] ${d.place || '-'}`);
+    lines.push('[일정 요약]');
+    lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+    if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
+    if ((d.notes || '').trim()){
+      lines.push('[특이사항]');
+      lines.push(...d.notes.split('\n').filter(Boolean));
+    }
+    lines.push(`[문의처] ${d.contact || '-'}`);
+
+    return lines.join('\n');
   }
-
-  lines.push(`[일자] ${dateStr}`);
-  lines.push(`[장소] ${d.place || '-'}`);
-  lines.push('[일정 요약]');
-  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
-  if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
-  if ((d.notes || '').trim()){
-    lines.push('[특이사항]');
-    lines.push(...d.notes.split('\n').filter(Boolean));
-  }
-  lines.push(`[문의처] ${d.contact || '-'}`);
-
-  return lines.join('\n');
-}
-
 
   /* ===== 미리보기 모달 ===== */
   (function setupPreviewModal(){
@@ -675,12 +656,8 @@ function buildShareText(){
       modal.hidden = true;
       modal.removeEventListener('click', onBackdropClick);
     }
-    function onBackdropClick(e){
-      if (e.target === modal) closePreviewModal();
-    }
-    function onEsc(e){
-      if (e.key === 'Escape') closePreviewModal();
-    }
+    function onBackdropClick(e){ if (e.target === modal) closePreviewModal(); }
+    function onEsc(e){ if (e.key === 'Escape') closePreviewModal(); }
     async function copyPreviewText(){
       const text = ta.value || '';
       if (navigator.clipboard && navigator.clipboard.writeText){
@@ -699,10 +676,8 @@ function buildShareText(){
       toast.classList.add('show');
       setTimeout(()=> toast.classList.remove('show'), 1500);
     }
-
     window.openPreviewModal = openPreviewModal;
     window.closePreviewModal = closePreviewModal;
-
     btnCopy?.addEventListener('click', copyPreviewText);
     btnClose2?.addEventListener('click', closePreviewModal);
   })();
@@ -755,10 +730,6 @@ function buildShareText(){
 
       // 필수 체크 (특이사항은 선택)
       if(!data.team) { alert('반을 선택해주세요.'); return; }
-      if(data.team.includes('기타:') && data.team.endsWith('기타:')){
-  alert('기타 반명을 입력해주세요.');
-  return;
-}
       if(!data.title.trim()) { alert('제목을 입력해주세요.'); return; }
       if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); return; }
       if(!data.date){ alert('일자를 입력해주세요.'); return; }
