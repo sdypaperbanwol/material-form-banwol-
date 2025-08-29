@@ -528,6 +528,16 @@
       .split('\n').map(s => s.trim()).filter(Boolean);
     return raw;
   }
+    function buildMapSearchLinks(place) {
+  const q = encodeURIComponent((place || '').trim());
+  if (!q) return null;
+  return {
+    naver: `https://m.map.naver.com/search2/search.naver?query=${q}`,
+    kakao: `https://map.kakao.com/?q=${q}`,
+    google: `https://www.google.com/maps/search/?api=1&query=${q}`,
+  };
+}
+
   function setNotesLines(lines){
     const ta = document.getElementById('notes');
     ta.value = (lines || []).join('\n');
