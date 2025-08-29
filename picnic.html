@@ -26,7 +26,8 @@
     border:1px solid var(--sec-line);border-radius:999px;
     display:inline-block;padding:6px 12px;
   }
-
+.toolbar label { white-space: nowrap; }
+#exportWidth { min-width: 160px; }
   .row{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:start;
     padding:10px;border:1px dashed #eee;border-radius:12px;background:#fafbff}
   .row + .row{margin-top:8px}
@@ -275,11 +276,8 @@
           </select>
         </label>
           <!-- ✅ 여기에 추가 -->
-    <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
-      <input id="exportShowURL" type="checkbox"> 이미지에 지도 URL 표시
-    </label>
-
-    <!-- ✅ QR 토글이 있다면, 그 옆이나 아래에 둬도 됩니다 -->
+    
+        <!-- ✅ QR 토글이 있다면, 그 옆이나 아래에 둬도 됩니다 -->
     <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
       <input id="exportShowQR" type="checkbox" checked> 이미지에 지도 QR 포함
     </label>
