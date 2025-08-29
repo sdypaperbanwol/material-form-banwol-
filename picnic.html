@@ -187,14 +187,25 @@
               </div>
             </div>
 
-            <div class="row">
-              <label for="notes">특이사항</label>
-              <textarea id="notes" placeholder="예) 
+   <div class="row">
+  <label for="notes">특이사항</label>
+  <div>
+    <!-- 템플릿 칩 -->
+    <div class="chip-group" id="notesPresets" role="group" aria-label="특이사항 템플릿">
+      <!-- JS에서 자동 렌더링 -->
+    </div>
+    <small style="color:var(--muted)">클릭 시 특이사항에 추가/제거됩니다(중복 방지)</small>
+
+    <!-- 실제 입력 textarea (JS가 참조하는 #notes) -->
+    <textarea id="notes" placeholder="예)
 - 편한 복장 및 운동화 권장
 - 개인 물/우의 등 준비
-- 전세버스 대절 (개별 집결 없음)
+- 전세버스 대절(개별 집결 없음)
 - 일부 구간은 도보 이동 예정"></textarea>
-            </div>
+  </div>
+</div>
+
+
             <div class="row">
               <label for="contact">문의처</label>
               <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
@@ -411,6 +422,96 @@
       setBus(target.getAttribute('data-val'));
     });
   })();
+
+/* ===== 특이사항 템플릿(칩) ===== */
+const NOTES_PRESETS = [
+  '편한 복장과 운동화를 착용해 주세요.',
+  '대중교통·자차로 개별 집결해 주세요.',
+  '버스 대절 관계로 정시에 집결해 주세요.',
+  '개인 물/우의 등 준비해주세요.',
+  '음료는 준비되어 있습니다.',
+  '장거리 일정이므로 정시에 집결해 주세요.',
+];
+
+function getNotesLines() {
+  const raw = (document.getElementById('notes').value || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+  return raw;
+}
+
+function setNotesLines(lines) {
+  const ta = document.getElementById('notes');
+  ta.value = (lines || []).join('\n');
+  syncNotesPresetSelection(); // 내용 반영 후 칩 상태 동기화
+}
+
+function toggleNotePreset(text) {
+  const lines = getNotesLines();
+  const i = lines.indexOf(text);
+  if (i >= 0) {
+    lines.splice(i, 1);           // 이미 있으면 제거
+  } else {
+    lines.push(text);             // 없으면 추가(맨 아래 줄)
+  }
+  setNotesLines(lines);
+}
+
+function renderNotesPresets() {
+  const box = document.getElementById('notesPresets');
+  if (!box) return;
+  box.innerHTML = '';
+  NOTES_PRESETS.forEach(txt => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = txt;
+    chip.tabIndex = 0;
+    chip.setAttribute('role', 'button');
+    chip.setAttribute('data-text', txt);
+    box.appendChild(chip);
+  });
+
+  // 클릭/키보드로 토글
+  box.addEventListener('click', e => {
+    const c = e.target.closest('.chip');
+    if (!c) return;
+    toggleNotePreset(c.getAttribute('data-text'));
+  });
+  box.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const c = e.target.closest('.chip');
+      if (!c) return;
+      e.preventDefault();
+      toggleNotePreset(c.getAttribute('data-text'));
+    }
+  });
+
+  // 초기 선택 상태 반영
+  syncNotesPresetSelection();
+}
+
+function syncNotesPresetSelection() {
+  const selected = new Set(getNotesLines());
+  document.querySelectorAll('#notesPresets .chip').forEach(chip => {
+    const t = chip.getAttribute('data-text');
+    chip.classList.toggle('selected', selected.has(t));
+  });
+}
+
+// 사용자가 직접 메모 입력/삭제해도 칩 상태가 맞춰지도록
+(function bindNotesInputSync(){
+  const ta = document.getElementById('notes');
+  if (!ta) return;
+  ta.addEventListener('input', () => {
+    // 입력이 바뀌면 칩 선택상태 동기화
+    syncNotesPresetSelection();
+  });
+})();
+
+// 초기 렌더 (init() 실행 전에 불러도 OK)
+renderNotesPresets();
+
 
   /* ===== 폼 수집 ===== */
   function collect(){
