@@ -291,15 +291,12 @@
       </select>
     </label>
   </div>
-    
-    <!-- 하단 툴바 -->
-    <div class="toolbar no-print">
-      <button id="btnShare">임시 저장하기</button>
-      <button id="btnCopyText">안내문(텍스트)</button>
-      <button id="btnExportIMG">안내문(이미지)</button>
-      <button id="btnSubmit">인사지원팀 제출</button>
-    </div>
-  </div>
+
+  <button id="btnShare">임시 저장하기</button>
+  <button id="btnCopyText">안내문(텍스트)</button>
+  <button id="btnExportIMG">안내문(이미지)</button>
+  <button id="btnSubmit">인사지원팀 제출</button>
+</div>
 
   <!-- 스크롤 배지 -->
   <div id="busBadge" aria-hidden="true">버스: <span id="busBadgeVal">-</span></div>
@@ -815,6 +812,20 @@
       const data = collect();
       const todayStr = new Date().toISOString().slice(0,10);
 
+// ✅ (추가 #1) 제출 직전: 현재 페이지 주소/키 추출
+    const urlObj   = new URL(location.href);
+    const shareKey = urlObj.searchParams.get('k') || ''; // 임시저장 키가 있으면 사용
+    const pageUrl  = urlObj.toString();                  // 현재 페이지 주소(키 포함일 수 있음)
+
+    // ✅ (추가 #2) payload에 주소/키 포함
+    const payload = {
+      ...data,
+      submitted_at: new Date().toISOString(), // J열(클라이언트 제출시각)
+      client_url: pageUrl,                    // K열(클라이언트 URL)로 저장할 값
+      share_key: shareKey,                    // (옵션) 서버에서 URL 재구성할 때 사용
+      mode: 'append'
+    };
+      
       // (기타 입력 강제)
       const customOpen = document.getElementById('teamCustom')?.style.display !== 'none';
       const customVal = document.getElementById('teamCustom')?.value.trim();
@@ -849,7 +860,6 @@
         return;
       }
 
-      const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
       const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
       let json;
       try{ json = await res.json(); }
