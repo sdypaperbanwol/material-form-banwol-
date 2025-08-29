@@ -484,8 +484,6 @@ function buildMapSearchLinks(place){
   const q = encodeURIComponent(raw);
   return {
     naver: `https://m.map.naver.com/search2/search.naver?query=${q}`,
-    kakao: `https://map.kakao.com/?q=${q}`,
-    google: `https://www.google.com/maps/search/?api=1&query=${q}`,
   };
 }
 
@@ -625,8 +623,6 @@ function buildMapSearchLinks(place){
      const links = buildMapSearchLinks(d.place);
   if (links) {
     lines.push(`[지도] 네이버: ${links.naver}`);
-    lines.push(`       카카오: ${links.kakao}`);
-    lines.push(`       구글  : ${links.google}`);
   }
     lines.push('[일정 요약]');
     lines.push(...(d.schedule || '').split('\n').filter(Boolean));
@@ -883,8 +879,6 @@ function buildMapSearchLinks(place){
         <div style="margin-top:6px;font-size:12px;color:#333">
           <b>지도</b>
           <a href="${links.naver}">네이버</a> · 
-          <a href="${links.kakao}">카카오</a> · 
-          <a href="${links.google}">구글</a>
         </div>` : '';
     })()}
     <!-- ===================== -->
