@@ -326,7 +326,7 @@
 
   <!-- ===== 앱 스크립트 (메인) ===== -->
   <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbw5PHeh1YRRndXhHi3hk3ssDoAYnUZ5uRCXoHFhk8vfr1_H1AbnPL8FXLL6GeGJVN_F/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzowA0wVkt_R92BkUHY8DFANwTB0RK01YkzW_Pl2Q_14lUhkrhz2_oP6ef2sbfllv3l/exec';
 
   /* fetch 타임아웃 */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
@@ -478,6 +478,16 @@
       e.preventDefault(); toggleTeam(chip.dataset.val);
     });
   })();
+function buildMapSearchLinks(place){
+  const raw = (place || '').trim();
+  if (!raw || /^https?:\/\//i.test(raw)) return null; // 장소가 URL이면 지도링크 생성 스킵
+  const q = encodeURIComponent(raw);
+  return {
+    naver: `https://m.map.naver.com/search2/search.naver?query=${q}`,
+    kakao: `https://map.kakao.com/?q=${q}`,
+    google: `https://www.google.com/maps/search/?api=1&query=${q}`,
+  };
+}
 
   /* 버스 칩 */
   function setBus(val){
@@ -528,16 +538,7 @@
       .split('\n').map(s => s.trim()).filter(Boolean);
     return raw;
   }
-    function buildMapSearchLinks(place) {
-  const q = encodeURIComponent((place || '').trim());
-  if (!q) return null;
-  return {
-    naver: `https://m.map.naver.com/search2/search.naver?query=${q}`,
-    kakao: `https://map.kakao.com/?q=${q}`,
-    google: `https://www.google.com/maps/search/?api=1&query=${q}`,
-  };
-}
-
+   
   function setNotesLines(lines){
     const ta = document.getElementById('notes');
     ta.value = (lines || []).join('\n');
