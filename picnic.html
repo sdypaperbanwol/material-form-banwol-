@@ -671,11 +671,16 @@
 
   lines.push(header, '');
 
-  if (d.team) {
-    const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
-    const teamLabel = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
-    lines.push(`[반] ${teamLabel}`);
-  }
+  let teamLine = '-';
+if (d.team) {
+  const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
+  teamLine = arr.map(v => {
+    if (v.startsWith('기타:')) return v.replace(/^기타:/,'');  
+    return v + '반';
+  }).join(', ');
+}
+
+
 
   lines.push(`[일자] ${dateStr}`);
   lines.push(`[장소] ${d.place || '-'}`);
@@ -972,7 +977,7 @@
     return `
       <div class="export-title">${title}</div>
       <div class="export-meta">
-        <div><b>반</b> ${teamLine || '-'}</div>
+        <div><b>대상</b> ${teamLine || '-'}</div>
         <div><b>일자</b> ${dateStr}</div>
         <div><b>장소</b> ${d.place || '-'}</div>
        ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${d.bus}</div>` : '' }
