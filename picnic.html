@@ -53,14 +53,21 @@
       border-color:#9fa8da;box-shadow:0 0 0 2px rgba(63,81,181,.12) inset;
     }
 
-    /* 칩 공통 */
-    .chip-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .chip{
-      border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;
-      padding:6px 14px;font-weight:700;min-width:44px;text-align:center;user-select:none;
-      box-shadow:0 1px 2px rgba(0,0,0,.04);
-    }
-    .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
+   .chip{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:8px;        /* 살짝 둥근 네모 */
+  cursor:pointer;
+  padding:10px 14px;
+  font-weight:700;
+  min-width:44px;
+  text-align:left;          /* ← 왼쪽 정렬 */
+  user-select:none;
+  line-height:1.4;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+  white-space:normal;       /* 2줄 허용 */
+}
+
 
     /* 우하단 배지 */
     #busBadge{
@@ -520,10 +527,11 @@
 
   /* ===== 특이사항 템플릿(칩) ===== */
   const NOTES_PRESETS = [
-  '- 편한 복장(운동화)과 개인 물·우의 등을 준비해 주세요.',
-  '- 버스 대절 관계로 원활한 진행을 위해 정시에 집결해 주세요.',
-  '- 대중교통을 이용해 개별 집결해 주세요.',
-  '- 자차 이용 시, 인근 공영·노상 주차장 또는 장소 내 마련된 주차장을 이용해 주세요.'
+  '- 편한 복장과 개인 물·우의 등을 준비해 주세요.',
+  '- 버스 대절 관계로 조금 여유 있게 집결해 주세요.',
+  '- 자차·대중교통을 이용해 개별 집결해 주세요.',
+  '- 자차 이용 시, 인근 공영·노상 주차장을 이용해 주세요.',
+  '- 장소에 따라 내부 주차장이 마련되어 있습니다.'
 
   ];
   function getNotesLines(){
