@@ -444,20 +444,21 @@ function setSelectedPlace(item){
   }catch(_){ return false; }
 }
 
- function resolveNaverLink(item){
+function resolveNaverLink(item){
   const link = item.link || item.url || '';
-  if (link && isNaverPlaceUrl(link)) {
-    return link; // 네이버 지도/플레이스/단축만 통과
-  }
-  // 좌표가 있으면 v5 좌표 링크 우선
-  if (item.mapx && item.mapy) {
-    return `https://map.naver.com/v5/?c=${item.mapx},${item.mapy},15,0,0,0,dh`;
-  }
-  // 마지막 안전장치: 검색 링크 (이름+주소 조합이 있으면 더 정확)
-  const q = [item.title || '', item.roadAddress || item.address || '']
-              .filter(Boolean).join(' ');
-  return buildNaverSearchLink(q || (item.title || ''));
+  try{
+    const u = new URL(link);
+    const host = u.hostname;
+    const path = u.pathname || '';
+    if (/naver\.me$/.test(host) || (/(^|\.)naver\.com$/.test(host) && /^(\/v5|\/place|\/p\/entry|\/entry\/place|\/map)/.test(path))) {
+      return link; // 네이버 지도/플레이스만 허용
+    }
+  }catch(_){}
+
+  // fallback: 상호명+주소 검색
+  return buildNaverSearchLink(item.title || '', item.roadAddress || item.address || '');
 }
+
 
 
   (function bindCustomTeam(){
