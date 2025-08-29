@@ -751,34 +751,58 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
     return buildNaverSearchLink(place);       // 마지막 안전장치: 검색 링크
   }
 
-  function buildShareText(){
+ function buildShareText(){
   const d = collect();
   const lines = [];
   const dateStr = d.date ? weekdayKR(d.date) : '-';
   const header = makeShareTitle(d) || '안내문';
 
+  // 제목
   lines.push(header, '');
+
+  // 대상
   const target = formatTarget(d.team);
-  if (target) lines.push(`[대상] ${target}`);
-  lines.push(`[일자] ${dateStr}`);
-  lines.push(`[장소] ${d.place || '-'}`);
+  if (target) { 
+    lines.push(`[대상] ${target}`, ''); 
+  }
 
-  // ▼ 주소/전화(텍스트 공유용)
-  if (d.placeAddr) lines.push(`       (주소) ${d.placeAddr}`);
-  if (d.placeTel)  lines.push(`       (전화) ${d.placeTel}`);
-  if (d.placeLink) lines.push(`       (네이버) ${d.placeLink}`);
-  // ▲
+  // 일자
+  lines.push(`[일자] ${dateStr}`, '');
 
+  // 장소
+  lines.push(`[장소] ${d.place || '-'}`, '');
+  if (d.placeAddr) lines.push(`       (주소) ${d.placeAddr}`, '');
+  if (d.placeTel)  lines.push(`       (전화) ${d.placeTel}`, '');
+  if (d.placeLink) lines.push(`       (네이버) ${d.placeLink}`, '');
+
+  // 일정 요약
   lines.push('[일정 요약]');
-  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
-  if ((d.bus||'').trim() && d.busShow) lines.push(`[버스 대절] ${d.bus}`);
+  const schedule = (d.schedule || '').split('\n').filter(Boolean);
+  if (schedule.length) {
+    lines.push(...schedule);
+  } else {
+    lines.push('-');
+  }
+  lines.push('');  // 빈 줄
+
+  // 버스
+  if ((d.bus||'').trim() && d.busShow) {
+    lines.push(`[버스 대절] ${d.bus}`, '');
+  }
+
+  // 특이사항
   if ((d.notes || '').trim()){
     lines.push('[특이사항]');
     lines.push(...d.notes.split('\n').filter(Boolean));
+    lines.push('');
   }
+
+  // 문의처
   lines.push(`[문의처] ${d.contact || '-'}`);
+
   return lines.join('\n');
 }
+
 
 
   /* 미리보기 모달 */
