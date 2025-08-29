@@ -18,7 +18,6 @@
     .card h2{margin:0;padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
     .card .body{padding:18px}
 
-    /* === 섹션 구분 === */
     .sec{display:grid;gap:12px;padding:14px 12px;border:1px solid var(--line);border-radius:14px;background:#fff}
     .sec + .sec{margin-top:14px}
     .sec-title{
@@ -28,7 +27,6 @@
       display:inline-block;padding:6px 12px;
     }
 
-    /* === 폼 로우 === */
     .row{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:start;
       padding:10px;border:1px dashed #eee;border-radius:12px;background:#fafbff}
     .row + .row{margin-top:8px}
@@ -36,142 +34,89 @@
       font-weight:800;padding:8px 10px;border-radius:10px;border:1px solid #e7eaf6;
       background:#f7f9ff;color:#243b6b;display:inline-flex;align-items:center;gap:6px
     }
-    .badge-req{
-      font-size:11px;font-weight:900;color:#b71c1c;background:#ffebee;border:1px solid #ffcdd2;
-      padding:2px 6px;border-radius:999px;
-    }
+    .badge-req{font-size:11px;font-weight:900;color:#b71c1c;background:#ffebee;border:1px solid #ffcdd2;padding:2px 6px;border-radius:999px;}
     input[type=text], input[type=date], textarea, select{
       width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none
     }
     textarea{min-height:110px;resize:vertical}
+    .row:focus-within{background:#ffffff;border-color:#cfd8ff; box-shadow:0 0 0 3px rgba(63,81,181,.08)}
+    input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 2px rgba(63,81,181,.12) inset}
 
-    /* 포커스/에러 */
-    .row:focus-within{
-      background:#ffffff;border-color:#cfd8ff; box-shadow:0 0 0 3px rgba(63,81,181,.08);
-    }
-    input:focus, textarea:focus, select:focus{
-      border-color:#9fa8da;box-shadow:0 0 0 2px rgba(63,81,181,.12) inset;
-    }
-
-    /* 칩 공통 (대상, 버스) */
     .chip-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .chip{
-      border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;
-      padding:6px 14px;font-weight:700;min-width:44px;text-align:center;user-select:none;
-      box-shadow:0 1px 2px rgba(0,0,0,.04);
-    }
+    .chip{border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;padding:6px 14px;font-weight:700;min-width:44px;text-align:center;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.04)}
     .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
 
-    /* 특이사항 칩 전용 스타일 (네모, 좌측 정렬, 항상 2줄 높이) */
-    #notesPresets .chip {
-      border-radius:8px;
-      padding:8px 12px;
-      font-size:13px;
-      text-align:left;
-      line-height:1.4;
-      white-space:normal;
-      min-height:36px;
-      display:flex;
-      align-items:center;
-    }
+    #notesPresets .chip{border-radius:8px;padding:8px 12px;font-size:13px;text-align:left;line-height:1.4;white-space:normal;min-height:36px;display:flex;align-items:center}
 
-    /* 우하단 배지 */
-    #busBadge{
-      position:fixed; right:16px; bottom:16px; z-index:9999;
-      background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px 10px;
-      font-weight:800; box-shadow:0 4px 12px rgba(0,0,0,.12); display:none;
-    }
+    #busBadge{position:fixed; right:16px; bottom:16px; z-index:9999;background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px 10px;font-weight:800; box-shadow:0 4px 12px rgba(0,0,0,.12); display:none}
 
-    /* 로딩 오버레이 */
-    #loadingOverlay{
-      position:fixed; inset:0; background:rgba(255,255,255,.7); z-index:10000;
-      display:none; align-items:center; justify-content:center; flex-direction:column; gap:14px;
-      backdrop-filter:saturate(1.2) blur(2px);
-    }
-    .spinner{
-      width:48px; height:48px; border-radius:50%;
-      border:4px solid rgba(0,0,0,.08); border-top-color: var(--brand);
-      animation: spin 1s linear infinite;
-    }
+    #loadingOverlay{position:fixed; inset:0; background:rgba(255,255,255,.7); z-index:10000;display:none; align-items:center; justify-content:center; flex-direction:column; gap:14px;backdrop-filter:saturate(1.2) blur(2px)}
+    .spinner{width:48px; height:48px; border-radius:50%;border:4px solid rgba(0,0,0,.08); border-top-color: var(--brand);animation: spin 1s linear infinite}
     @keyframes spin{ to{ transform: rotate(360deg);} }
     .loading-text{font-weight:700; color:#333}
     .loading-sub{font-size:12px; color:#777}
     .toolbar [disabled]{opacity:.6; cursor:not-allowed}
 
-    /* 하단 툴바 */
-    .toolbar {
-      display: grid; gap: 12px; margin: 24px 0; padding: 16px;
-      border: 1px solid var(--line); border-radius: 16px; background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    .toolbar button{
-      padding: 14px; font-size: 15px; font-weight: 700; border-radius: 12px;
-      transition: all .2s; border:1px solid var(--line); background:#fff; cursor:pointer;
-    }
-    #btnShare { border-color:#90caf9; background:#e3f2fd; color:#1565c0; }
-    #btnShare:hover { background:#bbdefb; }
-    #btnCopyText { border-color:#a5d6a7; background:#e8f5e9; color:#2e7d32; }
-    #btnCopyText:hover { background:#c8e6c9; }
-    #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
-    #btnSubmit:hover { background:#ffcdd2; }
-    #btnExportIMG {
-      border-color:#ffd54f;
-      background:#fff8e1;
-      color:#ff6f00;
-    }
-    #btnExportIMG:hover {
-      background:#ffe082;
-    }
+    .toolbar{display: grid; gap: 12px; margin: 24px 0; padding: 16px;border: 1px solid var(--line); border-radius: 16px; background: #fff;box-shadow: 0 2px 8px rgba(0,0,0,0.06)}
+    .toolbar button{padding: 14px; font-size: 15px; font-weight: 700; border-radius: 12px;transition: all .2s; border:1px solid var(--line); background:#fff; cursor:pointer}
+    #btnShare { border-color:#90caf9; background:#e3f2fd; color:#1565c0 }
+    #btnShare:hover { background:#bbdefb }
+    #btnCopyText { border-color:#a5d6a7; background:#e8f5e9; color:#2e7d32 }
+    #btnCopyText:hover { background:#c8e6c9 }
+    #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828 }
+    #btnSubmit:hover { background:#ffcdd2 }
+    #btnExportIMG { border-color:#ffd54f;background:#fff8e1;color:#ff6f00 }
+    #btnExportIMG:hover { background:#ffe082 }
 
-    /* 미리보기 모달 & 토스트 */
-    #previewModal[hidden]{ display:none !important; }
-    #previewModal{ position:fixed !important; inset:0 !important; z-index:20000 !important; display:flex !important; align-items:center; justify-content:center; background:rgba(0,0,0,.45); padding:20px; }
-    .preview-card{ background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 12px 30px rgba(0,0,0,.18); padding:16px; }
-    .preview-actions{ display:flex; gap:8px; align-items:center; }
-    .preview-toast{
-      display:none;
-      padding:6px 10px;
-      border-radius:999px;
-      font-weight:700;
-      font-size:12px;
-      color:#2e7d32;
-      background:#e8f5e9;
-      border:1px solid #a5d6a7;
-    }
-    .preview-toast.show{
-      display:inline-block;
-    }
+    #previewModal[hidden]{ display:none !important }
+    #previewModal{ position:fixed !important; inset:0 !important; z-index:20000 !important; display:flex !important; align-items:center; justify-content:center; background:rgba(0,0,0,.45); padding:20px }
+    .preview-card{ background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 12px 30px rgba(0,0,0,.18); padding:16px }
+    .preview-actions{ display:flex; gap:8px; align-items:center }
+    .preview-toast{display:none;padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px;color:#2e7d32;background:#e8f5e9;border:1px solid #a5d6a7}
+    .preview-toast.show{display:inline-block}
 
-    /* 안내문 PDF/이미지용 스타일 */
-    .export-title{ font-weight:900; font-size:20px; margin:0 0 10px; }
-    .export-meta{ margin:10px 0 16px; padding:10px 12px; background:#f7f9ff; border:1px solid #e6ebff; border-radius:10px; }
-    .export-meta b{ display:inline-block; width:56px; color:#1a237e; }
-    .export-sec-title{ margin:18px 0 8px; font-weight:800; color:#1a237e; border-left:4px solid #1a237e; padding-left:8px; }
-    .export-list{ margin:6px 0 0 0; padding-left:18px; list-style-type:none; }
-    .export-list li{ margin:4px 0; }
+    .export-title{ font-weight:900; font-size:20px; margin:0 0 10px }
+    .export-meta{ margin:10px 0 16px; padding:10px 12px; background:#f7f9ff; border:1px solid #e6ebff; border-radius:10px }
+    .export-meta b{ display:inline-block; width:56px; color:#1a237e }
+    .export-sec-title{ margin:18px 0 8px; font-weight:800; color:#1a237e; border-left:4px solid #1a237e; padding-left:8px }
+    .export-list{ margin:6px 0 0 0; padding-left:18px; list-style-type:none }
+    .export-list li{ margin:4px 0 }
+
+    .place-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .place-picked{font-size:12px;color:#1565c0}
+    .place-picked a{color:#1565c0; text-decoration:underline}
+
+    /* 장소선택 모달 */
+    #placeModal[hidden]{display:none !important}
+    #placeModal{position:fixed; inset:0; z-index:21000; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); padding:20px}
+    .place-card{ background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 12px 30px rgba(0,0,0,.18); padding:16px; width:min(680px, 92vw) }
+    .place-head{display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:10px}
+    .place-list{max-height:56vh; overflow:auto; border:1px solid #eee; border-radius:12px}
+    .place-item{padding:12px; border-bottom:1px solid #f0f0f0; cursor:pointer}
+    .place-item:hover{background:#f7faff}
+    .place-item b{display:block}
+    .place-item small{display:block; color:#666}
+    .empty{padding:16px; text-align:center; color:#777}
 
     @media (max-width: 640px) {
       .row { grid-template-columns: 1fr; gap: 6px; padding:12px }
       .row label { padding:6px 10px }
-      .row > * + * { margin-top: 2px; }
+      .row > * + * { margin-top: 2px }
       .sec { padding:12px 10px }
       .sec-title{ font-size:12px }
     }
-
     @media print{
-      .no-print, .toolbar, #busBadge, #loadingOverlay, #previewModal { display:none !important; }
+      .no-print, .toolbar, #busBadge, #loadingOverlay, #previewModal, #placeModal { display:none !important }
       body{ background:#fff }
       .wrap{ max-width:900px }
-      pre, textarea { font-family: inherit; font-size: 14px; }
+      pre, textarea { font-family: inherit; font-size: 14px }
     }
-
-    /* 카드형(세로 얇게) 타이트 */
-    #exportDoc.card-narrow #exportInner { padding:22px 24px; }
-    #exportDoc.card-narrow .export-title { font-size:18px; margin-bottom:8px; }
-    #exportDoc.card-narrow .export-meta { padding:8px 10px; }
-    #exportDoc.card-narrow .export-meta b { width:48px; }
-    #exportDoc.card-narrow .export-sec-title { font-size:14px; margin-top:14px; }
-    #exportDoc.card-narrow .export-list li { margin:3px 0; }
+    #exportDoc.card-narrow #exportInner { padding:22px 24px }
+    #exportDoc.card-narrow .export-title { font-size:18px; margin-bottom:8px }
+    #exportDoc.card-narrow .export-meta { padding:8px 10px }
+    #exportDoc.card-narrow .export-meta b { width:48px }
+    #exportDoc.card-narrow .export-sec-title { font-size:14px; margin-top:14px }
+    #exportDoc.card-narrow .export-list li { margin:3px 0 }
   </style>
 </head>
 <body>
@@ -214,20 +159,16 @@
             </div>
             <div class="row">
               <label for="place">장소 <span class="badge-req">필수</span></label>
-              <input id="place" type="text" placeholder="예) XXX (주소는 선택사항)" />
+              <div>
+                <div class="place-actions">
+                  <input id="place" type="text" placeholder="예) 고잔동 부드럽소 (주소/지점명 가능)" style="flex:1" />
+                  <button type="button" id="btnPickPlace" title="네이버에서 지점 후보 검색해 선택">장소 찾기(검증)</button>
+                </div>
+                <input id="placeUrl" type="hidden" value="" />
+                <div id="placePicked" class="place-picked" style="display:none;margin-top:6px"></div>
+                <small style="color:var(--muted)">지점 선택 시 아래에 링크가 표시되고 안내문에는 그 링크만 첨부됩니다.</small>
+              </div>
             </div>
-            <div id="placeTools" style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-  <button type="button" id="openMapSearch" style="padding:6px 10px; border:1px solid #ccd; border-radius:8px; background:#f7f9ff; font-weight:700; cursor:pointer;">
-    네이버 지도에서 검색
-  </button>
-  <label style="display:inline-flex; align-items:center; gap:6px; font-weight:700; color:#243b6b;">
-    <input id="includeSearchLinks" type="checkbox" />
-    (옵션) 검색 링크도 포함
-  </label>
-  <input id="placeUrl" type="text" placeholder="확정 지점의 네이버지도 URL 붙여넣기(선택)"
-         style="flex:1; min-width:260px; padding:8px 10px; border:1px solid #ccd; border-radius:8px;" />
-</div>
-
           </div>
 
           <!-- 운영 정보 -->
@@ -236,10 +177,9 @@
             <div class="row">
               <label for="schedule">일정 요약 <span class="badge-req">필수</span></label>
               <textarea id="schedule" placeholder="예시)
-- 06:00 화랑유원지 집결
+- 06:00 집결
 - 06:30 버스 출발
-- 11:00 XX 관람 시작
-- 12:30 점심 식사
+- 12:30 점심
 - 15:00 귀가"></textarea>
             </div>
 
@@ -269,8 +209,7 @@
                 <textarea id="notes" placeholder="예)
 - 편한 복장 및 운동화 권장
 - 개인 물/우의 등 준비
-- 전세버스 대절(개별 집결 없음)
-- 일부 구간은 도보 이동 예정"></textarea>
+- 일부 구간 도보 이동 예정"></textarea>
               </div>
             </div>
           </div>
@@ -320,9 +259,7 @@
   <!-- 공유 텍스트 미리보기 모달 -->
   <div id="previewModal" hidden role="dialog" aria-modal="true" aria-labelledby="previewTitle">
     <div class="preview-card" role="document">
-      <div class="preview-head">
-        <h3 id="previewTitle">안내문 미리보기</h3>
-      </div>
+      <div class="preview-head"><h3 id="previewTitle">안내문 미리보기</h3></div>
       <textarea id="previewTa"></textarea>
       <div class="preview-hint">배포용으로 자유 수정 가능하나, 인사지원팀 전송 시에는 입력한 원본 내용과 동일해야 합니다.</div>
       <div class="preview-actions">
@@ -333,10 +270,23 @@
     </div>
   </div>
 
+  <!-- 장소 선택 모달 -->
+  <div id="placeModal" hidden role="dialog" aria-modal="true" aria-labelledby="placeTitle">
+    <div class="place-card" role="document">
+      <div class="place-head">
+        <h3 id="placeTitle" style="margin:0">장소 선택</h3>
+        <div style="display:flex; gap:8px; align-items:center">
+          <input id="placeQuery" type="text" placeholder="지점명/주소로 재검색" style="width: min(360px, 60vw)">
+          <button id="placeSearchBtn" type="button">검색</button>
+          <button id="placeCloseBtn" type="button">닫기</button>
+        </div>
+      </div>
+      <div id="placeList" class="place-list"><div class="empty">검색어를 입력해 주세요.</div></div>
+    </div>
+  </div>
+
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-
-  <!-- ===== 앱 스크립트 (메인) ===== -->
   <script>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbzowA0wVkt_R92BkUHY8DFANwTB0RK01YkzW_Pl2Q_14lUhkrhz2_oP6ef2sbfllv3l/exec';
 
@@ -349,8 +299,7 @@
   }
 
   /* 로딩 오버레이 */
-  let loadingCount = 0;
-  let loadingTimer = null;
+  let loadingCount = 0, loadingTimer = null;
   function setToolbarDisabled(disabled){
     document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
     document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
@@ -383,15 +332,13 @@
   function legacyCopy(text){
     try{
       const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
+      ta.value = text; ta.setAttribute('readonly', '');
       ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.opacity = '0';
       document.body.appendChild(ta); ta.focus(); ta.select();
       const ok = document.execCommand('copy'); document.body.removeChild(ta);
       return ok;
     }catch(_){ return false; }
   }
-
   async function safeDistribute({title='', text='', url='', pureText=false, forceManual=false}) {
     const toCopy =
       text
@@ -490,50 +437,97 @@
       e.preventDefault(); toggleTeam(chip.dataset.val);
     });
   })();
-function buildMapSearchLinks(place){
-  const raw = (place || '').trim();
-  if (!raw || /^https?:\/\//i.test(raw)) return null; // 장소가 URL이면 지도링크 생성 스킵
-  const q = encodeURIComponent(raw);
-  return {
-    naver: `https://m.map.naver.com/search2/search.naver?query=${q}`,
-  };
-}
 
-  /* 버스 칩 */
-  function setBus(val){
-    const hidden = document.getElementById('bus');
-    const chips = document.querySelectorAll('#busChips .chip');
-    hidden.value = val || '';
-    chips.forEach(c => c.classList.toggle('selected', c.getAttribute('data-val') === val));
-    document.getElementById('busBadgeVal').textContent = hidden.value || '-';
-    updateBusBadgeVisibility();
+  /* ===== 장소(네이버) 처리: 검증 URL 선택 흐름 ===== */
+  function isUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
+  function buildNaverSearchLink(q){
+    const raw=(q||'').trim(); if(!raw) return '';
+    return `https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(raw)}`;
   }
-  const showAfter = 200;
-  function updateBusBadgeVisibility(){
-    const badge = document.getElementById('busBadge');
-    if(window.scrollY > showAfter){
-      const v = document.getElementById('bus').value || '';
-      badge.style.display = v ? 'block' : 'none';
-    }else{ badge.style.display = 'none'; }
+  function setPickedPlaceLink(url, label){
+    const box = document.getElementById('placePicked');
+    const hidden = document.getElementById('placeUrl');
+    hidden.value = url || '';
+    if(url){
+      box.innerHTML = `선택된 지도 링크: <a href="${url}" target="_blank" rel="noopener">${label||'열기'}</a>`;
+      box.style.display = 'block';
+    }else{
+      box.innerHTML = ''; box.style.display = 'none';
+    }
   }
-  window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
-  window.addEventListener('resize', updateBusBadgeVisibility);
-  (function bindBusChips(){
-    const g = document.getElementById('busChips'); if(!g) return;
-    g.addEventListener('click', (e)=>{
-      const target = e.target.closest('.chip'); if(!target) return;
-      setBus(target.getAttribute('data-val'));
-    });
-  })();
-  (function bindBusChipsA11y(){
-    const g = document.getElementById('busChips'); if(!g) return;
-    g.querySelectorAll('.chip').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','radio'); });
-    g.addEventListener('keydown', e=>{
-      if (e.key!=='Enter' && e.key!==' ') return;
-      const chip = e.target.closest('.chip'); if(!chip) return;
-      e.preventDefault(); setBus(chip.getAttribute('data-val'));
-    });
-  })();
+
+  // 후보 검색 모달
+  const placeModal = {
+    el: null, listEl: null, queryEl: null, open(initQ=''){
+      if(!this.el){
+        this.el = document.getElementById('placeModal');
+        this.listEl = document.getElementById('placeList');
+        this.queryEl = document.getElementById('placeQuery');
+        document.getElementById('placeCloseBtn').addEventListener('click', ()=> this.close());
+        document.getElementById('placeSearchBtn').addEventListener('click', ()=> this.search());
+        this.queryEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter') this.search(); });
+        this.el.addEventListener('click', (e)=>{ if(e.target===this.el) this.close(); });
+      }
+      this.queryEl.value = (initQ||'').trim();
+      this.listEl.innerHTML = '<div class="empty">검색 중…</div>';
+      this.el.hidden = false;
+      this.search();
+    },
+    close(){ if(this.el) this.el.hidden = true; },
+    async search(){
+      const q = (this.queryEl.value||'').trim();
+      if(!q){ this.listEl.innerHTML = '<div class="empty">검색어를 입력해 주세요.</div>'; return; }
+      try{
+        const url = `${GAS_URL}?mode=naver_local&query=${encodeURIComponent(q)}`;
+        const res = await fetchWithTimeout(url);
+        const json = await res.json();
+        if(!res.ok) throw new Error(json && json.error || ('HTTP '+res.status));
+        const rows = Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
+        if(!rows.length){ this.listEl.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>'; return; }
+        const mapRow = (r)=>({
+          name: r.name || r.title || r.place_name || '',
+          road: r.roadAddress || r.road_address || r.road || r.address || '',
+          jibun: r.jibunAddress || r.jibun_address || '',
+          url : r.mapUrl || r.link || r.url || ''
+        });
+        this.listEl.innerHTML = rows.map(r=>{
+          const x = mapRow(r);
+          const addr = x.road || x.jibun || '';
+          return `<div class="place-item" data-url="${encodeURIComponent(x.url)}" data-name="${encodeURIComponent(x.name)}">
+                    <b>${escapeHTML(x.name)}</b>
+                    <small>${escapeHTML(addr)}</small>
+                  </div>`;
+        }).join('');
+        this.listEl.querySelectorAll('.place-item').forEach(el=>{
+          el.addEventListener('click', ()=>{
+            const url = decodeURIComponent(el.getAttribute('data-url')||'');
+            const name = decodeURIComponent(el.getAttribute('data-name')||'');
+            if(url){
+              setPickedPlaceLink(url, name||'지도열기');
+            }else{
+              // URL이 비어있으면 검색링크로 대체
+              setPickedPlaceLink(buildNaverSearchLink(name || q), name||q);
+            }
+            if(name){ document.getElementById('place').value = name; }
+            this.close();
+          });
+        });
+      }catch(err){
+        console.error(err);
+        this.listEl.innerHTML = `<div class="empty">검색 오류: ${escapeHTML(err.message||'알 수 없음')}</div>`;
+      }
+    }
+  };
+
+  document.getElementById('btnPickPlace').addEventListener('click', ()=>{
+    const seed = document.getElementById('place').value;
+    placeModal.open(seed);
+  });
+
+  // 사용자가 장소 텍스트를 바꾸면 이전 선택 URL은 무효화(오동작 방지)
+  document.getElementById('place').addEventListener('input', ()=>{
+    setPickedPlaceLink('', '');
+  });
 
   /* 특이사항 템플릿 */
   const NOTES_PRESETS = [
@@ -548,7 +542,6 @@ function buildMapSearchLinks(place){
       .split('\n').map(s => s.trim()).filter(Boolean);
     return raw;
   }
-   
   function setNotesLines(lines){
     const ta = document.getElementById('notes');
     ta.value = (lines || []).join('\n');
@@ -604,28 +597,12 @@ function buildMapSearchLinks(place){
       schedule: document.getElementById('schedule').value,
       bus: document.getElementById('bus').value,
       place: document.getElementById('place').value,
+      placeUrl: document.getElementById('placeUrl').value,
       notes: document.getElementById('notes').value,
       contact: document.getElementById('contact').value,
       busShow: document.getElementById('busShow')?.checked ? 1 : 0,
-         placeUrl: (document.getElementById('placeUrl')?.value || '').trim(),
-    includeSearchLinks: document.getElementById('includeSearchLinks')?.checked ? 1 : 0,
     };
   }
-function buildNaverSearchLink(q){
-  const raw = (q || '').trim();
-  if (!raw) return '';
-  return `https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(raw)}`;
-}
-
-document.getElementById('openMapSearch')?.addEventListener('click', ()=>{
-  const place = document.getElementById('place')?.value || '';
-  const url = buildNaverSearchLink(place);
-  if (!url){ alert('장소를 먼저 입력해 주세요.'); document.getElementById('place')?.focus(); return; }
-  window.open(url, '_blank', 'noopener,noreferrer');
-});
-
-// 사용자가 place에 URL을 넣었다면 자동 검색 링크는 쓰지 않도록 보호
-function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
 
   /* 공유 텍스트 */
   function decodeShare(b64){
@@ -639,38 +616,39 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
     if (rawTitle) return rawTitle;
     return [dateTxt, target, '야유회'].filter(Boolean).join(' ');
   }
- function buildShareText(){
-  const d = collect();
-  const lines = [];
-  const dateStr = d.date ? weekdayKR(d.date) : '-';
-  const header = makeShareTitle(d) || '안내문';
-  lines.push(header, '');
-  const target = formatTarget(d.team);
-  if (target) lines.push(`[대상] ${target}`);
-  lines.push(`[일자] ${dateStr}`);
-  lines.push(`[장소] ${d.place || '-'}`);
 
-  // === 지도 링크 정책 ===
-  const placeLooksURL = isURL(d.place);
-  if ((d.placeUrl||'').trim()){
-    lines.push(`[지도] 네이버: ${d.placeUrl.trim()}`);
-  } else if (d.includeSearchLinks && !placeLooksURL && (d.place||'').trim()){
-    const search = buildNaverSearchLink(d.place);
-    if (search) lines.push(`[지도] 네이버: ${search}`);
+  function resolvedMapLink(d){
+    const place = (d.place||'').trim();
+    const picked = (d.placeUrl||'').trim();
+    if(picked) return picked;                 // 검증된 지점 URL
+    if(isUrl(place)) return place;            // 사용자가 URL 직접 입력
+    return buildNaverSearchLink(place);       // 마지막 안전장치: 검색 링크
   }
-  // ======================
 
-  lines.push('[일정 요약]');
-  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
-  if ((d.bus||'').trim() && d.busShow) lines.push(`[버스 대절] ${d.bus}`);
-  if ((d.notes || '').trim()){
-    lines.push('[특이사항]');
-    lines.push(...d.notes.split('\n').filter(Boolean));
+  function buildShareText(){
+    const d = collect();
+    const lines = [];
+    const dateStr = d.date ? weekdayKR(d.date) : '-';
+    const header = makeShareTitle(d) || '안내문';
+    lines.push(header, '');
+    const target = formatTarget(d.team);
+    if (target) lines.push(`[대상] ${target}`);
+    lines.push(`[일자] ${dateStr}`);
+    lines.push(`[장소] ${d.place || '-'}`);
+
+    const link = resolvedMapLink(d);
+    if(link) lines.push(`[지도] ${link}`);
+
+    lines.push('[일정 요약]');
+    lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+    if ((d.bus||'').trim() && d.busShow) lines.push(`[버스 대절] ${d.bus}`);
+    if ((d.notes || '').trim()){
+      lines.push('[특이사항]');
+      lines.push(...d.notes.split('\n').filter(Boolean));
+    }
+    lines.push(`[문의처] ${d.contact || '-'}`);
+    return lines.join('\n');
   }
-  lines.push(`[문의처] ${d.contact || '-'}`);
-  return lines.join('\n');
-}
-
 
   /* 미리보기 모달 */
   (function setupPreviewModal(){
@@ -733,7 +711,7 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
     }finally{ hideLoading(); }
   });
 
-  /* >>> 제출: 자동 임시저장 → ?k=주소 K열 저장 */
+  /* 제출 */
   async function submitToSheet(){
     showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
     try{
@@ -764,15 +742,13 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
       if(!data.contact.trim()) invalid.push(() => document.getElementById('contact').focus());
       if (invalid.length){ alert('필수 항목을 입력/선택해 주세요.'); invalid[0](); hideLoading(); return; }
 
-      // 1) 주소창에 ?k=가 있으면 재사용, 없으면 자동 임시저장 호출
-      let shareKey = '';
-      let clientUrl = '';
+      // 1) 주소창에 ?k= 있으면 재사용, 없으면 자동 임시저장
+      let shareKey='', clientUrl='';
       const urlObj = new URL(location.href);
       const existingKey = urlObj.searchParams.get('k') || '';
 
       if (existingKey) {
-        shareKey = existingKey;
-        clientUrl = urlObj.toString();
+        shareKey = existingKey; clientUrl = urlObj.toString();
       } else {
         try {
           const shareRes = await fetchWithTimeout(GAS_URL, {
@@ -787,21 +763,16 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
             urlObj.searchParams.set('k', shareKey);
             clientUrl = urlObj.toString();
             history.replaceState(null, '', clientUrl);
-          } else {
-            clientUrl = location.href; // 실패해도 제출은 진행
-          }
-        } catch(err){
-          clientUrl = location.href;
-          console.warn('자동 임시저장 실패:', err);
-        }
+          } else { clientUrl = location.href; }
+        } catch{ clientUrl = location.href; }
       }
 
-      // 2) 최종 payload (K열에 client_url 기록)
+      // 2) 제출 payload
       const payload = {
         ...data,
-        submitted_at: new Date().toISOString(), // J열
-        client_url: clientUrl,                  // K열 (키 포함 주소)
-        share_key: shareKey,                    // 옵션
+        submitted_at: new Date().toISOString(),
+        client_url: clientUrl,
+        share_key: shareKey,
         mode: 'append'
       };
 
@@ -819,6 +790,42 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
     }finally{ hideLoading(); }
   }
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
+
+  /* 버스 칩 + 배지 */
+  function setBus(val){
+    const hidden = document.getElementById('bus');
+    const chips = document.querySelectorAll('#busChips .chip');
+    hidden.value = val || '';
+    chips.forEach(c => c.classList.toggle('selected', c.getAttribute('data-val') === val));
+    document.getElementById('busBadgeVal').textContent = hidden.value || '-';
+    updateBusBadgeVisibility();
+  }
+  const showAfter = 200;
+  function updateBusBadgeVisibility(){
+    const badge = document.getElementById('busBadge');
+    if(window.scrollY > showAfter){
+      const v = document.getElementById('bus').value || '';
+      badge.style.display = v ? 'block' : 'none';
+    }else{ badge.style.display = 'none'; }
+  }
+  window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
+  window.addEventListener('resize', updateBusBadgeVisibility);
+  (function bindBusChips(){
+    const g = document.getElementById('busChips'); if(!g) return;
+    g.addEventListener('click', (e)=>{
+      const target = e.target.closest('.chip'); if(!target) return;
+      setBus(target.getAttribute('data-val'));
+    });
+  })();
+  (function bindBusChipsA11y(){
+    const g = document.getElementById('busChips'); if(!g) return;
+    g.querySelectorAll('.chip').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','radio'); });
+    g.addEventListener('keydown', e=>{
+      if (e.key!=='Enter' && e.key!==' ') return;
+      const chip = e.target.closest('.chip'); if(!chip) return;
+      e.preventDefault(); setBus(chip.getAttribute('data-val'));
+    });
+  })();
 
   /* 오늘 이전 날짜 선택 금지 */
   (function lockPastDate(){
@@ -845,6 +852,8 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
         document.getElementById('schedule').value = data.schedule||'';
         document.getElementById('bus').value = data.bus || ''; setBus(document.getElementById('bus').value || '');
         document.getElementById('place').value = data.place||'';
+        document.getElementById('placeUrl').value = data.placeUrl||'';
+        if(data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
         document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
@@ -873,6 +882,8 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
         document.getElementById('schedule').value = data.schedule||'';
         document.getElementById('bus').value = data.bus || ''; setBus(document.getElementById('bus').value || '');
         document.getElementById('place').value = data.place||'';
+        document.getElementById('placeUrl').value = data.placeUrl||'';
+        if(data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
         document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
@@ -884,9 +895,9 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
       alert('불러오기 오류: ' + msg);
     } finally{ hideLoading(); }
   }
-  </script>
 
-  <!-- 외부 라이브러리 (이미지) -->
+  /* 안내문 이미지 렌더용 */
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <!-- 안내문 이미지 렌더용 히든 DOM -->
@@ -894,8 +905,9 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
     <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;"></div>
   </div>
 
-  <!-- 이미지 생성 스크립트 -->
   <script>
+  function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]) ); }
+
   function buildExportHTML(){
     const d = collect();
     const dateStr = d.date ? weekdayKR(d.date) : '-';
@@ -903,30 +915,22 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
     const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
     const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
     const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine), '야유회'].filter(Boolean).join(' '));
+
+    const link = resolvedMapLink(d);
+    const mapLine = link ? `
+      <div style="margin-top:6px;font-size:12px">
+        <b>지도</b> <a href="${link}">열기</a>
+      </div>` : '';
+
     return `
       <div class="export-title">${title}</div>
       <div class="export-meta">
         <div><b>대상</b> ${teamLine || '-'}</div>
         <div><b>일자</b> ${dateStr}</div>
-        <div><b>장소</b> ${d.place || '-'}</div>
-          <!-- === 지도 링크 추가 === -->
-  ${(()=>{
-  const d2 = collect();
-  const placeLooksURL = isURL(d2.place);
-  const url = (d2.placeUrl||'').trim();
-  const search = (!url && d2.includeSearchLinks && !placeLooksURL && (d2.place||'').trim())
-    ? buildNaverSearchLink(d2.place) : '';
-  if (url){
-    return `<div style="margin-top:6px;font-size:12px;"><b>지도</b> <a href="${url}">네이버</a></div>`;
-  } else if (search){
-    return `<div style="margin-top:6px;font-size:12px;"><b>지도</b> <a href="${search}">네이버(검색)</a></div>`;
-  }
-  return '';
-})()}
-
-    <!-- ===================== -->
-        ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${d.bus}</div>` : '' }
-        <div><b>문의</b> ${d.contact || '-'}</div>
+        <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
+        ${mapLine}
+        ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${escapeHTML(d.bus)}</div>` : '' }
+        <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
       </div>
 
       <div class="export-sec-title">일정 요약</div>
@@ -940,7 +944,6 @@ function isURL(s){ return /^https?:\/\//i.test((s||'').trim()); }
         : '' }
     `;
   }
-  function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function fillExportDom(){ const inner = document.getElementById('exportInner'); if(!inner) return; inner.innerHTML = buildExportHTML(); }
 
   async function exportAsImage(){
