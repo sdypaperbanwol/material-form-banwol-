@@ -116,6 +116,19 @@
     #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
     #btnSubmit:hover { background:#ffcdd2; }
 
+/* 안내문 PDF/이미지용 타이틀/섹션 스타일 */
+.export-title{
+  font-weight:900; font-size:20px; margin:0 0 10px;
+}
+.export-meta{ margin:10px 0 16px; padding:10px 12px; background:#f7f9ff; border:1px solid #e6ebff; border-radius:10px; }
+.export-meta b{ display:inline-block; width:56px; color:#1a237e; }
+.export-sec-title{
+  margin:18px 0 8px; font-weight:800; color:#1a237e; border-left:4px solid #1a237e; padding-left:8px;
+}
+.export-list{ margin:6px 0 0 0; padding-left:18px; }
+.export-list li{ margin:4px 0; }
+
+    
     /* 미리보기 모달 */
     #previewModal[hidden] { display: none; }
     #previewModal {
@@ -942,6 +955,131 @@ if (invalid.length){
 
     updateBusBadgeVisibility();
   })();
+
+<!-- 안내문 PDF/이미지용 미리보기 DOM (화면에 안 보임) -->
+<div id="exportDoc" style="position:absolute; left:-99999px; top:-99999px; width:794px; background:#fff;">
+  <!-- 794px = A4 width @96dpi. 높이는 내용에 따라 자동 -->
+  <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;">
+    <!-- JS에서 내용이 채워짐 -->
+  </div>
+</div>
+<script>
+// 안내문용 DOM을 채우는 함수
+function buildExportHTML(){
+  const d = collect();
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+
+  // team 문자열에서 '기타:' 제거해 표시
+  let teamLine = '-';
+  if (d.team) {
+    const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
+    teamLine = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
+  }
+
+  // 일정/특이사항 라인 가공
+  const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
+
+  // 헤더 타이틀
+  const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine+'반'), '야유회'].filter(Boolean).join(' '));
+
+  // HTML 구성
+  return `
+    <div class="export-title">${title}</div>
+
+    <div class="export-meta">
+      <div><b>반</b> ${teamLine || '-'}</div>
+      <div><b>일자</b> ${dateStr}</div>
+      <div><b>장소</b> ${d.place || '-'}</div>
+      ${ (d.bus||'').trim() ? `<div><b>버스</b> ${d.bus}</div>` : '' }
+      <div><b>문의</b> ${d.contact || '-'}</div>
+    </div>
+
+    <div class="export-sec-title">일정 요약</div>
+    ${scheduleLines.length
+      ? `<ul class="export-list">${scheduleLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+      : `<div style="color:#999">-</div>`}
+
+    ${notesLines.length
+      ? `
+        <div class="export-sec-title">특이사항</div>
+        <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>
+      ` : '' }
+  `;
+}
+
+// 간단 이스케이프
+function escapeHTML(s){
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// DOM 채우기
+function fillExportDom(){
+  const inner = document.getElementById('exportInner');
+  if(!inner) return;
+  inner.innerHTML = buildExportHTML();
+}
+
+// 이미지로 저장 (PNG)
+async function exportAsImage(){
+  showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+  try{
+    fillExportDom();
+    const target = document.getElementById('exportDoc');
+    // 더 선명하게 (scale=2)
+    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+    const dataURL = canvas.toDataURL('image/png');
+
+    // 다운로드
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = (collect().title || '안내문') + '.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    hideLoading();
+  }
+}
+
+// PDF로 저장 (A4, 세로)
+async function exportAsPDF(){
+  showLoading('PDF 생성 중…', '잠시만 기다려주세요');
+  try{
+    fillExportDom();
+    const target = document.getElementById('exportDoc');
+    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+    // A4(px) @ 96dpi 기준: 794 x 1123 정도. jsPDF는 mm 단위 사용.
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({orientation:'p', unit:'mm', format:'a4'});
+
+    const pageWidth = pdf.internal.pageSize.getWidth();   // 210mm
+    const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
+    // 이미지 비율에 맞춰 폭을 A4 가로폭에 맞춤
+    const imgW = pageWidth;
+    const imgH = (canvas.height / canvas.width) * imgW;
+
+    pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
+    pdf.save((collect().title || '안내문') + '.pdf');
+  } finally {
+    hideLoading();
+  }
+}
+
+// 버튼 바인딩
+document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
+document.getElementById('btnExportPDF')?.addEventListener('click', exportAsPDF);
+</script>
+
+    
+    <!-- html2canvas: DOM을 이미지로 캡쳐 -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- jsPDF: 이미지를 PDF로 저장 -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   </script>
 </body>
 </html>
