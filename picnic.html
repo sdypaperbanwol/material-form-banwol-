@@ -250,6 +250,15 @@
             <option value="560">카드형(560px)</option>
           </select>
         </label>
+          <!-- ✅ 여기에 추가 -->
+    <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
+      <input id="exportShowURL" type="checkbox"> 이미지에 지도 URL 표시
+    </label>
+
+    <!-- ✅ QR 토글이 있다면, 그 옆이나 아래에 둬도 됩니다 -->
+    <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
+      <input id="exportShowQR" type="checkbox" checked> 이미지에 지도 QR 포함
+    </label>
       </div>
 
       <button id="btnShare">임시 저장하기</button>
@@ -442,6 +451,10 @@ function setSelectedPlace(item){
     // 지도/플레이스 관련 경로만 허용
     return /^(\/v5|\/p\/entry|\/entry\/place|\/map|\/place)/.test(path);
   }catch(_){ return false; }
+}
+function makeQrSrc(url, size=160){
+  // 공개 QR 이미지 서비스 (CORS OK) – html2canvas(useCORS:true)와 함께 작동
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
 }
 
 function resolveNaverLink(item){
@@ -1068,11 +1081,14 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
     const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
     const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine), '야유회'].filter(Boolean).join(' '));
 
-    const link = resolvedMapLink(d);
-    const mapLine = link ? `
-      <div style="margin-top:6px;font-size:12px">
-        <b>지도</b> <a href="${link}">열기</a>
-      </div>` : '';
+  const link = resolvedMapLink(d); // 네이버 지도 링크
+const showQR  = document.getElementById('exportShowQR')?.checked;
+const qrHtml = (showQR && link)
+  ? `<div style="margin-top:8px; display:flex; align-items:center; gap:10px">
+       <img src="${makeQrSrc(link)}" alt="지도 QR" width="120" height="120" crossorigin="anonymous">
+       <div style="font-size:12px;color:#555">네이버 지도에서 위치 확인</div>
+     </div>`
+  : '';
 
     return `
       <div class="export-title">${title}</div>
