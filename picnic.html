@@ -141,6 +141,9 @@
   #exportDoc.card-narrow .export-meta b { width:48px }
   #exportDoc.card-narrow .export-sec-title { font-size:14px; margin-top:14px }
   #exportDoc.card-narrow .export-list li { margin:3px 0 }
+
+   #btnReset { border-color:#cfd8dc; background:#eceff1; color:#455a64 }
+#btnReset:hover { background:#e0e7ec }
 </style>
 
 </head>
@@ -282,7 +285,7 @@
       <input id="exportShowQR" type="checkbox" checked> 이미지에 지도 QR 포함
     </label>
       </div>
-
+      <button id="btnReset" type="button" title="초기화">초기화</button>
       <button id="btnShare">임시 저장하기</button>
       <button id="btnCopyText">안내문(텍스트)</button>
       <button id="btnExportIMG">안내문(이미지)</button>
@@ -413,6 +416,45 @@ function setSelectedPlace(item){
     alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
     return { method:'manual' };
   }
+function resetAll() {
+  if (!confirm('모든 입력을 초기화하고, 주소의 k/code 파라미터도 제거할까요?')) return;
+
+  // 1) 텍스트/히든 입력값 초기화
+  const ids = [
+    'team','title','date','schedule','bus',
+    'place','placeUrl','placeAddr','placeTel','placeLink',
+    'notes','contact'
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // 2) 팀 칩/기타 입력 초기화
+  setTeamHiddenFromArray([]);
+  renderTeamChips();
+  restoreCustomTeamFromTeamValue(); // 기타 입력칸 접기
+
+  // 3) 버스 선택/배지/체크 초기화
+  setBus('');
+  const busShow = document.getElementById('busShow');
+  if (busShow) busShow.checked = true; // 기본값 유지(표시)라면 true
+
+  // 4) 장소 미리보기 박스 비우기
+  setPickedPlaceLink('', '');
+
+  // 5) URL의 k/code 파라미터 제거 (새로고침 없이 즉시 반영)
+  const url = new URL(location.href);
+  url.searchParams.delete('k');
+  url.searchParams.delete('code');
+  history.replaceState(null, '', url.origin + url.pathname);
+
+  // 6) 스크롤/배지 등 UI 마무리
+  updateBusBadgeVisibility();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('btnReset')?.addEventListener('click', resetAll);
 
   /* 날짜/대상 포맷 */
   function weekdayKR(dateStr){
