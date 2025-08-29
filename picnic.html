@@ -899,75 +899,97 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
   })();
 
   /* init */
-  (async function init(){
-    const p = new URLSearchParams(location.search);
-    const k = p.get('k'); const code = p.get('code');
-    if(k){ try{ await loadByKey(k); }catch(_){ /* noop */ } }
-    else if(code){
-      const data = decodeShare(code);
-      if(data){
-        document.getElementById('team').value = data.team || '';
-        renderTeamChips(); restoreCustomTeamFromTeamValue();
-        document.getElementById('title').value = data.title||'';
-        document.getElementById('date').value = data.date||'';
-        document.getElementById('schedule').value = data.schedule||'';
-        document.getElementById('bus').value = data.bus || ''; setBus(document.getElementById('bus').value || '');
-        document.getElementById('place').value = data.place||'';
-        document.getElementById('placeUrl').value = data.placeUrl||'';
-        if(data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
-        // ✅ 여기 추가
-  document.getElementById('placeAddr').value = data.placeAddr || '';
-  document.getElementById('placeTel').value  = data.placeTel  || '';
-  document.getElementById('placeLink').value = data.placeLink || '';
+(async function init(){
+  const p = new URLSearchParams(location.search);
+  const k = p.get('k'); 
+  const code = p.get('code');
 
-  document.getElementById('notes').value = data.notes||'';
-  document.getElementById('contact').value = data.contact||'';
-  document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
-}
-    }else{
-      document.getElementById('title').value = '야유회 안내';
-      document.getElementById('team').value = '';
+  if (k) { 
+    try { await loadByKey(k); } catch(_) {}
+  } 
+  else if (code) {
+    const data = decodeShare(code);
+    if (data) {
+      document.getElementById('team').value = data.team || '';
       renderTeamChips(); restoreCustomTeamFromTeamValue();
+      document.getElementById('title').value = data.title||'';
+      document.getElementById('date').value = data.date||'';
+      document.getElementById('schedule').value = data.schedule||'';
+      document.getElementById('bus').value = data.bus || ''; 
+      setBus(document.getElementById('bus').value || '');
+
+      document.getElementById('place').value = data.place||'';
+      document.getElementById('placeUrl').value = data.placeUrl||'';
+      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
+
+      // ✅ hidden 복원
+      document.getElementById('placeAddr').value = data.placeAddr || '';
+      document.getElementById('placeTel').value  = data.placeTel  || '';
+      document.getElementById('placeLink').value = data.placeLink || '';
+
+      document.getElementById('notes').value = data.notes||'';
+      document.getElementById('contact').value = data.contact||'';
+      document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
     }
-    updateBusBadgeVisibility();
-  })();
+  } 
+  else {
+    document.getElementById('title').value = '야유회 안내';
+    document.getElementById('team').value = '';
+    renderTeamChips(); restoreCustomTeamFromTeamValue();
+  }
+
+  updateBusBadgeVisibility();
+})();
+
 
   /* 임시 저장 불러오기 */
-  async function loadByKey(k){
-    showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
-    try{
-      const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
-      const res = await fetchWithTimeout(url);
-      let json; try{ json = await res.json(); } catch{ const t = await res.text(); throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); }
-      if(json.status === 'ok' && json.data){
-        const data = json.data;
-        document.getElementById('team').value = data.team || '';
-        renderTeamChips(); restoreCustomTeamFromTeamValue();
-        document.getElementById('title').value = data.title||'';
-        document.getElementById('date').value = data.date||'';
-        document.getElementById('schedule').value = data.schedule||'';
-        document.getElementById('bus').value = data.bus || ''; setBus(document.getElementById('bus').value || '');
-        document.getElementById('place').value = data.place||'';
-        document.getElementById('placeUrl').value = data.placeUrl||'';
-        if(data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
-         // ✅ 여기 추가
-  document.getElementById('placeAddr').value = data.placeAddr || '';
-  document.getElementById('placeTel').value  = data.placeTel  || '';
-  document.getElementById('placeLink').value = data.placeLink || '';
+ async function loadByKey(k){
+  showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
+  try{
+    const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
+    const res = await fetchWithTimeout(url);
+    let json; 
+    try { json = await res.json(); } 
+    catch { 
+      const t = await res.text(); 
+      throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); 
+    }
 
-  document.getElementById('notes').value = data.notes||'';
-  document.getElementById('contact').value = data.contact||'';
-  document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
-}
-    
-      }else{
-        alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
-      }
-    } catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('불러오기 오류: ' + msg);
-    } finally{ hideLoading(); }
+    if (json.status === 'ok' && json.data){
+      const data = json.data;
+
+      document.getElementById('team').value = data.team || '';
+      renderTeamChips(); restoreCustomTeamFromTeamValue();
+      document.getElementById('title').value = data.title||'';
+      document.getElementById('date').value = data.date||'';
+      document.getElementById('schedule').value = data.schedule||'';
+      document.getElementById('bus').value = data.bus || ''; 
+      setBus(document.getElementById('bus').value || '');
+
+      document.getElementById('place').value = data.place||'';
+      document.getElementById('placeUrl').value = data.placeUrl||'';
+      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
+
+      // ✅ hidden 복원
+      document.getElementById('placeAddr').value = data.placeAddr || '';
+      document.getElementById('placeTel').value  = data.placeTel  || '';
+      document.getElementById('placeLink').value = data.placeLink || '';
+
+      document.getElementById('notes').value = data.notes||'';
+      document.getElementById('contact').value = data.contact||'';
+      document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
+    } 
+    else {
+      alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
+    }
+  } catch(err){
+    const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+    alert('불러오기 오류: ' + msg);
+  } finally { 
+    hideLoading(); 
   }
+}
+
 
   /* 안내문 이미지 렌더용 */
   </script>
