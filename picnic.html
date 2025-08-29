@@ -493,10 +493,20 @@ function setSelectedPlace(item){
 
   /* ===== 장소(네이버) 처리: 검증 URL 선택 흐름 ===== */
   function isUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
-  function buildNaverSearchLink(q){
-    const raw=(q||'').trim(); if(!raw) return '';
-    return `https://m.map.naver.com/search2/search.naver?query=${encodeURIComponent(raw)}`;
-  }
+// 상호명만 우선, 주소는 동/구까지만 잘라 보조
+function buildNaverSearchLink(rawName, rawAddr=''){
+  const name = (rawName||'').trim();
+  const addr = (rawAddr||'').trim()
+    // 번지부터 잘라내기 (예: "광덕서로 78 대한법조" → "광덕서로")
+    .replace(/\s+\d.*$/, '')
+    // "대한법조" 같은 건물명은 검색에 방해되는 경우가 많아 제거
+    .replace(/대한법조|빌딩|타워|센터|상가|아파트|오피스텔|Mall|몰/gi, '')
+    .trim();
+
+  const q = name || addr || '';
+  return 'https://map.naver.com/p/search/' + encodeURIComponent(q);
+}
+
   function setPickedPlaceLink(url, label){
     const box = document.getElementById('placePicked');
     const hidden = document.getElementById('placeUrl');
