@@ -63,16 +63,18 @@
     .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
 
     /* 특이사항 칩 전용 스타일 (네모, 좌측 정렬, 항상 2줄 높이) */
-    #notesPresets .chip{
-      border-radius:8px;
-      padding:10px 14px;
-      text-align:left;
-      line-height:1.4;
-      white-space:normal;
-      min-height:44px;
-      display:flex;
-      align-items:center;
-    }
+   #notesPresets .chip {
+  border-radius:8px;
+  padding:8px 12px;     /* 좌우 padding 줄여서 공간 확보 */
+  font-size:13px;       /* 살짝 줄여서 한 줄에 들어가기 쉽게 */
+  text-align:left;
+  line-height:1.4;
+  white-space:normal;   /* 길면 줄바꿈 허용 */
+  min-height:36px;      /* 줄여도 보기 좋게 */
+  display:flex;
+  align-items:center;
+}
+
 
     /* 우하단 배지 */
     #busBadge{
@@ -514,9 +516,9 @@
   /* ===== 특이사항 템플릿(칩) ===== */
   const NOTES_PRESETS = [
     '- 편한 복장과 개인 물·우의 등을 준비해 주세요.',
-    '- 버스 대절 관계로 원활한 출출을 위해 여유 있게 집결해 주세요.'.replace('출출','출발'), // 오타 방지
+    '- 버스 대절로 인해 여유 있게 집결해 주세요.',
     '- 자차·대중교통을 이용해 개별 집결해 주세요.',
-    '- 자차 이용 시, 인근 공영·노상 주차장을 이용해 주세요.',
+    '- 자차는 인근 공영·노상 주차장을 이용해 주세요.',
     '- 장소에 따라 내부 주차장이 마련되어 있습니다.',
   ];
   function getNotesLines(){
