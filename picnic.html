@@ -677,16 +677,21 @@
     const btnCopy = document.getElementById('previewCopy');
     const toast = document.getElementById('previewToast');
 
-    function openPreviewModal(text){
-      if (!modal || !ta) return;
-      ta.value = text || '';
-      ta.style.height = 'auto';
-      ta.style.height = Math.max(220, Math.min(420, ta.scrollHeight)) + 'px';
-      modal.hidden = false;
-      setTimeout(()=>{ ta.focus(); ta.select(); }, 0);
-      document.addEventListener('keydown', onEsc, { once: true });
-      modal.addEventListener('click', onBackdropClick);
-    }
+   function openPreviewModal(text){
+  if (!modal || !ta) return;
+  ta.value = text || '';
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(220, Math.min(420, ta.scrollHeight)) + 'px';
+
+  // ✅ 모달 열 때 토스트 초기화
+  toast?.classList.remove('show');
+
+  modal.hidden = false;
+  setTimeout(()=>{ ta.focus(); ta.select(); }, 0);
+  document.addEventListener('keydown', onEsc, { once: true });
+  modal.addEventListener('click', onBackdropClick);
+}
+
     function closePreviewModal(){
       if (!modal) return;
       modal.hidden = true;
