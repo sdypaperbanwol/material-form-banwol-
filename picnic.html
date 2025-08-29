@@ -634,13 +634,21 @@
   }
 
   /* ===== 제목/공유 텍스트 ===== */
-  function makeShareTitle(d){
-    const teamLabel = d.team ? `${d.team}반` : '';
-    const dateTxt = d.date ? weekdayKR(d.date) : '';
-    const rawTitle = (d.title || '').trim();
-    if (rawTitle) return rawTitle;
-    return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
-  }
+function makeShareTitle(d){
+  // team값에서 "기타:" 접두어 제거
+  const cleanTeam = (d.team || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(v => v.startsWith('기타:') ? v.slice(3) : v) // "기타:" 제거
+    .join(',');
+  const teamLabel = cleanTeam ? `${cleanTeam}반` : '';
+  const dateTxt = d.date ? weekdayKR(d.date) : '';
+  const rawTitle = (d.title || '').trim();
+  if (rawTitle) return rawTitle;
+  return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
+}
+
   function buildShareText(){
     const d = collect();
     const lines = [];
