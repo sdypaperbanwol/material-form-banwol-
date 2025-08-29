@@ -162,13 +162,16 @@
               <label>반 선택 <span class="badge-req">필수</span></label>
               <div>
                 <input id="team" type="hidden" value="">
-                <div class="chip-group" id="teamChips" role="group" aria-label="반 선택">
-                  <div class="chip" data-val="A">A반</div>
-                  <div class="chip" data-val="B">B반</div>
-                  <div class="chip" data-val="C">C반</div>
-                  <div class="chip" data-val="D">D반</div>
-                  <div class="chip" data-val="기타">기타</div>
-                </div>
+               <div class="chip-group" id="teamChips" role="group" aria-label="반 선택">
+  <div class="chip" data-val="A">A반</div>
+  <div class="chip" data-val="B">B반</div>
+  <div class="chip" data-val="C">C반</div>
+  <div class="chip" data-val="D">D반</div>
+  <div class="chip" data-val="기타">기타</div>
+  <!-- 기타 입력칸 (처음엔 숨김) -->
+  <input id="teamCustom" type="text" placeholder="직접 입력" style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
+</div>
+
                 <small style="color:var(--muted)">여러 반 선택 가능</small>
               </div>
             </div>
@@ -382,34 +385,51 @@
     return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
   }
 
-  /* ===== 팀 칩 ===== */
-  function parseTeams(str){ return (str || '').split(',').map(s => s.trim()).filter(Boolean); }
-  function teamsToString(arr){ return Array.from(new Set(arr)).join(','); }
-  function getTeamsArray(){ return parseTeams(document.getElementById('team').value); }
-  function setTeamHiddenFromArray(arr){ document.getElementById('team').value = teamsToString(arr); }
-  function renderTeamChips(){
-    const selected = new Set(getTeamsArray());
-    document.querySelectorAll('#teamChips .chip').forEach(chip=>{
-      chip.classList.toggle('selected', selected.has(chip.dataset.val));
-    });
-  }
-  function toggleTeam(val){
-    const arr = getTeamsArray();
-    const i = arr.indexOf(val);
-    if (i >= 0) arr.splice(i,1);
-    else arr.push(val);
+/* ===== 팀 칩 ===== */
+function parseTeams(str){ ... }
+function teamsToString(arr){ ... }
+function getTeamsArray(){ ... }
+function setTeamHiddenFromArray(arr){ ... }
+function renderTeamChips(){ ... }
+function toggleTeam(val){ ... }
+
+(function bindTeamChips(){
+  const group = document.getElementById('teamChips');
+  if(!group) return;
+  group.addEventListener('click', e=>{
+    const chip = e.target.closest('.chip');
+    if(!chip) return;
+    toggleTeam(chip.dataset.val);
+  });
+})();
+
+/* ===== 기타 직접입력 ===== */
+(function bindCustomTeam(){
+  const chips = document.getElementById('teamChips');
+  const customInput = document.getElementById('teamCustom');
+  chips.addEventListener('click', e=>{
+    const chip = e.target.closest('.chip');
+    if(!chip) return;
+    if(chip.dataset.val === '기타'){
+      customInput.style.display = customInput.style.display === 'none' ? 'inline-block' : 'none';
+      if(customInput.style.display !== 'none'){
+        customInput.focus();
+      } else {
+        customInput.value = '';
+        toggleTeam('기타'); // team 배열에서도 제거
+      }
+    }
+  });
+  customInput.addEventListener('input', ()=>{
+    let val = customInput.value.trim();
+    let arr = getTeamsArray().filter(t => !t.startsWith('기타:') && t!=='기타');
+    if(val){
+      arr.push('기타:'+val);
+    }
     setTeamHiddenFromArray(arr);
     renderTeamChips();
-  }
-  (function bindTeamChips(){
-    const group = document.getElementById('teamChips');
-    if(!group) return;
-    group.addEventListener('click', e=>{
-      const chip = e.target.closest('.chip');
-      if(!chip) return;
-      toggleTeam(chip.dataset.val);
-    });
-  })();
+  });
+})();
 
   /* ===== 버스 칩 ===== */
   function setBus(val){
@@ -667,7 +687,6 @@
     if(!data.place.trim()) { alert('장소를 입력해주세요.'); return; }
     if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
     if(!data.bus) { alert('버스 대절 여부를 선택해주세요.'); return; }
-    if(!(data.notes||'').trim()) { alert('특이사항을 입력해주세요.'); return; }
     if(!data.contact.trim()){ alert('문의처를 입력해주세요.'); return; }
 
     const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
