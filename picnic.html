@@ -482,6 +482,41 @@
     });
   })();
 
+// 팀 칩 키보드 토글
+(function bindTeamChipsA11y(){
+  const group = document.getElementById('teamChips');
+  if(!group) return;
+  group.querySelectorAll('.chip[data-val]:not([data-val="기타"])').forEach(chip=>{
+    chip.tabIndex = 0;
+    chip.setAttribute('role','button');
+  });
+  group.addEventListener('keydown', e=>{
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const chip = e.target.closest('.chip');
+    if(!chip || chip.dataset.val === '기타') return;
+    e.preventDefault();
+    toggleTeam(chip.dataset.val);
+  });
+})();
+
+// 버스 칩 키보드 토글
+(function bindBusChipsA11y(){
+  const group = document.getElementById('busChips');
+  if(!group) return;
+  group.querySelectorAll('.chip').forEach(chip=>{
+    chip.tabIndex = 0;
+    chip.setAttribute('role','radio');
+  });
+  group.addEventListener('keydown', e=>{
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const chip = e.target.closest('.chip');
+    if(!chip) return;
+    e.preventDefault();
+    setBus(chip.getAttribute('data-val'));
+  });
+})();
+
+    
   /* ===== 버스 칩 ===== */
   function setBus(val){
     const hidden = document.getElementById('bus');
@@ -730,15 +765,71 @@
       const data = collect();
       const todayStr = new Date().toISOString().slice(0,10);
 
+       // (여기 추가 👇)
+    const customOpen = document.getElementById('teamCustom')?.style.display !== 'none';
+    const customVal = document.getElementById('teamCustom')?.value.trim();
+    if (customOpen && !customVal) {
+      alert('반(기타)을 선택하셨습니다. 내용을 입력해 주세요.');
+      document.getElementById('teamCustom').focus();
+      hideLoading();
+      return;
+    }
+      
       // 필수 체크 (특이사항은 선택)
-      if(!data.team) { alert('반을 선택해주세요.'); return; }
-      if(!data.title.trim()) { alert('제목을 입력해주세요.'); return; }
-      if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); return; }
-      if(!data.date){ alert('일자를 입력해주세요.'); return; }
-      if(!data.place.trim()) { alert('장소를 입력해주세요.'); return; }
-      if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
-      if(!data.bus) { alert('버스 대절 여부를 선택해주세요.'); return; }
-      if(!data.contact.trim()){ alert('문의처를 입력해주세요.'); return; }
+     // 필수 체크 (특이사항은 선택)
+const invalid = [];
+
+// 반 선택
+if(!data.team) {
+  invalid.push(() => document.querySelector('#teamChips .chip')?.focus());
+}
+
+// 제목
+if(!data.title.trim()) {
+  invalid.push(() => document.getElementById('title').focus());
+}
+
+// 날짜 (오늘 이전이면 바로 리턴)
+if (data.date && data.date < todayStr) { 
+  alert('오늘 이후 날짜만 선택 가능합니다.'); 
+  hideLoading(); 
+  document.getElementById('date').focus(); 
+  return; 
+}
+
+// 날짜 미입력
+if(!data.date) {
+  invalid.push(() => document.getElementById('date').focus());
+}
+
+// 장소
+if(!data.place.trim()) {
+  invalid.push(() => document.getElementById('place').focus());
+}
+
+// 일정 요약
+if(!(data.schedule||'').trim()) {
+  invalid.push(() => document.getElementById('schedule').focus());
+}
+
+// 버스 여부
+if(!data.bus) {
+  invalid.push(() => document.querySelector('#busChips .chip')?.focus());
+}
+
+// 문의처
+if(!data.contact.trim()) {
+  invalid.push(() => document.getElementById('contact').focus());
+}
+
+// 하나라도 문제 있으면 처리
+if (invalid.length){
+  alert('필수 항목을 입력/선택해 주세요.');
+  invalid[0](); // 첫 번째 문제 있는 필드에 포커스
+  hideLoading();
+  return;
+}
+
 
       const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
       const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
