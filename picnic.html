@@ -7,6 +7,7 @@
   <style>
     :root{
       --brand:#e53935; --ink:#222; --muted:#666; --line:#ddd; --bg:#f7f7f9;
+      --soft:#f2f5fa; --sec:#eef3ff; --sec-line:#d9e2ff;
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
@@ -16,18 +17,40 @@
     .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
     .card h2{margin:0;padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
     .card .body{padding:18px}
-    .f{display:grid;gap:12px}
-    .row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:start}
-    .row label{font-weight:700;padding-top:6px}
+
+    /* === 섹션 구분 === */
+    .sec{display:grid;gap:12px;padding:14px 12px;border:1px solid var(--line);border-radius:14px;background:#fff}
+    .sec + .sec{margin-top:14px}
+    .sec-title{
+      font-weight:900;font-size:13px;letter-spacing:.2px;color:#1a237e;
+      background:linear-gradient(180deg,#f7f9ff,#eef3ff);
+      border:1px solid var(--sec-line);border-radius:999px;
+      display:inline-block;padding:6px 12px;
+    }
+
+    /* === 폼 로우(라벨/필드) === */
+    .row{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:start;
+      padding:10px;border:1px dashed #eee;border-radius:12px;background:#fafbff}
+    .row + .row{margin-top:8px}
+    .row label{
+      font-weight:800;padding:8px 10px;border-radius:10px;border:1px solid #e7eaf6;
+      background:#f7f9ff;color:#243b6b;display:inline-flex;align-items:center;gap:6px
+    }
+    .badge-req{
+      font-size:11px;font-weight:900;color:#b71c1c;background:#ffebee;border:1px solid #ffcdd2;
+      padding:2px 6px;border-radius:999px;
+    }
     input[type=text], input[type=date], textarea, select{
       width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none
     }
     textarea{min-height:110px;resize:vertical}
 
-    @media (max-width: 640px) {
-      .row { grid-template-columns: 1fr; gap: 6px; }
-      .row label { padding-top: 0; }
-      .row > * + * { margin-top: 2px; }
+    /* 포커스/에러 가독성 */
+    .row:focus-within{
+      background:#ffffff;border-color:#cfd8ff; box-shadow:0 0 0 3px rgba(63,81,181,.08);
+    }
+    input:focus, textarea:focus, select:focus{
+      border-color:#9fa8da;box-shadow:0 0 0 2px rgba(63,81,181,.12) inset;
     }
 
     /* 칩 공통 */
@@ -64,24 +87,13 @@
 
     /* 하단 툴바(세로 버튼) */
     .toolbar {
-      display: grid;
-      gap: 12px;
-      margin: 24px 0;
-      padding: 16px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fff;
+      display: grid; gap: 12px; margin: 24px 0; padding: 16px;
+      border: 1px solid var(--line); border-radius: 16px; background: #fff;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
     .toolbar button{
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 700;
-      border-radius: 12px;
-      transition: all .2s;
-      border:1px solid var(--line);
-      background:#fff;
-      cursor:pointer;
+      padding: 14px; font-size: 15px; font-weight: 700; border-radius: 12px;
+      transition: all .2s; border:1px solid var(--line); background:#fff; cursor:pointer;
     }
     #btnShare { border-color:#90caf9; background:#e3f2fd; color:#1565c0; }
     #btnShare:hover { background:#bbdefb; }
@@ -120,6 +132,15 @@
     .preview-toast{ display:none; align-self:flex-start; font-size:12px; color:#2e7d32; font-weight:700; }
     .preview-toast.show{ display:inline-block; }
 
+    /* 모바일 최적화 */
+    @media (max-width: 640px) {
+      .row { grid-template-columns: 1fr; gap: 6px; padding:12px }
+      .row label { padding:6px 10px }
+      .row > * + * { margin-top: 2px; }
+      .sec { padding:12px 10px }
+      .sec-title{ font-size:12px }
+    }
+
     @media print{
       .no-print, .toolbar, #busBadge, #loadingOverlay, #previewModal { display:none !important; }
       body{ background:#fff }
@@ -134,38 +155,47 @@
       <div class="card no-print">
         <h2>안내문 작성</h2>
         <div class="body">
-          <div class="f">
-          <!-- 반 선택: 칩(다중 선택) -->
-<div class="row">
-  <label>반 선택</label>
-  <div>
-    <input id="team" type="hidden" value="">
-    <div class="chip-group" id="teamChips" role="group" aria-label="반 선택">
-      <div class="chip" data-val="A">A반</div>
-      <div class="chip" data-val="B">B반</div>
-      <div class="chip" data-val="C">C반</div>
-      <div class="chip" data-val="D">D반</div>
-      <div class="chip" data-val="기타">기타</div>
-    </div>
-    <small style="color:var(--muted)">여러 반 선택 가능</small>
-  </div>
-</div>
-
-
+          <!-- === 섹션: 참여 대상 === -->
+          <div class="sec">
+            <div class="sec-title">참여 대상</div>
             <div class="row">
-              <label for="title">제목(선택)</label>
+              <label>반 선택</label>
+              <div>
+                <input id="team" type="hidden" value="">
+                <div class="chip-group" id="teamChips" role="group" aria-label="반 선택">
+                  <div class="chip" data-val="A">A반</div>
+                  <div class="chip" data-val="B">B반</div>
+                  <div class="chip" data-val="C">C반</div>
+                  <div class="chip" data-val="D">D반</div>
+                  <div class="chip" data-val="기타">기타</div>
+                </div>
+                <small style="color:var(--muted)">여러 반 선택 가능</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- === 섹션: 기본 정보 === -->
+          <div class="sec">
+            <div class="sec-title">기본 정보</div>
+            <div class="row">
+              <label for="title">제목</label>
               <input id="title" type="text" placeholder="예) 야유회 안내" />
             </div>
             <div class="row">
-              <label for="date">일자</label>
+              <label for="date">일자 <span class="badge-req">필수</span></label>
               <input id="date" type="date" />
             </div>
             <div class="row">
               <label for="place">장소</label>
               <input id="place" type="text" placeholder="예) XXX (주소는 선택사항)" />
             </div>
+          </div>
+
+          <!-- === 섹션: 운영 정보 === -->
+          <div class="sec">
+            <div class="sec-title">운영 정보</div>
             <div class="row">
-              <label for="schedule">일정 요약</label>
+              <label for="schedule">일정 요약 <span class="badge-req">필수</span></label>
               <textarea id="schedule" placeholder="예시)
 - 06:00 화랑유원지 집결
 - 06:30 버스 출발
@@ -174,7 +204,6 @@
 - 15:00 귀가"></textarea>
             </div>
 
-            <!-- 버스 대절 O/X -->
             <div class="row">
               <label>버스 대절</label>
               <div>
@@ -187,27 +216,25 @@
               </div>
             </div>
 
-   <div class="row">
-  <label for="notes">특이사항</label>
-  <div>
-    <!-- 템플릿 칩 -->
-    <div class="chip-group" id="notesPresets" role="group" aria-label="특이사항 템플릿">
-      <!-- JS에서 자동 렌더링 -->
-    </div>
-    <small style="color:var(--muted)">클릭 시 특이사항에 추가/제거됩니다(중복 방지)</small>
-
-    <!-- 실제 입력 textarea (JS가 참조하는 #notes) -->
-    <textarea id="notes" placeholder="예)
+            <div class="row">
+              <label for="notes">특이사항</label>
+              <div>
+                <div class="chip-group" id="notesPresets" role="group" aria-label="특이사항 템플릿"></div>
+                <small style="color:var(--muted)">클릭 시 특이사항에 추가/제거됩니다(중복 방지)</small>
+                <textarea id="notes" placeholder="예)
 - 편한 복장 및 운동화 권장
 - 개인 물/우의 등 준비
 - 전세버스 대절(개별 집결 없음)
 - 일부 구간은 도보 이동 예정"></textarea>
-  </div>
-</div>
+              </div>
+            </div>
+          </div>
 
-
+          <!-- === 섹션: 문의 === -->
+          <div class="sec">
+            <div class="sec-title">문의</div>
             <div class="row">
-              <label for="contact">문의처</label>
+              <label for="contact">문의처 <span class="badge-req">필수</span></label>
               <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
             </div>
           </div>
@@ -293,10 +320,10 @@
     else { finish(); }
   }
 
-  /* ===== 인앱 감지(링크 공유 등에서 필요 시) ===== */
+  /* ===== 인앱 감지 ===== */
   function isMobile(){ return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
 
-  /* ===== 수동/클립보드 복사 유틸 ===== */
+  /* ===== 복사 유틸 ===== */
   function legacyCopy(text){
     try{
       const ta = document.createElement('textarea');
@@ -355,19 +382,11 @@
     return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
   }
 
-  /* ===== 팀 칩 유틸(전역) ===== */
-  function parseTeams(str){
-    return (str || '').split(',').map(s => s.trim()).filter(Boolean);
-  }
-  function teamsToString(arr){
-    return Array.from(new Set(arr)).join(',');
-  }
-  function getTeamsArray(){
-    return parseTeams(document.getElementById('team').value);
-  }
-  function setTeamHiddenFromArray(arr){
-    document.getElementById('team').value = teamsToString(arr);
-  }
+  /* ===== 팀 칩 ===== */
+  function parseTeams(str){ return (str || '').split(',').map(s => s.trim()).filter(Boolean); }
+  function teamsToString(arr){ return Array.from(new Set(arr)).join(','); }
+  function getTeamsArray(){ return parseTeams(document.getElementById('team').value); }
+  function setTeamHiddenFromArray(arr){ document.getElementById('team').value = teamsToString(arr); }
   function renderTeamChips(){
     const selected = new Set(getTeamsArray());
     document.querySelectorAll('#teamChips .chip').forEach(chip=>{
@@ -423,100 +442,76 @@
     });
   })();
 
-/* ===== 특이사항 템플릿(칩) ===== */
-const NOTES_PRESETS = [
-  '- 편한 복장과 운동화를 착용해 주세요.',
-  '- 대중교통·자차로 개별 집결해 주세요.',
-  '- 버스 대절 관계로 정시에 집결해 주세요.',
-  '- 개인 물/우의 등 준비해주세요.',
-  '- 음료는 준비되어 있습니다.',
-  '- 장거리 일정이므로 정시에 집결해 주세요.',
-];
-
-function getNotesLines() {
-  const raw = (document.getElementById('notes').value || '')
-    .split('\n')
-    .map(s => s.trim())
-    .filter(Boolean);
-  return raw;
-}
-
-function setNotesLines(lines) {
-  const ta = document.getElementById('notes');
-  ta.value = (lines || []).join('\n');
-  syncNotesPresetSelection(); // 내용 반영 후 칩 상태 동기화
-}
-
-function toggleNotePreset(text) {
-  const lines = getNotesLines();
-  const i = lines.indexOf(text);
-  if (i >= 0) {
-    lines.splice(i, 1);           // 이미 있으면 제거
-  } else {
-    lines.push(text);             // 없으면 추가(맨 아래 줄)
+  /* ===== 특이사항 템플릿(칩) ===== */
+  const NOTES_PRESETS = [
+    '- 편한 복장과 운동화를 착용해 주세요.',
+    '- 대중교통·자차로 개별 집결해 주세요.',
+    '- 버스 대절 관계로 정시에 집결해 주세요.',
+    '- 개인 물/우의 등 준비해주세요.',
+    '- 음료는 준비되어 있습니다.',
+    '- 장거리 일정이므로 정시에 집결해 주세요.',
+  ];
+  function getNotesLines(){
+    const raw = (document.getElementById('notes').value || '')
+      .split('\n').map(s => s.trim()).filter(Boolean);
+    return raw;
   }
-  setNotesLines(lines);
-}
-
-function renderNotesPresets() {
-  const box = document.getElementById('notesPresets');
-  if (!box) return;
-  box.innerHTML = '';
-  NOTES_PRESETS.forEach(txt => {
-    const chip = document.createElement('div');
-    chip.className = 'chip';
-    chip.textContent = txt;
-    chip.tabIndex = 0;
-    chip.setAttribute('role', 'button');
-    chip.setAttribute('data-text', txt);
-    box.appendChild(chip);
-  });
-
-  // 클릭/키보드로 토글
-  box.addEventListener('click', e => {
-    const c = e.target.closest('.chip');
-    if (!c) return;
-    toggleNotePreset(c.getAttribute('data-text'));
-  });
-  box.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      const c = e.target.closest('.chip');
-      if (!c) return;
-      e.preventDefault();
-      toggleNotePreset(c.getAttribute('data-text'));
-    }
-  });
-
-  // 초기 선택 상태 반영
-  syncNotesPresetSelection();
-}
-
-function syncNotesPresetSelection() {
-  const selected = new Set(getNotesLines());
-  document.querySelectorAll('#notesPresets .chip').forEach(chip => {
-    const t = chip.getAttribute('data-text');
-    chip.classList.toggle('selected', selected.has(t));
-  });
-}
-
-// 사용자가 직접 메모 입력/삭제해도 칩 상태가 맞춰지도록
-(function bindNotesInputSync(){
-  const ta = document.getElementById('notes');
-  if (!ta) return;
-  ta.addEventListener('input', () => {
-    // 입력이 바뀌면 칩 선택상태 동기화
+  function setNotesLines(lines){
+    const ta = document.getElementById('notes');
+    ta.value = (lines || []).join('\n');
     syncNotesPresetSelection();
-  });
-})();
-
-// 초기 렌더 (init() 실행 전에 불러도 OK)
-renderNotesPresets();
-
+  }
+  function toggleNotePreset(text){
+    const lines = getNotesLines();
+    const i = lines.indexOf(text);
+    if (i >= 0) lines.splice(i, 1);
+    else lines.push(text);
+    setNotesLines(lines);
+  }
+  function renderNotesPresets(){
+    const box = document.getElementById('notesPresets');
+    if (!box) return;
+    box.innerHTML = '';
+    NOTES_PRESETS.forEach(txt => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = txt;
+      chip.tabIndex = 0;
+      chip.setAttribute('role', 'button');
+      chip.setAttribute('data-text', txt);
+      box.appendChild(chip);
+    });
+    box.addEventListener('click', e => {
+      const c = e.target.closest('.chip'); if (!c) return;
+      toggleNotePreset(c.getAttribute('data-text'));
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const c = e.target.closest('.chip'); if (!c) return;
+        e.preventDefault();
+        toggleNotePreset(c.getAttribute('data-text'));
+      }
+    });
+    syncNotesPresetSelection();
+  }
+  function syncNotesPresetSelection(){
+    const selected = new Set(getNotesLines());
+    document.querySelectorAll('#notesPresets .chip').forEach(chip => {
+      const t = chip.getAttribute('data-text');
+      chip.classList.toggle('selected', selected.has(t));
+    });
+  }
+  (function bindNotesInputSync(){
+    const ta = document.getElementById('notes');
+    if (!ta) return;
+    ta.addEventListener('input', () => { syncNotesPresetSelection(); });
+  })();
+  renderNotesPresets();
 
   /* ===== 폼 수집 ===== */
   function collect(){
     return {
-      team: document.getElementById('team').value, // "A,B,기타" 형식
+      team: document.getElementById('team').value,
       title: document.getElementById('title').value,
       date: document.getElementById('date').value,
       schedule: document.getElementById('schedule').value,
@@ -535,7 +530,6 @@ renderNotesPresets();
 
   /* ===== 제목/공유 텍스트 ===== */
   function makeShareTitle(d){
-    // ※ 요청대로 '제목' 로직은 기존 유지
     const teamLabel = d.team ? `${d.team}반` : '';
     const dateTxt = d.date ? weekdayKR(d.date) : '';
     const rawTitle = (d.title || '').trim();
@@ -612,7 +606,6 @@ renderNotesPresets();
       setTimeout(()=> toast.classList.remove('show'), 1500);
     }
 
-    // 외부에서 사용
     window.openPreviewModal = openPreviewModal;
     window.closePreviewModal = closePreviewModal;
 
@@ -620,55 +613,46 @@ renderNotesPresets();
     btnClose2?.addEventListener('click', closePreviewModal);
   })();
 
-  /* ===== 버튼: 안내문(공유용 텍스트) — 모달만 띄움 ===== */
+  /* ===== 버튼 동작 ===== */
   document.getElementById('btnCopyText').addEventListener('click', async ()=>{
     showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 300);
     try{
       const text = buildShareText();
-      openPreviewModal(text); // URL 포함 안 함
-    }finally{
-      hideLoading();
-    }
+      openPreviewModal(text);
+    }finally{ hideLoading(); }
   });
 
-  /* ===== 버튼: 임시저장(수정용 링크) ===== */
-document.getElementById('btnShare').addEventListener('click', async ()=>{
-  showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
-  try{
-    const res = await fetchWithTimeout(GAS_URL, {
-      method:'POST',
-      body: JSON.stringify({ mode:'share', data: collect() })
-    });
-    let json;
-    try{ json = await res.json(); }
-    catch{
-      const t = await res.text();
-      throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
-    }
-    if(res.ok && json.status==='ok' && json.key){
-      const url = new URL(location.href);
-      url.searchParams.delete('code');
-      url.searchParams.set('k', json.key);
-      history.replaceState(null, '', url.toString());
+  document.getElementById('btnShare').addEventListener('click', async ()=>{
+    showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
+    try{
+      const res = await fetchWithTimeout(GAS_URL, {
+        method:'POST',
+        body: JSON.stringify({ mode:'share', data: collect() })
+      });
+      let json;
+      try{ json = await res.json(); }
+      catch{
+        const t = await res.text();
+        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+      }
+      if(res.ok && json.status==='ok' && json.key){
+        const url = new URL(location.href);
+        url.searchParams.delete('code');
+        url.searchParams.set('k', json.key);
+        history.replaceState(null, '', url.toString());
 
-      // 원래는 safeDistribute() → 공유창 뜸
-      // 👉 안내문(공유용 텍스트)처럼 복사 미리보기만
-      const titleText = makeShareTitle(collect());
-      const shareText = `${titleText}\n${url.toString()}`;
-      openPreviewModal(shareText);
+        const titleText = makeShareTitle(collect());
+        const shareText = `${titleText}\n${url.toString()}`;
+        openPreviewModal(shareText);
+      }else{
+        alert('임시 저장 실패: ' + (json.error || res.status));
+      }
+    }catch(err){
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('임시 저장 중 오류: ' + msg);
+    }finally{ hideLoading(); }
+  });
 
-    }else{
-      alert('임시 저장 실패: ' + (json.error || res.status));
-    }
-  }catch(err){
-    const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-    alert('임시 저장 중 오류: ' + msg);
-  }finally{
-    hideLoading();
-  }
-});
-
-  /* ===== 제출(인사지원팀) ===== */
   async function submitToSheet(){
     showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
     try{
@@ -695,9 +679,7 @@ document.getElementById('btnShare').addEventListener('click', async ()=>{
     }catch(err){
       const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
       alert('전송 중 오류: ' + msg);
-    }finally{
-      hideLoading();
-    }
+    }finally{ hideLoading(); }
   }
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
@@ -737,7 +719,7 @@ document.getElementById('btnShare').addEventListener('click', async ()=>{
     }
   }
 
-  /* ===== 오늘 이전 날짜 선택 금지(HTML min 설정) ===== */
+  /* ===== 오늘 이전 날짜 선택 금지 ===== */
   (function lockPastDate(){
     const el = document.getElementById('date');
     if(!el) return;
