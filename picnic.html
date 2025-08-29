@@ -369,7 +369,7 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try{ await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; }
       catch(_){}
-
+}
     if (legacyCopy(toCopy)) { return { method:'legacy' }; }
 
     alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
