@@ -170,6 +170,9 @@
 
       <!-- 선택한 지점의 네이버 플레이스(또는 검색) URL 저장 -->
       <input id="placeUrl" type="hidden" value="" />
+      <input id="placeAddr" type="hidden" value="" />
+<input id="placeTel"  type="hidden" value="" />
+<input id="placeLink" type="hidden" value="" />
 
       <!-- 사용자가 지점을 확정하면 여기 미리보기로 표시됨 -->
       <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;">
@@ -504,34 +507,58 @@ function setSelectedPlace(item){
         if(!res.ok) throw new Error(json && json.error || ('HTTP '+res.status));
         const rows = Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
         if(!rows.length){ this.listEl.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>'; return; }
-        const mapRow = (r)=>({
-          name: r.name || r.title || r.place_name || '',
-          road: r.roadAddress || r.road_address || r.road || r.address || '',
-          jibun: r.jibunAddress || r.jibun_address || '',
-          url : r.mapUrl || r.link || r.url || ''
-        });
-        this.listEl.innerHTML = rows.map(r=>{
-          const x = mapRow(r);
-          const addr = x.road || x.jibun || '';
-          return `<div class="place-item" data-url="${encodeURIComponent(x.url)}" data-name="${encodeURIComponent(x.name)}">
-                    <b>${escapeHTML(x.name)}</b>
-                    <small>${escapeHTML(addr)}</small>
-                  </div>`;
-        }).join('');
-        this.listEl.querySelectorAll('.place-item').forEach(el=>{
-          el.addEventListener('click', ()=>{
-            const url = decodeURIComponent(el.getAttribute('data-url')||'');
-            const name = decodeURIComponent(el.getAttribute('data-name')||'');
-            if(url){
-              setPickedPlaceLink(url, name||'지도열기');
-            }else{
-              // URL이 비어있으면 검색링크로 대체
-              setPickedPlaceLink(buildNaverSearchLink(name || q), name||q);
-            }
-            if(name){ document.getElementById('place').value = name; }
-            this.close();
-          });
-        });
+       // placeModal.search() 안의 mapRow 부분 교체
+const mapRow = (r)=>({
+  name: r.name || r.title || r.place_name || '',
+  road: r.roadAddress || r.road_address || r.road || '',
+  jibun: r.jibunAddress || r.jibun_address || r.address || '',
+  tel : r.telephone || r.tel || '',
+  url : r.mapUrl || r.link || r.url || ''
+});
+
+       // this.listEl.innerHTML 생성 부분 교체
+this.listEl.innerHTML = rows.map(r=>{
+  const x = mapRow(r);
+  const addr = x.road || x.jibun || '';
+  return `<div class="place-item"
+              data-url="${encodeURIComponent(x.url)}"
+              data-name="${encodeURIComponent(x.name)}"
+              data-addr="${encodeURIComponent(addr)}"
+              data-tel="${encodeURIComponent(x.tel)}"
+              data-link="${encodeURIComponent(x.url)}">
+            <b>${escapeHTML(x.name)}</b>
+            <small>${escapeHTML(addr)}</small>
+          </div>`;
+}).join('');
+
+       // this.listEl.querySelectorAll('.place-item').forEach(...) 내부 교체
+this.listEl.querySelectorAll('.place-item').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const name = decodeURIComponent(el.getAttribute('data-name')||'');
+    const addr = decodeURIComponent(el.getAttribute('data-addr')||'');
+    const tel  = decodeURIComponent(el.getAttribute('data-tel')||'');
+    const link = decodeURIComponent(el.getAttribute('data-link')||'');
+    const finalUrl = link || buildNaverSearchLink(name || q);
+
+    // hidden들 채우기
+    setSelectedPlace({
+      title: name,
+      roadAddress: addr,   // setSelectedPlace에서 roadAddress 우선 사용
+      address: addr,
+      telephone: tel,
+      link: finalUrl
+    });
+
+    // 화면 미리보기/버튼 링크 갱신
+    setPickedPlaceLink(finalUrl, name || '지도열기');
+
+    // 입력창에도 상호명 세팅
+    if(name){ document.getElementById('place').value = name; }
+
+    this.close();
+  });
+});
+
       }catch(err){
         console.error(err);
         this.listEl.innerHTML = `<div class="empty">검색 오류: ${escapeHTML(err.message||'알 수 없음')}</div>`;
@@ -609,21 +636,25 @@ function setSelectedPlace(item){
   renderNotesPresets();
 
   /* 폼 수집 */
-  function collect(){
+ function collect(){
+  const val = id => document.getElementById(id)?.value || '';
   return {
-    team: document.getElementById('team').value,
-    title: document.getElementById('title').value,
-    date: document.getElementById('date').value,
-    schedule: document.getElementById('schedule').value,
-    bus: document.getElementById('bus').value,
-    place: document.getElementById('place').value,
-    // ▼ 추가
-    placeAddr: document.getElementById('placeAddr').value,
-    placeTel:  document.getElementById('placeTel').value,
-    placeLink: document.getElementById('placeLink').value,
-    // ▲ 추가
-    notes: document.getElementById('notes').value,
-    contact: document.getElementById('contact').value,
+    team: val('team'),
+    title: val('title'),
+    date: val('date'),
+    schedule: val('schedule'),
+    bus: val('bus'),
+
+    place: val('place'),
+    // ▼ 추가/수정: 누락되었던 필드들 + 널가드
+    placeAddr: val('placeAddr'),
+    placeTel:  val('placeTel'),
+    placeLink: val('placeLink'),
+    placeUrl:  val('placeUrl'),
+    // ▲
+
+    notes: val('notes'),
+    contact: val('contact'),
     busShow: document.getElementById('busShow')?.checked ? 1 : 0,
   };
 }
@@ -884,10 +915,15 @@ function setSelectedPlace(item){
         document.getElementById('place').value = data.place||'';
         document.getElementById('placeUrl').value = data.placeUrl||'';
         if(data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
-        document.getElementById('notes').value = data.notes||'';
-        document.getElementById('contact').value = data.contact||'';
-        document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
-      }
+        // ✅ 여기 추가
+  document.getElementById('placeAddr').value = data.placeAddr || '';
+  document.getElementById('placeTel').value  = data.placeTel  || '';
+  document.getElementById('placeLink').value = data.placeLink || '';
+
+  document.getElementById('notes').value = data.notes||'';
+  document.getElementById('contact').value = data.contact||'';
+  document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
+}
     }else{
       document.getElementById('title').value = '야유회 안내';
       document.getElementById('team').value = '';
@@ -914,9 +950,16 @@ function setSelectedPlace(item){
         document.getElementById('place').value = data.place||'';
         document.getElementById('placeUrl').value = data.placeUrl||'';
         if(data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
-        document.getElementById('notes').value = data.notes||'';
-        document.getElementById('contact').value = data.contact||'';
-        document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
+         // ✅ 여기 추가
+  document.getElementById('placeAddr').value = data.placeAddr || '';
+  document.getElementById('placeTel').value  = data.placeTel  || '';
+  document.getElementById('placeLink').value = data.placeLink || '';
+
+  document.getElementById('notes').value = data.notes||'';
+  document.getElementById('contact').value = data.contact||'';
+  document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
+}
+    
       }else{
         alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
       }
