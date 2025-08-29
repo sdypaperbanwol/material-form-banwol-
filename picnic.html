@@ -165,6 +165,16 @@
       .wrap{ max-width:900px }
       pre, textarea { font-family: inherit; font-size: 14px; }
     }
+
+    /* === 카드형(세로 얇게)일 때 타이트 스타일 === */
+#exportDoc.card-narrow #exportInner { padding:22px 24px; }         /* 좌우 여백 줄임 */
+#exportDoc.card-narrow .export-title { font-size:18px; margin-bottom:8px; }
+#exportDoc.card-narrow .export-meta { padding:8px 10px; }
+#exportDoc.card-narrow .export-meta b { width:48px; }               /* 라벨 칸 축소 */
+#exportDoc.card-narrow .export-sec-title { font-size:14px; margin-top:14px; }
+#exportDoc.card-narrow .export-list li { margin:3px 0; }
+
+    
   </style>
 </head>
 <body>
@@ -1004,7 +1014,7 @@
     inner.innerHTML = buildExportHTML();
   }
 
- async function exportAsImage(){
+async function exportAsImage(){
   showLoading('이미지 생성 중…', '잠시만 기다려주세요');
   try{
     fillExportDom();
@@ -1013,22 +1023,28 @@
     const sel    = document.getElementById('exportWidth');
     const choice = sel ? sel.value : 'auto';
 
-    // 기존 width 백업
+    // 기존 width/class 백업
     const prevWidth = target.style.width;
+    const hadNarrow = target.classList.contains('card-narrow');
 
-    // ✅ 폭 결정
+    // ===== 폭 결정 =====
     let pxWidth;
     if (choice === 'auto') {
-      // 내용 기반 자동 맞춤: 최소 520px, 최대 794px
-      // inner 의 실제 내용 폭을 재보고 여백(패딩+여유) 더해서 클램프
-      // 현재 exportInner 패딩 좌우 합이 64px이므로 +64, 여유 16 더해 약간 넉넉하게
+      // ⚠️ 세로 얇게: 강한 클램프(최소 420 ~ 최대 560)
+      // 내용 길이에 맞추되, 너무 넓어지지 않게 제한
+      target.style.width = 'auto';                    // 컨테이너 강제폭 해제 후 실제 폭 측정
       const measured = inner.scrollWidth || 0;
-      pxWidth = Math.max(520, Math.min(794, measured + 16));
+      pxWidth = Math.max(420, Math.min(560, measured + 12));  // 여유 12px
     } else {
-      pxWidth = parseInt(choice, 10) || 794;
+      pxWidth = parseInt(choice, 10) || 560;
     }
 
+    // 폭 적용
     target.style.width = pxWidth + 'px';
+
+    // ===== 좁으면 카드형 스타일 적용 =====
+    if (pxWidth <= 560) target.classList.add('card-narrow');
+    else target.classList.remove('card-narrow');
 
     // 렌더
     const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
@@ -1041,10 +1057,12 @@
     a.click();
     a.remove();
 
-    // width 복원
+    // 복원
     target.style.width = prevWidth;
+    if (!hadNarrow) target.classList.remove('card-narrow');
   } finally { hideLoading(); }
 }
+
 
 
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
