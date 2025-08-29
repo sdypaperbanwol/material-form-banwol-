@@ -63,18 +63,17 @@
     .chip.selected{border-color:var(--brand); color:#fff; background:var(--brand)}
 
     /* 특이사항 칩 전용 스타일 (네모, 좌측 정렬, 항상 2줄 높이) */
-   #notesPresets .chip {
-  border-radius:8px;
-  padding:8px 12px;     /* 좌우 padding 줄여서 공간 확보 */
-  font-size:13px;       /* 살짝 줄여서 한 줄에 들어가기 쉽게 */
-  text-align:left;
-  line-height:1.4;
-  white-space:normal;   /* 길면 줄바꿈 허용 */
-  min-height:36px;      /* 줄여도 보기 좋게 */
-  display:flex;
-  align-items:center;
-}
-
+    #notesPresets .chip {
+      border-radius:8px;
+      padding:8px 12px;
+      font-size:13px;
+      text-align:left;
+      line-height:1.4;
+      white-space:normal;
+      min-height:36px;
+      display:flex;
+      align-items:center;
+    }
 
     /* 우하단 배지 */
     #busBadge{
@@ -116,48 +115,13 @@
     #btnSubmit { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
     #btnSubmit:hover { background:#ffcdd2; }
 
-/* 안내문 PDF/이미지용 타이틀/섹션 스타일 */
-.export-title{
-  font-weight:900; font-size:20px; margin:0 0 10px;
-}
-.export-meta{ margin:10px 0 16px; padding:10px 12px; background:#f7f9ff; border:1px solid #e6ebff; border-radius:10px; }
-.export-meta b{ display:inline-block; width:56px; color:#1a237e; }
-.export-sec-title{
-  margin:18px 0 8px; font-weight:800; color:#1a237e; border-left:4px solid #1a237e; padding-left:8px;
-}
-.export-list{ margin:6px 0 0 0; padding-left:18px; }
-.export-list li{ margin:4px 0; }
-
-    
-    /* 미리보기 모달 */
-    #previewModal[hidden] { display: none; }
-    #previewModal {
-      position: fixed; inset: 0; z-index: 20000;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,.45);
-      padding: 20px;
-    }
-    .preview-card{
-      width: min(720px, 94vw);
-      background:#fff; border:1px solid var(--line); border-radius:16px;
-      box-shadow:0 12px 30px rgba(0,0,0,.18);
-      display:flex; flex-direction:column; gap:12px; padding:16px;
-    }
-    .preview-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .preview-head h3{ margin:0; font-size:18px }
-    .preview-actions{ display:flex; gap:8px; justify-content:flex-end }
-    .preview-actions button{
-      border:1px solid var(--line); background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer;
-    }
-    #previewTa{
-      width:100%; min-height:220px; max-height:420px;
-      padding:10px; border:1px solid #ddd; border-radius:10px;
-      font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
-      resize:vertical; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
-    }
-    .preview-hint{ font-size:12px; color:#777 }
-    .preview-toast{ display:none; align-self:flex-start; font-size:12px; color:#2e7d32; font-weight:700; }
-    .preview-toast.show{ display:inline-block; }
+    /* 안내문 PDF/이미지용 타이틀/섹션 스타일 */
+    .export-title{ font-weight:900; font-size:20px; margin:0 0 10px; }
+    .export-meta{ margin:10px 0 16px; padding:10px 12px; background:#f7f9ff; border:1px solid #e6ebff; border-radius:10px; }
+    .export-meta b{ display:inline-block; width:56px; color:#1a237e; }
+    .export-sec-title{ margin:18px 0 8px; font-weight:800; color:#1a237e; border-left:4px solid #1a237e; padding-left:8px; }
+    .export-list{ margin:6px 0 0 0; padding-left:18px; }
+    .export-list li{ margin:4px 0; }
 
     /* 모바일 최적화 */
     @media (max-width: 640px) {
@@ -275,7 +239,9 @@
     <!-- 하단 툴바 -->
     <div class="toolbar no-print">
       <button id="btnShare">임시 저장하기</button>
-      <button id="btnCopyText">안내문 미리보기</button>
+      <button id="btnCopyText">안내문(텍스트)</button>
+      <button id="btnExportPDF">안내문(PDF)</button>
+      <button id="btnExportIMG">안내문(이미지)</button>
       <button id="btnSubmit">인사지원팀 제출</button>
     </div>
   </div>
@@ -309,6 +275,7 @@
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
+  <!-- ===== 앱 스크립트 (메인) ===== -->
   <script>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZVROE3X1C1LywBB1jfrOC6yxCKTVIPmuZ_yA3V-c84Q1DBXIrLc2parM_gsHJLAY/exec';
 
@@ -396,7 +363,7 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try { await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; }
       catch(_) {}
-    } // ← 누락되었던 닫는 중괄호 보완
+    }
 
     if (legacyCopy(toCopy)) { return { method:'legacy' }; }
 
@@ -495,41 +462,23 @@
     });
   })();
 
-// 팀 칩 키보드 토글
-(function bindTeamChipsA11y(){
-  const group = document.getElementById('teamChips');
-  if(!group) return;
-  group.querySelectorAll('.chip[data-val]:not([data-val="기타"])').forEach(chip=>{
-    chip.tabIndex = 0;
-    chip.setAttribute('role','button');
-  });
-  group.addEventListener('keydown', e=>{
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const chip = e.target.closest('.chip');
-    if(!chip || chip.dataset.val === '기타') return;
-    e.preventDefault();
-    toggleTeam(chip.dataset.val);
-  });
-})();
+  // 팀 칩 키보드 토글
+  (function bindTeamChipsA11y(){
+    const group = document.getElementById('teamChips');
+    if(!group) return;
+    group.querySelectorAll('.chip[data-val]:not([data-val="기타"])').forEach(chip=>{
+      chip.tabIndex = 0;
+      chip.setAttribute('role','button');
+    });
+    group.addEventListener('keydown', e=>{
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const chip = e.target.closest('.chip');
+      if(!chip || chip.dataset.val === '기타') return;
+      e.preventDefault();
+      toggleTeam(chip.dataset.val);
+    });
+  })();
 
-// 버스 칩 키보드 토글
-(function bindBusChipsA11y(){
-  const group = document.getElementById('busChips');
-  if(!group) return;
-  group.querySelectorAll('.chip').forEach(chip=>{
-    chip.tabIndex = 0;
-    chip.setAttribute('role','radio');
-  });
-  group.addEventListener('keydown', e=>{
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const chip = e.target.closest('.chip');
-    if(!chip) return;
-    e.preventDefault();
-    setBus(chip.getAttribute('data-val'));
-  });
-})();
-
-    
   /* ===== 버스 칩 ===== */
   function setBus(val){
     const hidden = document.getElementById('bus');
@@ -558,6 +507,23 @@
       const target = e.target.closest('.chip');
       if(!target) return;
       setBus(target.getAttribute('data-val'));
+    });
+  })();
+
+  // 버스 칩 키보드 접근성
+  (function bindBusChipsA11y(){
+    const group = document.getElementById('busChips');
+    if(!group) return;
+    group.querySelectorAll('.chip').forEach(chip=>{
+      chip.tabIndex = 0;
+      chip.setAttribute('role','radio');
+    });
+    group.addEventListener('keydown', e=>{
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      e.preventDefault();
+      setBus(chip.getAttribute('data-val'));
     });
   })();
 
@@ -647,21 +613,16 @@
   }
 
   /* ===== 제목/공유 텍스트 ===== */
-function makeShareTitle(d){
-  // team값에서 "기타:" 접두어 제거
-  const cleanTeam = (d.team || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean)
-    .map(v => v.startsWith('기타:') ? v.slice(3) : v) // "기타:" 제거
-    .join(',');
-  const teamLabel = cleanTeam ? `${cleanTeam}반` : '';
-  const dateTxt = d.date ? weekdayKR(d.date) : '';
-  const rawTitle = (d.title || '').trim();
-  if (rawTitle) return rawTitle;
-  return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
-}
-
+  function makeShareTitle(d){
+    const cleanTeam = (d.team || '')
+      .split(',').map(s=>s.trim()).filter(Boolean)
+      .map(v => v.startsWith('기타:') ? v.slice(3) : v).join(',');
+    const teamLabel = cleanTeam ? `${cleanTeam}반` : '';
+    const dateTxt = d.date ? weekdayKR(d.date) : '';
+    const rawTitle = (d.title || '').trim();
+    if (rawTitle) return rawTitle;
+    return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
+  }
   function buildShareText(){
     const d = collect();
     const lines = [];
@@ -670,7 +631,7 @@ function makeShareTitle(d){
 
     lines.push(header, '');
 
-    // [반] 줄에서 '기타:' 접두어 제거해서 출력
+    // [반] 줄에서 '기타:' 제거
     if (d.team) {
       const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
       const teamLabel = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
@@ -786,71 +747,39 @@ function makeShareTitle(d){
       const data = collect();
       const todayStr = new Date().toISOString().slice(0,10);
 
-       // (여기 추가 👇)
-    const customOpen = document.getElementById('teamCustom')?.style.display !== 'none';
-    const customVal = document.getElementById('teamCustom')?.value.trim();
-    if (customOpen && !customVal) {
-      alert('반(기타)을 선택하셨습니다. 내용을 입력해 주세요.');
-      document.getElementById('teamCustom').focus();
-      hideLoading();
-      return;
-    }
-      
+      // (기타 입력 강제)
+      const customOpen = document.getElementById('teamCustom')?.style.display !== 'none';
+      const customVal = document.getElementById('teamCustom')?.value.trim();
+      if (customOpen && !customVal) {
+        alert('반(기타)을 선택하셨습니다. 내용을 입력해 주세요.');
+        document.getElementById('teamCustom').focus();
+        hideLoading();
+        return;
+      }
+
       // 필수 체크 (특이사항은 선택)
-     // 필수 체크 (특이사항은 선택)
-const invalid = [];
+      const invalid = [];
+      if(!data.team) invalid.push(() => document.querySelector('#teamChips .chip')?.focus());
+      if(!data.title.trim()) invalid.push(() => document.getElementById('title').focus());
 
-// 반 선택
-if(!data.team) {
-  invalid.push(() => document.querySelector('#teamChips .chip')?.focus());
-}
+      if (data.date && data.date < todayStr) {
+        alert('오늘 이후 날짜만 선택 가능합니다.');
+        hideLoading();
+        document.getElementById('date').focus();
+        return;
+      }
+      if(!data.date) invalid.push(() => document.getElementById('date').focus());
+      if(!data.place.trim()) invalid.push(() => document.getElementById('place').focus());
+      if(!(data.schedule||'').trim()) invalid.push(() => document.getElementById('schedule').focus());
+      if(!data.bus) invalid.push(() => document.querySelector('#busChips .chip')?.focus());
+      if(!data.contact.trim()) invalid.push(() => document.getElementById('contact').focus());
 
-// 제목
-if(!data.title.trim()) {
-  invalid.push(() => document.getElementById('title').focus());
-}
-
-// 날짜 (오늘 이전이면 바로 리턴)
-if (data.date && data.date < todayStr) { 
-  alert('오늘 이후 날짜만 선택 가능합니다.'); 
-  hideLoading(); 
-  document.getElementById('date').focus(); 
-  return; 
-}
-
-// 날짜 미입력
-if(!data.date) {
-  invalid.push(() => document.getElementById('date').focus());
-}
-
-// 장소
-if(!data.place.trim()) {
-  invalid.push(() => document.getElementById('place').focus());
-}
-
-// 일정 요약
-if(!(data.schedule||'').trim()) {
-  invalid.push(() => document.getElementById('schedule').focus());
-}
-
-// 버스 여부
-if(!data.bus) {
-  invalid.push(() => document.querySelector('#busChips .chip')?.focus());
-}
-
-// 문의처
-if(!data.contact.trim()) {
-  invalid.push(() => document.getElementById('contact').focus());
-}
-
-// 하나라도 문제 있으면 처리
-if (invalid.length){
-  alert('필수 항목을 입력/선택해 주세요.');
-  invalid[0](); // 첫 번째 문제 있는 필드에 포커스
-  hideLoading();
-  return;
-}
-
+      if (invalid.length){
+        alert('필수 항목을 입력/선택해 주세요.');
+        invalid[0]();
+        hideLoading();
+        return;
+      }
 
       const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
       const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
@@ -873,43 +802,6 @@ if (invalid.length){
     }
   }
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
-
-  /* ===== 저장값 불러오기 ===== */
-  async function loadByKey(k){
-    showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
-    try{
-      const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
-      const res = await fetchWithTimeout(url);
-      let json;
-      try{ json = await res.json(); }
-      catch{
-        const t = await res.text();
-        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
-      }
-      if(json.status === 'ok' && json.data){
-        const data = json.data;
-        document.getElementById('team').value = data.team || '';
-        renderTeamChips();
-        restoreCustomTeamFromTeamValue();
-
-        document.getElementById('title').value = data.title||'';
-        document.getElementById('date').value = data.date||'';
-        document.getElementById('schedule').value = data.schedule||'';
-        document.getElementById('bus').value = data.bus || '';
-        setBus(document.getElementById('bus').value || '');
-        document.getElementById('place').value = data.place||'';
-        document.getElementById('notes').value = data.notes||'';
-        document.getElementById('contact').value = data.contact||'';
-      }else{
-        alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
-      }
-    } catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('불러오기 오류: ' + msg);
-    } finally{
-      hideLoading();
-    }
-  }
 
   /* ===== 오늘 이전 날짜 선택 금지 ===== */
   (function lockPastDate(){
@@ -956,130 +848,145 @@ if (invalid.length){
     updateBusBadgeVisibility();
   })();
 
-<!-- 안내문 PDF/이미지용 미리보기 DOM (화면에 안 보임) -->
-<div id="exportDoc" style="position:absolute; left:-99999px; top:-99999px; width:794px; background:#fff;">
-  <!-- 794px = A4 width @96dpi. 높이는 내용에 따라 자동 -->
-  <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;">
-    <!-- JS에서 내용이 채워짐 -->
-  </div>
-</div>
-<script>
-// 안내문용 DOM을 채우는 함수
-function buildExportHTML(){
-  const d = collect();
-  const dateStr = d.date ? weekdayKR(d.date) : '-';
+  /* ===== 임시 저장 불러오기 ===== */
+  async function loadByKey(k){
+    showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
+    try{
+      const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
+      const res = await fetchWithTimeout(url);
+      let json;
+      try{ json = await res.json(); }
+      catch{
+        const t = await res.text();
+        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+      }
+      if(json.status === 'ok' && json.data){
+        const data = json.data;
+        document.getElementById('team').value = data.team || '';
+        renderTeamChips();
+        restoreCustomTeamFromTeamValue();
 
-  // team 문자열에서 '기타:' 제거해 표시
-  let teamLine = '-';
-  if (d.team) {
-    const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
-    teamLine = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
+        document.getElementById('title').value = data.title||'';
+        document.getElementById('date').value = data.date||'';
+        document.getElementById('schedule').value = data.schedule||'';
+        document.getElementById('bus').value = data.bus || '';
+        setBus(document.getElementById('bus').value || '');
+        document.getElementById('place').value = data.place||'';
+        document.getElementById('notes').value = data.notes||'';
+        document.getElementById('contact').value = data.contact||'';
+      }else{
+        alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
+      }
+    } catch(err){
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('불러오기 오류: ' + msg);
+    } finally{
+      hideLoading();
+    }
   }
+  </script>
 
-  // 일정/특이사항 라인 가공
-  const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
-  const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  <!-- ===== 외부 라이브러리 (PDF/이미지) ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-  // 헤더 타이틀
-  const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine+'반'), '야유회'].filter(Boolean).join(' '));
-
-  // HTML 구성
-  return `
-    <div class="export-title">${title}</div>
-
-    <div class="export-meta">
-      <div><b>반</b> ${teamLine || '-'}</div>
-      <div><b>일자</b> ${dateStr}</div>
-      <div><b>장소</b> ${d.place || '-'}</div>
-      ${ (d.bus||'').trim() ? `<div><b>버스</b> ${d.bus}</div>` : '' }
-      <div><b>문의</b> ${d.contact || '-'}</div>
+  <!-- 안내문 PDF/이미지용 미리보기 DOM (화면에 안 보임) -->
+  <div id="exportDoc" style="position:absolute; left:-99999px; top:-99999px; width:794px; background:#fff;">
+    <!-- 794px = A4 width @96dpi -->
+    <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;">
+      <!-- JS에서 내용이 채워짐 -->
     </div>
+  </div>
 
-    <div class="export-sec-title">일정 요약</div>
-    ${scheduleLines.length
-      ? `<ul class="export-list">${scheduleLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
-      : `<div style="color:#999">-</div>`}
+  <!-- ===== PDF/이미지 생성 스크립트 ===== -->
+  <script>
+  function buildExportHTML(){
+    const d = collect();
+    const dateStr = d.date ? weekdayKR(d.date) : '-';
 
-    ${notesLines.length
-      ? `
-        <div class="export-sec-title">특이사항</div>
-        <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>
-      ` : '' }
-  `;
-}
+    // team 문자열에서 '기타:' 제거
+    let teamLine = '-';
+    if (d.team) {
+      const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
+      teamLine = arr.map(v => v.startsWith('기타:') ? v.replace(/^기타:/,'') : v).join(', ');
+    }
 
-// 간단 이스케이프
-function escapeHTML(s){
-  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
+    const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
+    const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
 
-// DOM 채우기
-function fillExportDom(){
-  const inner = document.getElementById('exportInner');
-  if(!inner) return;
-  inner.innerHTML = buildExportHTML();
-}
+    const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine+'반'), '야유회'].filter(Boolean).join(' '));
 
-// 이미지로 저장 (PNG)
-async function exportAsImage(){
-  showLoading('이미지 생성 중…', '잠시만 기다려주세요');
-  try{
-    fillExportDom();
-    const target = document.getElementById('exportDoc');
-    // 더 선명하게 (scale=2)
-    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-    const dataURL = canvas.toDataURL('image/png');
+    return `
+      <div class="export-title">${title}</div>
+      <div class="export-meta">
+        <div><b>반</b> ${teamLine || '-'}</div>
+        <div><b>일자</b> ${dateStr}</div>
+        <div><b>장소</b> ${d.place || '-'}</div>
+        ${ (d.bus||'').trim() ? `<div><b>버스</b> ${d.bus}</div>` : '' }
+        <div><b>문의</b> ${d.contact || '-'}</div>
+      </div>
 
-    // 다운로드
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = (collect().title || '안내문') + '.png';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    hideLoading();
+      <div class="export-sec-title">일정 요약</div>
+      ${scheduleLines.length
+        ? `<ul class="export-list">${scheduleLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+        : `<div style="color:#999">-</div>`}
+
+      ${notesLines.length
+        ? `
+          <div class="export-sec-title">특이사항</div>
+          <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>
+        ` : '' }
+    `;
   }
-}
 
-// PDF로 저장 (A4, 세로)
-async function exportAsPDF(){
-  showLoading('PDF 생성 중…', '잠시만 기다려주세요');
-  try{
-    fillExportDom();
-    const target = document.getElementById('exportDoc');
-    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-    // A4(px) @ 96dpi 기준: 794 x 1123 정도. jsPDF는 mm 단위 사용.
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({orientation:'p', unit:'mm', format:'a4'});
-
-    const pageWidth = pdf.internal.pageSize.getWidth();   // 210mm
-    const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
-
-    // 이미지 비율에 맞춰 폭을 A4 가로폭에 맞춤
-    const imgW = pageWidth;
-    const imgH = (canvas.height / canvas.width) * imgW;
-
-    pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
-    pdf.save((collect().title || '안내문') + '.pdf');
-  } finally {
-    hideLoading();
+  function escapeHTML(s){
+    return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   }
-}
 
-// 버튼 바인딩
-document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
-document.getElementById('btnExportPDF')?.addEventListener('click', exportAsPDF);
-</script>
+  function fillExportDom(){
+    const inner = document.getElementById('exportInner');
+    if(!inner) return;
+    inner.innerHTML = buildExportHTML();
+  }
 
-    
-    <!-- html2canvas: DOM을 이미지로 캡쳐 -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<!-- jsPDF: 이미지를 PDF로 저장 -->
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  async function exportAsImage(){
+    showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+    try{
+      fillExportDom();
+      const target = document.getElementById('exportDoc');
+      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+      const dataURL = canvas.toDataURL('image/png');
 
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = (collect().title || '안내문') + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally { hideLoading(); }
+  }
+
+  async function exportAsPDF(){
+    showLoading('PDF 생성 중…', '잠시만 기다려주세요');
+    try{
+      fillExportDom();
+      const target = document.getElementById('exportDoc');
+      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({orientation:'p', unit:'mm', format:'a4'});
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgW = pageWidth;
+      const imgH = (canvas.height / canvas.width) * imgW;
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
+      pdf.save((collect().title || '안내문') + '.pdf');
+    } finally { hideLoading(); }
+  }
+
+  document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
+  document.getElementById('btnExportPDF')?.addEventListener('click', exportAsPDF);
   </script>
 </body>
 </html>
