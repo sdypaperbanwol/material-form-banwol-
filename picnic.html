@@ -142,7 +142,7 @@
       display:inline-block;
     }
 
-    /* 안내문 PDF/이미지용 타이틀/섹션 스타일 */
+    /* 안내문 PDF/이미지용 스타일 */
     .export-title{ font-weight:900; font-size:20px; margin:0 0 10px; }
     .export-meta{ margin:10px 0 16px; padding:10px 12px; background:#f7f9ff; border:1px solid #e6ebff; border-radius:10px; }
     .export-meta b{ display:inline-block; width:56px; color:#1a237e; }
@@ -150,7 +150,6 @@
     .export-list{ margin:6px 0 0 0; padding-left:18px; list-style-type:none; }
     .export-list li{ margin:4px 0; }
 
-    /* 모바일 최적화 */
     @media (max-width: 640px) {
       .row { grid-template-columns: 1fr; gap: 6px; padding:12px }
       .row label { padding:6px 10px }
@@ -166,15 +165,13 @@
       pre, textarea { font-family: inherit; font-size: 14px; }
     }
 
-    /* === 카드형(세로 얇게)일 때 타이트 스타일 === */
-#exportDoc.card-narrow #exportInner { padding:22px 24px; }         /* 좌우 여백 줄임 */
-#exportDoc.card-narrow .export-title { font-size:18px; margin-bottom:8px; }
-#exportDoc.card-narrow .export-meta { padding:8px 10px; }
-#exportDoc.card-narrow .export-meta b { width:48px; }               /* 라벨 칸 축소 */
-#exportDoc.card-narrow .export-sec-title { font-size:14px; margin-top:14px; }
-#exportDoc.card-narrow .export-list li { margin:3px 0; }
-
-    
+    /* 카드형(세로 얇게) 타이트 */
+    #exportDoc.card-narrow #exportInner { padding:22px 24px; }
+    #exportDoc.card-narrow .export-title { font-size:18px; margin-bottom:8px; }
+    #exportDoc.card-narrow .export-meta { padding:8px 10px; }
+    #exportDoc.card-narrow .export-meta b { width:48px; }
+    #exportDoc.card-narrow .export-sec-title { font-size:14px; margin-top:14px; }
+    #exportDoc.card-narrow .export-list li { margin:3px 0; }
   </style>
 </head>
 <body>
@@ -183,7 +180,7 @@
       <div class="card no-print">
         <h2>안내문 작성</h2>
         <div class="body">
-          <!-- === 섹션: 참여 대상 === -->
+          <!-- 참여 대상 -->
           <div class="sec">
             <div class="sec-title">참여 대상</div>
             <div class="row">
@@ -196,7 +193,6 @@
                   <div class="chip" data-val="C">C반</div>
                   <div class="chip" data-val="D">D반</div>
                   <div class="chip" data-val="기타">기타</div>
-                  <!-- 기타 입력칸 (초기 숨김) -->
                   <input id="teamCustom" type="text" placeholder="직접 입력"
                          style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
                 </div>
@@ -205,7 +201,7 @@
             </div>
           </div>
 
-          <!-- === 섹션: 기본 정보 === -->
+          <!-- 기본 정보 -->
           <div class="sec">
             <div class="sec-title">기본 정보</div>
             <div class="row">
@@ -222,7 +218,7 @@
             </div>
           </div>
 
-          <!-- === 섹션: 운영 정보 === -->
+          <!-- 운영 정보 -->
           <div class="sec">
             <div class="sec-title">운영 정보</div>
             <div class="row">
@@ -267,7 +263,7 @@
             </div>
           </div>
 
-          <!-- === 섹션: 문의 === -->
+          <!-- 문의 -->
           <div class="sec">
             <div class="sec-title">문의</div>
             <div class="row">
@@ -279,24 +275,25 @@
       </div>
     </div>
 
-<div class="toolbar no-print">
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-    <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
-      이미지 폭
-      <select id="exportWidth">
-        <option value="auto" selected>자동(내용에 맞춤)</option>
-        <option value="794">A4(794px, 기본)</option>
-        <option value="680">컴팩트(680px)</option>
-        <option value="560">카드형(560px)</option>
-      </select>
-    </label>
-  </div>
+    <div class="toolbar no-print">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
+          이미지 폭
+          <select id="exportWidth">
+            <option value="auto" selected>자동(내용에 맞춤)</option>
+            <option value="794">A4(794px, 기본)</option>
+            <option value="680">컴팩트(680px)</option>
+            <option value="560">카드형(560px)</option>
+          </select>
+        </label>
+      </div>
 
-  <button id="btnShare">임시 저장하기</button>
-  <button id="btnCopyText">안내문(텍스트)</button>
-  <button id="btnExportIMG">안내문(이미지)</button>
-  <button id="btnSubmit">인사지원팀 제출</button>
-</div>
+      <button id="btnShare">임시 저장하기</button>
+      <button id="btnCopyText">안내문(텍스트)</button>
+      <button id="btnExportIMG">안내문(이미지)</button>
+      <button id="btnSubmit">인사지원팀 제출</button>
+    </div>
+  </div>
 
   <!-- 스크롤 배지 -->
   <div id="busBadge" aria-hidden="true">버스: <span id="busBadgeVal">-</span></div>
@@ -331,7 +328,7 @@
   <script>
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbw5PHeh1YRRndXhHi3hk3ssDoAYnUZ5uRCXoHFhk8vfr1_H1AbnPL8FXLL6GeGJVN_F/exec';
 
-  /* ===== fetch 타임아웃 유틸 ===== */
+  /* fetch 타임아웃 */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
     const controller = new AbortController();
     const timer = setTimeout(()=>controller.abort(), timeoutMs);
@@ -339,7 +336,7 @@
     finally { clearTimeout(timer); }
   }
 
-  /* ===== 로딩 오버레이 ===== */
+  /* 로딩 오버레이 */
   let loadingCount = 0;
   let loadingTimer = null;
   function setToolbarDisabled(disabled){
@@ -369,22 +366,16 @@
     else { finish(); }
   }
 
-  /* ===== 인앱 감지 ===== */
+  /* 유틸 */
   function isMobile(){ return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-
-  /* ===== 복사 유틸 ===== */
   function legacyCopy(text){
     try{
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.top = '-9999px';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus(); ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
+      ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      const ok = document.execCommand('copy'); document.body.removeChild(ta);
       return ok;
     }catch(_){ return false; }
   }
@@ -394,157 +385,101 @@
       text
         ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
         : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
-
-    if (forceManual) {
-      openPreviewModal(toCopy);
-      return { method: 'manual-forced' };
-    }
-
+    if (forceManual) { openPreviewModal(toCopy); return { method: 'manual-forced' }; }
     const shouldSkipWebShare = pureText === true;
     if (!shouldSkipWebShare && isMobile() && navigator.share) {
       try {
-        const payload = {};
-        if (title) payload.title = title;
-        if (text)  payload.text  = text;
-        if (url)   payload.url   = url;
-        await navigator.share(payload);
-        return { method:'share' };
+        const payload = {}; if (title) payload.title = title; if (text) payload.text = text; if (url) payload.url = url;
+        await navigator.share(payload); return { method:'share' };
       } catch(_) {}
     }
-
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      try { await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; }
-      catch(_) {}
+      try { await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; } catch(_){}
     }
-
-    if (legacyCopy(toCopy)) { return { method:'legacy' }; }
-
+    if (legacyCopy(toCopy)) return { method:'legacy' };
     alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
     return { method:'manual' };
   }
 
-  /* ===== 날짜 포맷 ===== */
+  /* 날짜/대상 포맷 */
   function weekdayKR(dateStr){
     if(!dateStr) return '';
     const d = new Date(dateStr+'T00:00:00');
     const yo = ['일','월','화','수','목','금','토'][d.getDay()];
     return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
   }
-
-  /* ===== 대상(팀) 유틸 ===== */
   function parseTeams(str){ return (str || '').split(',').map(s => s.trim()).filter(Boolean); }
   function teamsToString(arr){ return Array.from(new Set(arr)).join(','); }
   function getTeamsArray(){ return parseTeams(document.getElementById('team').value); }
   function setTeamHiddenFromArray(arr){ document.getElementById('team').value = teamsToString(arr); }
   function hasAnyCustomTeam(){ return getTeamsArray().some(v => v==='기타' || v.startsWith('기타:')); }
-
-  /* 대상 라벨 공통 포맷터: 'A,B,기타:외부팀' -> 'A반, B반, 외부팀' */
   function formatTarget(teamStr){
     const arr = (teamStr || '').split(',').map(s => s.trim()).filter(Boolean);
     if (!arr.length) return '';
-    const mapped = arr.map(v => {
-      if (/^기타:/.test(v)) return v.replace(/^기타:/, '');
-      if (/^[A-D]$/i.test(v)) return v + '반';
-      return v;
-    });
+    const mapped = arr.map(v => (/^기타:/.test(v) ? v.replace(/^기타:/,'') : (/^[A-D]$/i.test(v) ? v+'반' : v)));
     return Array.from(new Set(mapped)).join(', ');
   }
-
   function renderTeamChips(){
     const arr = getTeamsArray();
     document.querySelectorAll('#teamChips .chip').forEach(chip=>{
       const val = chip.dataset.val;
-      if(val === '기타'){ chip.classList.toggle('selected', hasAnyCustomTeam()); }
-      else { chip.classList.toggle('selected', arr.includes(val)); }
+      chip.classList.toggle('selected', val==='기타' ? hasAnyCustomTeam() : arr.includes(val));
     });
   }
   function toggleTeam(val){
     const arr = getTeamsArray();
     const i = arr.indexOf(val);
-    if (i >= 0) arr.splice(i,1);
-    else arr.push(val);
-    setTeamHiddenFromArray(arr);
-    renderTeamChips();
+    if (i >= 0) arr.splice(i,1); else arr.push(val);
+    setTeamHiddenFromArray(arr); renderTeamChips();
   }
-
-  /* 일반 대상 칩 클릭 */
   (function bindTeamChips(){
-    const group = document.getElementById('teamChips');
-    if(!group) return;
-    group.addEventListener('click', e=>{
-      const chip = e.target.closest('.chip');
-      if(!chip) return;
-      if (chip.dataset.val === '기타') return; // 기타는 별도 처리
+    const g = document.getElementById('teamChips'); if(!g) return;
+    g.addEventListener('click', e=>{
+      const chip = e.target.closest('.chip'); if(!chip) return;
+      if (chip.dataset.val === '기타') return;
       toggleTeam(chip.dataset.val);
     });
   })();
-
-  /* ===== 기타 직접입력 ===== */
   function removeAllCustomTeamFromArray(arr){ return (arr||[]).filter(v => v!=='기타' && !v.startsWith('기타:')); }
   function restoreCustomTeamFromTeamValue(){
-    const arr = getTeamsArray();
-    const custom = arr.find(v => v.startsWith('기타:'));
-    const input = document.getElementById('teamCustom');
-    if (!input) return;
-    if (custom){
-      input.style.display = 'inline-block';
-      input.value = custom.split(':').slice(1).join(':');
-    } else {
-      input.style.display = 'none';
-      input.value = '';
-    }
+    const arr = getTeamsArray(); const custom = arr.find(v => v.startsWith('기타:'));
+    const input = document.getElementById('teamCustom'); if (!input) return;
+    if (custom){ input.style.display='inline-block'; input.value = custom.split(':').slice(1).join(':'); }
+    else { input.style.display='none'; input.value=''; }
     renderTeamChips();
   }
   (function bindCustomTeam(){
-    const chips = document.getElementById('teamChips');
-    const customInput = document.getElementById('teamCustom');
+    const chips = document.getElementById('teamChips'); const customInput = document.getElementById('teamCustom');
     if(!chips || !customInput) return;
-
     chips.addEventListener('click', e=>{
-      const chip = e.target.closest('.chip');
-      if(!chip) return;
+      const chip = e.target.closest('.chip'); if(!chip) return;
       if(chip.dataset.val === '기타'){
         const opening = (customInput.style.display === 'none' || customInput.style.display === '');
-        if(opening){
-          customInput.style.display = 'inline-block';
-          customInput.focus();
-        }else{
+        if(opening){ customInput.style.display='inline-block'; customInput.focus(); }
+        else{
           const arr = removeAllCustomTeamFromArray(getTeamsArray());
-          setTeamHiddenFromArray(arr);
-          customInput.value = '';
-          customInput.style.display = 'none';
-          renderTeamChips();
+          setTeamHiddenFromArray(arr); customInput.value=''; customInput.style.display='none'; renderTeamChips();
         }
       }
     });
-
     customInput.addEventListener('input', ()=>{
       const val = customInput.value.trim();
       let arr = removeAllCustomTeamFromArray(getTeamsArray());
       if(val){ arr.push('기타:'+val); }
-      setTeamHiddenFromArray(arr);
-      renderTeamChips();
+      setTeamHiddenFromArray(arr); renderTeamChips();
     });
   })();
-
-  // 대상 칩 키보드 토글
   (function bindTeamChipsA11y(){
-    const group = document.getElementById('teamChips');
-    if(!group) return;
-    group.querySelectorAll('.chip[data-val]:not([data-val="기타"])').forEach(chip=>{
-      chip.tabIndex = 0;
-      chip.setAttribute('role','button');
-    });
-    group.addEventListener('keydown', e=>{
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      const chip = e.target.closest('.chip');
-      if(!chip || chip.dataset.val === '기타') return;
-      e.preventDefault();
-      toggleTeam(chip.dataset.val);
+    const g = document.getElementById('teamChips'); if(!g) return;
+    g.querySelectorAll('.chip[data-val]:not([data-val="기타"])').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','button'); });
+    g.addEventListener('keydown', e=>{
+      if (e.key!=='Enter' && e.key!==' ') return;
+      const chip = e.target.closest('.chip'); if(!chip || chip.dataset.val==='기타') return;
+      e.preventDefault(); toggleTeam(chip.dataset.val);
     });
   })();
 
-  /* ===== 버스 칩 ===== */
+  /* 버스 칩 */
   function setBus(val){
     const hidden = document.getElementById('bus');
     const chips = document.querySelectorAll('#busChips .chip');
@@ -559,40 +494,28 @@
     if(window.scrollY > showAfter){
       const v = document.getElementById('bus').value || '';
       badge.style.display = v ? 'block' : 'none';
-    }else{
-      badge.style.display = 'none';
-    }
+    }else{ badge.style.display = 'none'; }
   }
   window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
   window.addEventListener('resize', updateBusBadgeVisibility);
   (function bindBusChips(){
-    const group = document.getElementById('busChips');
-    if(!group) return;
-    group.addEventListener('click', (e)=>{
-      const target = e.target.closest('.chip');
-      if(!target) return;
+    const g = document.getElementById('busChips'); if(!g) return;
+    g.addEventListener('click', (e)=>{
+      const target = e.target.closest('.chip'); if(!target) return;
       setBus(target.getAttribute('data-val'));
     });
   })();
-
-  // 버스 칩 키보드 접근성
   (function bindBusChipsA11y(){
-    const group = document.getElementById('busChips');
-    if(!group) return;
-    group.querySelectorAll('.chip').forEach(chip=>{
-      chip.tabIndex = 0;
-      chip.setAttribute('role','radio');
-    });
-    group.addEventListener('keydown', e=>{
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      const chip = e.target.closest('.chip');
-      if(!chip) return;
-      e.preventDefault();
-      setBus(chip.getAttribute('data-val'));
+    const g = document.getElementById('busChips'); if(!g) return;
+    g.querySelectorAll('.chip').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','radio'); });
+    g.addEventListener('keydown', e=>{
+      if (e.key!=='Enter' && e.key!==' ') return;
+      const chip = e.target.closest('.chip'); if(!chip) return;
+      e.preventDefault(); setBus(chip.getAttribute('data-val'));
     });
   })();
 
-  /* ===== 특이사항 템플릿(칩) ===== */
+  /* 특이사항 템플릿 */
   const NOTES_PRESETS = [
     '- 편한 복장과 개인 물·우의 등을 준비해 주세요.',
     '- 버스 대절, 조금 여유 있게 집결해 주세요.',
@@ -618,16 +541,12 @@
     setNotesLines(lines);
   }
   function renderNotesPresets(){
-    const box = document.getElementById('notesPresets');
-    if (!box) return;
+    const box = document.getElementById('notesPresets'); if (!box) return;
     box.innerHTML = '';
     NOTES_PRESETS.forEach(txt => {
       const chip = document.createElement('div');
-      chip.className = 'chip';
-      chip.textContent = txt;
-      chip.tabIndex = 0;
-      chip.setAttribute('role', 'button');
-      chip.setAttribute('data-text', txt);
+      chip.className = 'chip'; chip.textContent = txt; chip.tabIndex = 0;
+      chip.setAttribute('role','button'); chip.setAttribute('data-text', txt);
       box.appendChild(chip);
     });
     box.addEventListener('click', e => {
@@ -637,8 +556,7 @@
     box.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         const c = e.target.closest('.chip'); if (!c) return;
-        e.preventDefault();
-        toggleNotePreset(c.getAttribute('data-text'));
+        e.preventDefault(); toggleNotePreset(c.getAttribute('data-text'));
       }
     });
     syncNotesPresetSelection();
@@ -651,13 +569,12 @@
     });
   }
   (function bindNotesInputSync(){
-    const ta = document.getElementById('notes');
-    if (!ta) return;
+    const ta = document.getElementById('notes'); if (!ta) return;
     ta.addEventListener('input', () => { syncNotesPresetSelection(); });
   })();
   renderNotesPresets();
 
-  /* ===== 폼 수집 ===== */
+  /* 폼 수집 */
   function collect(){
     return {
       team: document.getElementById('team').value,
@@ -672,13 +589,11 @@
     };
   }
 
-  // (구방식) base64 디코딩 (호환)
+  /* 공유 텍스트 */
   function decodeShare(b64){
     try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
     catch(e){ alert('공유 코드 해석 실패'); return null }
   }
-
-  /* ===== 제목/공유 텍스트 ===== */
   function makeShareTitle(d){
     const target = formatTarget(d.team);
     const dateTxt = d.date ? weekdayKR(d.date) : '';
@@ -686,37 +601,28 @@
     if (rawTitle) return rawTitle;
     return [dateTxt, target, '야유회'].filter(Boolean).join(' ');
   }
-
   function buildShareText(){
     const d = collect();
     const lines = [];
     const dateStr = d.date ? weekdayKR(d.date) : '-';
     const header = makeShareTitle(d) || '안내문';
-
     lines.push(header, '');
-
     const target = formatTarget(d.team);
     if (target) lines.push(`[대상] ${target}`);
-
     lines.push(`[일자] ${dateStr}`);
     lines.push(`[장소] ${d.place || '-'}`);
     lines.push('[일정 요약]');
     lines.push(...(d.schedule || '').split('\n').filter(Boolean));
-
-    if ((d.bus||'').trim() && d.busShow) {
-      lines.push(`[버스 대절] ${d.bus}`);
-    }
-
+    if ((d.bus||'').trim() && d.busShow) lines.push(`[버스 대절] ${d.bus}`);
     if ((d.notes || '').trim()){
       lines.push('[특이사항]');
       lines.push(...d.notes.split('\n').filter(Boolean));
     }
     lines.push(`[문의처] ${d.contact || '-'}`);
-
     return lines.join('\n');
   }
 
-  /* ===== 미리보기 모달 ===== */
+  /* 미리보기 모달 */
   (function setupPreviewModal(){
     const modal = document.getElementById('previewModal');
     const ta = document.getElementById('previewTa');
@@ -729,144 +635,129 @@
       ta.value = text || '';
       ta.style.height = 'auto';
       ta.style.height = Math.max(220, Math.min(420, ta.scrollHeight)) + 'px';
-      toast?.classList.remove('show');  // 열 때 토스트 초기화
+      toast?.classList.remove('show');
       modal.hidden = false;
       setTimeout(()=>{ ta.focus(); ta.select(); }, 0);
       document.addEventListener('keydown', onEsc, { once: true });
       modal.addEventListener('click', onBackdropClick);
     }
-    function closePreviewModal(){
-      if (!modal) return;
-      modal.hidden = true;
-      modal.removeEventListener('click', onBackdropClick);
-    }
+    function closePreviewModal(){ if (!modal) return; modal.hidden = true; modal.removeEventListener('click', onBackdropClick); }
     function onBackdropClick(e){ if (e.target === modal) closePreviewModal(); }
     function onEsc(e){ if (e.key === 'Escape') closePreviewModal(); }
     async function copyPreviewText(){
       const text = ta.value || '';
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        try{ await navigator.clipboard.writeText(text); showToast(); return; }
-        catch(_){}
-      }
-      try{
-        ta.select();
-        const ok = document.execCommand('copy');
-        if (ok) { showToast(); return; }
-      }catch(_){}
+      if (navigator.clipboard && navigator.clipboard.writeText){ try{ await navigator.clipboard.writeText(text); showToast(); return; } catch(_){} }
+      try{ ta.select(); const ok = document.execCommand('copy'); if (ok) { showToast(); return; } }catch(_){}
       alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
     }
-    function showToast(){
-      if (!toast) return;
-      toast.classList.add('show');
-      setTimeout(()=> toast.classList.remove('show'), 3000);
-    }
+    function showToast(){ if (!toast) return; toast.classList.add('show'); setTimeout(()=> toast.classList.remove('show'), 3000); }
     window.openPreviewModal = openPreviewModal;
     window.closePreviewModal = closePreviewModal;
     btnCopy?.addEventListener('click', copyPreviewText);
     btnClose2?.addEventListener('click', closePreviewModal);
   })();
 
-  /* ===== 버튼 동작 ===== */
+  /* 버튼 동작 */
   document.getElementById('btnCopyText').addEventListener('click', async ()=>{
     showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 300);
-    try{
-      const text = buildShareText();
-      openPreviewModal(text);
-    }finally{ hideLoading(); }
+    try{ const text = buildShareText(); openPreviewModal(text); }
+    finally{ hideLoading(); }
   });
 
   document.getElementById('btnShare').addEventListener('click', async ()=>{
     showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
     try{
-      const res = await fetchWithTimeout(GAS_URL, {
-        method:'POST',
-        body: JSON.stringify({ mode:'share', data: collect() })
-      });
-      let json;
-      try{ json = await res.json(); }
-      catch{
-        const t = await res.text();
-        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
-      }
+      const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify({ mode:'share', data: collect() })});
+      let json; try{ json = await res.json(); } catch{ const t = await res.text(); throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); }
       if(res.ok && json.status==='ok' && json.key){
         const url = new URL(location.href);
-        url.searchParams.delete('code');
-        url.searchParams.set('k', json.key);
+        url.searchParams.delete('code'); url.searchParams.set('k', json.key);
         history.replaceState(null, '', url.toString());
-
         const titleText = makeShareTitle(collect());
         const shareText = `${titleText}\n${url.toString()}`;
         openPreviewModal(shareText);
-      }else{
-        alert('임시 저장 실패: ' + (json.error || res.status));
-      }
+      }else{ alert('임시 저장 실패: ' + (json.error || res.status)); }
     }catch(err){
       const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
       alert('임시 저장 중 오류: ' + msg);
     }finally{ hideLoading(); }
   });
 
+  /* >>> 제출: 자동 임시저장 → ?k=주소 K열 저장 */
   async function submitToSheet(){
     showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
     try{
       const data = collect();
       const todayStr = new Date().toISOString().slice(0,10);
 
-// ✅ (추가 #1) 제출 직전: 현재 페이지 주소/키 추출
-    const urlObj   = new URL(location.href);
-    const shareKey = urlObj.searchParams.get('k') || ''; // 임시저장 키가 있으면 사용
-    const pageUrl  = urlObj.toString();                  // 현재 페이지 주소(키 포함일 수 있음)
-
-    // ✅ (추가 #2) payload에 주소/키 포함
-    const payload = {
-      ...data,
-      submitted_at: new Date().toISOString(), // J열(클라이언트 제출시각)
-      client_url: pageUrl,                    // K열(클라이언트 URL)로 저장할 값
-      share_key: shareKey,                    // (옵션) 서버에서 URL 재구성할 때 사용
-      mode: 'append'
-    };
-      
       // (기타 입력 강제)
       const customOpen = document.getElementById('teamCustom')?.style.display !== 'none';
-      const customVal = document.getElementById('teamCustom')?.value.trim();
+      const customVal  = document.getElementById('teamCustom')?.value.trim();
       if (customOpen && !customVal) {
         alert('대상(기타)을 선택하셨습니다. 내용을 입력해 주세요.');
         document.getElementById('teamCustom').focus();
-        hideLoading();
-        return;
+        hideLoading(); return;
       }
 
-      // 필수 체크 (특이사항은 선택)
+      // 필수 체크
       const invalid = [];
       if(!data.team) invalid.push(() => document.querySelector('#teamChips .chip')?.focus());
       if(!data.title.trim()) invalid.push(() => document.getElementById('title').focus());
-
       if (data.date && data.date < todayStr) {
-        alert('오늘 이후 날짜만 선택 가능합니다.');
-        hideLoading();
-        document.getElementById('date').focus();
-        return;
+        alert('오늘 이후 날짜만 선택 가능합니다.'); hideLoading();
+        document.getElementById('date').focus(); return;
       }
       if(!data.date) invalid.push(() => document.getElementById('date').focus());
       if(!data.place.trim()) invalid.push(() => document.getElementById('place').focus());
       if(!(data.schedule||'').trim()) invalid.push(() => document.getElementById('schedule').focus());
       if(!data.bus) invalid.push(() => document.querySelector('#busChips .chip')?.focus());
       if(!data.contact.trim()) invalid.push(() => document.getElementById('contact').focus());
+      if (invalid.length){ alert('필수 항목을 입력/선택해 주세요.'); invalid[0](); hideLoading(); return; }
 
-      if (invalid.length){
-        alert('필수 항목을 입력/선택해 주세요.');
-        invalid[0]();
-        hideLoading();
-        return;
+      // 1) 주소창에 ?k=가 있으면 재사용, 없으면 자동 임시저장 호출
+      let shareKey = '';
+      let clientUrl = '';
+      const urlObj = new URL(location.href);
+      const existingKey = urlObj.searchParams.get('k') || '';
+
+      if (existingKey) {
+        shareKey = existingKey;
+        clientUrl = urlObj.toString();
+      } else {
+        try {
+          const shareRes = await fetchWithTimeout(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ mode:'share', data })
+          });
+          let shareJson; try{ shareJson = await shareRes.json(); }
+          catch{ const t = await shareRes.text(); throw new Error('임시저장 응답이 JSON이 아님: ' + t.slice(0,200)); }
+          if (shareRes.ok && shareJson.status==='ok' && shareJson.key){
+            shareKey = shareJson.key;
+            urlObj.searchParams.delete('code');
+            urlObj.searchParams.set('k', shareKey);
+            clientUrl = urlObj.toString();
+            history.replaceState(null, '', clientUrl);
+          } else {
+            clientUrl = location.href; // 실패해도 제출은 진행
+          }
+        } catch(err){
+          clientUrl = location.href;
+          console.warn('자동 임시저장 실패:', err);
+        }
       }
 
+      // 2) 최종 payload (K열에 client_url 기록)
+      const payload = {
+        ...data,
+        submitted_at: new Date().toISOString(), // J열
+        client_url: clientUrl,                  // K열 (키 포함 주소)
+        share_key: shareKey,                    // 옵션
+        mode: 'append'
+      };
+
+      // 3) 제출
       const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
-      let json;
-      try{ json = await res.json(); }
-      catch{
-        const t = await res.text();
-        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
-      }
+      let json; try{ json = await res.json(); } catch{ const t = await res.text(); throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); }
       if(res.ok && (json.status==='ok' || json.result==='ok')){
         alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
       }else{
@@ -875,16 +766,13 @@
     }catch(err){
       const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
       alert('전송 중 오류: ' + msg);
-    }finally{
-      hideLoading();
-    }
+    }finally{ hideLoading(); }
   }
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
-  /* ===== 오늘 이전 날짜 선택 금지 ===== */
+  /* 오늘 이전 날짜 선택 금지 */
   (function lockPastDate(){
-    const el = document.getElementById('date');
-    if(!el) return;
+    const el = document.getElementById('date'); if(!el) return;
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth()+1).padStart(2,'0');
@@ -892,26 +780,20 @@
     el.min = `${yyyy}-${mm}-${dd}`;
   })();
 
-  /* ===== init ===== */
+  /* init */
   (async function init(){
     const p = new URLSearchParams(location.search);
-    const k = p.get('k');
-    const code = p.get('code');
-
-    if(k){
-      try{ await loadByKey(k); }catch(_){}
-    }else if(code){
+    const k = p.get('k'); const code = p.get('code');
+    if(k){ try{ await loadByKey(k); }catch(_){ /* noop */ } }
+    else if(code){
       const data = decodeShare(code);
       if(data){
         document.getElementById('team').value = data.team || '';
-        renderTeamChips();
-        restoreCustomTeamFromTeamValue();
-
+        renderTeamChips(); restoreCustomTeamFromTeamValue();
         document.getElementById('title').value = data.title||'';
         document.getElementById('date').value = data.date||'';
         document.getElementById('schedule').value = data.schedule||'';
-        document.getElementById('bus').value = data.bus || '';
-        setBus(document.getElementById('bus').value || '');
+        document.getElementById('bus').value = data.bus || ''; setBus(document.getElementById('bus').value || '');
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
@@ -920,77 +802,57 @@
     }else{
       document.getElementById('title').value = '야유회 안내';
       document.getElementById('team').value = '';
-      renderTeamChips();
-      restoreCustomTeamFromTeamValue();
+      renderTeamChips(); restoreCustomTeamFromTeamValue();
     }
-
     updateBusBadgeVisibility();
   })();
 
-  /* ===== 임시 저장 불러오기 ===== */
+  /* 임시 저장 불러오기 */
   async function loadByKey(k){
     showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
     try{
       const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
       const res = await fetchWithTimeout(url);
-      let json;
-      try{ json = await res.json(); }
-      catch{
-        const t = await res.text();
-        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
-      }
+      let json; try{ json = await res.json(); } catch{ const t = await res.text(); throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); }
       if(json.status === 'ok' && json.data){
         const data = json.data;
         document.getElementById('team').value = data.team || '';
-        renderTeamChips();
-        restoreCustomTeamFromTeamValue();
-
+        renderTeamChips(); restoreCustomTeamFromTeamValue();
         document.getElementById('title').value = data.title||'';
         document.getElementById('date').value = data.date||'';
         document.getElementById('schedule').value = data.schedule||'';
-        document.getElementById('bus').value = data.bus || '';
-        setBus(document.getElementById('bus').value || '');
+        document.getElementById('bus').value = data.bus || ''; setBus(document.getElementById('bus').value || '');
         document.getElementById('place').value = data.place||'';
         document.getElementById('notes').value = data.notes||'';
         document.getElementById('contact').value = data.contact||'';
         document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
-
       }else{
         alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
       }
     } catch(err){
       const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
       alert('불러오기 오류: ' + msg);
-    } finally{
-      hideLoading();
-    }
+    } finally{ hideLoading(); }
   }
   </script>
 
-  <!-- ===== 외부 라이브러리 (PDF/이미지) ===== -->
+  <!-- 외부 라이브러리 (이미지) -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-  <!-- 안내문 PDF/이미지용 미리보기 DOM (화면에 안 보임) -->
+  <!-- 안내문 이미지 렌더용 히든 DOM -->
   <div id="exportDoc" style="position:absolute; left:-99999px; top:-99999px; width:794px; background:#fff;">
-    <!-- 794px = A4 width @96dpi -->
-    <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;">
-      <!-- JS에서 내용이 채워짐 -->
-    </div>
+    <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;"></div>
   </div>
 
-  <!-- ===== PDF/이미지 생성 스크립트 ===== -->
+  <!-- 이미지 생성 스크립트 -->
   <script>
   function buildExportHTML(){
     const d = collect();
     const dateStr = d.date ? weekdayKR(d.date) : '-';
-
-    const teamLine = formatTarget(d.team);  // ✅ 대상 문자열 통일
-
+    const teamLine = formatTarget(d.team);
     const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
     const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
-
     const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine), '야유회'].filter(Boolean).join(' '));
-
     return `
       <div class="export-title">${title}</div>
       <div class="export-meta">
@@ -1007,74 +869,49 @@
         : `<div style="color:#999">-</div>`}
 
       ${notesLines.length
-        ? `
-          <div class="export-sec-title">특이사항</div>
-          <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>
-        ` : '' }
+        ? `<div class="export-sec-title">특이사항</div>
+           <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+        : '' }
     `;
   }
+  function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function fillExportDom(){ const inner = document.getElementById('exportInner'); if(!inner) return; inner.innerHTML = buildExportHTML(); }
 
-  function escapeHTML(s){
-    return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  async function exportAsImage(){
+    showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+    try{
+      fillExportDom();
+      const target = document.getElementById('exportDoc');
+      const inner  = document.getElementById('exportInner');
+      const sel    = document.getElementById('exportWidth');
+      const choice = sel ? sel.value : 'auto';
+
+      const prevWidth = target.style.width;
+      const hadNarrow = target.classList.contains('card-narrow');
+
+      let pxWidth;
+      if (choice === 'auto') {
+        target.style.width = 'auto';
+        const measured = inner.scrollWidth || 0;
+        pxWidth = Math.max(420, Math.min(560, measured + 12));
+      } else {
+        pxWidth = parseInt(choice, 10) || 560;
+      }
+      target.style.width = pxWidth + 'px';
+      if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
+
+      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+      const dataURL = canvas.toDataURL('image/png');
+
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = (collect().title || '안내문') + `.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+
+      target.style.width = prevWidth;
+      if (!hadNarrow) target.classList.remove('card-narrow');
+    } finally { hideLoading(); }
   }
-
-  function fillExportDom(){
-    const inner = document.getElementById('exportInner');
-    if(!inner) return;
-    inner.innerHTML = buildExportHTML();
-  }
-
-async function exportAsImage(){
-  showLoading('이미지 생성 중…', '잠시만 기다려주세요');
-  try{
-    fillExportDom();
-    const target = document.getElementById('exportDoc');
-    const inner  = document.getElementById('exportInner');
-    const sel    = document.getElementById('exportWidth');
-    const choice = sel ? sel.value : 'auto';
-
-    // 기존 width/class 백업
-    const prevWidth = target.style.width;
-    const hadNarrow = target.classList.contains('card-narrow');
-
-    // ===== 폭 결정 =====
-    let pxWidth;
-    if (choice === 'auto') {
-      // ⚠️ 세로 얇게: 강한 클램프(최소 420 ~ 최대 560)
-      // 내용 길이에 맞추되, 너무 넓어지지 않게 제한
-      target.style.width = 'auto';                    // 컨테이너 강제폭 해제 후 실제 폭 측정
-      const measured = inner.scrollWidth || 0;
-      pxWidth = Math.max(420, Math.min(560, measured + 12));  // 여유 12px
-    } else {
-      pxWidth = parseInt(choice, 10) || 560;
-    }
-
-    // 폭 적용
-    target.style.width = pxWidth + 'px';
-
-    // ===== 좁으면 카드형 스타일 적용 =====
-    if (pxWidth <= 560) target.classList.add('card-narrow');
-    else target.classList.remove('card-narrow');
-
-    // 렌더
-    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-    const dataURL = canvas.toDataURL('image/png');
-
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = (collect().title || '안내문') + `.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    // 복원
-    target.style.width = prevWidth;
-    if (!hadNarrow) target.classList.remove('card-narrow');
-  } finally { hideLoading(); }
-}
-
-
-
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
   </script>
 </body>
