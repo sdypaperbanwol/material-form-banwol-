@@ -162,16 +162,16 @@
               <label>반 선택 <span class="badge-req">필수</span></label>
               <div>
                 <input id="team" type="hidden" value="">
-               <div class="chip-group" id="teamChips" role="group" aria-label="반 선택">
-  <div class="chip" data-val="A">A반</div>
-  <div class="chip" data-val="B">B반</div>
-  <div class="chip" data-val="C">C반</div>
-  <div class="chip" data-val="D">D반</div>
-  <div class="chip" data-val="기타">기타</div>
-  <!-- 기타 입력칸 (처음엔 숨김) -->
-  <input id="teamCustom" type="text" placeholder="직접 입력" style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
-</div>
-
+                <div class="chip-group" id="teamChips" role="group" aria-label="반 선택">
+                  <div class="chip" data-val="A">A반</div>
+                  <div class="chip" data-val="B">B반</div>
+                  <div class="chip" data-val="C">C반</div>
+                  <div class="chip" data-val="D">D반</div>
+                  <div class="chip" data-val="기타">기타</div>
+                  <!-- 기타 입력칸 (초기 숨김) -->
+                  <input id="teamCustom" type="text" placeholder="직접 입력"
+                         style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
+                </div>
                 <small style="color:var(--muted)">여러 반 선택 가능</small>
               </div>
             </div>
@@ -181,7 +181,7 @@
           <div class="sec">
             <div class="sec-title">기본 정보</div>
             <div class="row">
-              <label for="title">제목</label>
+              <label for="title">제목 <span class="badge-req">필수</span></label>
               <input id="title" type="text" placeholder="예) 야유회 안내" />
             </div>
             <div class="row">
@@ -208,7 +208,7 @@
             </div>
 
             <div class="row">
-             <label for="bus">버스 대절 <span class="badge-req">필수</span></label>
+              <label for="bus">버스 대절 <span class="badge-req">필수</span></label>
               <div>
                 <input id="bus" type="hidden" value="" />
                 <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
@@ -369,7 +369,6 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try{ await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; }
       catch(_){}
-    }
 
     if (legacyCopy(toCopy)) { return { method:'legacy' }; }
 
@@ -385,51 +384,108 @@
     return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
   }
 
-/* ===== 팀 칩 ===== */
-function parseTeams(str){ ... }
-function teamsToString(arr){ ... }
-function getTeamsArray(){ ... }
-function setTeamHiddenFromArray(arr){ ... }
-function renderTeamChips(){ ... }
-function toggleTeam(val){ ... }
-
-(function bindTeamChips(){
-  const group = document.getElementById('teamChips');
-  if(!group) return;
-  group.addEventListener('click', e=>{
-    const chip = e.target.closest('.chip');
-    if(!chip) return;
-    toggleTeam(chip.dataset.val);
-  });
-})();
-
-/* ===== 기타 직접입력 ===== */
-(function bindCustomTeam(){
-  const chips = document.getElementById('teamChips');
-  const customInput = document.getElementById('teamCustom');
-  chips.addEventListener('click', e=>{
-    const chip = e.target.closest('.chip');
-    if(!chip) return;
-    if(chip.dataset.val === '기타'){
-      customInput.style.display = customInput.style.display === 'none' ? 'inline-block' : 'none';
-      if(customInput.style.display !== 'none'){
-        customInput.focus();
-      } else {
-        customInput.value = '';
-        toggleTeam('기타'); // team 배열에서도 제거
+  /* ===== 팀 칩 유틸 ===== */
+  function parseTeams(str){
+    return (str || '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+  function teamsToString(arr){
+    return Array.from(new Set(arr)).join(',');
+  }
+  function getTeamsArray(){
+    return parseTeams(document.getElementById('team').value);
+  }
+  function setTeamHiddenFromArray(arr){
+    document.getElementById('team').value = teamsToString(arr);
+  }
+  function hasAnyCustomTeam(){
+    return getTeamsArray().some(v => v==='기타' || v.startsWith('기타:'));
+  }
+  function renderTeamChips(){
+    const arr = getTeamsArray();
+    document.querySelectorAll('#teamChips .chip').forEach(chip=>{
+      const val = chip.dataset.val;
+      if(val === '기타'){
+        chip.classList.toggle('selected', hasAnyCustomTeam());
+      }else{
+        chip.classList.toggle('selected', arr.includes(val));
       }
-    }
-  });
-  customInput.addEventListener('input', ()=>{
-    let val = customInput.value.trim();
-    let arr = getTeamsArray().filter(t => !t.startsWith('기타:') && t!=='기타');
-    if(val){
-      arr.push('기타:'+val);
-    }
+    });
+  }
+  function toggleTeam(val){
+    const arr = getTeamsArray();
+    const i = arr.indexOf(val);
+    if (i >= 0) arr.splice(i,1);
+    else arr.push(val);
     setTeamHiddenFromArray(arr);
     renderTeamChips();
-  });
-})();
+  }
+
+  /* 리스트형 칩(일반 반들) */
+  (function bindTeamChips(){
+    const group = document.getElementById('teamChips');
+    if(!group) return;
+    group.addEventListener('click', e=>{
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      if (chip.dataset.val === '기타') return; // 기타는 별도 처리
+      toggleTeam(chip.dataset.val);
+    });
+  })();
+
+  /* ===== 기타 직접입력 ===== */
+  function removeAllCustomTeamFromArray(arr){
+    return (arr||[]).filter(v => v!=='기타' && !v.startsWith('기타:'));
+  }
+  function restoreCustomTeamFromTeamValue(){
+    const arr = getTeamsArray();
+    const custom = arr.find(v => v.startsWith('기타:'));
+    const input = document.getElementById('teamCustom');
+    if (!input) return;
+    if (custom){
+      input.style.display = 'inline-block';
+      input.value = custom.split(':').slice(1).join(':');
+    } else {
+      input.style.display = 'none';
+      input.value = '';
+    }
+    renderTeamChips();
+  }
+  (function bindCustomTeam(){
+    const chips = document.getElementById('teamChips');
+    const customInput = document.getElementById('teamCustom');
+    if(!chips || !customInput) return;
+
+    chips.addEventListener('click', e=>{
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      if(chip.dataset.val === '기타'){
+        // 토글: 열기/닫기
+        const opening = (customInput.style.display === 'none' || customInput.style.display === '');
+        if(opening){
+          customInput.style.display = 'inline-block';
+          // '기타' 토글을 team 값에 직접 추가하지는 않음 (입력값으로만 관리)
+          customInput.focus();
+        }else{
+          // 닫을 때는 모든 기타 관련값 제거
+          const arr = removeAllCustomTeamFromArray(getTeamsArray());
+          setTeamHiddenFromArray(arr);
+          customInput.value = '';
+          customInput.style.display = 'none';
+          renderTeamChips();
+        }
+      }
+    });
+
+    customInput.addEventListener('input', ()=>{
+      const val = customInput.value.trim();
+      let arr = removeAllCustomTeamFromArray(getTeamsArray());
+      if(val){
+        arr.push('기타:'+val);
+      }
+      setTeamHiddenFromArray(arr);
+      renderTeamChips();
+    });
+  })();
 
   /* ===== 버스 칩 ===== */
   function setBus(val){
@@ -674,42 +730,41 @@ function toggleTeam(val){ ... }
   });
 
   async function submitToSheet(){
-  showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
-  try{
-    const data = collect();
-    const todayStr = new Date().toISOString().slice(0,10);
+    showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
+    try{
+      const data = collect();
+      const todayStr = new Date().toISOString().slice(0,10);
 
-    // 필수 체크
-    if(!data.team) { alert('반을 선택해주세요.'); return; }
-    if(!data.title.trim()) { alert('제목을 입력해주세요.'); return; }
-    if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); return; }
-    if(!data.date){ alert('일자를 입력해주세요.'); return; }
-    if(!data.place.trim()) { alert('장소를 입력해주세요.'); return; }
-    if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
-    if(!data.bus) { alert('버스 대절 여부를 선택해주세요.'); return; }
-    if(!data.contact.trim()){ alert('문의처를 입력해주세요.'); return; }
+      // 필수 체크 (특이사항은 선택)
+      if(!data.team) { alert('반을 선택해주세요.'); return; }
+      if(!data.title.trim()) { alert('제목을 입력해주세요.'); return; }
+      if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); return; }
+      if(!data.date){ alert('일자를 입력해주세요.'); return; }
+      if(!data.place.trim()) { alert('장소를 입력해주세요.'); return; }
+      if(!(data.schedule||'').trim()){ alert('일정 요약을 입력해주세요.'); return; }
+      if(!data.bus) { alert('버스 대절 여부를 선택해주세요.'); return; }
+      if(!data.contact.trim()){ alert('문의처를 입력해주세요.'); return; }
 
-    const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
-    const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
-    let json;
-    try{ json = await res.json(); }
-    catch{
-      const t = await res.text();
-      throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+      const payload = { ...data, submitted_at: new Date().toISOString(), mode:'append' };
+      const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
+      let json;
+      try{ json = await res.json(); }
+      catch{
+        const t = await res.text();
+        throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200));
+      }
+      if(res.ok && (json.status==='ok' || json.result==='ok')){
+        alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
+      }else{
+        alert(`제출 실패: ${json.error||res.status}`);
+      }
+    }catch(err){
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('전송 중 오류: ' + msg);
+    }finally{
+      hideLoading();
     }
-    if(res.ok && (json.status==='ok' || json.result==='ok')){
-      alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
-    }else{
-      alert(`제출 실패: ${json.error||res.status}`);
-    }
-  }catch(err){
-    const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-    alert('전송 중 오류: ' + msg);
-  }finally{
-    hideLoading();
   }
-}
-
   document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
   /* ===== 저장값 불러오기 ===== */
@@ -728,6 +783,7 @@ function toggleTeam(val){ ... }
         const data = json.data;
         document.getElementById('team').value = data.team || '';
         renderTeamChips();
+        restoreCustomTeamFromTeamValue();
 
         document.getElementById('title').value = data.title||'';
         document.getElementById('date').value = data.date||'';
@@ -772,6 +828,7 @@ function toggleTeam(val){ ... }
       if(data){
         document.getElementById('team').value = data.team || '';
         renderTeamChips();
+        restoreCustomTeamFromTeamValue();
 
         document.getElementById('title').value = data.title||'';
         document.getElementById('date').value = data.date||'';
@@ -786,6 +843,7 @@ function toggleTeam(val){ ... }
       document.getElementById('title').value = '야유회 안내';
       document.getElementById('team').value = '';
       renderTeamChips();
+      restoreCustomTeamFromTeamValue();
     }
 
     updateBusBadgeVisibility();
