@@ -344,7 +344,7 @@ function setSelectedPlace(item){
   document.getElementById('place').value     = item.title || '';
   document.getElementById('placeAddr').value = item.roadAddress || item.address || '';
   document.getElementById('placeTel').value  = item.telephone || '';
-  document.getElementById('placeLink').value = item.link || '';
+  document.getElementById('placeLink').value = resolveNaverLink(item);
 
   // 텍스트 공유 시 불필요한 자동 검색 링크는 더 이상 넣지 않으니,
   // buildMapSearchLinks 사용 부분은 제거/주석 처리해도 됩니다.
@@ -430,6 +430,18 @@ function setSelectedPlace(item){
     else { input.style.display='none'; input.value=''; }
     renderTeamChips();
   }
+    function resolveNaverLink(item){
+  if(item.link && item.link.includes('/entry/place/')){
+    return item.link; // 네이버 플레이스 공식 링크
+  }
+  // 좌표 기반 지도 URL (mapx, mapy가 있으면 활용)
+  if(item.mapx && item.mapy){
+    return `https://map.naver.com/v5/?c=${item.mapx},${item.mapy},15,0,0,0,dh`;
+  }
+  // fallback: 그냥 검색 링크
+  return buildNaverSearchLink(item.title || '');
+}
+
   (function bindCustomTeam(){
     const chips = document.getElementById('teamChips'); const customInput = document.getElementById('teamCustom');
     if(!chips || !customInput) return;
