@@ -520,12 +520,14 @@
 
   /* ===== 특이사항 템플릿(칩) ===== */
   const NOTES_PRESETS = [
-    '- 편한 복장과 운동화를 착용해 주세요.',
-    '- 대중교통·자차로 개별 집결해 주세요.',
-    '- 버스 대절 관계로 정시에 집결해 주세요.',
-    '- 개인 물/우의 등 준비해주세요.',
-    '- 음료는 준비되어 있습니다.',
-    '- 장거리 일정이므로 정시에 집결해 주세요.',
+  '- 편한 복장과 운동화를 착용해 주세요.',
+  '- 대중교통·자차로 개별 집결해 주세요.',
+  '- 버스 대절 관계로 정시에 집결해 주세요.',
+  '- 개인 물/우의 등 준비해주세요.',
+  '- 음료는 준비되어 있습니다.',
+  '- 장거리 일정이므로 정시에 집결해 주세요.',
+  '- 주차는 인근 공영/노상 주차장에 해주세요.',
+  '- 주차자리는 마련되어 있습니다.', // 장소에 따라 주차장이 있음을 안내
   ];
   function getNotesLines(){
     const raw = (document.getElementById('notes').value || '')
@@ -612,27 +614,38 @@
     if (rawTitle) return rawTitle;
     return [dateTxt, teamLabel, '야유회'].filter(Boolean).join(' ');
   }
-  function buildShareText(){
-    const d = collect();
-    const lines = [];
-    const dateStr = d.date ? weekdayKR(d.date) : '-';
-    const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
+function buildShareText(){
+  const d = collect();
+  const lines = [];
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const header = makeShareTitle(d) || (d.team ? `${d.team}반 안내문` : '안내문');
 
-    lines.push(header, '');
-    if (d.team) lines.push(`[반] ${d.team}`);
-    lines.push(`[일자] ${dateStr}`);
-    lines.push(`[장소] ${d.place || '-'}`);
-    lines.push('[일정 요약]');
-    lines.push(...(d.schedule || '').split('\n').filter(Boolean));
-    if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
-    if ((d.notes || '').trim()){
-      lines.push('[특이사항]');
-      lines.push(...d.notes.split('\n').filter(Boolean));
-    }
-    lines.push(`[문의처] ${d.contact || '-'}`);
+  lines.push(header, '');
 
-    return lines.join('\n');
+  if (d.team) {
+    // team 값 분해 → '기타:xxx'면 접두어 빼고 출력
+    const arr = d.team.split(',').map(s=>s.trim()).filter(Boolean);
+    const teamLabel = arr.map(v=>{
+      if(v.startsWith('기타:')) return v.replace(/^기타:/,'');
+      return v;
+    }).join(', ');
+    lines.push(`[반] ${teamLabel}`);
   }
+
+  lines.push(`[일자] ${dateStr}`);
+  lines.push(`[장소] ${d.place || '-'}`);
+  lines.push('[일정 요약]');
+  lines.push(...(d.schedule || '').split('\n').filter(Boolean));
+  if ((d.bus || '').trim()) lines.push(`[버스 대절] ${d.bus}`);
+  if ((d.notes || '').trim()){
+    lines.push('[특이사항]');
+    lines.push(...d.notes.split('\n').filter(Boolean));
+  }
+  lines.push(`[문의처] ${d.contact || '-'}`);
+
+  return lines.join('\n');
+}
+
 
   /* ===== 미리보기 모달 ===== */
   (function setupPreviewModal(){
@@ -737,6 +750,10 @@
 
       // 필수 체크 (특이사항은 선택)
       if(!data.team) { alert('반을 선택해주세요.'); return; }
+      if(data.team.includes('기타:') && data.team.endsWith('기타:')){
+  alert('기타 반명을 입력해주세요.');
+  return;
+}
       if(!data.title.trim()) { alert('제목을 입력해주세요.'); return; }
       if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); return; }
       if(!data.date){ alert('일자를 입력해주세요.'); return; }
