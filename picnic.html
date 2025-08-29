@@ -269,6 +269,19 @@
       </div>
     </div>
 
+<div class="toolbar no-print">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
+      이미지 폭
+      <select id="exportWidth">
+        <option value="auto" selected>자동(내용에 맞춤)</option>
+        <option value="794">A4(794px, 기본)</option>
+        <option value="680">컴팩트(680px)</option>
+        <option value="560">카드형(560px)</option>
+      </select>
+    </label>
+  </div>
+    
     <!-- 하단 툴바 -->
     <div class="toolbar no-print">
       <button id="btnShare">임시 저장하기</button>
@@ -991,22 +1004,48 @@
     inner.innerHTML = buildExportHTML();
   }
 
-  async function exportAsImage(){
-    showLoading('이미지 생성 중…', '잠시만 기다려주세요');
-    try{
-      fillExportDom();
-      const target = document.getElementById('exportDoc');
-      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-      const dataURL = canvas.toDataURL('image/png');
+ async function exportAsImage(){
+  showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+  try{
+    fillExportDom();
+    const target = document.getElementById('exportDoc');
+    const inner  = document.getElementById('exportInner');
+    const sel    = document.getElementById('exportWidth');
+    const choice = sel ? sel.value : 'auto';
 
-      const a = document.createElement('a');
-      a.href = dataURL;
-      a.download = (collect().title || '안내문') + '.png';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } finally { hideLoading(); }
-  }
+    // 기존 width 백업
+    const prevWidth = target.style.width;
+
+    // ✅ 폭 결정
+    let pxWidth;
+    if (choice === 'auto') {
+      // 내용 기반 자동 맞춤: 최소 520px, 최대 794px
+      // inner 의 실제 내용 폭을 재보고 여백(패딩+여유) 더해서 클램프
+      // 현재 exportInner 패딩 좌우 합이 64px이므로 +64, 여유 16 더해 약간 넉넉하게
+      const measured = inner.scrollWidth || 0;
+      pxWidth = Math.max(520, Math.min(794, measured + 16));
+    } else {
+      pxWidth = parseInt(choice, 10) || 794;
+    }
+
+    target.style.width = pxWidth + 'px';
+
+    // 렌더
+    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+    const dataURL = canvas.toDataURL('image/png');
+
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = (collect().title || '안내문') + `.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    // width 복원
+    target.style.width = prevWidth;
+  } finally { hideLoading(); }
+}
+
 
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
   </script>
