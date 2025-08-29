@@ -621,6 +621,12 @@
     if (target) lines.push(`[대상] ${target}`);
     lines.push(`[일자] ${dateStr}`);
     lines.push(`[장소] ${d.place || '-'}`);
+     const links = buildMapSearchLinks(d.place);
+  if (links) {
+    lines.push(`[지도] 네이버: ${links.naver}`);
+    lines.push(`       카카오: ${links.kakao}`);
+    lines.push(`       구글  : ${links.google}`);
+  }
     lines.push('[일정 요약]');
     lines.push(...(d.schedule || '').split('\n').filter(Boolean));
     if ((d.bus||'').trim() && d.busShow) lines.push(`[버스 대절] ${d.bus}`);
@@ -869,6 +875,18 @@
         <div><b>대상</b> ${teamLine || '-'}</div>
         <div><b>일자</b> ${dateStr}</div>
         <div><b>장소</b> ${d.place || '-'}</div>
+          <!-- === 지도 링크 추가 === -->
+    ${(()=>{
+      const links = buildMapSearchLinks(d.place);
+      return links ? `
+        <div style="margin-top:6px;font-size:12px;color:#333">
+          <b>지도</b>
+          <a href="${links.naver}">네이버</a> · 
+          <a href="${links.kakao}">카카오</a> · 
+          <a href="${links.google}">구글</a>
+        </div>` : '';
+    })()}
+    <!-- ===================== -->
         ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${d.bus}</div>` : '' }
         <div><b>문의</b> ${d.contact || '-'}</div>
       </div>
