@@ -737,16 +737,34 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
         } else {
           throw new Error('StaticMap 생성 실패');
         }
-      } catch(err){
-        console.error('[static map error]', err, dbg);
-        setMapPreview('');
-        document.getElementById('placeLat').value = '';
-        document.getElementById('placeLng').value = '';
-        document.getElementById('placeMapImg').value = '';
-        alert('지도 이미지를 불러오지 못했습니다. 주소를 조금 다르게 입력해 다시 시도해 주세요.');
-      } finally {
-        placeModal.close();
-      }
+     } catch (err) {
+  console.error('[static map error]', err, dbg);
+  setMapPreview('');
+  document.getElementById('placeLat').value = '';
+  document.getElementById('placeLng').value = '';
+  document.getElementById('placeMapImg').value = '';
+
+  // 🔍 어떤 단계에서 막혔는지 눈에 보이게
+  const last = (dbg && dbg.steps && dbg.steps[dbg.steps.length - 1]) || {};
+  let hint = '';
+  if (dbg && Array.isArray(dbg.steps) && dbg.steps.some(s => s.step === 'geocode' && s.ok === false)) {
+    hint = '지오코딩 실패 (주소 인식 안됨)';
+  } else if (last.step === 'static_map') {
+    hint = `정적지도 실패(status=${last.json_status ?? '?'})`;
+  } else {
+    hint = '원인 미상(네트워크/키/쿼터 가능)';
+  }
+
+  alert(
+    '지도 이미지를 불러오지 못했습니다.\n' +
+    '사유: ' + hint + '\n\n' +
+    '• 주소를 도로명으로 바꿔 재검색해 보세요.\n' +
+    '• 관리자 콘솔에서 NCP API 키/권한을 확인해 주세요.'
+  );
+} finally {
+  placeModal.close();
+}
+
     })();
   });
 });
