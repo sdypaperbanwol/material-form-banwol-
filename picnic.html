@@ -690,7 +690,7 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
           if (!q) return null;
           const url = `${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
           const r   = await fetchWithTimeout(url);
-        + let j;
+          let j;
  try {
    j = await r.json();
  } catch (e) {
