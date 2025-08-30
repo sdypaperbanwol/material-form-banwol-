@@ -281,10 +281,7 @@
           <!-- ✅ 여기에 추가 -->
     
         <!-- ✅ QR 토글이 있다면, 그 옆이나 아래에 둬도 됩니다 -->
-    <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
-      <input id="exportShowQR" type="checkbox" checked> 이미지에 지도 QR 포함
-    </label>
-      </div>
+          </div>
       <button id="btnReset" type="button" title="초기화">초기화</button>
       <button id="btnShare">임시 저장하기</button>
       <button id="btnCopyText">안내문(텍스트)</button>
@@ -515,10 +512,6 @@ document.getElementById('btnReset')?.addEventListener('click', resetAll);
     // 지도/플레이스 관련 경로만 허용
     return /^(\/v5|\/p\/entry|\/entry\/place|\/map|\/place)/.test(path);
   }catch(_){ return false; }
-}
-function makeQrSrc(url, size=160){
-  // 공개 QR 이미지 서비스 (CORS OK) – html2canvas(useCORS:true)와 함께 작동
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
 }
 
 function resolveNaverLink(item){
@@ -1159,64 +1152,53 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
   </div>
 
   <script>
- function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]) ); }
+function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]) ); }
 
-  function buildExportHTML(){
-    const d = collect();
-    const dateStr   = d.date ? weekdayKR(d.date) : '-';
-    const teamLine  = formatTarget(d.team);
-    const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
-    const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
-    const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine), '야유회'].filter(Boolean).join(' '));
+function buildExportHTML(){
+  const d = collect();
+  const dateStr   = d.date ? weekdayKR(d.date) : '-';
+  const teamLine  = formatTarget(d.team);
+  const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine), '야유회'].filter(Boolean).join(' '));
 
-    // ✅ 토글값 읽기
-    const showURL = document.getElementById('exportShowURL')?.checked;
-    const showQR  = document.getElementById('exportShowQR')?.checked;
+  // URL 토글 체크박스가 있으면 반영(없으면 항상 미표시)
+  const showURL = document.getElementById('exportShowURL')?.checked === true;
 
-    // ✅ 최종 지도 링크(텍스트/QR 둘 다 이 값 기준)
-    const link = resolvedMapLink(d);
+  // 최종 지도 링크(텍스트 용)
+  const link = resolvedMapLink(d);
 
-    // ✅ QR 블럭(체크되고 링크가 있을 때만)
-    const qrHtml = (showQR && link)
-      ? `<div style="margin-top:8px; display:flex; align-items:center; gap:10px">
-           <img src="${makeQrSrc(link)}" alt="지도 QR" width="120" height="120" crossorigin="anonymous">
-           <div style="font-size:12px;color:#555">네이버 지도에서 위치 확인</div>
-         </div>`
-      : '';
+  return `
+    <div class="export-title">${escapeHTML(title)}</div>
+    <div class="export-meta">
+      <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
+      <div><b>일자</b> ${escapeHTML(dateStr)}</div>
+      <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
 
-    return `
-      <div class="export-title">${escapeHTML(title)}</div>
-      <div class="export-meta">
-        <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
-        <div><b>일자</b> ${escapeHTML(dateStr)}</div>
-        <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
+      ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
+      ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`  : '' }
 
-        ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
-        ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`  : '' }
-
-        <!-- ✅ URL 토글 반영: 체크된 경우에만 출력 -->
-        ${ (showURL && link)
-            ? `<div style="font-size:12px;color:#555"><b>네이버</b> ${escapeHTML(link)}</div>`
-            : '' }
-
-        ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${escapeHTML(d.bus)}</div>` : '' }
-        <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
-
-        <!-- ✅ QR 블럭 실제 삽입 -->
-        ${qrHtml}
-      </div>
-
-      <div class="export-sec-title">일정 요약</div>
-      ${ scheduleLines.length
-          ? `<ul class="export-list">${scheduleLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
-          : `<div style="color:#999">-</div>` }
-
-      ${ notesLines.length
-          ? `<div class="export-sec-title">특이사항</div>
-             <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+      <!-- URL은 체크된 경우에만 노출(체크박스가 없으면 자연히 미표시) -->
+      ${ (showURL && link)
+          ? `<div style="font-size:12px;color:#555"><b>네이버</b> ${escapeHTML(link)}</div>`
           : '' }
-    `;
-  }
+
+      ${ (d.bus||'').trim() && d.busShow ? `<div><b>버스</b> ${escapeHTML(d.bus)}</div>` : '' }
+      <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
+    </div>
+
+    <div class="export-sec-title">일정 요약</div>
+    ${ scheduleLines.length
+        ? `<ul class="export-list">${scheduleLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+        : `<div style="color:#999">-</div>` }
+
+    ${ notesLines.length
+        ? `<div class="export-sec-title">특이사항</div>
+           <ul class="export-list">${notesLines.map(li => `<li>${escapeHTML(li)}</li>`).join('')}</ul>`
+        : '' }
+  `;
+}
+
 
   function fillExportDom(){
     const inner = document.getElementById('exportInner');
