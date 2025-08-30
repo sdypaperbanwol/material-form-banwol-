@@ -201,6 +201,10 @@
       <input id="placeAddr" type="hidden" value="" />
 <input id="placeTel"  type="hidden" value="" />
 <input id="placeLink" type="hidden" value="" />
+      <div id="placeThumb" style="display:none; margin-top:6px">
+  <img id="placeThumbImg" alt="지도 미리보기"
+       style="max-width:220px;border:1px solid var(--line);border-radius:8px">
+</div>
           <!-- 선택된 지점의 좌표 및 지도 이미지 저장 -->
     <input id="placeLat" type="hidden" value="" />
     <input id="placeLng" type="hidden" value="" />
@@ -337,7 +341,7 @@
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyBN3Ama_3rjKRYuZsGS0nDV1VwJe94DaoIv2VtMcv95l7ag9zTjRKZX3PAfAWo73AY/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwlNgD3nt68KS6J4H7PUWOmbkZaRtrp5KMHoeWo_iqI3nptE05Bx1DdxJpu1ZkB1zHA/exec';
 
   /* fetch 타임아웃 */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
@@ -653,57 +657,47 @@ this.listEl.innerHTML = rows.map(r=>{
 
        // this.listEl.querySelectorAll('.place-item').forEach(...) 내부 교체
 this.listEl.querySelectorAll('.place-item').forEach(el=>{
-  el.addEventListener('click', async ()=>{
+  el.addEventListener('click', ()=>{
     const name = decodeURIComponent(el.getAttribute('data-name')||'');
     const addr = decodeURIComponent(el.getAttribute('data-addr')||'');
     const tel  = decodeURIComponent(el.getAttribute('data-tel')||'');
     const raw  = decodeURIComponent(el.getAttribute('data-link')||'');
+    const mapx = decodeURIComponent(el.getAttribute('data-x')||'');
+    const mapy = decodeURIComponent(el.getAttribute('data-y')||'');
 
-    // 1) 네이버 링크 정정
     const finalUrl = resolveNaverLink({
-      title: name, roadAddress: addr, address: addr, telephone: tel, link: raw
+      title: name, roadAddress: addr, address: addr,
+      telephone: tel, link: raw, mapx, mapy
     });
 
-    // 2) 기본 필드 세팅
-    setSelectedPlace({ title:name, roadAddress:addr, address:addr, telephone:tel, link:finalUrl });
-    if (name) document.getElementById('place').value = name;
+    setSelectedPlace({
+      title: name, roadAddress: addr, address: addr,
+      telephone: tel, link: finalUrl, mapx, mapy
+    });
+
     setPickedPlaceLink(finalUrl, name || '지도열기');
+    if (name) document.getElementById('place').value = name;
 
-    // 3) 지오코딩 → 정적지도 생성
-    try{
-      // 지오코딩(주소 우선, 없으면 상호명)
-      const gRes = await fetchWithTimeout(`${GAS_URL}?mode=geocode&query=${encodeURIComponent(addr || name)}`);
-      const gJson = await gRes.json();
-      if (gRes.ok && gJson.status === 'ok'){
-        const {lat, lng} = gJson;
+    // ✅ 여기서 좌표 저장 + Static Map 이미지 요청
+    document.getElementById('placeLat').value = mapy;
+    document.getElementById('placeLng').value = mapx;
 
-        // 숨은 필드에 좌표 저장
-        document.getElementById('placeLat').value = lat;
-        document.getElementById('placeLng').value = lng;
-
-        // 정적지도 호출(폭/높이는 카드형 기준으로 예시)
-        const mRes  = await fetchWithTimeout(`${GAS_URL}?mode=static_map&lat=${lat}&lng=${lng}&w=560&h=280&level=16`);
-        const mJson = await mRes.json();
-        if (mRes.ok && mJson.status === 'ok' && mJson.dataUrl){
-          document.getElementById('placeMapImg').value = mJson.dataUrl;
-
-          // 미리보기 상자에 썸네일도 곁들여 표시
-          const box = document.getElementById('placePicked');
-          box.innerHTML = `
-            선택된 지도 링크: <a href="${finalUrl}" target="_blank" rel="noopener">${name||'지도열기'}</a>
-            <div style="margin-top:8px"><img src="${mJson.dataUrl}" alt="지도 미리보기" style="max-width:100%; border:1px solid #e0e0e0; border-radius:8px"></div>
-          `;
-          box.style.display = 'block';
+    (async ()=>{
+      try {
+        const api = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(mapy)}&lng=${encodeURIComponent(mapx)}&w=600&h=400`;
+        const res = await fetch(api);
+        const json = await res.json();
+        if (json.status === 'ok' && json.dataUrl) {
+          document.getElementById('placeMapImg').value = json.dataUrl;
+          setMapPreview(json.dataUrl); // 👈 미리보기 함수 (직접 정의해야 함)
         }
-      }
-    }catch(e){
-      console.warn('지도 썸네일 생성 실패:', e);
-      // 좌표/지도 실패해도 나머지 흐름은 그대로 진행
-    }
+      } catch(err){ console.error('StaticMap 오류', err); }
+    })();
 
     this.close();
   });
 });
+
 
 
       }catch(err){
@@ -719,9 +713,14 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
   });
 
   // 사용자가 장소 텍스트를 바꾸면 이전 선택 URL은 무효화(오동작 방지)
-  document.getElementById('place').addEventListener('input', ()=>{
-    setPickedPlaceLink('', '');
-  });
+ document.getElementById('place').addEventListener('input', ()=>{
+  setPickedPlaceLink('', '');
+  document.getElementById('placeLat').value = '';
+  document.getElementById('placeLng').value = '';
+  document.getElementById('placeMapImg').value = '';
+  setMapPreview('');
+});
+
 
   /* 특이사항 템플릿 */
   const NOTES_PRESETS = [
@@ -783,7 +782,7 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
   renderNotesPresets();
 
   /* 폼 수집 */
- function collect(){
+function collect(){
   const val = id => document.getElementById(id)?.value || '';
   return {
     team: val('team'),
@@ -793,18 +792,22 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
     bus: val('bus'),
 
     place: val('place'),
-    // ▼ 추가/수정: 누락되었던 필드들 + 널가드
     placeAddr: val('placeAddr'),
     placeTel:  val('placeTel'),
     placeLink: val('placeLink'),
     placeUrl:  val('placeUrl'),
-    // ▲
+
+    // ✅ 새로 추가
+    placeLat:   val('placeLat'),
+    placeLng:   val('placeLng'),
+    placeMapImg: val('placeMapImg'),
 
     notes: val('notes'),
     contact: val('contact'),
     busShow: document.getElementById('busShow')?.checked ? 1 : 0,
   };
 }
+
 
 
   /* 공유 텍스트 */
@@ -878,6 +881,45 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
   lines.push(`📞 [문의처] ${d.contact || '-'}`);
 
   return lines.join('\n');
+}
+async function buildMapThumbByLatLng(lat, lng){
+  try{
+    const url = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=440&h=300&level=16`;
+    const res = await fetchWithTimeout(url);
+    const json = await res.json();
+    if (!res.ok || json.status !== 'ok' || !json.dataUrl) throw new Error('static_map failed');
+    return json.dataUrl; // data:image/png;base64,...
+  }catch(e){
+    console.warn('Static map error:', e);
+    return '';
+  }
+}
+
+async function geocodeToLatLng(name, road, jibun){
+  const q = (road || jibun || name || '').trim();
+  if (!q) return null;
+  try{
+    const url = `${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
+    const res = await fetchWithTimeout(url);
+    const json = await res.json();
+    if (!res.ok || json.status !== 'ok' || !json.found) return null;
+    return { lat: json.lat, lng: json.lng };
+  }catch(e){
+    console.warn('Geocode error:', e);
+    return null;
+  }
+}
+
+function setMapPreview(dataUrl){
+  const img = document.getElementById('placeThumbImg');
+  const box = document.getElementById('placeThumb');
+  if (dataUrl){
+    img.src = dataUrl;
+    box.style.display = 'block';
+  } else {
+    img.removeAttribute('src');
+    box.style.display = 'none';
+  }
 }
 
 
@@ -1178,44 +1220,30 @@ function buildExportHTML(){
   const d = collect();
   const dateStr = d.date ? weekdayKR(d.date) : '-';
   const teamLine = formatTarget(d.team);
-  const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
-  const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
-  const title = (d.title || '').trim() || ([dateStr, teamLine && (teamLine), '야유회'].filter(Boolean).join(' '));
-
-  const showURL = document.getElementById('exportShowURL')?.checked; // 있으면 반영
-  const link    = resolvedMapLink(d);
-  const mapImg  = document.getElementById('placeMapImg')?.value;     // dataURL
 
   return `
-    <div class="export-title">${escapeHTML(title)}</div>
+    <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
     <div class="export-meta">
       <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
       <div><b>일자</b> ${escapeHTML(dateStr)}</div>
       <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
       ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
-      ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`  : '' }
-      ${ (showURL && link) ? `<div style="font-size:12px;color:#555"><b>네이버</b> ${escapeHTML(link)}</div>` : '' }
-      ${ ((d.bus||'').trim() && d.busShow) ? `<div><b>버스</b> ${escapeHTML(d.bus)}</div>` : '' }
+      ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>` : '' }
       <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
-
-      ${ mapImg
-          ? `<div style="margin-top:10px">
-               <img src="${mapImg}" alt="지도" style="width:100%; max-width:560px; border:1px solid #e0e0e0; border-radius:8px">
-             </div>`
-          : '' }
     </div>
 
-    <div class="export-sec-title">일정 요약</div>
-    ${scheduleLines.length
-      ? `<ul class="export-list">${scheduleLines.map(li=>`<li>${escapeHTML(li)}</li>`).join('')}</ul>`
-      : `<div style="color:#999">-</div>`}
+    <!-- ✅ 지도 이미지 삽입 -->
+    ${ d.placeMapImg
+        ? `<div style="margin:16px 0">
+             <img src="${d.placeMapImg}" style="max-width:100%;border:1px solid #ddd;border-radius:8px">
+           </div>`
+        : '' }
 
-    ${notesLines.length
-      ? `<div class="export-sec-title">특이사항</div>
-         <ul class="export-list">${notesLines.map(li=>`<li>${escapeHTML(li)}</li>`).join('')}</ul>`
-      : '' }
+    <div class="export-sec-title">일정 요약</div>
+    ...
   `;
 }
+
 
 
 
