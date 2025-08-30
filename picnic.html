@@ -708,21 +708,22 @@ const clean = (s='') => s
   .replace(/\s{2,}/g, ' ')
   .trim();
 
-const addrC = clean(addr);
-const nameC = clean(name);
+ // 0) 원본 먼저(절대 건드리지 말고 그대로 시도)
+ const addrRaw = (addr || '').trim();
+ const nameRaw = (name || '').trim();
+ const addrC   = clean(addrRaw);
+ const nameC   = clean(nameRaw);
+ const adminOnly = addrRaw.split(/\s+/).slice(0, 3).join(' ').trim(); // 시/구/동 정도
 
-// 행정구 단위(시/구/동 2~3단어)만 남긴 축약 주소
-const adminOnly = addrC.split(/\s+/).slice(0, 3).join(' ').trim();
-
-// 재시도 큐(중복 제거)
-[
-  addrC,                        // 도로명/지번 주소(정제)
-  `${nameC} ${addrC}`.trim(),   // 상호 + 주소
-  adminOnly && `${adminOnly} ${nameC}`.trim(), // 시/구/동 + 상호
-  nameC,                        // 상호만
-  addrC && `대한민국 ${addrC}`, // 국가 접두
-].forEach(q => { if (q && !variants.includes(q)) variants.push(q); });
-
+ [
+   addrRaw,                               // ★ 원본 주소(번지 포함) 최우선
+   (nameRaw && addrRaw) ? `${nameRaw} ${addrRaw}` : '', // 원본 상호+주소
+   addrC,                                 // 정제 주소(차선)
+   (nameC && addrC) ? `${nameC} ${addrC}` : '',
+   adminOnly && `${adminOnly} ${nameRaw || nameC || ''}`.trim(),
+   nameRaw || nameC,                      // 상호만(최후)
+   addrRaw && `대한민국 ${addrRaw}`,      // 국가 접두(최후)
+ ].forEach(q => { if (q && !variants.includes(q)) variants.push(q); });
 let g = null;
 for (const q of variants) {
   const r = await tryGeocode(q);
