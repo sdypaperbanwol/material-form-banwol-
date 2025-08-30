@@ -655,14 +655,14 @@ this.listEl.innerHTML = rows.map(r=>{
 }).join('');
 
 
-       // this.listEl.querySelectorAll('.place-item').forEach(...) 내부 교체
+ // ✅ 장소 클릭 시 좌표 확정 → Static Map 생성 (지오코딩 우선)
 this.listEl.querySelectorAll('.place-item').forEach(el=>{
   el.addEventListener('click', ()=>{
     const name = decodeURIComponent(el.getAttribute('data-name')||'');
     const addr = decodeURIComponent(el.getAttribute('data-addr')||'');
     const tel  = decodeURIComponent(el.getAttribute('data-tel')||'');
     const raw  = decodeURIComponent(el.getAttribute('data-link')||'');
-    const mapx = decodeURIComponent(el.getAttribute('data-x')||'');
+    const mapx = decodeURIComponent(el.getAttribute('data-x')||''); // 원본 응답 좌표(신뢰X)
     const mapy = decodeURIComponent(el.getAttribute('data-y')||'');
 
     const finalUrl = resolveNaverLink({
@@ -674,29 +674,53 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
       title: name, roadAddress: addr, address: addr,
       telephone: tel, link: finalUrl, mapx, mapy
     });
-
     setPickedPlaceLink(finalUrl, name || '지도열기');
     if (name) document.getElementById('place').value = name;
 
-    // ✅ 여기서 좌표 저장 + Static Map 이미지 요청
-    document.getElementById('placeLat').value = mapy;
-    document.getElementById('placeLng').value = mapx;
-
     (async ()=>{
       try {
-        const api = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(mapy)}&lng=${encodeURIComponent(mapx)}&w=600&h=400`;
-        const res = await fetch(api);
+        // 1) 주소(또는 상호)로 WGS84 위경도 먼저 확보
+        let lat='', lng='';
+        const geo = await geocodeToLatLng(name, addr, '');
+        if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
+          lat = geo.lat; lng = geo.lng;
+        } else {
+          // 2) 최후의 보정: mapx/mapy가 한국 위경도 범위면만 사용
+          const fx = parseFloat(mapx), fy = parseFloat(mapy);
+          if (isFinite(fx) && isFinite(fy) && fy>=30 && fy<=40 && fx>=124 && fx<=132) {
+            lat = fy; lng = fx;
+          }
+        }
+        if (!lat || !lng) throw new Error('좌표 추출 실패');
+
+        // hidden 저장
+        document.getElementById('placeLat').value = lat;
+        document.getElementById('placeLng').value = lng;
+
+        // 3) Static Map 생성
+        const api = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=600&h=400`;
+        const res = await fetchWithTimeout(api);
         const json = await res.json();
         if (json.status === 'ok' && json.dataUrl) {
           document.getElementById('placeMapImg').value = json.dataUrl;
-          setMapPreview(json.dataUrl); // 👈 미리보기 함수 (직접 정의해야 함)
+          setMapPreview(json.dataUrl); // 썸네일 미리보기
+        } else {
+          throw new Error('StaticMap 생성 실패');
         }
-      } catch(err){ console.error('StaticMap 오류', err); }
+      } catch(err){
+        console.error('StaticMap 오류', err);
+        setMapPreview('');
+        document.getElementById('placeLat').value = '';
+        document.getElementById('placeLng').value = '';
+        document.getElementById('placeMapImg').value = '';
+        alert('지도 이미지를 불러오지 못했습니다. 주소를 조금 다르게 입력해 다시 시도해 주세요.');
+      } finally {
+        placeModal.close();
+      }
     })();
-
-    this.close();
   });
 });
+
 
 
 
@@ -921,6 +945,16 @@ function setMapPreview(dataUrl){
     box.style.display = 'none';
   }
 }
+// ✅ html2canvas 캡처 전에 모든 이미지 로딩을 기다리는 유틸
+async function waitForImagesLoaded(root){
+  const imgs = Array.from(root.querySelectorAll('img'));
+  const pendings = imgs.filter(img => !img.complete || img.naturalWidth === 0);
+  if (!pendings.length) return;
+  await Promise.all(pendings.map(img => new Promise(res => {
+    img.addEventListener('load',  res, { once:true });
+    img.addEventListener('error', res, { once:true });
+  })));
+}
 
 
 
@@ -1139,6 +1173,16 @@ function setMapPreview(dataUrl){
       document.getElementById('placeAddr').value = data.placeAddr || '';
       document.getElementById('placeTel').value  = data.placeTel  || '';
       document.getElementById('placeLink').value = data.placeLink || '';
+// ① 좌표/지도 이미지까지 복원
+document.getElementById('placeLat').value    = data.placeLat    || '';
+document.getElementById('placeLng').value    = data.placeLng    || '';
+document.getElementById('placeMapImg').value = data.placeMapImg || '';
+
+// ② 썸네일 박스 갱신
+if (data.placeMapImg) setMapPreview(data.placeMapImg);
+
+// ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
+if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
 
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
@@ -1187,7 +1231,15 @@ function setMapPreview(dataUrl){
       document.getElementById('placeAddr').value = data.placeAddr || '';
       document.getElementById('placeTel').value  = data.placeTel  || '';
       document.getElementById('placeLink').value = data.placeLink || '';
+document.getElementById('placeLat').value    = data.placeLat    || '';
+document.getElementById('placeLng').value    = data.placeLng    || '';
+document.getElementById('placeMapImg').value = data.placeMapImg || '';
 
+// ② 썸네일 박스 갱신
+if (data.placeMapImg) setMapPreview(data.placeMapImg);
+
+// ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
+if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
       document.getElementById('busShow').checked = (data.busShow === undefined) ? true : !!data.busShow;
@@ -1275,6 +1327,8 @@ function buildExportHTML(){
       }
       target.style.width = pxWidth + 'px';
       if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
+// ✅ 내보내기용 히든 DOM 안의 모든 <img> 로드 대기
+await waitForImagesLoaded(target);
 
       const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
       const dataURL = canvas.toDataURL('image/png');
