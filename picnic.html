@@ -341,7 +341,7 @@
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwlNgD3nt68KS6J4H7PUWOmbkZaRtrp5KMHoeWo_iqI3nptE05Bx1DdxJpu1ZkB1zHA/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwi-Ubq9l-LFVWq1np_mXkjPlzIHNUi14pewoRb78RZOGb2bkKEJhcvOFTOTwN5ycw/exec';
 
   /* fetch 타임아웃 */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
@@ -640,7 +640,8 @@ function buildNaverSearchLink(rawName, rawAddr=''){
        // this.listEl.innerHTML 생성 부분 교체
 this.listEl.innerHTML = rows.map(r=>{
   const x = mapRow(r);
-  const addr = x.road || x.jibun || '';
+  const addr = (x.road || x.jibun || '').trim() || (name || ''); 
+
   return `<div class="place-item"
               data-url="${encodeURIComponent(x.url)}"
               data-name="${encodeURIComponent(x.name)}"
@@ -698,9 +699,47 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
         };
 
         // 지오코딩 시도 순서: (도로명/지번주소) → (상호 + 주소) → (상호만)
-        let g = await tryGeocode(addr);
-        if (!g) g = await tryGeocode(`${name} ${addr}`.trim());
-        if (!g) g = await tryGeocode(name);
+       // 🔧 지오코딩 시도 보강
+const variants = [];
+const clean = (s='') => s
+  .replace(/\((?:[^()]|\([^()]*\))*\)/g, '')     // 괄호 내용 통째 제거
+  .replace(/\s+\d+[-~]?\d*(?:호|번지|층|F|동|호실)?/g, '') // 번지/호/층 등 제거
+  .replace(/대한법조|빌딩|타워|센터|상가|아파트|오피스텔|Mall|몰/gi, '')
+  .replace(/\s{2,}/g, ' ')
+  .trim();
+
+const addrC = clean(addr);
+const nameC = clean(name);
+
+// 행정구 단위(시/구/동 2~3단어)만 남긴 축약 주소
+const adminOnly = addrC.split(/\s+/).slice(0, 3).join(' ').trim();
+
+// 재시도 큐(중복 제거)
+[
+  addrC,                        // 도로명/지번 주소(정제)
+  `${nameC} ${addrC}`.trim(),   // 상호 + 주소
+  adminOnly && `${adminOnly} ${nameC}`.trim(), // 시/구/동 + 상호
+  nameC,                        // 상호만
+  addrC && `대한민국 ${addrC}`, // 국가 접두
+].forEach(q => { if (q && !variants.includes(q)) variants.push(q); });
+
+let g = null;
+for (const q of variants) {
+  const r = await tryGeocode(q);
+  dbg.steps.push({ step:'geocode', q, ok: !!r });
+  if (r) { g = r; break; }
+}
+
+let lat = g?.lat || '';
+let lng = g?.lng || '';
+
+// 👉 그래도 불발이면 여기서 끝내지 말고, 마지막 보호 장치로 시/구/동만으로 재시도
+if ((!lat || !lng) && adminOnly) {
+  const r2 = await tryGeocode(adminOnly);
+  dbg.steps.push({ step:'geocode_adminOnly', q: adminOnly, ok: !!r2 });
+  if (r2) { lat = r2.lat; lng = r2.lng; }
+}
+
 
         if (g) { lat = g.lat; lng = g.lng; }
 
