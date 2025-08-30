@@ -730,8 +730,7 @@ for (const q of variants) {
   if (r) { g = r; break; }
 }
 
-let lat = g?.lat || '';
-let lng = g?.lng || '';
+lat = g?.lat ?? ''; lng = g?.lng ?? '';
 
 // 👉 그래도 불발이면 여기서 끝내지 말고, 마지막 보호 장치로 시/구/동만으로 재시도
 if ((!lat || !lng) && adminOnly) {
