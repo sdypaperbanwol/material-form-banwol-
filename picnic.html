@@ -640,7 +640,7 @@ function buildNaverSearchLink(rawName, rawAddr=''){
        // this.listEl.innerHTML 생성 부분 교체
 this.listEl.innerHTML = rows.map(r=>{
   const x = mapRow(r);
-  const addr = (x.road || x.jibun || '').trim() || (name || ''); 
+  const addr = (x.road || x.jibun || '').trim() || (x.name || '');
 
   return `<div class="place-item"
               data-url="${encodeURIComponent(x.url)}"
