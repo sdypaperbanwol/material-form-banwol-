@@ -187,6 +187,11 @@
     <label for="date">일자 <span class="badge-req">필수</span></label>
     <input id="date" type="date" />
   </div>
+  
+<div class="row">
+  <label for="time">시간</label>
+  <input id="time" type="time" />
+</div>
 
   <div class="row">
     <label for="place">장소 <span class="badge-req">필수</span></label>
@@ -913,6 +918,7 @@ function collect(){
     team: val('team'),
     title: val('title'),
     date: val('date'),
+    time: val('time'),    
     schedule: val('schedule'),
     bus: val('bus'),
 
@@ -972,7 +978,7 @@ function collect(){
   }
 
   // 일자
-  lines.push(`📅 [일자] ${dateStr}`, '');
+  lines.push(`📅 [일시] ${dateTimeLine}`, '');
 
   // 장소
   lines.push(`📍 [장소] ${d.place || '-'}`, '');
@@ -1263,6 +1269,7 @@ async function waitForImagesLoaded(root){
       renderTeamChips(); restoreCustomTeamFromTeamValue();
       document.getElementById('title').value = data.title||'';
       document.getElementById('date').value = data.date||'';
+      document.getElementById('time').value  = data.time || '';   // ← 여기 추가
       document.getElementById('schedule').value = data.schedule||'';
       document.getElementById('bus').value = data.bus || ''; 
       setBus(document.getElementById('bus').value || '');
@@ -1321,6 +1328,7 @@ if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
       renderTeamChips(); restoreCustomTeamFromTeamValue();
       document.getElementById('title').value = data.title||'';
       document.getElementById('date').value = data.date||'';
+      document.getElementById('time').value  = data.time || '';   // ← 여기 추가
       document.getElementById('schedule').value = data.schedule||'';
       document.getElementById('bus').value = data.bus || ''; 
       setBus(document.getElementById('bus').value || '');
@@ -1373,6 +1381,8 @@ function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','
 function buildExportHTML(){
   const d = collect();
   const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const timeStr = (d.time || '').trim();                    // "HH:MM"
+  const dateTimeLine = timeStr ? `${dateStr} ${timeStr}` : dateStr;
   const teamLine = formatTarget(d.team);
 
   const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
@@ -1389,7 +1399,7 @@ function buildExportHTML(){
     <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
     <div class="export-meta">
       <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
-      <div><b>일자</b> ${escapeHTML(dateStr)}</div>
+      <div><b>일시</b> ${escapeHTML(dateTimeLine)}</div>
       <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
       ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
       ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>` : '' }
