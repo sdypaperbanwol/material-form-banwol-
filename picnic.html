@@ -430,10 +430,11 @@ function setSelectedPlace(item){
 function resetAll() {
   if (!confirm('모든 입력을 초기화하고, 주소의 k/code 파라미터도 제거할까요?')) return;
 
-  // 1) 텍스트/히든 입력값 초기화
+  // 1) 텍스트/히든 입력값 초기화 (+ time, 좌표/지도 이미지 추가)
   const ids = [
-    'team','title','date','schedule','bus',
+    'team','title','date','time','schedule','bus',
     'place','placeUrl','placeAddr','placeTel','placeLink',
+    'placeLat','placeLng','placeMapImg',  // ✅ 좌표/지도
     'notes','contact'
   ];
   ids.forEach(id => {
@@ -441,29 +442,39 @@ function resetAll() {
     if (el) el.value = '';
   });
 
-  // 2) 팀 칩/기타 입력 초기화
+  // 2) 특이사항 칩 상태도 함께 해제
+  //    (값만 비우면 칩 class(selected) 안 풀리므로 아래 호출 필요)
+  if (typeof setNotesLines === 'function') {
+    setNotesLines([]); // textarea 비우고 칩 selection도 동기화
+  } else if (typeof syncNotesPresetSelection === 'function') {
+    syncNotesPresetSelection();
+  }
+
+  // 3) 팀 칩/기타 입력 초기화
   setTeamHiddenFromArray([]);
   renderTeamChips();
   restoreCustomTeamFromTeamValue(); // 기타 입력칸 접기
 
-  // 3) 버스 선택/배지/체크 초기화
+  // 4) 버스 선택/배지/체크 초기화
   setBus('');
   const busShow = document.getElementById('busShow');
-  if (busShow) busShow.checked = true; // 기본값 유지(표시)라면 true
+  if (busShow) busShow.checked = true; // 기본값 유지
 
-  // 4) 장소 미리보기 박스 비우기
+  // 5) 장소 미리보기/썸네일 박스 비우기
   setPickedPlaceLink('', '');
+  setMapPreview(''); // ✅ 썸네일 숨김
 
-  // 5) URL의 k/code 파라미터 제거 (새로고침 없이 즉시 반영)
+  // 6) URL의 k/code 파라미터 제거
   const url = new URL(location.href);
   url.searchParams.delete('k');
   url.searchParams.delete('code');
   history.replaceState(null, '', url.origin + url.pathname);
 
-  // 6) 스크롤/배지 등 UI 마무리
+  // 7) 스크롤/배지 등 UI 마무리
   updateBusBadgeVisibility();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 
 document.getElementById('btnReset')?.addEventListener('click', resetAll);
 
