@@ -1009,7 +1009,7 @@ function collect(){
 }
 async function buildMapThumbByLatLng(lat, lng){
   try{
-    const url = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=440&h=300&level=13`;
+    const url = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=440&h=300&level=16`;
     const res = await fetchWithTimeout(url);
     const json = await res.json();
     if (!res.ok || json.status !== 'ok' || !json.dataUrl) throw new Error('static_map failed');
