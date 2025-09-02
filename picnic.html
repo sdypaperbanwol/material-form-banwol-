@@ -773,7 +773,7 @@ if ((!lat || !lng) && adminOnly) {
         document.getElementById('placeLng').value = lng;
 
         // 3) Static Map 생성
-        const api = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=600&h=400`;
+        const api = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=300&h=200`;
         const res = await fetchWithTimeout(api);
         const json = await res.json();
         dbg.steps.push({ step:'static_map', ok:(json && json.status==='ok'), json_status: json && json.status });
