@@ -1375,26 +1375,18 @@ function buildExportHTML(){
   const dateStr = d.date ? weekdayKR(d.date) : '-';
   const teamLine = formatTarget(d.team);
 
-  // 일정/특이사항 라인 만들기
-  const scheduleLines = (d.schedule || '')
-    .split('\n')
-    .map(s => s.trim())
-    .filter(Boolean);
+  const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const notesLines    = (d.notes || '').split('\n').map(s=>s.trim()).filter(Boolean);
 
-  const notesLines = (d.notes || '')
-    .split('\n')
-    .map(s => s.trim())
-    .filter(Boolean);
+  // ✅ 체크박스까지 반영해서 실제로 보여줄지 결정
+  const showBus = !!Number(d.busShow) && (d.bus || '').trim();
 
-  // 리스트 HTML 생성 유틸
-  const toList = (arr) => {
-    if (!arr.length) return '<ul class="export-list"><li>-</li></ul>';
-    return '<ul class="export-list">' + arr.map(li => `<li>${escapeHTML(li)}</li>`).join('') + '</ul>';
-  };
+  const toList = (arr)=> arr.length
+    ? '<ul class="export-list">' + arr.map(li=>`<li>${escapeHTML(li)}</li>`).join('') + '</ul>'
+    : '<ul class="export-list"><li>-</li></ul>';
 
   return `
     <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
-
     <div class="export-meta">
       <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
       <div><b>일자</b> ${escapeHTML(dateStr)}</div>
@@ -1406,22 +1398,20 @@ function buildExportHTML(){
 
     ${ d.placeMapImg
         ? `<div style="margin:16px 0; text-align:center">
-             <img src="${d.placeMapImg}"
-                  style="width:300px;height:auto;border:1px solid #ddd;border-radius:8px;display:inline-block">
+             <img src="${d.placeMapImg}" style="width:300px;height:auto;border:1px solid #ddd;border-radius:8px;display:inline-block">
            </div>`
         : '' }
 
     <div class="export-sec-title">일정 요약</div>
     ${toList(scheduleLines)}
 
-    ${ d.bus && String(d.bus).trim()
+    ${ showBus
         ? `<div class="export-sec-title">버스 대절</div>
            <ul class="export-list"><li>${escapeHTML(d.bus)}</li></ul>`
         : '' }
 
     ${ notesLines.length
-        ? `<div class="export-sec-title">특이사항</div>
-           ${toList(notesLines)}`
+        ? `<div class="export-sec-title">특이사항</div>${toList(notesLines)}`
         : '' }
   `;
 }
