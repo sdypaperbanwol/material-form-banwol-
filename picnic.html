@@ -158,7 +158,9 @@
 }
 
 /* 메타 박스 길이 줄이기 */
-#exportDoc .export-meta{ max-width:720px; }
+/* 기존 720px → 560px 권장 */
+#exportDoc .export-meta{ max-width:560px; margin-right:auto; }
+
 
 /* 본문 섹션을 카드+그리드로 (좌우 균형) */
 #exportDoc .export-sections{
@@ -185,7 +187,9 @@
 
    /* wide 모드일 때: 섹션 2열 + '일정 요약'은 가로 전체(span 2) */
 #exportDoc.wide .export-sections { grid-template-columns: 1fr 1fr; }
-#exportDoc.wide .export-sections .card-schedule { grid-column: 1 / -1; }
+/* 기존: 일정 요약을 항상 가로 전체(span 2) → 반폭으로 바꿈 */
+#exportDoc.wide .export-sections .card-schedule { grid-column: auto; }
+
 
 </style>
 
