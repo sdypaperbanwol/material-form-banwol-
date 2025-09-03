@@ -189,6 +189,52 @@
 #exportDoc.wide .export-sections { grid-template-columns: 1fr 1fr; }
 /* 기존: 일정 요약을 항상 가로 전체(span 2) → 반폭으로 바꿈 */
 #exportDoc.wide .export-sections .card-schedule { grid-column: auto; }
+/* ===== EXPORT LAYOUT OVERRIDE (paste at end) ===== */
+
+/* A4 가로(=wide)일 때: 왼쪽 본문 1, 오른쪽 지도 고정폭 */
+#exportDoc.wide .export-grid {
+  grid-template-columns: 1fr 420px; /* 지도 폭 조정은 여기 숫자 */
+  gap: 24px;
+}
+
+/* 메타(대상/일시/장소/주소/버스/문의)가 왼쪽 칼럼 가로를 꽉 쓰도록 */
+#exportDoc.wide .export-meta {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* 아래 섹션은 항상 반반(0.5/0.5) */
+#exportDoc.wide .export-sections {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 일정 요약이 가로 전체로 퍼지지 않도록(반폭 유지) */
+#exportDoc.wide .export-sections .card-schedule {
+  grid-column: auto !important;
+}
+/* ==== FINAL OVERRIDE (place at the very end) ==== */
+
+/* 오른쪽 지도 칼럼 폭 확정 (필요하면 420 숫자만 바꾸세요) */
+#exportDoc.wide .export-grid{
+  grid-template-columns: 1fr 420px !important;
+  gap: 24px !important;
+}
+
+/* 아래 섹션은 반반(0.5/0.5) */
+#exportDoc.wide .export-sections{
+  grid-template-columns: 1fr 1fr !important;
+}
+
+/* 일정 요약이 전체 폭으로 퍼지지 않게 */
+#exportDoc.wide .export-sections .card-schedule{
+  grid-column: auto !important;
+}
+
+/* 메타(대상/일시/장소/주소/버스/문의) 폭은 왼쪽 칼럼 전체 사용 */
+#exportDoc.wide .export-meta{
+  max-width: 100% !important;
+  width: 100% !important;
+}
 
 
 </style>
