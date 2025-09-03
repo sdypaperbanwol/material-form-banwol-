@@ -32,9 +32,17 @@
     padding:10px;border:1px dashed #eee;border-radius:12px;background:#fafbff}
   .row + .row{margin-top:8px}
   .row label{
-    font-weight:800;padding:8px 10px;border-radius:10px;border:1px solid #e7eaf6;
-    background:#f7f9ff;color:#243b6b;display:inline-flex;align-items:center;gap:6px
-  }
+  font-weight:800;
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid #e7eaf6;
+  background:#f7f9ff;
+  color:#243b6b;
+  display:flex;                    /* 추가 */
+  align-items:center;              /* 추가 */
+  justify-content:space-between;   /* 추가 */
+  gap:8px;                         /* 추가 */
+}
   .badge-req{font-size:11px;font-weight:900;color:#b71c1c;background:#ffebee;border:1px solid #ffcdd2;padding:2px 6px;border-radius:999px;}
   input[type=text], input[type=date], textarea, select{
     width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none
@@ -241,161 +249,204 @@
   gap:6px; margin-bottom:6px; color:#243b6b; font-weight:700;
 }
 .field-toggle input{ transform: translateY(1px); }
+/* 라벨 오른쪽 끝에 '표시' 체크박스 인라인 배치 */
+.row label{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+.field-toggle-inline{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:#243b6b;
+  font-weight:700;
+}
+.field-toggle-inline input{ transform: translateY(1px); }
 
 
 </style>
 
 </head>
 <body>
-  <div class="wrap">
-    <div class="grid">
-      <div class="card no-print">
-        <h2>안내문 작성</h2>
-        <div class="body">
-          <!-- 참여 대상 -->
-          <div class="sec">
-            <div class="sec-title">참여 대상</div>
-           <div class="row">
-  <label>대상</label>
-  <div>
-    <div class="field-toggle"><label><input id="showTeam" type="checkbox" checked> 표시</label></div>
+<div class="wrap">
+  <div class="grid">
+    <div class="card no-print">
+      <h2>안내문 작성</h2>
+      <div class="body">
 
-    <input id="team" type="hidden" value="">
-    <div class="chip-group" id="teamChips" role="group" aria-label="대상">
-      <div class="chip" data-val="A">A반</div>
-      <div class="chip" data-val="B">B반</div>
-      <div class="chip" data-val="C">C반</div>
-      <div class="chip" data-val="D">D반</div>
-      <div class="chip" data-val="기타">기타</div>
-      <input id="teamCustom" type="text" placeholder="직접 입력"
-             style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
-    </div>
-    <small style="color:var(--muted)">여러 반 선택 가능</small>
-  </div>
-</div>
+        <!-- 참여 대상 -->
+        <div class="sec">
+          <div class="sec-title">참여 대상</div>
 
+          <div class="row">
+            <label>
+              대상
+              <span class="field-toggle-inline">
+                <input id="showTeam" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <input id="team" type="hidden" value="">
+              <div class="chip-group" id="teamChips" role="group" aria-label="대상">
+                <div class="chip" data-val="A">A반</div>
+                <div class="chip" data-val="B">B반</div>
+                <div class="chip" data-val="C">C반</div>
+                <div class="chip" data-val="D">D반</div>
+                <div class="chip" data-val="기타">기타</div>
+                <input id="teamCustom" type="text" placeholder="직접 입력"
+                       style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
+              </div>
+              <small style="color:var(--muted)">여러 반 선택 가능</small>
+            </div>
           </div>
+        </div>
 
         <!-- 기본 정보 -->
-<div class="sec">
-  <div class="sec-title">기본 정보</div>
+        <div class="sec">
+          <div class="sec-title">기본 정보</div>
 
- <div class="row">
-  <label for="title">제목</label>
-  <div>
-    <div class="field-toggle"><label><input id="showTitle" type="checkbox" checked> 표시</label></div>
-    <input id="title" type="text" placeholder="예) 야유회 안내" />
-  </div>
-</div>
+          <div class="row">
+            <label for="title">
+              제목
+              <span class="field-toggle-inline">
+                <input id="showTitle" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <input id="title" type="text" placeholder="예) 야유회 안내" />
+            </div>
+          </div>
 
+          <div class="row">
+            <label for="date">
+              일자
+              <span class="field-toggle-inline">
+                <input id="showDate" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <input id="date" type="date" />
+            </div>
+          </div>
 
-  <div class="row">
-  <label for="date">일자</label>
-  <div>
-    <div class="field-toggle"><label><input id="showDate" type="checkbox" checked> 표시</label></div>
-    <input id="date" type="date" />
-  </div>
-</div>
+          <div class="row">
+            <label for="time">
+              시간
+              <span class="field-toggle-inline">
+                <input id="showTime" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <input id="time" type="time" />
+            </div>
+          </div>
 
-  
-<div class="row">
-  <label for="time">시간</label>
-  <div>
-    <div class="field-toggle"><label><input id="showTime" type="checkbox" checked> 표시</label></div>
-    <input id="time" type="time" />
-  </div>
-</div>
+          <div class="row">
+            <label for="place">
+              장소
+              <span class="field-toggle-inline">
+                <input id="showPlace" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
+                <input id="place" type="text" placeholder="예) 고잔동 XX식당 (주소/지점명 가능)" style="flex:1" />
+                <button type="button" id="btnPickPlace" title="네이버에서 지점 후보 검색해 선택">장소 찾기(검증)</button>
+              </div>
 
+              <!-- 선택된 지점 정보/지도 -->
+              <input id="placeUrl" type="hidden" value="" />
+              <input id="placeAddr" type="hidden" value="" />
+              <input id="placeTel"  type="hidden" value="" />
+              <input id="placeLink" type="hidden" value="" />
 
-  <div class="row">
-  <label for="place">장소</label>
-  <div>
-    <div class="field-toggle"><label><input id="showPlace" type="checkbox" checked> 표시</label></div>
+              <div id="placeThumb" style="display:none; margin-top:6px">
+                <img id="placeThumbImg" alt="지도 미리보기"
+                     style="max-width:220px;border:1px solid var(--line);border-radius:8px">
+              </div>
 
-    <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
-      <input id="place" type="text" placeholder="예) 고잔동 XX식당 (주소/지점명 가능)" style="flex:1" />
-      <button type="button" id="btnPickPlace" title="네이버에서 지점 후보 검색해 선택">장소 찾기(검증)</button>
-    </div>
+              <input id="placeLat" type="hidden" value="" />
+              <input id="placeLng" type="hidden" value="" />
+              <input id="placeMapImg" type="hidden" value="" />
 
-    <input id="placeUrl" type="hidden" value="" />
-    <input id="placeAddr" type="hidden" value="" />
-    <input id="placeTel"  type="hidden" value="" />
-    <input id="placeLink" type="hidden" value="" />
+              <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
 
-    <div id="placeThumb" style="display:none; margin-top:6px">
-      <img id="placeThumbImg" alt="지도 미리보기"
-           style="max-width:220px;border:1px solid var(--line);border-radius:8px">
-    </div>
+              <small style="color:var(--muted)">지점 선택 시 위 칸에 확정된 지점 정보가 표시되고, 안내문에는 해당 링크만 첨부됩니다.</small>
+            </div>
+          </div>
+        </div>
 
-    <input id="placeLat" type="hidden" value="" />
-    <input id="placeLng" type="hidden" value="" />
-    <input id="placeMapImg" type="hidden" value="" />
+        <!-- 운영 정보 -->
+        <div class="sec">
+          <div class="sec-title">운영 정보</div>
 
-    <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
-
-    <small style="color:var(--muted)">지점 선택 시 위 칸에 확정된 지점 정보가 표시되고, 안내문에는 해당 링크만 첨부됩니다.</small>
-  </div>
-</div>
-
-
-
-          <!-- 운영 정보 -->
-          <div class="sec">
-            <div class="sec-title">운영 정보</div>
-           <div class="row">
-  <label for="schedule">일정 요약</label>
-  <div>
-    <div class="field-toggle"><label><input id="showSchedule" type="checkbox" checked> 표시</label></div>
-    <textarea id="schedule" placeholder="예시)
+          <div class="row">
+            <label for="schedule">
+              일정 요약
+              <span class="field-toggle-inline">
+                <input id="showSchedule" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <textarea id="schedule" placeholder="예시)
 - 09:00 집결 및 활동
 - 12:30 점심 식사
 - 15:00 귀가"></textarea>
-  </div>
-</div>
+            </div>
+          </div>
 
+          <div class="row">
+            <label for="bus">
+              버스 대절
+              <span class="field-toggle-inline">
+                <input id="showBus" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <input id="bus" type="hidden" value="" />
+              <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
+                <div class="chip" role="radio" tabindex="0" aria-checked="false" data-val="O">O</div>
+                <div class="chip" role="radio" tabindex="-1" aria-checked="false" data-val="X">X</div>
+              </div>
+              <small style="color:var(--muted)">버스 대절 여부(O/X)는 제출 시에는 항상 저장됩니다.</small>
+            </div>
+          </div>
 
-           <div class="row">
-  <label for="bus">버스 대절</label>
-  <div>
-    <div class="field-toggle"><label><input id="showBus" type="checkbox" checked> 표시</label></div>
-
-    <input id="bus" type="hidden" value="" />
-    <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
-      <div class="chip" role="radio" tabindex="0" aria-checked="false" data-val="O">O</div>
-      <div class="chip" role="radio" tabindex="-1" aria-checked="false" data-val="X">X</div>
-    </div>
-
-    <small style="color:var(--muted)">버스 대절 여부(O/X)는 제출 시에는 항상 저장됩니다.</small>
-  </div>
-</div>
-
-           <div class="row">
-  <label for="notes">특이사항</label>
-  <div>
-    <div class="field-toggle"><label><input id="showNotes" type="checkbox" checked> 표시</label></div>
-
-    <div class="chip-group" id="notesPresets" role="group" aria-label="특이사항 템플릿"></div>
-    <small style="color:var(--muted)">클릭 시 특이사항에 추가/제거됩니다(중복 방지)</small>
-    <textarea id="notes" placeholder="예)
+          <div class="row">
+            <label for="notes">
+              특이사항
+              <span class="field-toggle-inline">
+                <input id="showNotes" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <div class="chip-group" id="notesPresets" role="group" aria-label="특이사항 템플릿"></div>
+              <small style="color:var(--muted)">클릭 시 특이사항에 추가/제거됩니다(중복 방지)</small>
+              <textarea id="notes" placeholder="예)
 - 편한 복장 및 운동화 권장
 - 개인 물/우의 등 준비
 - 일부 구간 도보 이동 예정"></textarea>
-  </div>
-</div>
-
-
-        <div class="row">
-  <label for="contact">문의처</label>
-  <div>
-    <div class="field-toggle"><label><input id="showContact" type="checkbox" checked> 표시</label></div>
-    <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
-  </div>
-</div>
-
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+
+          <div class="row">
+            <label for="contact">
+              문의처
+              <span class="field-toggle-inline">
+                <input id="showContact" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
+            </div>
+          </div>
+
+        </div><!-- /.sec 운영 정보 -->
+
+      </div><!-- /.body -->
+    </div><!-- /.card -->
+  </div><!-- /.grid -->
+</div><!-- /.wrap -->
+
 
     <div class="toolbar no-print">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
