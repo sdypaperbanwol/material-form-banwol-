@@ -144,6 +144,26 @@
 
    #btnReset { border-color:#cfd8dc; background:#eceff1; color:#455a64 }
 #btnReset:hover { background:#e0e7ec }
+
+   /* A4 가로 등 넓은 폭일 때 2열 레이아웃 */
+#exportDoc.card-wide #exportInner { padding:24px 28px; }
+#exportDoc.card-wide .export-title { margin-bottom:12px; }
+
+#exportDoc.card-wide .export-layout{
+  display:grid;
+  grid-template-columns: 1fr 420px; /* 본문 / 지도(고정폭) */
+  gap:18px;
+  align-items:start;
+}
+
+#exportDoc.card-wide .export-meta{ margin:0; }
+#exportDoc.card-wide .export-map{ margin:0; }
+#exportDoc.card-wide .export-map img{
+  width:100%; height:auto;
+  border:1px solid #ddd; border-radius:8px;
+}
+
+   
 </style>
 
 </head>
@@ -288,6 +308,7 @@
           <select id="exportWidth">
             <option value="auto" selected>자동(내용에 맞춤)</option>
             <option value="794">A4(794px, 기본)</option>
+            <option value="1123">A4 가로(1123px)</option>
             <option value="680">컴팩트(680px)</option>
             <option value="560">카드형(560px)</option>
           </select>
@@ -1391,23 +1412,23 @@ function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','
 
 function buildExportHTML(){
   const d = collect();
-  const dateStr = d.date ? weekdayKR(d.date) : '-';
-  const timeStr = (d.time || '').trim();                    // "HH:MM"
+  const dateStr  = d.date ? weekdayKR(d.date) : '-';
+  const timeStr  = (d.time || '').trim();            // "HH:MM" 옵션
   const dateTimeLine = timeStr ? `${dateStr} ${timeStr}` : dateStr;
   const teamLine = formatTarget(d.team);
 
+  // 목록 변환
   const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
   const notesLines    = (d.notes || '').split('\n').map(s=>s.trim()).filter(Boolean);
-
-  // ✅ 체크박스까지 반영해서 실제로 보여줄지 결정
-  const showBus = !!Number(d.busShow) && (d.bus || '').trim();
-
   const toList = (arr)=> arr.length
     ? '<ul class="export-list">' + arr.map(li=>`<li>${escapeHTML(li)}</li>`).join('') + '</ul>'
     : '<ul class="export-list"><li>-</li></ul>';
 
-  return `
-    <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
+  // 체크박스까지 반영해서 실제 노출 여부 결정
+  const showBus = !!Number(d.busShow) && (d.bus || '').trim();
+
+  // 공통 메타 블록(일시에 시간 포함)
+  const metaHTML = `
     <div class="export-meta">
       <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
       <div><b>일시</b> ${escapeHTML(dateTimeLine)}</div>
@@ -1416,25 +1437,49 @@ function buildExportHTML(){
       ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>` : '' }
       <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
     </div>
-
-    ${ d.placeMapImg
-        ? `<div style="margin:16px 0; text-align:center">
-             <img src="${d.placeMapImg}" style="width:300px;height:auto;border:1px solid #ddd;border-radius:8px;display:inline-block">
-           </div>`
-        : '' }
-
-    <div class="export-sec-title">일정 요약</div>
-    ${toList(scheduleLines)}
-
-    ${ showBus
-        ? `<div class="export-sec-title">버스 대절</div>
-           <ul class="export-list"><li>${escapeHTML(d.bus)}</li></ul>`
-        : '' }
-
-    ${ notesLines.length
-        ? `<div class="export-sec-title">특이사항</div>${toList(notesLines)}`
-        : '' }
   `;
+
+  // 본문(일정/버스/특이사항)
+  const bodyHTML = `
+    <div>
+      ${metaHTML}
+
+      <div class="export-sec-title">일정 요약</div>
+      ${toList(scheduleLines)}
+
+      ${ showBus
+          ? `<div class="export-sec-title">버스 대절</div>
+             <ul class="export-list"><li>${escapeHTML(d.bus)}</li></ul>`
+          : '' }
+
+      ${ notesLines.length
+          ? `<div class="export-sec-title">특이사항</div>${toList(notesLines)}`
+          : '' }
+    </div>
+  `;
+
+  // 지도 칸 (있을 때만) — card-wide CSS가 width:100%로 맞춰줌
+  const mapCol = d.placeMapImg
+    ? `<div class="export-map">
+         <img src="${d.placeMapImg}" alt="지도">
+       </div>`
+    : '';
+
+  // 지도 있으면 2열, 없으면 1열
+  if (d.placeMapImg){
+    return `
+      <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
+      <div class="export-layout">
+        ${bodyHTML}
+        ${mapCol}
+      </div>
+    `;
+  } else {
+    return `
+      <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
+      ${bodyHTML}
+    `;
+  }
 }
 
 
@@ -1447,43 +1492,49 @@ function buildExportHTML(){
     inner.innerHTML = buildExportHTML();
   }
 
-  async function exportAsImage(){
-    showLoading('이미지 생성 중…', '잠시만 기다려주세요');
-    try{
-      fillExportDom();
-      const target = document.getElementById('exportDoc');
-      const inner  = document.getElementById('exportInner');
-      const sel    = document.getElementById('exportWidth');
-      const choice = sel ? sel.value : 'auto';
+ async function exportAsImage(){
+  showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+  try{
+    fillExportDom();
+    const target = document.getElementById('exportDoc');
+    const inner  = document.getElementById('exportInner');
+    const sel    = document.getElementById('exportWidth');
+    const choice = sel ? sel.value : 'auto';
 
-      const prevWidth = target.style.width;
-      const hadNarrow = target.classList.contains('card-narrow');
+    const prevWidth = target.style.width;
+    const hadNarrow = target.classList.contains('card-narrow');
+    const hadWide   = target.classList.contains('card-wide');
 
-      let pxWidth;
-      if (choice === 'auto') {
-        target.style.width = 'auto';
-        const measured = inner.scrollWidth || 0;
-        pxWidth = Math.max(420, Math.min(560, measured + 12));
-      } else {
-        pxWidth = parseInt(choice, 10) || 560;
-      }
-      target.style.width = pxWidth + 'px';
-      if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
-// ✅ 내보내기용 히든 DOM 안의 모든 <img> 로드 대기
-await waitForImagesLoaded(target);
+    let pxWidth;
+    if (choice === 'auto') {
+      target.style.width = 'auto';
+      const measured = inner.scrollWidth || 0;
+      pxWidth = Math.max(420, Math.min(560, measured + 12));
+    } else {
+      pxWidth = parseInt(choice, 10) || 560;
+    }
+    target.style.width = pxWidth + 'px';
 
-      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-      const dataURL = canvas.toDataURL('image/png');
+    // 좁으면 카드형, 넓으면 와이드 2열
+    if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
+    if (pxWidth >= 900) target.classList.add('card-wide');   else target.classList.remove('card-wide');
 
-      const a = document.createElement('a');
-      a.href = dataURL;
-      a.download = (collect().title || '안내문') + `.png`;
-      document.body.appendChild(a); a.click(); a.remove();
+    await waitForImagesLoaded(target);
+    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+    const dataURL = canvas.toDataURL('image/png');
 
-      target.style.width = prevWidth;
-      if (!hadNarrow) target.classList.remove('card-narrow');
-    } finally { hideLoading(); }
-  }
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = (collect().title || '안내문') + `.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+
+    // 되돌리기
+    target.style.width = prevWidth;
+    if (!hadNarrow) target.classList.remove('card-narrow');
+    if (!hadWide)   target.classList.remove('card-wide');
+  } finally { hideLoading(); }
+}
+
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
   </script>
 </body>
