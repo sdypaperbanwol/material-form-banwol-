@@ -106,6 +106,13 @@
     .sec { padding:12px 10px }
     .sec-title{ font-size:12px }
 
+.export-map img{
+  max-width:100%;
+  height:auto;
+  border:1px solid #ddd;
+  border-radius:8px;
+}
+    
     /* ✅ 모바일에서 장소선택 모달 헤더 세로 배치 */
     .place-head {
       flex-direction: column;
@@ -994,10 +1001,14 @@ function collect(){
     return buildNaverSearchLink(place);       // 마지막 안전장치: 검색 링크
   }
 
- function buildShareText(){
+function buildShareText(){
   const d = collect();
   const lines = [];
+
   const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const timeStr = (d.time || '').trim();
+  const dateTimeLine = timeStr ? `${dateStr} ${timeStr}` : dateStr;
+
   const header = makeShareTitle(d) || '안내문';
 
   // 제목
