@@ -106,13 +106,6 @@
     .sec { padding:12px 10px }
     .sec-title{ font-size:12px }
 
-.export-map img{
-  max-width:100%;
-  height:auto;
-  border:1px solid #ddd;
-  border-radius:8px;
-}
-    
     /* ✅ 모바일에서 장소선택 모달 헤더 세로 배치 */
     .place-head {
       flex-direction: column;
@@ -148,29 +141,47 @@
   #exportDoc.card-narrow .export-meta b { width:48px }
   #exportDoc.card-narrow .export-sec-title { font-size:14px; margin-top:14px }
   #exportDoc.card-narrow .export-list li { margin:3px 0 }
-
-   #btnReset { border-color:#cfd8dc; background:#eceff1; color:#455a64 }
-#btnReset:hover { background:#e0e7ec }
-
-   /* A4 가로 등 넓은 폭일 때 2열 레이아웃 */
-#exportDoc.card-wide #exportInner { padding:24px 28px; }
-#exportDoc.card-wide .export-title { margin-bottom:12px; }
-
-#exportDoc.card-wide .export-layout{
+/* ========= Export 전용 2단 레이아웃 ========= */
+#exportDoc .export-grid{
   display:grid;
-  grid-template-columns: 1fr 420px; /* 본문 / 지도(고정폭) */
-  gap:18px;
-  align-items:start;
+  grid-template-columns: 1fr;
+  gap:20px;
 }
-
-#exportDoc.card-wide .export-meta{ margin:0; }
-#exportDoc.card-wide .export-map{ margin:0; }
-#exportDoc.card-wide .export-map img{
+#exportDoc.wide .export-grid{
+  grid-template-columns: 1fr 380px; /* 왼쪽 본문 / 오른쪽 지도 */
+  gap:24px;
+}
+#exportDoc .export-map{ align-self:start }
+#exportDoc .export-map img{
   width:100%; height:auto;
   border:1px solid #ddd; border-radius:8px;
 }
 
-   
+/* 메타 박스 길이 줄이기 */
+#exportDoc .export-meta{ max-width:720px; }
+
+/* 본문 섹션을 카드+그리드로 (좌우 균형) */
+#exportDoc .export-sections{
+  display:grid;
+  grid-template-columns: 1fr; 
+  gap:14px;
+}
+#exportDoc.wide .export-sections{ grid-template-columns: 1fr 1fr; }
+
+#exportDoc .export-card{
+  border:1px solid #e6ebff;
+  background:#f7f9ff;
+  border-radius:12px;
+  padding:12px 14px;
+}
+#exportDoc .export-card .export-sec-title{
+  margin:0 0 6px;
+  font-weight:800; color:#1a237e;
+  border-left:4px solid #1a237e; padding-left:8px;
+}
+
+   #btnReset { border-color:#cfd8dc; background:#eceff1; color:#455a64 }
+#btnReset:hover { background:#e0e7ec }
 </style>
 
 </head>
@@ -1003,12 +1014,10 @@ function collect(){
 
 function buildShareText(){
   const d = collect();
-  const lines = [];
-
-  const dateStr = d.date ? weekdayKR(d.date) : '-';
-  const timeStr = (d.time || '').trim();
+  const dateStr  = d.date ? weekdayKR(d.date) : '-';
+  const timeStr  = (d.time || '').trim();
   const dateTimeLine = timeStr ? `${dateStr} ${timeStr}` : dateStr;
-
+  const lines = [];
   const header = makeShareTitle(d) || '안내문';
 
   // 제목
@@ -1424,74 +1433,76 @@ function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','
 function buildExportHTML(){
   const d = collect();
   const dateStr  = d.date ? weekdayKR(d.date) : '-';
-  const timeStr  = (d.time || '').trim();            // "HH:MM" 옵션
-  const dateTimeLine = timeStr ? `${dateStr} ${timeStr}` : dateStr;
+  const timeStr  = (d.time || '').trim();
+  const dateTime = timeStr ? `${dateStr} ${timeStr}` : dateStr;
   const teamLine = formatTarget(d.team);
 
-  // 목록 변환
   const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
-  const notesLines    = (d.notes || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const showBus       = !!Number(d.busShow) && (d.bus || '').trim();
+
   const toList = (arr)=> arr.length
     ? '<ul class="export-list">' + arr.map(li=>`<li>${escapeHTML(li)}</li>`).join('') + '</ul>'
     : '<ul class="export-list"><li>-</li></ul>';
 
-  // 체크박스까지 반영해서 실제 노출 여부 결정
-  const showBus = !!Number(d.busShow) && (d.bus || '').trim();
+  // 섹션 카드를 배열로 만들어 좌우 균형 배치
+  const sectionCards = [];
 
-  // 공통 메타 블록(일시에 시간 포함)
-  const metaHTML = `
-    <div class="export-meta">
-      <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
-      <div><b>일시</b> ${escapeHTML(dateTimeLine)}</div>
-      <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
-      ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
-      ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>` : '' }
-      <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
-    </div>
-  `;
-
-  // 본문(일정/버스/특이사항)
-  const bodyHTML = `
-    <div>
-      ${metaHTML}
-
+  sectionCards.push(`
+    <div class="export-card">
       <div class="export-sec-title">일정 요약</div>
       ${toList(scheduleLines)}
+    </div>
+  `);
 
-      ${ showBus
-          ? `<div class="export-sec-title">버스 대절</div>
-             <ul class="export-list"><li>${escapeHTML(d.bus)}</li></ul>`
-          : '' }
+  if (showBus){
+    sectionCards.push(`
+      <div class="export-card">
+        <div class="export-sec-title">버스 대절</div>
+        <ul class="export-list"><li>${escapeHTML(d.bus)}</li></ul>
+      </div>
+    `);
+  }
 
-      ${ notesLines.length
-          ? `<div class="export-sec-title">특이사항</div>${toList(notesLines)}`
+  if (notesLines.length){
+    sectionCards.push(`
+      <div class="export-card">
+        <div class="export-sec-title">특이사항</div>
+        ${toList(notesLines)}
+      </div>
+    `);
+  }
+
+  return `
+    <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
+
+    <div class="export-grid">
+      <!-- 왼쪽: 메타 + 섹션들 -->
+      <div>
+        <div class="export-meta">
+          <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
+          <div><b>일시</b> ${escapeHTML(dateTime)}</div>
+          <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
+          ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
+          ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`  : '' }
+          <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
+        </div>
+
+        <div class="export-sections">
+          ${sectionCards.join('')}
+        </div>
+      </div>
+
+      <!-- 오른쪽: 지도 -->
+      ${ d.placeMapImg
+          ? `<div class="export-map">
+               <img src="${d.placeMapImg}" alt="지도 미리보기">
+             </div>`
           : '' }
     </div>
   `;
-
-  // 지도 칸 (있을 때만) — card-wide CSS가 width:100%로 맞춰줌
-  const mapCol = d.placeMapImg
-    ? `<div class="export-map">
-         <img src="${d.placeMapImg}" alt="지도">
-       </div>`
-    : '';
-
-  // 지도 있으면 2열, 없으면 1열
-  if (d.placeMapImg){
-    return `
-      <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
-      <div class="export-layout">
-        ${bodyHTML}
-        ${mapCol}
-      </div>
-    `;
-  } else {
-    return `
-      <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
-      ${bodyHTML}
-    `;
-  }
 }
+
 
 
 
@@ -1503,49 +1514,47 @@ function buildExportHTML(){
     inner.innerHTML = buildExportHTML();
   }
 
- async function exportAsImage(){
-  showLoading('이미지 생성 중…', '잠시만 기다려주세요');
-  try{
-    fillExportDom();
-    const target = document.getElementById('exportDoc');
-    const inner  = document.getElementById('exportInner');
-    const sel    = document.getElementById('exportWidth');
-    const choice = sel ? sel.value : 'auto';
+  async function exportAsImage(){
+    showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+    try{
+      fillExportDom();
+      const target = document.getElementById('exportDoc');
+      const inner  = document.getElementById('exportInner');
+      const sel    = document.getElementById('exportWidth');
+      const choice = sel ? sel.value : 'auto';
 
-    const prevWidth = target.style.width;
-    const hadNarrow = target.classList.contains('card-narrow');
-    const hadWide   = target.classList.contains('card-wide');
+      const prevWidth = target.style.width;
+      const hadNarrow = target.classList.contains('card-narrow');
 
-    let pxWidth;
-    if (choice === 'auto') {
-      target.style.width = 'auto';
-      const measured = inner.scrollWidth || 0;
-      pxWidth = Math.max(420, Math.min(560, measured + 12));
-    } else {
-      pxWidth = parseInt(choice, 10) || 560;
-    }
-    target.style.width = pxWidth + 'px';
+      let pxWidth;
+      if (choice === 'auto') {
+        target.style.width = 'auto';
+        const measured = inner.scrollWidth || 0;
+        pxWidth = Math.max(420, Math.min(560, measured + 12));
+      } else {
+        pxWidth = parseInt(choice, 10) || 560;
+      }
+      target.style.width = pxWidth + 'px';
+      if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
 
-    // 좁으면 카드형, 넓으면 와이드 2열
-    if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
-    if (pxWidth >= 900) target.classList.add('card-wide');   else target.classList.remove('card-wide');
+      const isWide = (choice === '1123' || pxWidth >= 980); // A4 가로 선택 시
+    target.classList.toggle('wide', isWide);
+      
+// ✅ 내보내기용 히든 DOM 안의 모든 <img> 로드 대기
+await waitForImagesLoaded(target);
 
-    await waitForImagesLoaded(target);
-    const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-    const dataURL = canvas.toDataURL('image/png');
+      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+      const dataURL = canvas.toDataURL('image/png');
 
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = (collect().title || '안내문') + `.png`;
-    document.body.appendChild(a); a.click(); a.remove();
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = (collect().title || '안내문') + `.png`;
+      document.body.appendChild(a); a.click(); a.remove();
 
-    // 되돌리기
-    target.style.width = prevWidth;
-    if (!hadNarrow) target.classList.remove('card-narrow');
-    if (!hadWide)   target.classList.remove('card-wide');
-  } finally { hideLoading(); }
-}
-
+      target.style.width = prevWidth;
+      if (!hadNarrow) target.classList.remove('card-narrow');
+    } finally { hideLoading(); }
+  }
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
   </script>
 </body>
