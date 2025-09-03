@@ -182,6 +182,11 @@
 
    #btnReset { border-color:#cfd8dc; background:#eceff1; color:#455a64 }
 #btnReset:hover { background:#e0e7ec }
+
+   /* wide 모드일 때: 섹션 2열 + '일정 요약'은 가로 전체(span 2) */
+#exportDoc.wide .export-sections { grid-template-columns: 1fr 1fr; }
+#exportDoc.wide .export-sections .card-schedule { grid-column: 1 / -1; }
+
 </style>
 
 </head>
@@ -1445,25 +1450,17 @@ function buildExportHTML(){
     ? '<ul class="export-list">' + arr.map(li=>`<li>${escapeHTML(li)}</li>`).join('') + '</ul>'
     : '<ul class="export-list"><li>-</li></ul>';
 
-  // 섹션 카드를 배열로 만들어 좌우 균형 배치
   const sectionCards = [];
 
+  // 일정 요약: 2열 전체(span 2)
   sectionCards.push(`
-    <div class="export-card">
+    <div class="export-card card-schedule">
       <div class="export-sec-title">일정 요약</div>
       ${toList(scheduleLines)}
     </div>
   `);
 
-  if (showBus){
-    sectionCards.push(`
-      <div class="export-card">
-        <div class="export-sec-title">버스 대절</div>
-        <ul class="export-list"><li>${escapeHTML(d.bus)}</li></ul>
-      </div>
-    `);
-  }
-
+  // 특이사항: 반폭 카드(필요 시)
   if (notesLines.length){
     sectionCards.push(`
       <div class="export-card">
@@ -1477,7 +1474,6 @@ function buildExportHTML(){
     <div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>
 
     <div class="export-grid">
-      <!-- 왼쪽: 메타 + 섹션들 -->
       <div>
         <div class="export-meta">
           <div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>
@@ -1485,6 +1481,7 @@ function buildExportHTML(){
           <div><b>장소</b> ${escapeHTML(d.place || '-')}</div>
           ${ d.placeAddr ? `<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>` : '' }
           ${ d.placeTel  ? `<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`  : '' }
+          ${ showBus ? `<div><b>버스</b> ${escapeHTML(d.bus)}</div>` : '' }
           <div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>
         </div>
 
@@ -1493,15 +1490,13 @@ function buildExportHTML(){
         </div>
       </div>
 
-      <!-- 오른쪽: 지도 -->
       ${ d.placeMapImg
-          ? `<div class="export-map">
-               <img src="${d.placeMapImg}" alt="지도 미리보기">
-             </div>`
+          ? `<div class="export-map"><img src="${d.placeMapImg}" alt="지도 미리보기"></div>`
           : '' }
     </div>
   `;
 }
+
 
 
 
