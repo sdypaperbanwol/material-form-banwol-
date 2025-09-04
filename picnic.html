@@ -1032,28 +1032,7 @@ if ((!lat || !lng) && adminOnly) {
     }
   };
 
-  document.getElementById('btnPickPlace').addEventListener('click', async ()=>{
-  const seed = (document.getElementById('place').value || '').trim();
-
-  // ① 네이버 지도/플레이스 URL을 직접 붙인 경우 → 곧바로 확정
-  if (isUrl(seed) && isNaverPlaceUrl(seed)) {
-   // place 입력값은 그대로 두고, 링크만 확정
-   document.getElementById('placeLink').value = seed;
-   setPickedPlaceLink(seed, '네이버 지도');
-    // 주소 텍스트가 있으면 지오코딩도 시도(선택) → 없으면 생략 가능
-    return;
-  }
-
-  // ② 주소처럼 보이면 → 바로 지오코딩으로 확정
-  if (looksLikeKrAddress(seed)) {
-    await useAddressDirect(seed);
-    return;
-  }
-
-  // ③ 그 외(상호명 등)는 후보 검색 모달로
-  placeModal.open(seed);
-});
-
+  
 
   // 사용자가 장소 텍스트를 바꾸면 이전 선택 URL은 무효화(오동작 방지)
  document.getElementById('place').addEventListener('input', ()=>{
