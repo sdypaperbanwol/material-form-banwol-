@@ -1787,13 +1787,67 @@ function derivePlaceTitleFromAddress(addr='') {
   return tokens.slice(0,2).join(' ') || addr;
 }
 
+
+    
 // 느슨 비교: 공백/쉼표 등 제거 후 동일성 판단 → 중복 표시 방지용
 function isSameLoose(a='', b=''){
   const norm = s => (s||'').replace(/[,\s]/g,'').trim();
   return norm(a) && norm(a) === norm(b);
 }
 
-    
+    async function useAddressDirect(addrStr){
+  const raw = (addrStr||'').trim();
+  if(!raw) return;
+
+  showLoading('주소 확인 중…','지도 좌표를 찾는 중입니다');
+  try{
+    // 시도 후보들을 만들어서 순차 지오코딩
+    const norm = normalizeKrAddressForGeocode(raw);
+    const roadOnly = extractRoadAndNumber(raw) || extractRoadAndNumber(norm);
+    const variants = Array.from(new Set([
+      raw,               // 1) 원본(가끔 그대로 먹히는 케이스)
+      norm,              // 2) 전처리본(건물/층 제거)
+      roadOnly,          // 3) "도로명 + 번지"만
+      norm && `대한민국 ${norm}`,          // 4) 국가 접두
+      roadOnly && `대한민국 ${roadOnly}`,  // 5) 국가 접두
+    ].filter(Boolean)));
+
+    let geo=null;
+    for (const v of variants){
+      geo = await geocodeToLatLng('', v, '');
+      if (geo) break;
+    }
+    // 그래도 실패하면 명칭검색 모달로 폴백
+    if(!geo){ 
+      hideLoading();
+      placeModal.open(raw);
+      return;
+    }
+
+    // 좌표/지도 세팅
+    document.getElementById('placeAddr').value = raw; // 사용자가 적은 원본 주소 유지
+    const hid = document.getElementById('place'); if (hid) hid.value = raw;
+
+    document.getElementById('placeLat').value  = geo.lat;
+    document.getElementById('placeLng').value  = geo.lng;
+
+    const dataUrl = await buildMapThumbByLatLng(geo.lat, geo.lng);
+    document.getElementById('placeMapImg').value = dataUrl || '';
+    setMapPreview(dataUrl || '');
+
+    // 링크는 검색 링크라도 확보
+    const searchLink = buildNaverSearchLink('', raw);
+    document.getElementById('placeLink').value = searchLink;
+    setPickedPlaceLink(searchLink, '네이버 지도');
+
+    // 장소(텍스트)가 비어 있으면 주소에서 보기 좋게 추출
+    const t = document.getElementById('placeTitle');
+    if (t && !t.value.trim()) t.value = derivePlaceTitleFromAddress(raw);
+  } finally{
+    hideLoading();
+  }
+}
+
     
   </script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1938,15 +1992,38 @@ await waitForImagesLoaded(target);
 }
 
 async function useAddressDirect(addrStr){
-  const addr = (addrStr||'').trim();
-  if(!addr) return;
+  const raw = (addrStr||'').trim();
+  if(!raw) return;
 
   showLoading('주소 확인 중…','지도 좌표를 찾는 중입니다');
   try{
-    const geo = await geocodeToLatLng('', addr, '');
-    if(!geo){ alert('이 주소로 좌표를 찾지 못했습니다. 철자/형식을 확인해 주세요.'); return; }
+    // 시도 후보들을 만들어서 순차 지오코딩
+    const norm = normalizeKrAddressForGeocode(raw);
+    const roadOnly = extractRoadAndNumber(raw) || extractRoadAndNumber(norm);
+    const variants = Array.from(new Set([
+      raw,               // 1) 원본(가끔 그대로 먹히는 케이스)
+      norm,              // 2) 전처리본(건물/층 제거)
+      roadOnly,          // 3) "도로명 + 번지"만
+      norm && `대한민국 ${norm}`,          // 4) 국가 접두
+      roadOnly && `대한민국 ${roadOnly}`,  // 5) 국가 접두
+    ].filter(Boolean)));
 
-    document.getElementById('placeAddr').value = addr;
+    let geo=null;
+    for (const v of variants){
+      geo = await geocodeToLatLng('', v, '');
+      if (geo) break;
+    }
+    // 그래도 실패하면 명칭검색 모달로 폴백
+    if(!geo){ 
+      hideLoading();
+      placeModal.open(raw);
+      return;
+    }
+
+    // 좌표/지도 세팅
+    document.getElementById('placeAddr').value = raw; // 사용자가 적은 원본 주소 유지
+    const hid = document.getElementById('place'); if (hid) hid.value = raw;
+
     document.getElementById('placeLat').value  = geo.lat;
     document.getElementById('placeLng').value  = geo.lng;
 
@@ -1955,19 +2032,18 @@ async function useAddressDirect(addrStr){
     setMapPreview(dataUrl || '');
 
     // 링크는 검색 링크라도 확보
-    const searchLink = buildNaverSearchLink('', addr);
+    const searchLink = buildNaverSearchLink('', raw);
     document.getElementById('placeLink').value = searchLink;
     setPickedPlaceLink(searchLink, '네이버 지도');
 
-    // ✅ 장소명 자동 생성 (비어있을 때만)
-    const placeEl = document.getElementById('place');
-    if(!placeEl.value.trim()){
-      placeEl.value = derivePlaceTitleFromAddress(addr);
-    }
+    // 장소(텍스트)가 비어 있으면 주소에서 보기 좋게 추출
+    const t = document.getElementById('placeTitle');
+    if (t && !t.value.trim()) t.value = derivePlaceTitleFromAddress(raw);
   } finally{
     hideLoading();
   }
 }
+
 
     
   </script>
