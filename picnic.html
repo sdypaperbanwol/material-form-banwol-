@@ -519,7 +519,7 @@
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwNwgzKZ6z4Mop8sYRPlOy95JW06d2mFqMFJx2uZEy06UU3giAhI0ERWKX6VPWRmw1Y/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzA5HevqHf98Bp-0FvYfm2kfSpH-R0CwD0juHAzJmtOsyIu8m1DQy7lJhGI8mOMmMh/exec';
 
   /* fetch 타임아웃 */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
@@ -1173,6 +1173,11 @@ function collect(){
   };
 }
 
+function collectForShare(){
+  const d = collect();
+  d.placeMapImg = ''; // 임시저장 전에는 무조건 비우기
+  return d;
+}
 
 
 
@@ -1273,7 +1278,27 @@ async function buildMapThumbByLatLng(lat, lng){
     return '';
   }
 }
+    
+// ✅ buildMapThumbByLatLng(...) 바로 아래에 추가
+async function restoreMapIfNeededFromData(d){
+  if (!d) return;
+  // 이미 dataURL 이미지가 있으면 복원할 필요 없음
+  if (d.placeMapImg && d.placeMapImg.startsWith('data:image/')) return;
+  // 좌표가 있으면 정적지도 다시 생성
+  if (d.placeLat && d.placeLng){
+    try{
+      const dataUrl = await buildMapThumbByLatLng(d.placeLat, d.placeLng);
+      if (dataUrl){
+        document.getElementById('placeMapImg').value = dataUrl;
+        setMapPreview(dataUrl);
+      }
+    }catch(e){
+      console.warn('지도 복원 실패', e);
+    }
+  }
+}
 
+    
 async function geocodeToLatLng(name, road, jibun){
   const q = (road || jibun || name || '').trim();
   if (!q) return null;
@@ -1357,25 +1382,33 @@ async function waitForImagesLoaded(root){
   });
 
   document.getElementById('btnShare').addEventListener('click', async ()=>{
-    showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
-    try{
-      const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify({ mode:'share', data: collect() })});
-      let json; try{ json = await res.json(); } catch{ const t = await res.text(); throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); }
-      if(res.ok && json.status==='ok' && json.key){
-        const url = new URL(location.href);
-        url.searchParams.delete('code'); url.searchParams.set('k', json.key);
-        history.replaceState(null, '', url.toString());
-       const d = collect();
-const titleText = d.showTitle ? makeShareTitle(d) : '';
-const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString();
+  showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
+  try{
+    const cur = new URL(location.href);
+    const currentKey = cur.searchParams.get('k') || '';
 
-        openPreviewModal(shareText);
-      }else{ alert('임시 저장 실패: ' + (json.error || res.status)); }
-    }catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('임시 저장 중 오류: ' + msg);
-    }finally{ hideLoading(); }
-  });
+    const res = await fetchWithTimeout(GAS_URL, {
+      method:'POST',
+      body: JSON.stringify({ mode:'share', key: currentKey, data: collectForShare() })
+    });
+    const json = await res.json();
+    if(res.ok && json.status==='ok' && json.key){
+      cur.searchParams.set('k', json.key);
+      cur.searchParams.delete('code');
+      history.replaceState(null, '', cur.toString());
+
+      const d = collect();
+      const titleText = d.showTitle ? makeShareTitle(d) : '';
+      const linkText = cur.toString();
+      openPreviewModal(titleText ? `${titleText}\n${linkText}` : linkText);
+    }else{
+      alert('임시 저장 실패: ' + (json.error || res.status));
+    }
+  }catch(err){
+    alert('임시 저장 중 오류: ' + (err?.message || err));
+  }finally{ hideLoading(); }
+});
+
 
   /* 제출 */
   async function submitToSheet(){
@@ -1514,73 +1547,85 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
   /* init */
 (async function init(){
   const p = new URLSearchParams(location.search);
-  const k = p.get('k'); 
+  const k    = p.get('k'); 
   const code = p.get('code');
 
   if (k) { 
+    // ✅ k가 있으면 서버에서 로드(내부에서 썸네일 자동 복원)
     try { await loadByKey(k); } catch(_) {}
   } 
   else if (code) {
+    // 공유코드(옛 포맷)로 복원
     const data = decodeShare(code);
     if (data) {
+      // ===== 필드 복원 =====
       document.getElementById('team').value = data.team || '';
-      renderTeamChips(); restoreCustomTeamFromTeamValue();
-      document.getElementById('title').value = data.title||'';
-      document.getElementById('date').value = data.date||'';
-      document.getElementById('time').value  = data.time || '';   // ← 여기 추가
+      renderTeamChips(); 
+      restoreCustomTeamFromTeamValue();
+
+      document.getElementById('title').value    = data.title   || '';
+      document.getElementById('date').value     = data.date    || '';
+      document.getElementById('time').value     = data.time    || '';
       document.getElementById('schedule').value = data.schedule||'';
+
       document.getElementById('bus').value = data.bus || ''; 
       setBus(document.getElementById('bus').value || '');
 
-       // ✅ 장소명 복원 (새 스키마 우선, 과거 place fallback)
-     document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
+      // 장소명(새 스키마 우선, 과거 place fallback)
+      document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
 
-      document.getElementById('place').value = data.place||'';
-     if (!document.getElementById('placeName').value.trim()) {
-       const guessAddr = data.placeAddr || (looksLikeKrAddress(data.place||'') ? data.place : '');
-       if (guessAddr) document.getElementById('placeName').value = derivePlaceTitleFromAddress(guessAddr);
-     }
-      document.getElementById('placeUrl').value = data.placeUrl||'';
-      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
+      // 주소 입력칸
+      document.getElementById('place').value = data.place || '';
+      if (!document.getElementById('placeName').value.trim()) {
+        const guessAddr = data.placeAddr || (looksLikeKrAddress(data.place||'') ? data.place : '');
+        if (guessAddr) document.getElementById('placeName').value = derivePlaceTitleFromAddress(guessAddr);
+      }
 
-      // ✅ hidden 복원
-      document.getElementById('placeAddr').value = data.placeAddr || '';
-      document.getElementById('placeTel').value  = data.placeTel  || '';
-      document.getElementById('placeLink').value = data.placeLink || '';
-// ① 좌표/지도 이미지까지 복원
-document.getElementById('placeLat').value    = data.placeLat    || '';
-document.getElementById('placeLng').value    = data.placeLng    || '';
-document.getElementById('placeMapImg').value = data.placeMapImg || '';
+      // 지도 링크
+      document.getElementById('placeUrl').value = data.placeUrl || '';
+      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
 
-// ② 썸네일 박스 갱신
-if (data.placeMapImg) setMapPreview(data.placeMapImg);
+      // 히든 필드 복원
+      document.getElementById('placeAddr').value   = data.placeAddr   || '';
+      document.getElementById('placeTel').value    = data.placeTel    || '';
+      document.getElementById('placeLink').value   = data.placeLink   || '';
+      document.getElementById('placeLat').value    = data.placeLat    || '';
+      document.getElementById('placeLng').value    = data.placeLng    || '';
+      document.getElementById('placeMapImg').value = data.placeMapImg || '';
 
-// ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
-if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
+      // 썸네일이 이미 있으면 바로 표시
+      if (data.placeMapImg) setMapPreview(data.placeMapImg);
+      // 지도 링크 박스도 노출(안전)
+      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
 
-      document.getElementById('notes').value = data.notes||'';
-      document.getElementById('contact').value = data.contact||'';
-      // ✅ 표시 토글 복원 (없으면 기본 true)
-const setOn = (id, v) => {
-  const el = document.getElementById(id);
-  if (el) el.checked = (v === undefined ? true : !!v);
-};
-setOn('showTeam',     data.showTeam);
-setOn('showTitle',    data.showTitle);
-setOn('showDate',     data.showDate);
-setOn('showTime',     data.showTime);
-setOn('showPlace',    data.showPlace);
-setOn('showSchedule', data.showSchedule);
-setOn('showBus',      data.showBus);
-setOn('showNotes',    data.showNotes);
-setOn('showContact',  data.showContact);
+      document.getElementById('notes').value   = data.notes   || '';
+      document.getElementById('contact').value = data.contact || '';
 
+      // 표시 토글 복원 (없으면 기본 true)
+      const setOn = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = (v === undefined ? true : !!v);
+      };
+      setOn('showTeam',     data.showTeam);
+      setOn('showTitle',    data.showTitle);
+      setOn('showDate',     data.showDate);
+      setOn('showTime',     data.showTime);
+      setOn('showPlace',    data.showPlace);
+      setOn('showSchedule', data.showSchedule);
+      setOn('showBus',      data.showBus);
+      setOn('showNotes',    data.showNotes);
+      setOn('showContact',  data.showContact);
+
+      // ✅ 추가: 좌표가 있으면 썸네일 자동 복원
+      await restoreMapIfNeededFromData(data);
     }
   } 
   else {
+    // 초기 진입 기본값
     document.getElementById('title').value = '야유회 안내';
     document.getElementById('team').value = '';
-    renderTeamChips(); restoreCustomTeamFromTeamValue();
+    renderTeamChips(); 
+    restoreCustomTeamFromTeamValue();
   }
 
   updateBusBadgeVisibility();
@@ -1588,7 +1633,7 @@ setOn('showContact',  data.showContact);
 
 
   /* 임시 저장 불러오기 */
- async function loadByKey(k){
+async function loadByKey(k){
   showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
   try{
     const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
@@ -1603,55 +1648,66 @@ setOn('showContact',  data.showContact);
     if (json.status === 'ok' && json.data){
       const data = json.data;
 
+      // ===== 필드 복원 =====
       document.getElementById('team').value = data.team || '';
-      renderTeamChips(); restoreCustomTeamFromTeamValue();
-      document.getElementById('title').value = data.title||'';
-      document.getElementById('date').value = data.date||'';
-      document.getElementById('time').value  = data.time || '';   // ← 여기 추가
+      renderTeamChips(); 
+      restoreCustomTeamFromTeamValue();
+
+      document.getElementById('title').value    = data.title   || '';
+      document.getElementById('date').value     = data.date    || '';
+      document.getElementById('time').value     = data.time    || '';
       document.getElementById('schedule').value = data.schedule||'';
+
       document.getElementById('bus').value = data.bus || ''; 
       setBus(document.getElementById('bus').value || '');
 
-       // ✅ 장소명 복원
-     document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
+      // 장소(표시용 이름)
+      document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
 
-      document.getElementById('place').value = data.place||'';
-       if (!document.getElementById('placeName').value.trim()) {
-      const guessAddr = data.placeAddr || (looksLikeKrAddress(data.place||'') ? data.place : '');
-       if (guessAddr) document.getElementById('placeName').value = derivePlaceTitleFromAddress(guessAddr);
-     }
-      document.getElementById('placeUrl').value = data.placeUrl||'';
-      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place||'지도');
+      // 주소 입력칸
+      document.getElementById('place').value = data.place || '';
+      if (!document.getElementById('placeName').value.trim()) {
+        const guessAddr = data.placeAddr || (looksLikeKrAddress(data.place||'') ? data.place : '');
+        if (guessAddr) document.getElementById('placeName').value = derivePlaceTitleFromAddress(guessAddr);
+      }
 
-      // ✅ hidden 복원
-      document.getElementById('placeAddr').value = data.placeAddr || '';
-      document.getElementById('placeTel').value  = data.placeTel  || '';
-      document.getElementById('placeLink').value = data.placeLink || '';
-document.getElementById('placeLat').value    = data.placeLat    || '';
-document.getElementById('placeLng').value    = data.placeLng    || '';
-document.getElementById('placeMapImg').value = data.placeMapImg || '';
+      // 지도 링크
+      document.getElementById('placeUrl').value = data.placeUrl || '';
+      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
 
-// ② 썸네일 박스 갱신
-if (data.placeMapImg) setMapPreview(data.placeMapImg);
+      // 히든 필드 복원
+      document.getElementById('placeAddr').value   = data.placeAddr   || '';
+      document.getElementById('placeTel').value    = data.placeTel    || '';
+      document.getElementById('placeLink').value   = data.placeLink   || '';
+      document.getElementById('placeLat').value    = data.placeLat    || '';
+      document.getElementById('placeLng').value    = data.placeLng    || '';
+      document.getElementById('placeMapImg').value = data.placeMapImg || '';
 
-// ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
-if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
-      document.getElementById('notes').value = data.notes||'';
-      document.getElementById('contact').value = data.contact||'';
-      // ✅ 표시 토글 복원 (없으면 기본 true)
-const setOn = (id, v) => {
-  const el = document.getElementById(id);
-  if (el) el.checked = (v === undefined ? true : !!v);
-};
-setOn('showTeam',     data.showTeam);
-setOn('showTitle',    data.showTitle);
-setOn('showDate',     data.showDate);
-setOn('showTime',     data.showTime);
-setOn('showPlace',    data.showPlace);
-setOn('showSchedule', data.showSchedule);
-setOn('showBus',      data.showBus);
-setOn('showNotes',    data.showNotes);
-setOn('showContact',  data.showContact);
+      // 썸네일이 이미 저장돼 있으면 바로 표시
+      if (data.placeMapImg) setMapPreview(data.placeMapImg);
+      // 선택된 지도 링크 박스도 노출(안전)
+      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
+
+      document.getElementById('notes').value   = data.notes   || '';
+      document.getElementById('contact').value = data.contact || '';
+
+      // 표시 토글 복원 (없으면 기본 true)
+      const setOn = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = (v === undefined ? true : !!v);
+      };
+      setOn('showTeam',     data.showTeam);
+      setOn('showTitle',    data.showTitle);
+      setOn('showDate',     data.showDate);
+      setOn('showTime',     data.showTime);
+      setOn('showPlace',    data.showPlace);
+      setOn('showSchedule', data.showSchedule);
+      setOn('showBus',      data.showBus);
+      setOn('showNotes',    data.showNotes);
+      setOn('showContact',  data.showContact);
+
+      // ✅ 추가: 좌표가 있으면 썸네일 자동 복원
+      await restoreMapIfNeededFromData(data);
 
     } 
     else {
@@ -1664,6 +1720,7 @@ setOn('showContact',  data.showContact);
     hideLoading(); 
   }
 }
+
 
 
   /* 안내문 이미지 렌더용 */
