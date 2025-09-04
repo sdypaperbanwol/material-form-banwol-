@@ -1019,10 +1019,28 @@ if ((!lat || !lng) && adminOnly) {
     }
   };
 
-  document.getElementById('btnPickPlace').addEventListener('click', ()=>{
-    const seed = document.getElementById('place').value;
-    placeModal.open(seed);
-  });
+  document.getElementById('btnPickPlace').addEventListener('click', async ()=>{
+  const seed = (document.getElementById('place').value || '').trim();
+
+  // ① 네이버 지도/플레이스 URL을 직접 붙인 경우 → 곧바로 확정
+  if (isUrl(seed) && isNaverPlaceUrl(seed)) {
+   // place 입력값은 그대로 두고, 링크만 확정
+   document.getElementById('placeLink').value = seed;
+   setPickedPlaceLink(seed, '네이버 지도');
+    // 주소 텍스트가 있으면 지오코딩도 시도(선택) → 없으면 생략 가능
+    return;
+  }
+
+  // ② 주소처럼 보이면 → 바로 지오코딩으로 확정
+  if (looksLikeKrAddress(seed)) {
+    await useAddressDirect(seed);
+    return;
+  }
+
+  // ③ 그 외(상호명 등)는 후보 검색 모달로
+  placeModal.open(seed);
+});
+
 
   // 사용자가 장소 텍스트를 바꾸면 이전 선택 URL은 무효화(오동작 방지)
  document.getElementById('place').addEventListener('input', ()=>{
@@ -1609,6 +1627,9 @@ setOn('showContact',  data.showContact);
 
 
   /* 안내문 이미지 렌더용 */
+
+    
+    
   </script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
@@ -1743,6 +1764,48 @@ await waitForImagesLoaded(target);
     } finally { hideLoading(); }
   }
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
+
+    function looksLikeKrAddress(s=''){
+  s = (s||'').trim();
+  // 숫자(번지) + 도로/길/동/읍/면/리 등 주소 토큰이 섞여 있으면 주소로 간주
+  return /\d/.test(s) && /(로|길|번길|동|읍|면|리|로\d+번길)/.test(s);
+}
+
+async function useAddressDirect(addrStr){
+  const addr = (addrStr||'').trim();
+  if(!addr) return;
+
+  showLoading('주소 확인 중…','지도 좌표를 찾는 중입니다');
+  try{
+    // 1) 지오코딩 시도
+    const geo = await geocodeToLatLng('', addr, '');
+    if(!geo){ alert('이 주소로 좌표를 찾지 못했습니다. 철자/형식을 확인해 주세요.'); return; }
+
+    // 2) hidden 필드 채우기
+    document.getElementById('placeAddr').value = addr;
+    document.getElementById('placeLat').value  = geo.lat;
+    document.getElementById('placeLng').value  = geo.lng;
+
+    // 3) 지도 썸네일 생성
+    const dataUrl = await buildMapThumbByLatLng(geo.lat, geo.lng);
+    document.getElementById('placeMapImg').value = dataUrl || '';
+    setMapPreview(dataUrl || '');
+
+    // 4) 네이버 검색 링크라도 붙여두기(검증용)
+    const searchLink = buildNaverSearchLink('', addr);
+    document.getElementById('placeLink').value = searchLink;
+    setPickedPlaceLink(searchLink, '네이버 지도');
+
+    // 장소명 비어있으면 주소를 장소명으로 유지
+    const placeEl = document.getElementById('place');
+    if(!placeEl.value.trim()) placeEl.value = addr;
+
+  } finally{
+    hideLoading();
+  }
+}
+
+    
   </script>
 </body>
 </html>
