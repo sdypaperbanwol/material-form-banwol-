@@ -262,6 +262,32 @@
 }
 .field-toggle-inline input{ transform: translateY(1px); }
 
+   /* === Toolbar 레이아웃 재정비 === */
+.toolbar-actions{
+  display: grid;
+  gap: 12px;
+}
+
+/* 버튼을 한 줄 가득 채우도록 */
+.toolbar button{
+  width: 100%;
+}
+
+/* 2열 반반 줄: 텍스트 / 이미지 */
+.toolbar-actions .half-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* 모바일에서 1열로 바꾸고 싶으면 주석 해제
+@media (max-width: 420px){
+  .toolbar-actions .half-row{
+    grid-template-columns: 1fr;
+  }
+}
+*/
+
 
 </style>
 
@@ -454,28 +480,36 @@
 
 
     <div class="toolbar no-print">
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
-          이미지 폭
-          <select id="exportWidth">
-            <option value="auto" selected>자동(내용에 맞춤)</option>
-             <!-- <option value="794">A4(794px, 기본)</option> -->
-            <option value="1123">A4 가로(1123px)</option>
-             <!-- <option value="680">컴팩트(680px)</option> -->
-             <!-- <option value="560">카드형(560px)</option>> -->
-          </select>
-        </label>
-          <!-- ✅ 여기에 추가 -->
-    
-        <!-- ✅ QR 토글이 있다면, 그 옆이나 아래에 둬도 됩니다 -->
-          </div>
-      <button id="btnReset" type="button" title="초기화">초기화</button>
-      <button id="btnShare">임시 저장하기</button>
-      <button id="btnCopyText">안내문(텍스트)</button>
-      <button id="btnExportIMG">안내문(이미지)</button>
-      <button id="btnSubmit">인사지원팀 제출</button>
-    </div>
+  <!-- 상단 옵션(유지) -->
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
+      이미지 폭
+      <select id="exportWidth">
+        <option value="auto" selected>자동(내용에 맞춤)</option>
+        <option value="1123">A4 가로(1123px)</option>
+      </select>
+    </label>
   </div>
+
+  <!-- 새 레이아웃 -->
+  <div class="toolbar-actions">
+    <!-- 1행: 임시 저장하기 -->
+    <button id="btnShare">임시 저장하기</button>
+
+    <!-- 2행: 텍스트/이미지 (반반) -->
+    <div class="half-row">
+      <button id="btnCopyText">텍스트</button>
+      <button id="btnExportIMG">이미지</button>
+    </div>
+
+    <!-- 3행: 인사지원팀 제출 -->
+    <button id="btnSubmit">인사지원팀 제출</button>
+
+    <!-- 4행: 초기화 -->
+    <button id="btnReset" type="button" title="초기화">초기화</button>
+  </div>
+</div>
+
 
   <!-- 스크롤 배지 -->
   <div id="busBadge" aria-hidden="true">버스: <span id="busBadgeVal">-</span></div>
