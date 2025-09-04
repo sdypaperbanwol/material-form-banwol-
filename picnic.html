@@ -1204,8 +1204,16 @@ function buildShareText(){
 
   // 장소
   if (d.showPlace) {
-    lines.push(`📍 [장소] ${d.place || '-'}`, '');
-    if (d.placeAddr) lines.push(`🏠 (주소) ${d.placeAddr}`, '');
+    const placeLine = d.place || '-';
+    const addrLine  = d.placeAddr || '';
+    // 장소와 주소가 거의 같으면 주소만 노출
+    if (addrLine && isSameLoose(placeLine, addrLine)) {
+      lines.push(`📍 [장소] (아래 주소 참조)`, '');
+      lines.push(`🏠 (주소) ${addrLine}`, '');
+    } else {
+      lines.push(`📍 [장소] ${placeLine}`, '');
+      if (addrLine) lines.push(`🏠 (주소) ${addrLine}`, '');
+    }
     if (d.placeTel)  lines.push(`☎️ (전화) ${d.placeTel}`, '');
     if (d.placeLink) lines.push(`🔗 (네이버) ${d.placeLink}`, '');
   }
@@ -1627,6 +1635,50 @@ setOn('showContact',  data.showContact);
 
 
   /* 안내문 이미지 렌더용 */
+// 주소 문자열을 깔끔한 "표시용 장소명"으로 줄여줍니다.
+function derivePlaceTitleFromAddress(addr='') {
+  addr = (addr||'').trim();
+
+  // 1) 도로명 주소 케이스: "OO로/길 + 번지"
+  //   예) "서울특별시 관악구 남부순환로 1820" → "남부순환로 1820"
+  const roadMatch = addr.match(/([^\s]+?(?:로|길)\d*(?:-\d+)?)[\s,]+(\d+(?:-\d+)?)/);
+  if (roadMatch) {
+    const road = roadMatch[1];
+    const num  = roadMatch[2];
+    return `${road} ${num}`;
+  }
+
+  // 2) 지번 주소 케이스: "동/읍/면/리 + 번지"
+  //   예) "경기도 안산시 단원구 고잔동 525-2" → "고잔동 525-2"
+  const jibunMatch = addr.match(/([^\s]+?(동|읍|면|리))[\s,]+(\d+(?:-\d+)?)/);
+  if (jibunMatch) {
+    const dong = jibunMatch[1];
+    const num  = jibunMatch[3];
+    return `${dong} ${num}`;
+  }
+
+  // 3) 마지막 안전장치: 시/구/읍면동 등 행정동+다음 토큰 1~2개로 축약
+  const tokens = addr.split(/\s+/).filter(Boolean);
+  // 보통 [시, 구/군, 동/읍/면, 나머지…]
+  if (tokens.length >= 3) {
+    // "동/읍/면/리 + 다음 토큰" 조합 시도
+    for (let i=0;i<tokens.length;i++){
+      if (/[동읍면리]$/.test(tokens[i])) {
+        const next = tokens[i+1] || '';
+        if (next) return `${tokens[i]} ${next}`;
+        return tokens[i];
+      }
+    }
+  }
+  // 그래도 못 줄이면 첫 2~3개만
+  return tokens.slice(0,2).join(' ') || addr;
+}
+
+// 느슨 비교: 공백/쉼표 등 제거 후 동일성 판단 → 중복 표시 방지용
+function isSameLoose(a='', b=''){
+  const norm = s => (s||'').replace(/[,\s]/g,'').trim();
+  return norm(a) && norm(a) === norm(b);
+}
 
     
     
@@ -1660,9 +1712,10 @@ function buildExportHTML(){
   if (d.showDate) meta.push(`<div><b>일자</b> ${escapeHTML(dateStr)}</div>`);
   if (d.showTime && timeStr) meta.push(`<div><b>시간</b> ${escapeHTML(timeStr)}</div>`);
   if (d.showPlace) {
-    meta.push(`<div><b>장소</b> ${escapeHTML(d.place || '-')}</div>`);
-    if (d.placeAddr) meta.push(`<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>`);
-    if (d.placeTel)  meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
+ const same = d.placeAddr && isSameLoose(d.place, d.placeAddr);
+  meta.push(`<div><b>장소</b> ${escapeHTML(same ? '(아래 주소 참조)' : (d.place || '-'))}</div>`);
+ if (d.placeAddr) meta.push(`<div><b>주소</b> ${escapeHTML(d.placeAddr)}</div>`);  
+  if (d.placeTel)  meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
   }
   if (d.showBus && busVal) meta.push(`<div><b>버스</b> ${escapeHTML(busVal)}</div>`);
   if (d.showContact) meta.push(`<div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>`);
@@ -1777,29 +1830,27 @@ async function useAddressDirect(addrStr){
 
   showLoading('주소 확인 중…','지도 좌표를 찾는 중입니다');
   try{
-    // 1) 지오코딩 시도
     const geo = await geocodeToLatLng('', addr, '');
     if(!geo){ alert('이 주소로 좌표를 찾지 못했습니다. 철자/형식을 확인해 주세요.'); return; }
 
-    // 2) hidden 필드 채우기
     document.getElementById('placeAddr').value = addr;
     document.getElementById('placeLat').value  = geo.lat;
     document.getElementById('placeLng').value  = geo.lng;
 
-    // 3) 지도 썸네일 생성
     const dataUrl = await buildMapThumbByLatLng(geo.lat, geo.lng);
     document.getElementById('placeMapImg').value = dataUrl || '';
     setMapPreview(dataUrl || '');
 
-    // 4) 네이버 검색 링크라도 붙여두기(검증용)
+    // 링크는 검색 링크라도 확보
     const searchLink = buildNaverSearchLink('', addr);
     document.getElementById('placeLink').value = searchLink;
     setPickedPlaceLink(searchLink, '네이버 지도');
 
-    // 장소명 비어있으면 주소를 장소명으로 유지
+    // ✅ 장소명 자동 생성 (비어있을 때만)
     const placeEl = document.getElementById('place');
-    if(!placeEl.value.trim()) placeEl.value = addr;
-
+    if(!placeEl.value.trim()){
+      placeEl.value = derivePlaceTitleFromAddress(addr);
+    }
   } finally{
     hideLoading();
   }
