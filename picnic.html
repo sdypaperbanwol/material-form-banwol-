@@ -340,55 +340,52 @@
             </div>
           </div>
 
-          <div class="row">
-            <label for="place">
-              장소
-              <span class="field-toggle-inline">
-                <input id="showPlace" type="checkbox" checked> 표시
-              </span>
-            </label>
-            <div>
-              <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
-                <input id="place" type="text" placeholder="예) 고잔동 XX식당 (주소/지점명 가능)" style="flex:1" />
-                <button type="button" id="btnPickPlace" title="네이버에서 지점 후보 검색해 선택">장소 찾기(검증)</button>
-              </div>
-
+        <!-- 장소명(표시용) -->
 <div class="row">
-  <label for="placeAddrInput">
-    주소(지도용)
+  <label for="place">
+    장소명(표시용)
     <span class="field-toggle-inline">
-      <!-- 주소는 안내문 메타에도 표시되니 토글은 장소의 showPlace로만 제어 -->
-      <small style="font-weight:700;color:#62799b">지오코딩 후 지도 생성</small>
+      <input id="showPlace" type="checkbox" checked> 표시
     </span>
   </label>
-  <div style="display:flex; gap:8px; align-items:center;">
-    <input id="placeAddrInput" type="text" placeholder="예) 안산시 단원구 성호로 189 (성호공원 내)" style="flex:1" />
-    <button type="button" id="btnVerifyAddr" title="주소를 좌표로 변환해 지도/좌표 생성">주소 검증(지도)</button>
+  <div>
+    <input id="place" type="text" placeholder="예) 성호 족구장 / 점심 식당명 / 체육관명 등" />
+    <small style="color:var(--muted)">참가자에게 보일 '표시용' 명칭입니다. 주소와 달라도 됩니다.</small>
   </div>
-  <small style="color:var(--muted)">장소명이 없어도 괜찮아요. 주소만 검증해도 지도는 생성됩니다.</small>
 </div>
-              
-              <!-- 선택된 지점 정보/지도 -->
-              <input id="placeUrl" type="hidden" value="" />
-              <input id="placeAddr" type="hidden" value="" />
-              <input id="placeTel"  type="hidden" value="" />
-              <input id="placeLink" type="hidden" value="" />
 
-              <div id="placeThumb" style="display:none; margin-top:6px">
-                <img id="placeThumbImg" alt="지도 미리보기"
-                     style="max-width:220px;border:1px solid var(--line);border-radius:8px">
-              </div>
+<!-- 주소(검증/지도용) -->
+<div class="row">
+  <label for="addr">주소(검증)</label>
+  <div>
+    <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
+      <input id="addr" type="text" placeholder="예) 경기도 안산시 단원구 고잔동 525-2 / 남부순환로 1820 등" style="flex:1" />
+      <button type="button" id="btnVerifyAddr" title="주소를 지오코딩해 좌표/지도 생성">주소 검증</button>
+    </div>
 
-              <input id="placeLat" type="hidden" value="" />
-              <input id="placeLng" type="hidden" value="" />
-              <input id="placeMapImg" type="hidden" value="" />
+    <!-- 선택된 지점/지도 링크 표시 (그대로 사용) -->
+    <input id="placeUrl"  type="hidden" value="" />
+    <input id="placeAddr" type="hidden" value="" />
+    <input id="placeTel"  type="hidden" value="" />
+    <input id="placeLink" type="hidden" value="" />
 
-              <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
+    <div id="placeThumb" style="display:none; margin-top:6px">
+      <img id="placeThumbImg" alt="지도 미리보기"
+           style="max-width:220px;border:1px solid var(--line);border-radius:8px">
+    </div>
 
-              <small style="color:var(--muted)">지점 선택 시 위 칸에 확정된 지점 정보가 표시되고, 안내문에는 해당 링크만 첨부됩니다.</small>
-            </div>
-          </div>
-        </div>
+    <input id="placeLat" type="hidden" value="" />
+    <input id="placeLng" type="hidden" value="" />
+    <input id="placeMapImg" type="hidden" value="" />
+
+    <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
+
+    <small style="color:var(--muted)">
+      주소를 검증하면 좌표/지도/네이버 링크가 자동 생성됩니다.
+      (장소명은 위 칸에 표기용으로 자유 입력)
+    </small>
+  </div>
+</div>
 
         <!-- 운영 정보 -->
         <div class="sec">
@@ -614,12 +611,13 @@ function resetAll() {
   if (!confirm('모든 입력을 초기화하고, 주소의 k/code 파라미터도 제거할까요?')) return;
 
   // 1) 텍스트/히든 입력값 초기화 (+ time, 좌표/지도 이미지 추가)
-  const ids = [
-    'team','title','date','time','schedule','bus',
-    'place','placeUrl','placeAddr','placeTel','placeLink',
-    'placeLat','placeLng','placeMapImg',  // ✅ 좌표/지도
-    'notes','contact'
-  ];
+ const ids = [
+  'team','title','date','time','schedule','bus',
+  'place','placeUrl','placeAddr','placeTel','placeLink',
+  'placeLat','placeLng','placeMapImg',  // ✅ 좌표/지도
+  'notes','contact',
+  'addr' // ✅ 추가
+];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -799,30 +797,6 @@ function buildNaverSearchLink(rawName, rawAddr=''){
       box.innerHTML = ''; box.style.display = 'none';
     }
   }
-// (a) 주소 입력칸 ↔ hidden 동기화 + 지도 상태 초기화
-const addrInput = document.getElementById('placeAddrInput');
-if (addrInput) {
-  addrInput.addEventListener('input', ()=>{
-    // visible 입력 → hidden 동기화
-    document.getElementById('placeAddr').value = addrInput.value.trim();
-
-    // 주소가 바뀌면 좌표/지도 썸네일 초기화 (오동작 방지)
-    document.getElementById('placeLat').value = '';
-    document.getElementById('placeLng').value = '';
-    document.getElementById('placeMapImg').value = '';
-    setMapPreview('');
-  });
-}
-
-// (b) 주소 검증(지도) 버튼 → 지오코딩 + 지도 썸네일 생성
-document.getElementById('btnVerifyAddr')?.addEventListener('click', async ()=>{
-  const addr = (document.getElementById('placeAddrInput')?.value || '').trim();
-  if (!addr) { 
-    alert('주소를 입력해 주세요.'); 
-    return; 
-  }
-  await useAddressDirect(addr); // 이미 파일 하단에 정의된 함수 재사용
-});
 
   // 후보 검색 모달
   const placeModal = {
@@ -1559,7 +1533,6 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
 
       // ✅ hidden 복원
       document.getElementById('placeAddr').value = data.placeAddr || '';
-      document.getElementById('placeAddrInput')?.value = data.placeAddr || '';
       document.getElementById('placeTel').value  = data.placeTel  || '';
       document.getElementById('placeLink').value = data.placeLink || '';
 // ① 좌표/지도 이미지까지 복원
@@ -1572,6 +1545,10 @@ if (data.placeMapImg) setMapPreview(data.placeMapImg);
 
 // ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
 if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
+      // 보이는 주소 입력창에도 표시(주소 분리 UI 사용 시)
+const addrInput = document.getElementById('addr');
+if (addrInput) addrInput.value = data.placeAddr || '';
+
 
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
@@ -1633,7 +1610,6 @@ setOn('showContact',  data.showContact);
 
       // ✅ hidden 복원
       document.getElementById('placeAddr').value = data.placeAddr || '';
-      document.getElementById('placeAddrInput')?.value = data.placeAddr || '';
       document.getElementById('placeTel').value  = data.placeTel  || '';
       document.getElementById('placeLink').value = data.placeLink || '';
 document.getElementById('placeLat').value    = data.placeLat    || '';
@@ -1645,6 +1621,10 @@ if (data.placeMapImg) setMapPreview(data.placeMapImg);
 
 // ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
 if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
+      // 보이는 주소 입력창에도 표시(주소 분리 UI 사용 시)
+const addrInput = document.getElementById('addr');
+if (addrInput) addrInput.value = data.placeAddr || '';
+
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
       // ✅ 표시 토글 복원 (없으면 기본 true)
@@ -1896,8 +1876,36 @@ async function useAddressDirect(addrStr){
     hideLoading();
   }
 }
+document.getElementById('btnVerifyAddr')?.addEventListener('click', async () => {
+  const addr = (document.getElementById('addr')?.value || '').trim();
+  if (!addr) { alert('검증할 주소를 입력해 주세요.'); return; }
 
-    
+  // 1) 지오코딩 + 정적 지도 썸네일 생성(기존 유틸 재사용)
+  await useAddressDirect(addr);
+
+  // 2) 검증된 주소 hidden에 확정
+  const placeAddrEl = document.getElementById('placeAddr');
+  if (placeAddrEl) placeAddrEl.value = addr;
+
+  // 3) 네이버 지도 링크(주소 기반 검색) 확정
+  const nav = buildNaverSearchLink('', addr);
+  document.getElementById('placeLink').value = nav;
+  setPickedPlaceLink(nav, '네이버 지도');
+
+  // 4) 장소명 비어 있으면 주소에서 짧은 표기 생성해 자동 채움
+  const placeEl = document.getElementById('place');
+  if (placeEl && !placeEl.value.trim()) {
+    placeEl.value = derivePlaceTitleFromAddress(addr);
+  }
+});
+    // 주소 입력 변경 시: 이전 선택(링크/좌표/지도) 초기화
+document.getElementById('addr')?.addEventListener('input', () => {
+  setPickedPlaceLink('', '');
+  const ids = ['placeAddr','placeLat','placeLng','placeMapImg'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  setMapPreview('');
+});
+
   </script>
 </body>
 </html>
