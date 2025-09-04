@@ -340,52 +340,40 @@
             </div>
           </div>
 
-        <!-- 장소명(표시용) -->
-<div class="row">
-  <label for="place">
-    장소명(표시용)
-    <span class="field-toggle-inline">
-      <input id="showPlace" type="checkbox" checked> 표시
-    </span>
-  </label>
-  <div>
-    <input id="place" type="text" placeholder="예) 성호 족구장 / 점심 식당명 / 체육관명 등" />
-    <small style="color:var(--muted)">참가자에게 보일 '표시용' 명칭입니다. 주소와 달라도 됩니다.</small>
-  </div>
-</div>
+          <div class="row">
+            <label for="place">
+              장소
+              <span class="field-toggle-inline">
+                <input id="showPlace" type="checkbox" checked> 표시
+              </span>
+            </label>
+            <div>
+              <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
+                <input id="place" type="text" placeholder="예) 고잔동 XX식당 (주소/지점명 가능)" style="flex:1" />
+                <button type="button" id="btnPickPlace" title="네이버에서 지점 후보 검색해 선택">장소 찾기(검증)</button>
+              </div>
 
-<!-- 주소(검증/지도용) -->
-<div class="row">
-  <label for="addr">주소(검증)</label>
-  <div>
-    <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
-      <input id="addr" type="text" placeholder="예) 경기도 안산시 단원구 고잔동 525-2 / 남부순환로 1820 등" style="flex:1" />
-      <button type="button" id="btnVerifyAddr" title="주소를 지오코딩해 좌표/지도 생성">주소 검증</button>
-    </div>
+              <!-- 선택된 지점 정보/지도 -->
+              <input id="placeUrl" type="hidden" value="" />
+              <input id="placeAddr" type="hidden" value="" />
+              <input id="placeTel"  type="hidden" value="" />
+              <input id="placeLink" type="hidden" value="" />
 
-    <!-- 선택된 지점/지도 링크 표시 (그대로 사용) -->
-    <input id="placeUrl"  type="hidden" value="" />
-    <input id="placeAddr" type="hidden" value="" />
-    <input id="placeTel"  type="hidden" value="" />
-    <input id="placeLink" type="hidden" value="" />
+              <div id="placeThumb" style="display:none; margin-top:6px">
+                <img id="placeThumbImg" alt="지도 미리보기"
+                     style="max-width:220px;border:1px solid var(--line);border-radius:8px">
+              </div>
 
-    <div id="placeThumb" style="display:none; margin-top:6px">
-      <img id="placeThumbImg" alt="지도 미리보기"
-           style="max-width:220px;border:1px solid var(--line);border-radius:8px">
-    </div>
+              <input id="placeLat" type="hidden" value="" />
+              <input id="placeLng" type="hidden" value="" />
+              <input id="placeMapImg" type="hidden" value="" />
 
-    <input id="placeLat" type="hidden" value="" />
-    <input id="placeLng" type="hidden" value="" />
-    <input id="placeMapImg" type="hidden" value="" />
+              <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
 
-    <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
-
-    <small style="color:var(--muted)">
-      주소를 검증하면 좌표/지도/네이버 링크가 자동 생성됩니다.
-      (장소명은 위 칸에 표기용으로 자유 입력)
-    </small>
-  </div>
-</div>
+              <small style="color:var(--muted)">지점 선택 시 위 칸에 확정된 지점 정보가 표시되고, 안내문에는 해당 링크만 첨부됩니다.</small>
+            </div>
+          </div>
+        </div>
 
         <!-- 운영 정보 -->
         <div class="sec">
@@ -526,10 +514,10 @@
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavTaTCpURC_s7UKNL8DLpVF-scEtZGI8i0e0A9ajePAxJfQFObx1kBlqTwRZAcYAj/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwd4TKNP6mst9-50EKYfe8du2WUbcwHUNOjjxZ8a8Jv2rLMQl2GVAX1_jpasP3Dgpa4/exec';
 
   /* fetch 타임아웃 */
-  async function fetchWithTimeout(url, opts={}, timeoutMs=45000){
+  async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
     const controller = new AbortController();
     const timer = setTimeout(()=>controller.abort(), timeoutMs);
     try { return await fetch(url, {...opts, signal: controller.signal}); }
@@ -611,13 +599,12 @@ function resetAll() {
   if (!confirm('모든 입력을 초기화하고, 주소의 k/code 파라미터도 제거할까요?')) return;
 
   // 1) 텍스트/히든 입력값 초기화 (+ time, 좌표/지도 이미지 추가)
- const ids = [
-  'team','title','date','time','schedule','bus',
-  'place','placeUrl','placeAddr','placeTel','placeLink',
-  'placeLat','placeLng','placeMapImg',  // ✅ 좌표/지도
-  'notes','contact',
-  'addr' // ✅ 추가
-];
+  const ids = [
+    'team','title','date','time','schedule','bus',
+    'place','placeUrl','placeAddr','placeTel','placeLink',
+    'placeLat','placeLng','placeMapImg',  // ✅ 좌표/지도
+    'notes','contact'
+  ];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -1032,7 +1019,28 @@ if ((!lat || !lng) && adminOnly) {
     }
   };
 
-  
+  document.getElementById('btnPickPlace').addEventListener('click', async ()=>{
+  const seed = (document.getElementById('place').value || '').trim();
+
+  // ① 네이버 지도/플레이스 URL을 직접 붙인 경우 → 곧바로 확정
+  if (isUrl(seed) && isNaverPlaceUrl(seed)) {
+   // place 입력값은 그대로 두고, 링크만 확정
+   document.getElementById('placeLink').value = seed;
+   setPickedPlaceLink(seed, '네이버 지도');
+    // 주소 텍스트가 있으면 지오코딩도 시도(선택) → 없으면 생략 가능
+    return;
+  }
+
+  // ② 주소처럼 보이면 → 바로 지오코딩으로 확정
+  if (looksLikeKrAddress(seed)) {
+    await useAddressDirect(seed);
+    return;
+  }
+
+  // ③ 그 외(상호명 등)는 후보 검색 모달로
+  placeModal.open(seed);
+});
+
 
   // 사용자가 장소 텍스트를 바꾸면 이전 선택 URL은 무효화(오동작 방지)
  document.getElementById('place').addEventListener('input', ()=>{
@@ -1349,16 +1357,11 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
 
         openPreviewModal(shareText);
       }else{ alert('임시 저장 실패: ' + (json.error || res.status)); }
-   } catch(err){
-  let msg;
-  if (err && err.name === 'AbortError') {
-    msg = '서버 응답이 지연되어 요청이 취소되었습니다. 네트워크 상태 또는 서버 부하 가능성이 있습니다.';
-  } else {
-    msg = err && err.message ? err.message : String(err);
-  }
-  alert('전송 중 오류: ' + msg + '\n\n다시 시도해 주세요.');
-} finally { hideLoading(); }
-}); // ★ 이 줄이 꼭 필요!
+    }catch(err){
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('임시 저장 중 오류: ' + msg);
+    }finally{ hideLoading(); }
+  });
 
   /* 제출 */
   async function submitToSheet(){
@@ -1434,15 +1437,11 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
         alert(`제출 실패: ${json.error||res.status}`);
       }
     }catch(err){
-  let msg;
-  if (err && err.name === 'AbortError') {
-    msg = '서버 응답이 지연되어 요청이 취소되었습니다. 네트워크 상태 또는 서버 부하 가능성이 있습니다.';
-  } else {
-    msg = err && err.message ? err.message : String(err);
+      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+      alert('전송 중 오류: ' + msg);
+    }finally{ hideLoading(); }
   }
-  alert('전송 중 오류: ' + msg + '\n\n다시 시도해 주세요.');
-} finally { hideLoading(); }
-  }
+  document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
 
   /* 버스 칩 + 배지 */
   function setBus(val){
@@ -1533,10 +1532,6 @@ if (data.placeMapImg) setMapPreview(data.placeMapImg);
 
 // ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
 if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
-      // 보이는 주소 입력창에도 표시(주소 분리 UI 사용 시)
-const addrInput = document.getElementById('addr');
-if (addrInput) addrInput.value = data.placeAddr || '';
-
 
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
@@ -1609,10 +1604,6 @@ if (data.placeMapImg) setMapPreview(data.placeMapImg);
 
 // ③ 선택된 지도 링크 박스도 함께 보이도록(이미 있으나 안전하게)
 if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
-      // 보이는 주소 입력창에도 표시(주소 분리 UI 사용 시)
-const addrInput = document.getElementById('addr');
-if (addrInput) addrInput.value = data.placeAddr || '';
-
       document.getElementById('notes').value = data.notes||'';
       document.getElementById('contact').value = data.contact||'';
       // ✅ 표시 토글 복원 (없으면 기본 true)
@@ -1864,69 +1855,8 @@ async function useAddressDirect(addrStr){
     hideLoading();
   }
 }
-// ⛳ 이 부분으로 교체 (기존 btnVerifyAddr 핸들러 삭제 후)
-document.getElementById('btnVerifyAddr')?.addEventListener('click', async () => {
-  const raw = (document.getElementById('addr')?.value || '').trim();
-  if (!raw) { alert('검증할 주소나 장소명을 입력해 주세요.'); return; }
 
-  // 1) 주소처럼 보이면 기존 흐름 유지
-  if (looksLikeKrAddress(raw)) {
-    await useAddressDirect(raw);
-    // useAddressDirect가 placeAddr/placeLink/좌표/지도까지 세팅해줍니다.
-    return;
-  }
-
-  // 2) 주소가 아니면: 명칭으로 네이버 장소 검색 → 첫 결과를 사용
-  showLoading('장소 검색 중…', '명칭으로 주소를 확인합니다');
-  try {
-    const url = `${GAS_URL}?mode=naver_local&query=${encodeURIComponent(raw)}`;
-    const res = await fetchWithTimeout(url);
-    const json = await res.json();
-
-    const rows = Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
-    if (!rows.length) {
-      alert('해당 명칭으로 검색 결과가 없습니다. 주소로 입력해 보세요.');
-      return;
-    }
-
-    // 결과 정규화
-    const r = rows[0];
-    const name = r.name || r.title || r.place_name || '';
-    const road = r.roadAddress || r.road_address || r.road || '';
-    const jibun = r.jibunAddress || r.jibun_address || r.address || '';
-    const pickedAddr = (road || jibun || '').trim();
-    const tel = r.telephone || r.tel || '';
-    const mapUrl = r.mapUrl || r.link || r.url || '';
-
-    if (!pickedAddr) {
-      alert('주소가 없는 장소 결과입니다. 주소로 직접 입력해 주세요.');
-      return;
-    }
-
-    // 2-1) 주소로 좌표/지도 생성(기존 유틸 재사용)
-    await useAddressDirect(pickedAddr);
-
-    // 2-2) 표시용 값들 보강
-    //   - 장소명은 비어있으면 명칭으로 채움
-    const placeEl = document.getElementById('place');
-    if (placeEl && !placeEl.value.trim()) placeEl.value = name || derivePlaceTitleFromAddress(pickedAddr);
-
-    //   - 숨김 필드/링크/전화/주소 확정
-    document.getElementById('placeAddr').value = pickedAddr;
-    document.getElementById('placeTel').value  = tel || '';
-    const safeLink = resolveNaverLink({ title:name, roadAddress:pickedAddr, address:pickedAddr, link:mapUrl });
-    document.getElementById('placeLink').value = safeLink;
-    setPickedPlaceLink(safeLink, name || '네이버 지도');
-
-  } catch (e) {
-    console.error(e);
-    alert('명칭 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
-  } finally {
-    hideLoading();
-  }
-});
-
-document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
+    
   </script>
 </body>
 </html>
