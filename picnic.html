@@ -1238,67 +1238,64 @@ function collectForShare(){
 
 function buildShareText(){
   const d = collect();
-  const dateStr  = d.date ? weekdayKR(d.date) : '-';
-  const timeStr  = (d.time || '').trim();
-  const lines = [];
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const timeStr = (d.time || '').trim();
+
+  const blocks = [];
 
   // 제목
   if (d.showTitle) {
     const header = makeShareTitle(d) || '안내문';
-    lines.push(header, '');
+    blocks.push(header);
   }
 
   // 대상
   if (d.showTeam) {
     const target = formatTarget(d.team);
-    if (target) lines.push(`🎯 [대상] ${target}`, '');
+    if (target) blocks.push(`🎯 [대상] ${target}`);
   }
 
-  // 일자 / 시간 (분리)
-  const dateTimeLines = [];
-  if (d.showDate) dateTimeLines.push(`📅 [일자] ${dateStr}`);
-  if (d.showTime && timeStr) dateTimeLines.push(`⏰ [시간] ${timeStr}`);
-  if (dateTimeLines.length) lines.push(...dateTimeLines, '');
+  // 일자 / 시간 (각각 독립 블록 → 서로 사이에도 빈 줄 1개)
+  if (d.showDate) blocks.push(`📅 [일자] ${dateStr}`);
+  if (d.showTime && timeStr) blocks.push(`⏰ [시간] ${timeStr}`);
 
-  // 장소
-if (d.showPlace) {
-  const placeName = (d.placeName || '').trim();
-  const addrLine  = (d.place || d.placeAddr || '').trim(); // 사용자가 주소칸에 쓴 값 우선
+  // 장소 / 주소 / (네이버) / (전화) — 항목별 1블록
+  if (d.showPlace) {
+    const placeName = (d.placeName || '').trim();
+    const addrLine  = (d.place || d.placeAddr || '').trim();
 
-  if (placeName) lines.push(`📍 [장소] ${placeName}`, '');
-  if (addrLine)  lines.push(`🏠 [주소] ${addrLine}`, '');
-  if (d.placeTel)  lines.push(`☎️ (전화) ${d.placeTel}`, '');
-  if (d.placeLink) lines.push(`🔗 (네이버) ${d.placeLink}`, '');
-}
+    if (placeName) blocks.push(`📍 [장소] ${placeName}`);
+    if (addrLine)  blocks.push(`🏠 [주소] ${addrLine}`);
+    if ((d.placeLink || '').trim()) blocks.push(`🔗 (네이버) ${d.placeLink.trim()}`);
+    if ((d.placeTel  || '').trim()) blocks.push(`☎️ (전화) ${d.placeTel.trim()}`);
+  }
 
-  // 일정 요약
+  // 일정 요약 (여러 줄은 블록 내부에 그대로)
   if (d.showSchedule) {
-    lines.push('📝 [일정 요약]');
     const schedule = (d.schedule || '').split('\n').filter(Boolean);
-    if (schedule.length) lines.push(...schedule);
-    else lines.push('-');
-    lines.push('');
+    blocks.push(['📝 [일정 요약]', ...(schedule.length ? schedule : ['-'])].join('\n'));
   }
 
   // 버스
-  if (d.showBus && (d.bus||'').trim()) {
-    lines.push(`🚌 [버스 대절] ${d.bus}`, '');
+  if (d.showBus && (d.bus || '').trim()){
+    blocks.push(`🚌 [버스 대절] ${d.bus.trim()}`);
   }
 
-  // 특이사항
+  // 특이사항 (여러 줄은 블록 내부에 그대로)
   if (d.showNotes && (d.notes || '').trim()){
-    lines.push('⚠️ [특이사항]');
-    lines.push(...d.notes.split('\n').filter(Boolean));
-    lines.push('');
+    const notes = d.notes.split('\n').filter(Boolean);
+    blocks.push(['⚠️ [특이사항]', ...notes].join('\n'));
   }
 
-  // 문의
+  // 문의처
   if (d.showContact) {
-    lines.push(`📞 [문의처] ${d.contact || '-'}`);
+    blocks.push(`📞 [문의처] ${d.contact || '-'}`);
   }
 
-  return lines.join('\n');
+  // ✅ 블록 사이를 딱 1칸씩 띄워서 합치기
+  return blocks.filter(Boolean).join('\n\n');
 }
+
 
 async function buildMapThumbByLatLng(lat, lng){
   try{
