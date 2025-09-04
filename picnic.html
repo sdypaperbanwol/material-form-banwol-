@@ -529,7 +529,7 @@
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbyYSgfybbaf3wEP108E02xqO699CeT4z8HCqLO6VJVDWDlzxMwDsh2gW-QhlFx4MOew/exec';
 
   /* fetch 타임아웃 */
-  async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
+  async function fetchWithTimeout(url, opts={}, timeoutMs=45000){
     const controller = new AbortController();
     const timer = setTimeout(()=>controller.abort(), timeoutMs);
     try { return await fetch(url, {...opts, signal: controller.signal}); }
@@ -1349,11 +1349,16 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
 
         openPreviewModal(shareText);
       }else{ alert('임시 저장 실패: ' + (json.error || res.status)); }
-    }catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('임시 저장 중 오류: ' + msg);
-    }finally{ hideLoading(); }
-  });
+   } catch(err){
+  let msg;
+  if (err && err.name === 'AbortError') {
+    msg = '서버 응답이 지연되어 요청이 취소되었습니다. 네트워크 상태 또는 서버 부하 가능성이 있습니다.';
+  } else {
+    msg = err && err.message ? err.message : String(err);
+  }
+  alert('전송 중 오류: ' + msg + '\n\n다시 시도해 주세요.');
+} finally { hideLoading(); }
+}); // ★ 이 줄이 꼭 필요!
 
   /* 제출 */
   async function submitToSheet(){
@@ -1429,11 +1434,15 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
         alert(`제출 실패: ${json.error||res.status}`);
       }
     }catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('전송 중 오류: ' + msg);
-    }finally{ hideLoading(); }
+  let msg;
+  if (err && err.name === 'AbortError') {
+    msg = '서버 응답이 지연되어 요청이 취소되었습니다. 네트워크 상태 또는 서버 부하 가능성이 있습니다.';
+  } else {
+    msg = err && err.message ? err.message : String(err);
   }
-  document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
+  alert('전송 중 오류: ' + msg + '\n\n다시 시도해 주세요.');
+} finally { hideLoading(); }
+  
 
   /* 버스 칩 + 배지 */
   function setBus(val){
@@ -1917,7 +1926,7 @@ document.getElementById('btnVerifyAddr')?.addEventListener('click', async () => 
   }
 });
 
-
+document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
   </script>
 </body>
 </html>
