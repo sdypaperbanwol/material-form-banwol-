@@ -340,40 +340,97 @@
             </div>
           </div>
 
-          <div class="row">
-            <label for="place">
-              장소
-              <span class="field-toggle-inline">
-                <input id="showPlace" type="checkbox" checked> 표시
-              </span>
-            </label>
-            <div>
-              <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
-                <input id="place" type="text" placeholder="예) 고잔동 XX식당 (주소/지점명 가능)" style="flex:1" />
-                <button type="button" id="btnPickPlace" title="네이버에서 지점 후보 검색해 선택">장소 찾기(검증)</button>
-              </div>
+         <!-- 기본 정보 -->
+<div class="sec">
+  <div class="sec-title">기본 정보</div>
 
-              <!-- 선택된 지점 정보/지도 -->
-              <input id="placeUrl" type="hidden" value="" />
-              <input id="placeAddr" type="hidden" value="" />
-              <input id="placeTel"  type="hidden" value="" />
-              <input id="placeLink" type="hidden" value="" />
+  <div class="row">
+    <label for="title">
+      제목
+      <span class="field-toggle-inline">
+        <input id="showTitle" type="checkbox" checked> 표시
+      </span>
+    </label>
+    <div>
+      <input id="title" type="text" placeholder="예) 야유회 안내" />
+    </div>
+  </div>
 
-              <div id="placeThumb" style="display:none; margin-top:6px">
-                <img id="placeThumbImg" alt="지도 미리보기"
-                     style="max-width:220px;border:1px solid var(--line);border-radius:8px">
-              </div>
+  <div class="row">
+    <label for="date">
+      일자
+      <span class="field-toggle-inline">
+        <input id="showDate" type="checkbox" checked> 표시
+      </span>
+    </label>
+    <div>
+      <input id="date" type="date" />
+    </div>
+  </div>
 
-              <input id="placeLat" type="hidden" value="" />
-              <input id="placeLng" type="hidden" value="" />
-              <input id="placeMapImg" type="hidden" value="" />
+  <div class="row">
+    <label for="time">
+      시간
+      <span class="field-toggle-inline">
+        <input id="showTime" type="checkbox" checked> 표시
+      </span>
+    </label>
+    <div>
+      <input id="time" type="time" />
+    </div>
+  </div>
 
-              <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
+  <!-- ✅ 장소(텍스트) : 안내문에 보일 표기용 명칭 -->
+  <div class="row">
+    <label for="placeTitle">
+      장소(텍스트)
+      <span class="field-toggle-inline">
+        <input id="showPlace" type="checkbox" checked> 표시
+      </span>
+    </label>
+    <div>
+      <input id="placeTitle" type="text" placeholder="예) 고잔동 OO식당 본점 / 성호 체육문화센터" />
+      <small style="color:var(--muted)">안내문에 보일 장소명(표기용)입니다.</small>
+    </div>
+  </div>
 
-              <small style="color:var(--muted)">지점 선택 시 위 칸에 확정된 지점 정보가 표시되고, 안내문에는 해당 링크만 첨부됩니다.</small>
-            </div>
-          </div>
-        </div>
+  <!-- ✅ 주소 : 실제 도로명/지번 주소 -->
+  <div class="row">
+    <label for="placeAddr">
+      주소
+      <span class="field-toggle-inline">
+        <!-- showPlace 토글을 그대로 재사용 (명칭/주소 둘 다 영향) -->
+        <input id="showPlace_dup" type="checkbox" checked onclick="document.getElementById('showPlace').checked=this.checked"> 표시
+      </span>
+    </label>
+    <div>
+      <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
+        <input id="placeAddr" type="text" placeholder="예) 경기도 안산시 단원구 고잔동 525-2" style="flex:1" />
+        <button type="button" id="btnPickPlace" title="네이버에서 후보 검색/검증">장소 찾기(검증)</button>
+      </div>
+
+      <!-- 선택된 지점 정보/지도/링크(숨김값 포함) -->
+      <input id="place" type="hidden" value="" />            <!-- 🔁 호환용: 주소를 동기화해서 채워줍니다 -->
+      <input id="placeUrl"  type="hidden" value="" />
+      <input id="placeTel"  type="hidden" value="" />
+      <input id="placeLink" type="hidden" value="" />
+
+      <div id="placeThumb" style="display:none; margin-top:6px">
+        <img id="placeThumbImg" alt="지도 미리보기"
+             style="max-width:220px;border:1px solid var(--line);border-radius:8px">
+      </div>
+
+      <input id="placeLat" type="hidden" value="" />
+      <input id="placeLng" type="hidden" value="" />
+      <input id="placeMapImg" type="hidden" value="" />
+
+      <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
+
+      <small style="color:var(--muted)">주소를 정확히 입력하거나, “장소 찾기(검증)”로 지점 선택 시 지도/좌표가 저장됩니다.</small>
+    </div>
+  </div>
+</div>
+
 
         <!-- 운영 정보 -->
         <div class="sec">
@@ -514,7 +571,7 @@
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwd4TKNP6mst9-50EKYfe8du2WUbcwHUNOjjxZ8a8Jv2rLMQl2GVAX1_jpasP3Dgpa4/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycby6XFdrc0khWKKiby4hP1gTW9TgGLqX5uPnEtBirVu3tnuQ_edcKC49ez--eHGcx5e-/exec';
 
   /* fetch 타임아웃 */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
@@ -1116,9 +1173,13 @@ function collect(){
   const val = id => document.getElementById(id)?.value || '';
   const on  = id => {
     const el = document.getElementById(id);
-    // 저장 데이터에 토글이 없던 예전 키를 복원해도 항상 '표시'가 기본이 되도록
     return (el ? !!el.checked : true);
   };
+
+  // 주소 입력과 호환(hidden place) 동기화
+  const addrVal = val('placeAddr');
+  const hiddenPlace = document.getElementById('place');
+  if (hiddenPlace) hiddenPlace.value = addrVal;
 
   return {
     team: val('team'),
@@ -1128,11 +1189,13 @@ function collect(){
     schedule: val('schedule'),
     bus: val('bus'),
 
-    place: val('place'),
-    placeAddr: val('placeAddr'),
-    placeTel:  val('placeTel'),
-    placeLink: val('placeLink'),
-    placeUrl:  val('placeUrl'),
+    // ✅ 장소 분리
+    placeTitle: val('placeTitle'),   // 안내문에 보일 표기용 명칭
+    placeAddr:  val('placeAddr'),    // 실제 주소
+    place:      val('place'),        // (호환) = placeAddr와 동일하게 둠
+    placeUrl:   val('placeUrl'),
+    placeTel:   val('placeTel'),
+    placeLink:  val('placeLink'),
 
     placeLat:   val('placeLat'),
     placeLng:   val('placeLng'),
@@ -1141,12 +1204,11 @@ function collect(){
     notes: val('notes'),
     contact: val('contact'),
 
-    // ✅ 새 토글들
     showTeam:     on('showTeam'),
     showTitle:    on('showTitle'),
     showDate:     on('showDate'),
     showTime:     on('showTime'),
-    showPlace:    on('showPlace'),
+    showPlace:    on('showPlace'),  // 장소(텍스트)+주소 모두 이 토글에 따름
     showSchedule: on('showSchedule'),
     showBus:      on('showBus'),
     showNotes:    on('showNotes'),
@@ -1184,68 +1246,119 @@ function buildShareText(){
   const timeStr  = (d.time || '').trim();
   const lines = [];
 
-  // 제목
   if (d.showTitle) {
     const header = makeShareTitle(d) || '안내문';
     lines.push(header, '');
   }
-
-  // 대상
   if (d.showTeam) {
     const target = formatTarget(d.team);
     if (target) lines.push(`🎯 [대상] ${target}`, '');
   }
+  const dateTime = [];
+  if (d.showDate) dateTime.push(`📅 [일자] ${dateStr}`);
+  if (d.showTime && timeStr) dateTime.push(`⏰ [시간] ${timeStr}`);
+  if (dateTime.length) lines.push(...dateTime, '');
 
-  // 일자 / 시간 (분리)
-  const dateTimeLines = [];
-  if (d.showDate) dateTimeLines.push(`📅 [일자] ${dateStr}`);
-  if (d.showTime && timeStr) dateTimeLines.push(`⏰ [시간] ${timeStr}`);
-  if (dateTimeLines.length) lines.push(...dateTimeLines, '');
-
-  // 장소
+  // ✅ 장소/주소
   if (d.showPlace) {
-    const placeLine = d.place || '-';
-    const addrLine  = d.placeAddr || '';
-    // 장소와 주소가 거의 같으면 주소만 노출
-    if (addrLine && isSameLoose(placeLine, addrLine)) {
+    const titleLine = (d.placeTitle || '').trim();
+    const addrLine  = (d.placeAddr  || '').trim();
+    if (titleLine && addrLine && !isSameLoose(titleLine, addrLine)) {
+      lines.push(`📍 [장소] ${titleLine}`, '');
+      lines.push(`🏠 (주소) ${addrLine}`, '');
+    } else if (addrLine) {
       lines.push(`📍 [장소] (아래 주소 참조)`, '');
       lines.push(`🏠 (주소) ${addrLine}`, '');
     } else {
-      lines.push(`📍 [장소] ${placeLine}`, '');
-      if (addrLine) lines.push(`🏠 (주소) ${addrLine}`, '');
+      lines.push(`📍 [장소] -`, '');
     }
     if (d.placeTel)  lines.push(`☎️ (전화) ${d.placeTel}`, '');
     if (d.placeLink) lines.push(`🔗 (네이버) ${d.placeLink}`, '');
   }
 
-  // 일정 요약
   if (d.showSchedule) {
     lines.push('📝 [일정 요약]');
     const schedule = (d.schedule || '').split('\n').filter(Boolean);
-    if (schedule.length) lines.push(...schedule);
-    else lines.push('-');
-    lines.push('');
+    lines.push(...(schedule.length ? schedule : ['-']), '');
   }
 
-  // 버스
-  if (d.showBus && (d.bus||'').trim()) {
-    lines.push(`🚌 [버스 대절] ${d.bus}`, '');
-  }
-
-  // 특이사항
-  if (d.showNotes && (d.notes || '').trim()){
-    lines.push('⚠️ [특이사항]');
-    lines.push(...d.notes.split('\n').filter(Boolean));
-    lines.push('');
-  }
-
-  // 문의
-  if (d.showContact) {
-    lines.push(`📞 [문의처] ${d.contact || '-'}`);
-  }
+  if (d.showBus && (d.bus||'').trim()) lines.push(`🚌 [버스 대절] ${d.bus}`, '');
+  if (d.showNotes && (d.notes||'').trim()){ lines.push('⚠️ [특이사항]'); lines.push(...d.notes.split('\n').filter(Boolean), ''); }
+  if (d.showContact) lines.push(`📞 [문의처] ${d.contact || '-'}`);
 
   return lines.join('\n');
 }
+
+function buildExportHTML(){
+  const d = collect();
+  const dateStr  = d.date ? weekdayKR(d.date) : '-';
+  const timeStr  = (d.time || '').trim();
+  const teamLine = formatTarget(d.team);
+  const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  const busVal        = (d.bus || '').trim();
+
+  const toList = (arr)=> arr.length
+    ? '<ul class="export-list">' + arr.map(li=>`<li>${escapeHTML(li)}</li>`).join('') + '</ul>'
+    : '<ul class="export-list"><li>-</li></ul>';
+
+  const meta = [];
+  if (d.showTeam) meta.push(`<div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>`);
+  if (d.showDate) meta.push(`<div><b>일자</b> ${escapeHTML(dateStr)}</div>`);
+  if (d.showTime && timeStr) meta.push(`<div><b>시간</b> ${escapeHTML(timeStr)}</div>`);
+
+  if (d.showPlace) {
+    const titleLine = (d.placeTitle || '').trim();
+    const addrLine  = (d.placeAddr  || '').trim();
+    const same = titleLine && addrLine && isSameLoose(titleLine, addrLine);
+
+    meta.push(`<div><b>장소</b> ${escapeHTML(same ? '(아래 주소 참조)' : (titleLine || '-'))}</div>`);
+    if (addrLine) meta.push(`<div><b>주소</b> ${escapeHTML(addrLine)}</div>`);
+    if (d.placeTel)  meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
+  }
+  if (d.showBus && busVal) meta.push(`<div><b>버스</b> ${escapeHTML(busVal)}</div>`);
+  if (d.showContact) meta.push(`<div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>`);
+
+  const sectionCards = [];
+  if (d.showSchedule) {
+    sectionCards.push(`
+      <div class="export-card card-schedule">
+        <div class="export-sec-title">일정 요약</div>
+        ${toList(scheduleLines)}
+      </div>
+    `);
+  }
+  if (d.showNotes && notesLines.length){
+    sectionCards.push(`
+      <div class="export-card">
+        <div class="export-sec-title">특이사항</div>
+        ${toList(notesLines)}
+      </div>
+    `);
+  }
+
+  const titleHtml = d.showTitle
+    ? `<div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>`
+    : '';
+
+  const mapHtml = (d.showPlace && d.placeMapImg)
+    ? `<div class="export-map"><img src="${d.placeMapImg}" alt="지도 미리보기"></div>`
+    : '';
+
+  return `
+    ${titleHtml}
+    <div class="export-grid">
+      <div>
+        ${ meta.length ? `<div class="export-meta">${meta.join('')}</div>` : '' }
+        <div class="export-sections">
+          ${sectionCards.join('')}
+        </div>
+      </div>
+      ${mapHtml}
+    </div>
+  `;
+}
+
 
 async function buildMapThumbByLatLng(lat, lng){
   try{
