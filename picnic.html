@@ -353,6 +353,21 @@
                 <button type="button" id="btnPickPlace" title="네이버에서 지점 후보 검색해 선택">장소 찾기(검증)</button>
               </div>
 
+<div class="row">
+  <label for="placeAddrInput">
+    주소(지도용)
+    <span class="field-toggle-inline">
+      <!-- 주소는 안내문 메타에도 표시되니 토글은 장소의 showPlace로만 제어 -->
+      <small style="font-weight:700;color:#62799b">지오코딩 후 지도 생성</small>
+    </span>
+  </label>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <input id="placeAddrInput" type="text" placeholder="예) 안산시 단원구 성호로 189 (성호공원 내)" style="flex:1" />
+    <button type="button" id="btnVerifyAddr" title="주소를 좌표로 변환해 지도/좌표 생성">주소 검증(지도)</button>
+  </div>
+  <small style="color:var(--muted)">장소명이 없어도 괜찮아요. 주소만 검증해도 지도는 생성됩니다.</small>
+</div>
+              
               <!-- 선택된 지점 정보/지도 -->
               <input id="placeUrl" type="hidden" value="" />
               <input id="placeAddr" type="hidden" value="" />
@@ -784,6 +799,30 @@ function buildNaverSearchLink(rawName, rawAddr=''){
       box.innerHTML = ''; box.style.display = 'none';
     }
   }
+// (a) 주소 입력칸 ↔ hidden 동기화 + 지도 상태 초기화
+const addrInput = document.getElementById('placeAddrInput');
+if (addrInput) {
+  addrInput.addEventListener('input', ()=>{
+    // visible 입력 → hidden 동기화
+    document.getElementById('placeAddr').value = addrInput.value.trim();
+
+    // 주소가 바뀌면 좌표/지도 썸네일 초기화 (오동작 방지)
+    document.getElementById('placeLat').value = '';
+    document.getElementById('placeLng').value = '';
+    document.getElementById('placeMapImg').value = '';
+    setMapPreview('');
+  });
+}
+
+// (b) 주소 검증(지도) 버튼 → 지오코딩 + 지도 썸네일 생성
+document.getElementById('btnVerifyAddr')?.addEventListener('click', async ()=>{
+  const addr = (document.getElementById('placeAddrInput')?.value || '').trim();
+  if (!addr) { 
+    alert('주소를 입력해 주세요.'); 
+    return; 
+  }
+  await useAddressDirect(addr); // 이미 파일 하단에 정의된 함수 재사용
+});
 
   // 후보 검색 모달
   const placeModal = {
@@ -1520,6 +1559,7 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
 
       // ✅ hidden 복원
       document.getElementById('placeAddr').value = data.placeAddr || '';
+      document.getElementById('placeAddrInput')?.value = data.placeAddr || '';
       document.getElementById('placeTel').value  = data.placeTel  || '';
       document.getElementById('placeLink').value = data.placeLink || '';
 // ① 좌표/지도 이미지까지 복원
@@ -1593,6 +1633,7 @@ setOn('showContact',  data.showContact);
 
       // ✅ hidden 복원
       document.getElementById('placeAddr').value = data.placeAddr || '';
+      document.getElementById('placeAddrInput')?.value = data.placeAddr || '';
       document.getElementById('placeTel').value  = data.placeTel  || '';
       document.getElementById('placeLink').value = data.placeLink || '';
 document.getElementById('placeLat').value    = data.placeLat    || '';
