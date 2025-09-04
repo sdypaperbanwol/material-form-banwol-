@@ -1532,6 +1532,9 @@ const shareText = titleText ? `${titleText}\n${url.toString()}` : url.toString()
       document.getElementById('bus').value = data.bus || ''; 
       setBus(document.getElementById('bus').value || '');
 
+       // ✅ 장소명 복원 (새 스키마 우선, 과거 place fallback)
+     document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
+
       document.getElementById('place').value = data.place||'';
      if (!document.getElementById('placeName').value.trim()) {
        const guessAddr = data.placeAddr || (looksLikeKrAddress(data.place||'') ? data.place : '');
@@ -1608,6 +1611,9 @@ setOn('showContact',  data.showContact);
       document.getElementById('schedule').value = data.schedule||'';
       document.getElementById('bus').value = data.bus || ''; 
       setBus(document.getElementById('bus').value || '');
+
+       // ✅ 장소명 복원
+     document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
 
       document.getElementById('place').value = data.place||'';
        if (!document.getElementById('placeName').value.trim()) {
