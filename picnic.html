@@ -1876,35 +1876,68 @@ async function useAddressDirect(addrStr){
     hideLoading();
   }
 }
+// ⛳ 이 부분으로 교체 (기존 btnVerifyAddr 핸들러 삭제 후)
 document.getElementById('btnVerifyAddr')?.addEventListener('click', async () => {
-  const addr = (document.getElementById('addr')?.value || '').trim();
-  if (!addr) { alert('검증할 주소를 입력해 주세요.'); return; }
+  const raw = (document.getElementById('addr')?.value || '').trim();
+  if (!raw) { alert('검증할 주소나 장소명을 입력해 주세요.'); return; }
 
-  // 1) 지오코딩 + 정적 지도 썸네일 생성(기존 유틸 재사용)
-  await useAddressDirect(addr);
+  // 1) 주소처럼 보이면 기존 흐름 유지
+  if (looksLikeKrAddress(raw)) {
+    await useAddressDirect(raw);
+    // useAddressDirect가 placeAddr/placeLink/좌표/지도까지 세팅해줍니다.
+    return;
+  }
 
-  // 2) 검증된 주소 hidden에 확정
-  const placeAddrEl = document.getElementById('placeAddr');
-  if (placeAddrEl) placeAddrEl.value = addr;
+  // 2) 주소가 아니면: 명칭으로 네이버 장소 검색 → 첫 결과를 사용
+  showLoading('장소 검색 중…', '명칭으로 주소를 확인합니다');
+  try {
+    const url = `${GAS_URL}?mode=naver_local&query=${encodeURIComponent(raw)}`;
+    const res = await fetchWithTimeout(url);
+    const json = await res.json();
 
-  // 3) 네이버 지도 링크(주소 기반 검색) 확정
-  const nav = buildNaverSearchLink('', addr);
-  document.getElementById('placeLink').value = nav;
-  setPickedPlaceLink(nav, '네이버 지도');
+    const rows = Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
+    if (!rows.length) {
+      alert('해당 명칭으로 검색 결과가 없습니다. 주소로 입력해 보세요.');
+      return;
+    }
 
-  // 4) 장소명 비어 있으면 주소에서 짧은 표기 생성해 자동 채움
-  const placeEl = document.getElementById('place');
-  if (placeEl && !placeEl.value.trim()) {
-    placeEl.value = derivePlaceTitleFromAddress(addr);
+    // 결과 정규화
+    const r = rows[0];
+    const name = r.name || r.title || r.place_name || '';
+    const road = r.roadAddress || r.road_address || r.road || '';
+    const jibun = r.jibunAddress || r.jibun_address || r.address || '';
+    const pickedAddr = (road || jibun || '').trim();
+    const tel = r.telephone || r.tel || '';
+    const mapUrl = r.mapUrl || r.link || r.url || '';
+
+    if (!pickedAddr) {
+      alert('주소가 없는 장소 결과입니다. 주소로 직접 입력해 주세요.');
+      return;
+    }
+
+    // 2-1) 주소로 좌표/지도 생성(기존 유틸 재사용)
+    await useAddressDirect(pickedAddr);
+
+    // 2-2) 표시용 값들 보강
+    //   - 장소명은 비어있으면 명칭으로 채움
+    const placeEl = document.getElementById('place');
+    if (placeEl && !placeEl.value.trim()) placeEl.value = name || derivePlaceTitleFromAddress(pickedAddr);
+
+    //   - 숨김 필드/링크/전화/주소 확정
+    document.getElementById('placeAddr').value = pickedAddr;
+    document.getElementById('placeTel').value  = tel || '';
+    const safeLink = resolveNaverLink({ title:name, roadAddress:pickedAddr, address:pickedAddr, link:mapUrl });
+    document.getElementById('placeLink').value = safeLink;
+    setPickedPlaceLink(safeLink, name || '네이버 지도');
+
+  } catch (e) {
+    console.error(e);
+    alert('명칭 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+  } finally {
+    hideLoading();
   }
 });
-    // 주소 입력 변경 시: 이전 선택(링크/좌표/지도) 초기화
-document.getElementById('addr')?.addEventListener('input', () => {
-  setPickedPlaceLink('', '');
-  const ids = ['placeAddr','placeLat','placeLng','placeMapImg'];
-  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  setMapPreview('');
-});
+
 
   </script>
 </body>
