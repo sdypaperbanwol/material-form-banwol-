@@ -287,6 +287,55 @@
   }
 }
 */
+/* === 굵직한 섹션(참여/기본/운영) 강조 ===================== */
+.sec[data-kind]{
+  --accent: var(--sec-line);
+  position: relative;
+  border-width: 2px;                 /* 기존 1px → 2px */
+  border-color: var(--accent);
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.05);
+  padding-top: 16px;
+}
+
+/* 좌측 컬러 리본 */
+.sec[data-kind]::before{
+  content:"";
+  position:absolute;
+  left:-2px; top:-2px; bottom:-2px;
+  width:8px;
+  background: var(--accent);
+  border-radius:16px 0 0 16px;
+}
+
+/* 섹션 타이틀(알약)을 해당 색으로 통일 */
+.sec[data-kind] .sec-title{
+  color: var(--accent);
+  background: #fff;                           /* 눈에 잘 띄도록 흰색 */
+  border-color: color-mix(in srgb, var(--accent) 30%, #ffffff);
+  font-size: 14px;
+  letter-spacing: .2px;
+  padding: 8px 12px;
+}
+
+/* 섹션별 포인트 컬러(원하는 색으로 변경 가능) */
+.sec[data-kind="target"]{ --accent:#e53935; } /* 참여 대상: 빨강 */
+.sec[data-kind="basic"] { --accent:#283593; } /* 기본 정보: 진한 남색 */
+.sec[data-kind="ops"]   { --accent:#00695c; } /* 운영 정보: 청록 */
+
+/* 카드 상단 "안내문 작성" 헤더도 살짝 강조 */
+.card h2{
+  background: linear-gradient(90deg, #ffebee 0%, rgba(255,255,255,0) 65%);
+  border-bottom: 2px solid #ffcdd2;
+  color:#b71c1c;
+}
+
+/* 인쇄 시 과한 색상 최소화 */
+@media print{
+  .sec[data-kind]{ border-color:#999; box-shadow:none; }
+  .sec[data-kind]::before{ display:none; }
+  .card h2{ background:none; border-bottom:1px solid #bbb; color:#000; }
+}
 
 
 </style>
@@ -300,7 +349,7 @@
       <div class="body">
 
         <!-- 참여 대상 -->
-        <div class="sec">
+        <div class="sec" data-kind="target">
           <div class="sec-title">참여 대상</div>
 
           <div class="row">
@@ -327,7 +376,7 @@
         </div>
 
         <!-- 기본 정보 -->
-        <div class="sec">
+        <div class="sec" data-kind="basic">
           <div class="sec-title">기본 정보</div>
 
           <div class="row">
@@ -407,7 +456,7 @@
         </div>
 
         <!-- 운영 정보 -->
-        <div class="sec">
+        <div class="sec" data-kind="ops">
           <div class="sec-title">운영 정보</div>
 
           <div class="row">
