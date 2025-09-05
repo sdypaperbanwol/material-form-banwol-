@@ -228,6 +228,14 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
    .field-toggle-inline input[type="checkbox"]{ display:none; } /* 체크박스 숨김 */
 .toggle-label{ cursor:pointer; }                               /* 칩에 손가락 커서 */
 
+   #btnPrint{border-color:#ffd54f;background:#fff8e1;color:#ff6f00}
+#btnPrint:hover{background:#ffe082}
+
+/* 인쇄 시 exportDoc이 화면 안쪽에 배치되도록(안전장치) */
+@media print{
+  #exportDoc{ margin:0 auto !important; }
+}
+
 </style>
 
 </head>
@@ -469,6 +477,7 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
     <div class="half-row">
       <button id="btnCopyText"  title="공유용 문구를 미리보고 복사합니다">문구 복사</button>
       <button id="btnExportIMG" title="현재 내용을 PNG 이미지로 저장합니다">이미지 저장(PNG)</button>
+      <button id="btnPrint" title="현재 내용을 A4에 맞춰 인쇄합니다">출력</button>
     </div>
 
     <!-- 3행: 인사지원팀 제출 -->
@@ -1986,6 +1995,76 @@ await waitForImagesLoaded(target);
   }
   document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
 
+async function printExport(){
+  showLoading('인쇄 준비 중…', '레이아웃을 구성합니다', 300);
+  try{
+    // 1) 내보내기용 DOM 채우기
+    fillExportDom();
+
+    const target = document.getElementById('exportDoc');
+    const inner  = document.getElementById('exportInner');
+    const sel    = document.getElementById('exportWidth');
+    const choice = sel ? sel.value : 'auto';
+
+    // 기존 상태 백업
+    const prev = {
+      position: target.style.position,
+      left: target.style.left,
+      top: target.style.top,
+      width: target.style.width,
+      wide: target.classList.contains('wide'),
+      narrow: target.classList.contains('card-narrow')
+    };
+
+    // 2) 폭 결정(이미지 저장 로직과 동일)
+    let pxWidth;
+    if (choice === 'auto') {
+      target.style.width = 'auto';
+      const measured = inner.scrollWidth || 0;
+      pxWidth = Math.max(420, Math.min(560, measured + 12));
+    } else {
+      pxWidth = parseInt(choice, 10) || 560;
+    }
+    target.style.width = pxWidth + 'px';
+
+    const isWide = (choice === '1123' || pxWidth >= 980); // A4 가로 선택 시
+    target.classList.toggle('wide', isWide);
+    if (pxWidth <= 560) target.classList.add('card-narrow');
+    else target.classList.remove('card-narrow');
+
+    // 3) 인쇄용으로 화면 안에 배치
+    target.style.position = 'static';
+    target.style.left = 'auto';
+    target.style.top  = 'auto';
+
+    // 지도 썸네일 등 이미지 로딩 대기
+    await waitForImagesLoaded(target);
+
+    // 4) 인쇄 후 원복
+    const restore = ()=>{
+      target.style.position = prev.position || 'absolute';
+      target.style.left = prev.left || '-99999px';
+      target.style.top  = prev.top  || '-99999px';
+      target.style.width = prev.width || '';
+      target.classList.toggle('wide', prev.wide);
+      target.classList.toggle('card-narrow', prev.narrow);
+      window.removeEventListener('afterprint', restore);
+      hideLoading();
+    };
+    window.addEventListener('afterprint', restore);
+
+    // 5) 프린트
+    setTimeout(()=>{ window.print(); }, 0);
+  } catch(e){
+    hideLoading();
+    alert('인쇄 준비 중 오류: ' + (e?.message || e));
+  }
+}
+
+// 버튼 바인딩
+document.getElementById('btnPrint')?.addEventListener('click', printExport);
+
+    
     function looksLikeKrAddress(s=''){
   s = (s||'').trim();
   // 숫자(번지) + 도로/길/동/읍/면/리 등 주소 토큰이 섞여 있으면 주소로 간주
