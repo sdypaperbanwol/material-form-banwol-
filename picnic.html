@@ -235,6 +235,11 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 @media print{
   #exportDoc{ margin:0 auto !important; }
 }
+/* wide(가로)일 때 메타 폭을 왼쪽 컬럼에 맞춰 풀어 주기 */
+#exportDoc.wide .export-meta{
+  max-width: none;           /* 560px 제한 해제 */
+  margin-right: 0;           /* 남는 여백 제거(정렬 일치) */
+}
 
 </style>
 
