@@ -297,6 +297,12 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 .menu [role="menuitem"][aria-checked="true"]::before{ content:"✓ "; }
 .menu [role="menuitem"][aria-checked="true"]{ background:#f7f9ff; border-color:#e6ebff; }
 
+.split{ position:relative; display:flex; width:100%; gap:6px; align-items:stretch }
+.split .btn-export-toggle{
+  width:auto; min-width:84px; padding:14px 12px; /* ← 라벨 들어가도 보기 좋게 */
+  display:flex; align-items:center; justify-content:center; gap:6px;
+}
+
   
 </style>
 
@@ -539,17 +545,13 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   </button>
 
   <!-- 2) 내보내기 스플릿 -->
-  <div class="split" id="exportSplit">
-    <button id="btnExportMain" class="btn-export-main" title="바로 출력">
-      내보내기
-    </button>
-    <button id="btnExportToggle" class="btn-export-toggle"
-            aria-haspopup="menu" aria-expanded="false" title="내보내기 옵션 열기">▾</button>
-
-    <div id="exportMenu" class="menu" role="menu" hidden>
-      <button type="button" id="mnuCopyText" role="menuitem">문구 복사</button>
-      <button type="button" id="mnuSavePNG" role="menuitem">이미지 저장(PNG)</button>
-      <button type="button" id="mnuPrint"   role="menuitem">출력</button>
+<div class="split" id="exportSplit">
+  <button id="btnExportMain" class="btn-export-main" title="바로 출력">내보내기</button>
+  <button id="btnExportToggle" class="btn-export-toggle" aria-haspopup="menu" aria-expanded="false" title="내보내기 옵션 열기">▾</button>
+  <div id="exportMenu" class="menu" role="menu" hidden>
+  <button type="button" id="mnuCopyText" role="menuitem">문구 복사</button>
+  <button type="button" id="mnuSavePNG" role="menuitem">이미지 저장(PNG)</button>
+  <button type="button" id="mnuPrint"   role="menuitem">출력</button>
     </div>
   </div>
 </div>
@@ -1489,16 +1491,18 @@ async function waitForImagesLoaded(root){
   function closeMenu(){ menu.hidden = true;  toggle.setAttribute('aria-expanded','false'); }
 
   function applySelectionUI(){
-    // 메뉴에서 선택 표시(체크)
-    [...menu.querySelectorAll('[role="menuitem"]')].forEach(btn=>{
-      const isSel = btn.id === idMap[lastAction];
-      btn.setAttribute('aria-checked', String(isSel));
-      btn.classList.toggle('selected', isSel);
-    });
-    // 메인 버튼 힌트(툴팁). 보이는 라벨도 바꾸고 싶으면 아래 주석 해제
-    main.title = `${labelMap[lastAction]} 실행`;
-    // main.textContent = `내보내기 (${labelMap[lastAction]})`;
-  }
+  [...menu.querySelectorAll('[role="menuitem"]')].forEach(btn=>{
+    const isSel = btn.id === idMap[lastAction];
+    btn.setAttribute('aria-checked', String(isSel));
+    btn.classList.toggle('selected', isSel);
+  });
+
+  const labelMap = { text:'문구 복사', png:'이미지 저장(PNG)', print:'출력' };
+  main.title = `${labelMap[lastAction]} 실행`;
+  main.textContent = `내보내기 (${labelMap[lastAction]})`;  // ← 표시 강화
+  toggle.textContent = '옵션 ▾';                            // ← 라벨 부여
+}
+
 
   // ▼ 메뉴 아이템 클릭: “선택만” 하고 닫기 (실행 X)
   menu.addEventListener('click', e=>{
