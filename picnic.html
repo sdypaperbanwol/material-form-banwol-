@@ -336,7 +336,11 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   <div>
     <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
       <input id="place" type="text" placeholder="예) 안산시 단원구 고잔로 00 (도로명/지번 가능)" style="flex:1" />
-      <button type="button" id="btnPickPlace" title="네이버에서 주소/지점 검증">장소 찾기(검증)</button>
+      <button type="button" id="btnPickPlace"
+  title="네이버에서 주소/지점을 검증해 링크를 만들고, (주소 표시 ON + 지도 준비 시) 이미지에 지도 썸네일을 넣습니다">
+  장소 찾기(검증)
+</button>
+
     </div>
 
     <!-- 이하 그대로 유지 (hidden/지도 썸네일/선택박스 등) -->
@@ -356,7 +360,10 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 
               <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
 
-              <small style="color:var(--muted)">지점 선택 시 위 칸에 확정된 지점 정보가 표시되고, 안내문에는 해당 링크만 첨부됩니다.</small>
+              <small style="color:var(--muted)">
+  지점 선택 시 장소명/주소가 채워지고 (네이버) 링크가 생성됩니다.
+  ‘문구 복사’에는 링크가 포함되고, ‘이미지 저장(PNG)’은 <b>주소 표시</b>가 켜져 있고 지도 이미지가 준비된 경우에만 썸네일이 들어갑니다.
+</small>
             </div>
           </div>
         </div>
