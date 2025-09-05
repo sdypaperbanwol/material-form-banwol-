@@ -336,6 +336,48 @@
   .sec[data-kind]::before{ display:none; }
   .card h2{ background:none; border-bottom:1px solid #bbb; color:#000; }
 }
+/* === Toolbar 폭/레이아웃 컴팩트 (데스크탑에서만 좁게) === */
+:root{
+  /* 원하는 폭으로 조절: 560, 620, 680 등 */
+  --toolbar-max: 640px;
+}
+
+/* 가운데 정렬 + 최대폭 제한 */
+.toolbar{
+  width: min(var(--toolbar-max), 92vw);
+  margin-left: auto;
+  margin-right: auto;
+  border-width: 2px;                 /* 살짝 더 단단하게 */
+  box-shadow: 0 6px 20px rgba(0,0,0,.05);
+}
+
+/* 첫 줄 "이미지 폭" 옵션 영역도 가운데 정렬 느낌 나게 */
+.toolbar > div:first-child{
+  justify-content: space-between;    /* 한 줄에 알맞게 정렬 */
+}
+
+/* 버튼은 기본적으로 100% (모바일/좁은 화면) 유지 */
+.toolbar button{ width: 100%; }
+
+/* 데스크탑에서는 버튼 가득 느낌이 과하므로 살짝 여백 */
+@media (min-width: 980px){
+  .toolbar-actions .half-row{
+    gap: 10px;
+  }
+  /* 필요 시 버튼을 ‘가득’이 아니라 ‘적당히’로 바꾸려면 주석 해제
+  .toolbar button{
+    width: auto;
+    min-width: 220px;
+  }
+  .toolbar-actions{
+    justify-content: center;
+  }
+  .toolbar-actions .half-row{
+    grid-template-columns: auto auto;  /* 내용 폭 기준 */
+    justify-content: center;
+  }
+  */
+}
 
 
 </style>
