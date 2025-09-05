@@ -217,33 +217,13 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   .sec[data-kind]::before{ display:none; }
   .card h2{ background:none; border-bottom:1px solid #bbb; color:#000; }
 }
-/* === '표시' → '안내문 포함/숨김' 배지화 === */
-.field-toggle-inline{
-  display:inline-flex; align-items:center; gap:6px;
-  font-weight:700; color:#243b6b;
-}
-.field-toggle-inline .toggle-label::after{
-  content: attr(data-off);
-  display:inline-block;
-  padding:4px 10px;
-  font-size:12px;
-  border:1px solid #ddd;
-  border-radius:999px;
-  background:#f7f7f9;
-  color:#777;
-}
-/* 체크되면 '안내문 포함' 스타일 */
-.field-toggle-inline input:checked + .toggle-label::after{
-  content: attr(data-on);
-  border-color:#90caf9;
-  background:#e3f2fd;
-  color:#1565c0;
-}
 
-/* (선택) 체크박스를 스위치처럼 살짝 정돈 */
-.field-toggle-inline input{
-  transform: translateY(1px);
+   .field-toggle-inline{display:inline-flex;gap:6px;align-items:center}
+.toggle-label{
+  font-size:12px;font-weight:900;padding:2px 6px;border-radius:999px;
+  border:1px solid var(--sec-line);background:#eef3ff;color:#1a237e;
 }
+.toggle-label.off{background:#f5f5f5;color:#777;border-color:#ddd}
 
    
 </style>
@@ -264,7 +244,8 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
             <label>
               대상
               <span class="field-toggle-inline">
-                <input id="showTeam" type="checkbox" checked> 표시
+               <input id="showTeam" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
               </span>
             </label>
             <div>
@@ -287,51 +268,57 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
         <div class="sec" data-kind="basic">
           <div class="sec-title">기본 정보</div>
 
+         <!-- 제목 행: 이 블록으로 통째로 교체 -->
+<div class="row">
+  <label for="title">
+    제목
+    <span class="field-toggle-inline">
+      <input id="showTitle" type="checkbox" checked aria-label="안내문에 포함">
+      <span class="toggle-label">포함</span>
+    </span>
+  </label>
+  <div>
+    <input id="title" type="text" placeholder="예) 야유회 안내" />
+  </div>
+</div>
+
+
           <div class="row">
-          <label for="title">
-  제목
-  <span class="field-toggle-inline" 
-        title="체크하면 안내문(문구 복사/이미지/인쇄)에 이 항목이 포함됩니다.">
-    <input id="showTitle" type="checkbox" checked>
-    <span class="toggle-label" data-on="안내문 포함" data-off="숨김"></span>
+          <label for="date">
+  일자
+  <span class="field-toggle-inline">
+    <input id="showDate" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
   </span>
 </label>
 
-            <div>
-              <input id="title" type="text" placeholder="예) 야유회 안내" />
-            </div>
-          </div>
-
-          <div class="row">
-            <label for="date">
-              일자
-              <span class="field-toggle-inline">
-                <input id="showDate" type="checkbox" checked> 표시
-              </span>
-            </label>
             <div>
               <input id="date" type="date" />
             </div>
           </div>
 
           <div class="row">
-            <label for="time">
-              시간
-              <span class="field-toggle-inline">
-                <input id="showTime" type="checkbox" checked> 표시
-              </span>
-            </label>
+           <label for="time">
+  시간
+  <span class="field-toggle-inline">
+    <input id="showTime" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
+  </span>
+</label>
+
             <div>
               <input id="time" type="time" />
             </div>
           </div>
 <div class="row">
-  <label for="placeName">
-    장소
-    <span class="field-toggle-inline">
-      <input id="showPlace" type="checkbox" checked> 표시
-    </span>
-  </label>
+<label for="placeName">
+  장소
+  <span class="field-toggle-inline">
+    <input id="showPlace" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
+  </span>
+</label>
+
   <div>
     <input id="placeName" type="text" placeholder="예) OO체육문화센터 2체육관, 중앙광장, 족구장 등" />
   </div>
@@ -371,12 +358,14 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           <div class="sec-title">운영 정보</div>
 
           <div class="row">
-            <label for="schedule">
-              일정
-              <span class="field-toggle-inline">
-                <input id="showSchedule" type="checkbox" checked> 표시
-              </span>
-            </label>
+         <label for="schedule">
+  일정
+  <span class="field-toggle-inline">
+    <input id="showSchedule" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
+  </span>
+</label>
+
             <div>
               <textarea id="schedule" placeholder="예시)
 - 09:00 집결 및 활동
@@ -386,12 +375,14 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-            <label for="bus">
-              버스
-              <span class="field-toggle-inline">
-                <input id="showBus" type="checkbox" checked> 표시
-              </span>
-            </label>
+          <label for="bus">
+  버스
+  <span class="field-toggle-inline">
+    <input id="showBus" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
+  </span>
+</label>
+
             <div>
               <input id="bus" type="hidden" value="" />
               <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
@@ -403,12 +394,14 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-            <label for="notes">
-              특이사항
-              <span class="field-toggle-inline">
-                <input id="showNotes" type="checkbox" checked> 표시
-              </span>
-            </label>
+           <label for="notes">
+  특이사항
+  <span class="field-toggle-inline">
+    <input id="showNotes" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
+  </span>
+</label>
+
             <div>
               <div class="chip-group" id="notesPresets" role="group" aria-label="특이사항 템플릿"></div>
               <small style="color:var(--muted)">클릭 시 특이사항에 추가/제거됩니다(중복 방지)</small>
@@ -420,12 +413,14 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-            <label for="contact">
-              문의처
-              <span class="field-toggle-inline">
-                <input id="showContact" type="checkbox" checked> 표시
-              </span>
-            </label>
+          <label for="contact">
+  문의처
+  <span class="field-toggle-inline">
+    <input id="showContact" type="checkbox" checked aria-label="안내문에 포함">
+    <span class="toggle-label">포함</span>
+  </span>
+</label>
+
             <div>
               <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
             </div>
@@ -642,6 +637,7 @@ function resetAll() {
 ['showTeam','showTitle','showDate','showTime','showPlace','showSchedule','showBus','showNotes','showContact']
   .forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; });
 
+  refreshToggleLabels(); // ← 여기 추가
 
   // 5) 장소 미리보기/썸네일 박스 비우기
   setPickedPlaceLink('', '');
@@ -1525,6 +1521,33 @@ async function waitForImagesLoaded(root){
     });
   })();
 
+// ===== 표시 토글 라벨 동기화 =====
+const TOGGLE_IDS = [
+  'showTeam','showTitle','showDate','showTime',
+  'showPlace','showSchedule','showBus','showNotes','showContact'
+];
+
+function refreshToggleLabels(){
+  TOGGLE_IDS.forEach(id=>{
+    const cb = document.getElementById(id);
+    if(!cb) return;
+    const labelEl = cb.parentElement?.querySelector?.('.toggle-label');
+    if(!labelEl) return;
+    const on = !!cb.checked;
+    labelEl.textContent = on ? '포함' : '생략';
+    labelEl.classList.toggle('off', !on);
+    cb.setAttribute('aria-label', on ? '안내문에 포함' : '안내문에서 생략');
+    cb.title = '문구 복사/이미지 저장 시 ' + (on ? '포함됩니다' : '제외됩니다');
+  });
+}
+
+// 변경 감지 바인딩 + 최초 1회 반영
+TOGGLE_IDS.forEach(id=>{
+  document.getElementById(id)?.addEventListener('change', refreshToggleLabels);
+});
+refreshToggleLabels();
+
+    
   /* 오늘 이전 날짜 선택 금지 */
   (function lockPastDate(){
     const el = document.getElementById('date'); if(!el) return;
@@ -1618,7 +1641,7 @@ async function waitForImagesLoaded(root){
     renderTeamChips(); 
     restoreCustomTeamFromTeamValue();
   }
-
+refreshToggleLabels()
   updateBusBadgeVisibility();
 })();
 
@@ -1699,6 +1722,7 @@ async function loadByKey(k){
 
       // ✅ 추가: 좌표가 있으면 썸네일 자동 복원
       await restoreMapIfNeededFromData(data);
+      refreshToggleLabels();   // ← 추가
 
     } 
     else {
@@ -1708,6 +1732,7 @@ async function loadByKey(k){
     const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
     alert('불러오기 오류: ' + msg);
   } finally { 
+      refreshToggleLabels(); // ← 추가
     hideLoading(); 
   }
 }
