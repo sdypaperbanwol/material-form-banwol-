@@ -1534,12 +1534,15 @@ function refreshToggleLabels(){
     const labelEl = cb.parentElement?.querySelector?.('.toggle-label');
     if(!labelEl) return;
     const on = !!cb.checked;
-    labelEl.textContent = on ? '포함' : '생략';
+
+    // ▼ 여기만 교체
+    labelEl.textContent = on ? '표시' : '생략';
     labelEl.classList.toggle('off', !on);
-    cb.setAttribute('aria-label', on ? '안내문에 포함' : '안내문에서 생략');
-    cb.title = '문구 복사/이미지 저장 시 ' + (on ? '포함됩니다' : '제외됩니다');
+    cb.setAttribute('aria-label', on ? '안내문에 표시' : '안내문에서 생략');
+    cb.title = '문구 복사/이미지 저장 시 ' + (on ? '표시됩니다' : '표시되지 않습니다');
   });
 }
+
 
 // 변경 감지 바인딩 + 최초 1회 반영
 TOGGLE_IDS.forEach(id=>{
