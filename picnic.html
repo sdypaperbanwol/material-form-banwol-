@@ -264,6 +264,38 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   /* 인쇄는 한 열로 고정(폭 불일치 방지) */
   #exportDoc .export-sections{grid-template-columns:1fr!important}
 }
+/* ===== Split Button ===== */
+.split{ position:relative; display:flex; width:100%; gap:0 }
+.split .btn-export-main,
+.split .btn-export-toggle{
+  padding:14px; font-size:15px; font-weight:700; border-radius:12px; border:1px solid var(--line);
+  background:#fff8e1; color:#ff6f00; border-color:#ffd54f; cursor:pointer;
+}
+.split .btn-export-main{ flex:1; border-top-right-radius:0; border-bottom-right-radius:0; }
+.split .btn-export-toggle{ width:44px; border-left:0; border-top-left-radius:0; border-bottom-left-radius:0; }
+.split .btn-export-main:hover,
+.split .btn-export-toggle:hover{ background:#ffe082; }
+
+/* ===== Dropdown Menu ===== */
+.menu[hidden]{ display:none !important; }
+.menu{
+  position:absolute; right:0; top:calc(100% + 6px); min-width:220px; z-index:30000;
+  background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,.12);
+  padding:6px;
+}
+.menu button{
+  width:100%; text-align:left; padding:10px 12px; border-radius:10px; border:1px solid transparent; background:#fff; cursor:pointer;
+  font-weight:700;
+}
+.menu button:hover{ background:#f7f9ff; border-color:#e6ebff; }
+
+/* 작은 화면에선 버튼들 한 줄에 과하게 꽉 차지 않게 */
+@media (max-width: 480px){
+  .split .btn-export-main{ font-size:14px; padding:12px; }
+  .split .btn-export-toggle{ width:40px; padding:12px; }
+}
+
+  
 </style>
 
 
@@ -498,23 +530,36 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   </div>
 
   <!-- 새 레이아웃 -->
-  <div class="toolbar-actions">
-    <!-- 1행: 임시 저장하기 -->
-    <button id="btnShare" title="현재 입력을 서버에 임시 저장하고 복원용 링크를 만듭니다">임시 저장(링크 생성)</button>
+ <div class="toolbar-actions">
+  <!-- 1) 임시 저장 -->
+  <button id="btnShare" title="현재 입력을 서버에 임시 저장하고 복원용 링크를 만듭니다">
+    임시 저장(링크 생성)
+  </button>
 
-    <!-- 2행: 텍스트/이미지 (반반) -->
-    <div class="half-row">
-      <button id="btnCopyText"  title="공유용 문구를 미리보고 복사합니다">문구 복사</button>
-      <button id="btnExportIMG" title="현재 내용을 PNG 이미지로 저장합니다">이미지 저장(PNG)</button>
-      <button id="btnPrint" title="현재 내용을 A4에 맞춰 인쇄합니다">출력</button>
+  <!-- 2) 내보내기 스플릿 -->
+  <div class="split" id="exportSplit">
+    <button id="btnExportMain" class="btn-export-main" title="바로 출력">
+      내보내기
+    </button>
+    <button id="btnExportToggle" class="btn-export-toggle"
+            aria-haspopup="menu" aria-expanded="false" title="내보내기 옵션 열기">▾</button>
+
+    <div id="exportMenu" class="menu" role="menu" hidden>
+      <button type="button" id="mnuCopyText" role="menuitem">문구 복사</button>
+      <button type="button" id="mnuSavePNG" role="menuitem">이미지 저장(PNG)</button>
+      <button type="button" id="mnuPrint"   role="menuitem">출력</button>
     </div>
-
-    <!-- 3행: 인사지원팀 제출 -->
-    <button id="btnSubmit"    title="인사지원팀 시트에 접수 기록을 남깁니다">인사지원팀 제출(접수)</button>
-
-    <!-- 4행: 초기화 -->
-    <button id="btnReset"     title="모든 입력을 지우고 처음 상태로 되돌립니다">초기화</button>
   </div>
+
+  <!-- 3) 인사지원팀 제출 -->
+  <button id="btnSubmit" title="인사지원팀 시트에 접수 기록을 남깁니다">
+    인사지원팀 제출(접수)
+  </button>
+
+  <!-- 4) 초기화 -->
+  <button id="btnReset" title="모든 입력을 지우고 처음 상태로 되돌립니다">
+    초기화
+  </button>
 </div>
 
 
@@ -1422,11 +1467,57 @@ async function waitForImagesLoaded(root){
   })();
 
   /* 버튼 동작 */
-  document.getElementById('btnCopyText').addEventListener('click', async ()=>{
-    showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 300);
-    try{ const text = buildShareText(); openPreviewModal(text); }
-    finally{ hideLoading(); }
+  /* ===== 내보내기 스플릿 바인딩 ===== */
+(function setupExportSplit(){
+  const main   = document.getElementById('btnExportMain');
+  const toggle = document.getElementById('btnExportToggle');
+  const menu   = document.getElementById('exportMenu');
+  const split  = document.getElementById('exportSplit');
+  if(!main || !toggle || !menu || !split) return;
+
+  let lastAction = 'print'; // 기본: 출력
+
+  // 공통: 메뉴 열고닫기
+  const openMenu = ()=>{ menu.hidden = false; toggle.setAttribute('aria-expanded','true'); };
+  const closeMenu= ()=>{ menu.hidden = true;  toggle.setAttribute('aria-expanded','false'); };
+
+  toggle.addEventListener('click', (e)=>{ e.stopPropagation(); menu.hidden ? openMenu() : closeMenu(); });
+  document.addEventListener('click', (e)=>{ if(!menu.hidden && !split.contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
+
+  // 메인 버튼: 최근 작업 실행 (초기엔 '출력')
+  main.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if (lastAction === 'print')      document.getElementById('mnuPrint').click();
+    else if (lastAction === 'png')   document.getElementById('mnuSavePNG').click();
+    else                             document.getElementById('mnuCopyText').click();
   });
+
+  // 메뉴 항목: 실제 동작
+  document.getElementById('mnuCopyText').addEventListener('click', async ()=>{
+    closeMenu();
+    showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 300);
+    try{
+      const text = buildShareText();
+      openPreviewModal(text);
+      lastAction = 'text';
+    }finally{ hideLoading(); }
+  });
+
+  document.getElementById('mnuSavePNG').addEventListener('click', async ()=>{
+    closeMenu();
+    lastAction = 'png';
+    // exportAsImage는 이미 정의되어 있음
+    await exportAsImage();
+  });
+
+  document.getElementById('mnuPrint').addEventListener('click', async ()=>{
+    closeMenu();
+    lastAction = 'print';
+    await printExport();
+  });
+})();
+
 
   document.getElementById('btnShare').addEventListener('click', async ()=>{
   showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
