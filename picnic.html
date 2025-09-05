@@ -233,7 +233,12 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 
 /* 인쇄 시 exportDoc이 화면 안쪽에 배치되도록(안전장치) */
 @media print{
-  #exportDoc{ margin:0 auto !important; }
+  #exportDoc{
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto !important;
+  }
 }
 /* wide(가로)일 때 메타 폭을 왼쪽 컬럼에 맞춰 풀어 주기 */
 #exportDoc.wide .export-meta{
@@ -2073,6 +2078,10 @@ async function printExport(){
 
     // 폭을 mm로 강제 → 물리 크기 일관성
     target.style.width = `${pageWmm}mm`;
+    // ★ 화면 밖으로 보내둔 상태를 인쇄용으로 복귀
+target.style.position = 'static';
+target.style.left = '';
+target.style.top  = '';
 
     // 3-2) 내용 높이 측정 후 초과 시 자동 축소(zoom)
     await waitForImagesLoaded(target); // 높이 측정 전 이미지 대기
