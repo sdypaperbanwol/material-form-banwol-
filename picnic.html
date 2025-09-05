@@ -326,7 +326,13 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   </div>
 </div>
          <div class="row">
-  <label for="place">주소</label>
+  <label for="place">
+  주소
+  <span class="field-toggle-inline">
+    <input id="showAddress" type="checkbox" checked aria-label="안내문에 표시">
+    <span class="toggle-label">표시</span>
+  </span>
+</label>
   <div>
     <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
       <input id="place" type="text" placeholder="예) 안산시 단원구 고잔로 00 (도로명/지번 가능)" style="flex:1" />
@@ -1158,6 +1164,7 @@ function collect(){
     showDate: on('showDate'),
     showTime: on('showTime'),
     showPlace: on('showPlace'),
+    showAddress: on('showAddress'),   // ← 추가
     showSchedule: on('showSchedule'),
     showBus: on('showBus'),
     showNotes: on('showNotes'),
@@ -1219,14 +1226,16 @@ function buildShareText(){
 
   // 장소 / 주소 / (네이버) / (전화)
   if (d.showPlace) {
-    const placeName = (d.placeName || '').trim();
-    const addrLine  = (d.place || d.placeAddr || '').trim();
-
-    if (placeName) blocks.push(`📍 [장소] ${placeName}`);
-    if (addrLine)  blocks.push(`🏠 [주소] ${addrLine}`);
-    if ((d.placeLink || '').trim()) blocks.push(`🔗 (네이버) ${d.placeLink.trim()}`);
-    if ((d.placeTel  || '').trim()) blocks.push(`☎️ (전화) ${d.placeTel.trim()}`);
-  }
+   const placeName = (d.placeName || '').trim();
+   if (placeName) blocks.push(`📍 [장소] ${placeName}`);
+   if ((d.placeLink || '').trim()) blocks.push(`🔗 (네이버) ${d.placeLink.trim()}`);
+   if ((d.placeTel  || '').trim()) blocks.push(`☎️ (전화) ${d.placeTel.trim()}`);
+ }
+ // 주소는 독립 토글
+ const addrLine = (d.place || d.placeAddr || '').trim();
+ if (d.showAddress && addrLine) {
+   blocks.push(`🏠 [주소] ${addrLine}`);
+ }
 
   // 일정 요약
   if (d.showSchedule) {
@@ -1525,9 +1534,10 @@ async function waitForImagesLoaded(root){
 
 // ===== 표시 토글 라벨 동기화 =====
 const TOGGLE_IDS = [
-  'showTeam','showTitle','showDate','showTime',
-  'showPlace','showSchedule','showBus','showNotes','showContact'
-];
+ 'showTeam','showTitle','showDate','showTime',
+  'showPlace','showSchedule','showBus','showNotes','showContact',
+  'showAddress' // ← 추가
+ ];
 
 function refreshToggleLabels(){
   TOGGLE_IDS.forEach(id=>{
@@ -1852,13 +1862,14 @@ function buildExportHTML(){
   if (d.showDate) meta.push(`<div><b>일자</b> ${escapeHTML(dateStr)}</div>`);
   if (d.showTime && timeStr) meta.push(`<div><b>시간</b> ${escapeHTML(timeStr)}</div>`);
  if (d.showPlace) {
-  const placeName = (d.placeName || '').trim();
-  const addrLine  = (d.place || d.placeAddr || '').trim();
-
-  if (placeName) meta.push(`<div><b>장소</b> ${escapeHTML(placeName)}</div>`);
-  if (addrLine)  meta.push(`<div><b>주소</b> ${escapeHTML(addrLine)}</div>`);
-  if (d.placeTel) meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
-}
+   const placeName = (d.placeName || '').trim();
+   if (placeName) meta.push(`<div><b>장소</b> ${escapeHTML(placeName)}</div>`);
+   if (d.placeTel) meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
+ }
+ const addrLine = (d.place || d.placeAddr || '').trim();
+ if (d.showAddress && addrLine) {
+   meta.push(`<div><b>주소</b> ${escapeHTML(addrLine)}</div>`);
+ }
 // 지도 썸네일은 더 이상 필요 없다면, 아래를 비활성화해도 됨
 // const mapHtml = '';
 
