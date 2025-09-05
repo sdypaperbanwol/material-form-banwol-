@@ -1038,14 +1038,19 @@ if ((!lat || !lng) && adminOnly) {
   document.getElementById('btnPickPlace').addEventListener('click', async ()=>{
   const seed = (document.getElementById('place').value || '').trim();
 
-  // ① 네이버 지도/플레이스 URL을 직접 붙인 경우 → 곧바로 확정
-  if (isUrl(seed) && isNaverPlaceUrl(seed)) {
-   // place 입력값은 그대로 두고, 링크만 확정
-   document.getElementById('placeLink').value = seed;
-   setPickedPlaceLink(seed, '네이버 지도');
-    // 주소 텍스트가 있으면 지오코딩도 시도(선택) → 없으면 생략 가능
-    return;
-  }
+  // ① 네이버 지도/플레이스 URL을 직접 붙인 경우 → 링크 저장 + 지오코딩 시도
+if (isUrl(seed) && isNaverPlaceUrl(seed)) {
+  document.getElementById('placeLink').value = seed;
+  setPickedPlaceLink(seed, '네이버 지도');
+
+  // 장소명이나 주소 텍스트가 있으면 그것으로 지오코딩 시도
+  const nameGuess = (document.getElementById('placeName').value || '').trim();
+  const addrGuess = (document.getElementById('place').value || '').trim();
+  const q = looksLikeKrAddress(addrGuess) ? addrGuess : nameGuess;
+  if (q) { await useAddressDirect(q); }   // 성공 시 placeMapImg/썸네일 채워짐
+
+  return;
+}
 
   // ② 주소처럼 보이면 → 바로 지오코딩으로 확정
   if (looksLikeKrAddress(seed)) {
@@ -1901,10 +1906,10 @@ function buildExportHTML(){
     : '';
 
   // 지도는 "주소 표시 ON + 실제 주소 + 이미지 준비됨"일 때만 노출
-  const mapHtml = (d.showAddress && addrLine && d.placeMapImg)
-    ? `<div class="export-map"><img src="${d.placeMapImg}" alt="지도 미리보기"></div>`
-    : '';
-
+ const mapHtml = (d.showAddress && d.placeMapImg)
+  ? `<div class="export-map"><img src="${d.placeMapImg}" alt="지도 미리보기"></div>`
+  : '';
+  
   return `
     ${titleHtml}
     <div class="export-grid">
