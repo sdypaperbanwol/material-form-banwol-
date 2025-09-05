@@ -2044,8 +2044,7 @@ async function exportAsImage(){
 }
 
 
-// 버튼 바인딩
-document.getElementById('btnPrint')?.addEventListener('click', printExport);
+
 
     
     function looksLikeKrAddress(s=''){
@@ -2085,6 +2084,68 @@ async function useAddressDirect(addrStr){
     hideLoading();
   }
 }
+async function printExport(){
+  showLoading('인쇄 준비 중…', 'A4에 맞게 정돈합니다');
+  try{
+    fillExportDom();
+
+    const target = document.getElementById('exportDoc');
+    const inner  = document.getElementById('exportInner');
+    const sel    = document.getElementById('exportWidth');
+    const choice = sel ? sel.value : 'auto';
+
+    // 현재 상태 백업
+    const prev = {
+      style: target.getAttribute('style') || '',
+      className: target.className
+    };
+
+    // 레이아웃 폭/클래스 결정(가로 선택 시 landscape)
+    let pxWidth;
+    const isLandscape = (choice === '1123'); // 가로 A4 선택
+    if (isLandscape){
+      pxWidth = 1123;
+      target.classList.add('wide');
+    } else {
+      pxWidth = 794; // 기본 세로 느낌
+      target.classList.remove('wide');
+    }
+    if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
+
+    // 화면 안쪽으로 잠시 배치
+    target.style.position = 'static';
+    target.style.left = '';
+    target.style.top  = '';
+    target.style.width = pxWidth + 'px';
+    target.style.background = '#fff';
+    await waitForImagesLoaded(target);
+
+    // 인쇄용 @page 규격 주입 (A4 + 여백)
+    const style = document.createElement('style');
+    style.id = 'printStyle';
+    style.textContent = `
+      @media print {
+        @page { size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: 12mm; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // 인쇄
+    window.print();
+
+    // 클린업
+    document.head.removeChild(style);
+    target.setAttribute('style', prev.style);
+    target.className = prev.className;
+
+  } finally {
+    hideLoading();
+  }
+}
+
+    
+document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
+document.getElementById('btnPrint')?.addEventListener('click', printExport);
 
     
   </script>
