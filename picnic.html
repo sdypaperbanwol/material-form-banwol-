@@ -1469,6 +1469,8 @@ async function waitForImagesLoaded(root){
 
   /* 버튼 동작 */
   /* ===== 내보내기 스플릿 바인딩 ===== */
+<script>
+/* ===== 내보내기 스플릿 (옵션 선택 → 메인 버튼으로 실행) ===== */
 (function setupExportSplit(){
   const main   = document.getElementById('btnExportMain');
   const toggle = document.getElementById('btnExportToggle');
@@ -1476,48 +1478,63 @@ async function waitForImagesLoaded(root){
   const split  = document.getElementById('exportSplit');
   if(!main || !toggle || !menu || !split) return;
 
-  let lastAction = 'print'; // 기본: 출력
+  // 기본값: 출력. 마지막 선택 기억(선택)
+  let lastAction = localStorage.getItem('exportAction') || 'print';
+  const labelMap = { text:'문구 복사', png:'이미지 저장(PNG)', print:'출력' };
+  const idMap    = { text:'mnuCopyText', png:'mnuSavePNG',     print:'mnuPrint' };
 
-  // 공통: 메뉴 열고닫기
-  const openMenu = ()=>{ menu.hidden = false; toggle.setAttribute('aria-expanded','true'); };
-  const closeMenu= ()=>{ menu.hidden = true;  toggle.setAttribute('aria-expanded','false'); };
+  function openMenu(){ menu.hidden = false; toggle.setAttribute('aria-expanded','true'); }
+  function closeMenu(){ menu.hidden = true;  toggle.setAttribute('aria-expanded','false'); }
 
+  function applySelectionUI(){
+    // 메뉴에서 선택 표시(체크)
+    [...menu.querySelectorAll('[role="menuitem"]')].forEach(btn=>{
+      const isSel = btn.id === idMap[lastAction];
+      btn.setAttribute('aria-checked', String(isSel));
+      btn.classList.toggle('selected', isSel);
+    });
+    // 메인 버튼 힌트(툴팁). 보이는 라벨도 바꾸고 싶으면 아래 주석 해제
+    main.title = `${labelMap[lastAction]} 실행`;
+    // main.textContent = `내보내기 (${labelMap[lastAction]})`;
+  }
+
+  // ▼ 메뉴 아이템 클릭: “선택만” 하고 닫기 (실행 X)
+  menu.addEventListener('click', e=>{
+    const btn = e.target.closest('[role="menuitem"]');
+    if(!btn) return;
+    if (btn.id === 'mnuCopyText')      lastAction = 'text';
+    else if (btn.id === 'mnuSavePNG')  lastAction = 'png';
+    else                               lastAction = 'print';
+    localStorage.setItem('exportAction', lastAction);
+    applySelectionUI();
+    closeMenu();
+  });
+
+  // ▼ 메인 버튼 클릭: 여기서만 실제 실행
+  main.addEventListener('click', async (e)=>{
+    e.preventDefault();
+    if (lastAction === 'text'){
+      showLoading('텍스트 준비 중…','공유용 문장을 정리합니다',300);
+      try {
+        const text = buildShareText();
+        openPreviewModal(text);
+      } finally { hideLoading(); }
+    } else if (lastAction === 'png'){
+      await exportAsImage();
+    } else {
+      await printExport();
+    }
+  });
+
+  // 열고 닫기 제어
   toggle.addEventListener('click', (e)=>{ e.stopPropagation(); menu.hidden ? openMenu() : closeMenu(); });
-  document.addEventListener('click', (e)=>{ if(!menu.hidden && !split.contains(e.target)) closeMenu(); });
+  document.addEventListener('click',  (e)=>{ if(!menu.hidden && !split.contains(e.target)) closeMenu(); });
   document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
 
-  // 메인 버튼: 최근 작업 실행 (초기엔 '출력')
-  main.addEventListener('click', (e)=>{
-    e.preventDefault();
-    if (lastAction === 'print')      document.getElementById('mnuPrint').click();
-    else if (lastAction === 'png')   document.getElementById('mnuSavePNG').click();
-    else                             document.getElementById('mnuCopyText').click();
-  });
-
-  // 메뉴 항목: 실제 동작
-  document.getElementById('mnuCopyText').addEventListener('click', async ()=>{
-    closeMenu();
-    showLoading('텍스트 준비 중…', '공유용 문장을 정리합니다', 300);
-    try{
-      const text = buildShareText();
-      openPreviewModal(text);
-      lastAction = 'text';
-    }finally{ hideLoading(); }
-  });
-
-  document.getElementById('mnuSavePNG').addEventListener('click', async ()=>{
-    closeMenu();
-    lastAction = 'png';
-    // exportAsImage는 이미 정의되어 있음
-    await exportAsImage();
-  });
-
-  document.getElementById('mnuPrint').addEventListener('click', async ()=>{
-    closeMenu();
-    lastAction = 'print';
-    await printExport();
-  });
+  applySelectionUI(); // 초기 반영
 })();
+</script>
+
 
 
   document.getElementById('btnShare').addEventListener('click', async ()=>{
