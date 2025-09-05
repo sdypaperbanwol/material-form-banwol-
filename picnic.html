@@ -272,6 +272,18 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   /* 지도 썸네일이 너무 길어지는 것 방지 */
   #exportDoc .export-map img { max-height: 70mm; height: auto; object-fit: cover; }
 }
+@media print{
+  /* 메타 박스도 카드들과 같은 폭으로 */
+  #exportDoc .export-meta{
+    max-width: none !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+  /* 세로 인쇄는 한 열 고정(혹시 다른 규칙이 섞여도 안전) */
+  #exportDoc .export-sections{
+    grid-template-columns: 1fr !important;
+  }
+}
 
 </style>
 
@@ -2078,6 +2090,7 @@ async function printExport(){
 
     // 폭을 mm로 강제 → 물리 크기 일관성
     target.style.width = `${pageWmm}mm`;
+    target.classList.remove('card-narrow');
     // ★ 화면 밖으로 보내둔 상태를 인쇄용으로 복귀
 target.style.position = 'static';
 target.style.left = '';
