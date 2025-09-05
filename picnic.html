@@ -464,8 +464,6 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
       <select id="exportWidth">
         <option value="auto" selected>자동(내용에 맞춤)</option>
         <option value="1123">A4 가로(1123px)</option>
-        <option value="a4p300">A4 세로(300dpi, PNG)</option>
-        <option value="a4l300">A4 가로(300dpi, PNG)</option>
       </select>
     </label>
   </div>
@@ -1954,97 +1952,117 @@ function buildExportHTML(){
     inner.innerHTML = buildExportHTML();
   }
 
-async function exportAsImage(){
-  showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+  async function exportAsImage(){
+    showLoading('이미지 생성 중…', '잠시만 기다려주세요');
+    try{
+      fillExportDom();
+      const target = document.getElementById('exportDoc');
+      const inner  = document.getElementById('exportInner');
+      const sel    = document.getElementById('exportWidth');
+      const choice = sel ? sel.value : 'auto';
+
+      const prevWidth = target.style.width;
+      const hadNarrow = target.classList.contains('card-narrow');
+
+      let pxWidth;
+      if (choice === 'auto') {
+        target.style.width = 'auto';
+        const measured = inner.scrollWidth || 0;
+        pxWidth = Math.max(420, Math.min(560, measured + 12));
+      } else {
+        pxWidth = parseInt(choice, 10) || 560;
+      }
+      target.style.width = pxWidth + 'px';
+      if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
+
+      const isWide = (choice === '1123' || pxWidth >= 980); // A4 가로 선택 시
+    target.classList.toggle('wide', isWide);
+      
+// ✅ 내보내기용 히든 DOM 안의 모든 <img> 로드 대기
+await waitForImagesLoaded(target);
+
+      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
+      const dataURL = canvas.toDataURL('image/png');
+
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = (collect().title || '안내문') + `.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+
+      target.style.width = prevWidth;
+      if (!hadNarrow) target.classList.remove('card-narrow');
+    } finally { hideLoading(); }
+  }
+  document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
+
+async function printExport(){
+  showLoading('인쇄 준비 중…', '레이아웃을 구성합니다', 300);
   try{
+    // 1) 내보내기용 DOM 채우기
     fillExportDom();
+
     const target = document.getElementById('exportDoc');
     const inner  = document.getElementById('exportInner');
     const sel    = document.getElementById('exportWidth');
     const choice = sel ? sel.value : 'auto';
 
-    // 상태 백업
-    const prevWidth  = target.style.width;
-    const prevWide   = target.classList.contains('wide');
-    const hadNarrow  = target.classList.contains('card-narrow');
+    // 기존 상태 백업
+    const prev = {
+      position: target.style.position,
+      left: target.style.left,
+      top: target.style.top,
+      width: target.style.width,
+      wide: target.classList.contains('wide'),
+      narrow: target.classList.contains('card-narrow')
+    };
 
-    // 300dpi A4 픽셀
-    const A4P = { w:2480, h:3508 }; // 세로
-    const A4L = { w:3508, h:2480 }; // 가로
-    let a4 = null;
-
-    // 레이아웃용 CSS 폭 결정 (줄바꿈 안정)
+    // 2) 폭 결정(이미지 저장 로직과 동일)
     let pxWidth;
-    if (choice === 'a4p300' || choice === 'a4l300') {
-      a4 = (choice === 'a4p300') ? A4P : A4L;
-      // 세로/가로 레이아웃 폭(기존 감성 유지)
-      pxWidth = (choice === 'a4p300') ? 794 : 1123;
-    } else if (choice === 'auto') {
+    if (choice === 'auto') {
       target.style.width = 'auto';
       const measured = inner.scrollWidth || 0;
       pxWidth = Math.max(420, Math.min(560, measured + 12));
     } else {
       pxWidth = parseInt(choice, 10) || 560;
     }
-
-    // 레이아웃 적용
     target.style.width = pxWidth + 'px';
-    const isWide = (choice === '1123' || pxWidth >= 980);
-    target.classList.toggle('wide', isWide);
-    if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
 
-    // 이미지 로딩 대기
+    const isWide = (choice === '1123' || pxWidth >= 980); // A4 가로 선택 시
+    target.classList.toggle('wide', isWide);
+    if (pxWidth <= 560) target.classList.add('card-narrow');
+    else target.classList.remove('card-narrow');
+
+    // 3) 인쇄용으로 화면 안에 배치
+    target.style.position = 'static';
+    target.style.left = 'auto';
+    target.style.top  = 'auto';
+
+    // 지도 썸네일 등 이미지 로딩 대기
     await waitForImagesLoaded(target);
 
-    // 1차 캡처(고해상도)
-    const baseCanvas = await html2canvas(target, { backgroundColor:'#fff', scale:2, useCORS:true });
-    let dataURL;
+    // 4) 인쇄 후 원복
+    const restore = ()=>{
+      target.style.position = prev.position || 'absolute';
+      target.style.left = prev.left || '-99999px';
+      target.style.top  = prev.top  || '-99999px';
+      target.style.width = prev.width || '';
+      target.classList.toggle('wide', prev.wide);
+      target.classList.toggle('card-narrow', prev.narrow);
+      window.removeEventListener('afterprint', restore);
+      hideLoading();
+    };
+    window.addEventListener('afterprint', restore);
 
-    if (a4) {
-      // A4 고정 캔버스에 안전여백 포함 리샘플
-      const pad = 120; // 300dpi에서 대략 10mm
-      const out = document.createElement('canvas');
-      out.width = a4.w; out.height = a4.h;
-      const ctx = out.getContext('2d');
-
-      // 흰 배경
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, out.width, out.height);
-
-      // 비율 유지해서 최대한 꽉 채우되 여백 보존
-      const srcW = baseCanvas.width, srcH = baseCanvas.height;
-      const scale = Math.min((out.width - pad*2) / srcW, (out.height - pad*2) / srcH);
-      const drawW = Math.round(srcW * scale);
-      const drawH = Math.round(srcH * scale);
-      const dx = Math.floor((out.width  - drawW) / 2);
-      const dy = Math.floor((out.height - drawH) / 2);
-
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(baseCanvas, dx, dy, drawW, drawH);
-
-      dataURL = out.toDataURL('image/png');
-    } else {
-      // 기존 방식
-      dataURL = baseCanvas.toDataURL('image/png');
-    }
-
-    // 다운로드
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = (collect().title || '안내문') + `.png`;
-    document.body.appendChild(a); a.click(); a.remove();
-
-    // 복원
-    target.style.width = prevWidth || '';
-    target.classList.toggle('wide', prevWide);
-    if (!hadNarrow) target.classList.remove('card-narrow');
-  } finally {
+    // 5) 프린트
+    setTimeout(()=>{ window.print(); }, 0);
+  } catch(e){
     hideLoading();
+    alert('인쇄 준비 중 오류: ' + (e?.message || e));
   }
 }
 
-
-
+// 버튼 바인딩
+document.getElementById('btnPrint')?.addEventListener('click', printExport);
 
     
     function looksLikeKrAddress(s=''){
@@ -2084,68 +2102,6 @@ async function useAddressDirect(addrStr){
     hideLoading();
   }
 }
-async function printExport(){
-  showLoading('인쇄 준비 중…', 'A4에 맞게 정돈합니다');
-  try{
-    fillExportDom();
-
-    const target = document.getElementById('exportDoc');
-    const inner  = document.getElementById('exportInner');
-    const sel    = document.getElementById('exportWidth');
-    const choice = sel ? sel.value : 'auto';
-
-    // 현재 상태 백업
-    const prev = {
-      style: target.getAttribute('style') || '',
-      className: target.className
-    };
-
-    // 레이아웃 폭/클래스 결정(가로 선택 시 landscape)
-    let pxWidth;
-    const isLandscape = (choice === '1123'); // 가로 A4 선택
-    if (isLandscape){
-      pxWidth = 1123;
-      target.classList.add('wide');
-    } else {
-      pxWidth = 794; // 기본 세로 느낌
-      target.classList.remove('wide');
-    }
-    if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
-
-    // 화면 안쪽으로 잠시 배치
-    target.style.position = 'static';
-    target.style.left = '';
-    target.style.top  = '';
-    target.style.width = pxWidth + 'px';
-    target.style.background = '#fff';
-    await waitForImagesLoaded(target);
-
-    // 인쇄용 @page 규격 주입 (A4 + 여백)
-    const style = document.createElement('style');
-    style.id = 'printStyle';
-    style.textContent = `
-      @media print {
-        @page { size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: 12mm; }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // 인쇄
-    window.print();
-
-    // 클린업
-    document.head.removeChild(style);
-    target.setAttribute('style', prev.style);
-    target.className = prev.className;
-
-  } finally {
-    hideLoading();
-  }
-}
-
-    
-document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
-document.getElementById('btnPrint')?.addEventListener('click', printExport);
 
     
   </script>
