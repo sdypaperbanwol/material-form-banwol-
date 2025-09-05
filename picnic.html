@@ -2118,7 +2118,7 @@ await waitForImagesLoaded(target);
 async function printExport(){
   showLoading('인쇄 준비 중…', '레이아웃을 구성합니다', 300);
   try{
-    // 1) 내보내기용 DOM 채우기
+    // 0) 내용 채우기
     fillExportDom();
 
     const target = document.getElementById('exportDoc');
@@ -2126,17 +2126,19 @@ async function printExport(){
     const sel    = document.getElementById('exportWidth');
     const choice = sel ? sel.value : 'auto';
 
-    // 기존 상태 백업
+    // === 상태 백업 ===
     const prev = {
       position: target.style.position,
       left: target.style.left,
       top: target.style.top,
+      margin: target.style.margin,
       width: target.style.width,
+      zoom: target.style.zoom,
       wide: target.classList.contains('wide'),
       narrow: target.classList.contains('card-narrow')
     };
 
-    // 2) 폭 결정(이미지 저장 로직과 동일)
+    // 1) 폭 결정(이미지 저장 로직과 동일)
     let pxWidth;
     if (choice === 'auto') {
       target.style.width = 'auto';
@@ -2152,37 +2154,36 @@ async function printExport(){
     if (pxWidth <= 560) target.classList.add('card-narrow');
     else target.classList.remove('card-narrow');
 
-    // 3) 인쇄용으로 화면 안에 배치
-        // 3-1) A4 가용 폭/높이에 맞춰 mm 단위로 고정
-    // wide(가로)면 가로 A4로 가정, 아니면 세로 A4
-    const pageWmm   = isWide ? (297 - 20) : (210 - 20); // 좌우 10mm 여백 제외
-    const pageHmm   = isWide ? (210 - 20) : (297 - 20); // 상하 10mm 여백 제외
-    const pageHpx   = mmToPx(pageHmm);
+    // 2) 인쇄용 사이즈(실제 mm) 및 화면 안으로 끌어오기
+    const pageWmm = isWide ? (297 - 20) : (210 - 20); // 좌우 10mm 여백 제외
+    const pageHmm = isWide ? (210 - 20) : (297 - 20); // 상하 10mm 여백 제외
+    const pageHpx = Math.round(pageHmm * 3.7795275591);
 
-    // 폭을 mm로 강제 → 물리 크기 일관성
-    target.style.width = `${pageWmm}mm`;
-    target.classList.remove('card-narrow');
-    // ★ 화면 밖으로 보내둔 상태를 인쇄용으로 복귀
-target.style.position = 'static';
-target.style.left = '';
-target.style.top  = '';
+    target.style.position = 'static';   // ★ 오프스크린 해제
+    target.style.left = 'auto';
+    target.style.top  = 'auto';
+    target.style.margin = '0 auto';
+    target.style.width = `${pageWmm}mm`; // 물리 폭 고정
 
-    // 3-2) 내용 높이 측정 후 초과 시 자동 축소(zoom)
-    await waitForImagesLoaded(target); // 높이 측정 전 이미지 대기
+    // 3) 이미지 로딩 대기 + 높이 초과 시 자동 축소
+    await waitForImagesLoaded(target);
+    // 강제 reflow 2프레임 보장 → 브라우저가 실제 레이아웃 계산하도록
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
     const contentH = target.getBoundingClientRect().height;
-    let zoom = 1;
     if (contentH > pageHpx) {
-      zoom = Math.max(0.85, (pageHpx / contentH) * 0.995); // 약간의 버퍼
+      const zoom = Math.max(0.85, (pageHpx / contentH) * 0.995);
       target.style.zoom = String(zoom);
     }
 
     // 4) 인쇄 후 원복
-     const restore = ()=>{
-      target.style.position = prev.position || 'absolute';
-      target.style.left = prev.left || '-99999px';
-      target.style.top  = prev.top  || '-99999px';
-      target.style.width = prev.width || '';
-      target.style.zoom = '';                   // ★ 추가: 자동 축소 원복
+    const restore = () => {
+      target.style.position = prev.position;
+      target.style.left = prev.left;
+      target.style.top  = prev.top;
+      target.style.margin = prev.margin;
+      target.style.width = prev.width;
+      target.style.zoom = prev.zoom;
       target.classList.toggle('wide', prev.wide);
       target.classList.toggle('card-narrow', prev.narrow);
       window.removeEventListener('afterprint', restore);
@@ -2191,12 +2192,13 @@ target.style.top  = '';
     window.addEventListener('afterprint', restore);
 
     // 5) 프린트
-    setTimeout(()=>{ window.print(); }, 0);
+    window.print();
   } catch(e){
     hideLoading();
     alert('인쇄 준비 중 오류: ' + (e?.message || e));
   }
 }
+
 
 // 버튼 바인딩
 document.getElementById('btnPrint')?.addEventListener('click', printExport);
