@@ -1861,17 +1861,17 @@ function buildExportHTML(){
   if (d.showTeam) meta.push(`<div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>`);
   if (d.showDate) meta.push(`<div><b>일자</b> ${escapeHTML(dateStr)}</div>`);
   if (d.showTime && timeStr) meta.push(`<div><b>시간</b> ${escapeHTML(timeStr)}</div>`);
- if (d.showPlace) {
-   const placeName = (d.placeName || '').trim();
-   if (placeName) meta.push(`<div><b>장소</b> ${escapeHTML(placeName)}</div>`);
-   if (d.placeTel) meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
- }
- const addrLine = (d.place || d.placeAddr || '').trim();
- if (d.showAddress && addrLine) {
-   meta.push(`<div><b>주소</b> ${escapeHTML(addrLine)}</div>`);
- }
-// 지도 썸네일은 더 이상 필요 없다면, 아래를 비활성화해도 됨
-// const mapHtml = '';
+  if (d.showPlace) {
+    const placeName = (d.placeName || '').trim();
+    if (placeName) meta.push(`<div><b>장소</b> ${escapeHTML(placeName)}</div>`);
+    if (d.placeTel) meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
+  }
+  const addrLine = (d.place || d.placeAddr || '').trim();
+  if (d.showAddress && addrLine) {
+    meta.push(`<div><b>주소</b> ${escapeHTML(addrLine)}</div>`);
+  }
+  // 지도 썸네일은 더 이상 필요 없다면, 아래를 비활성화해도 됨
+  // const mapHtml = '';
 
   if (d.showBus && busVal) meta.push(`<div><b>버스</b> ${escapeHTML(busVal)}</div>`);
   if (d.showContact) meta.push(`<div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>`);
@@ -1900,8 +1900,8 @@ function buildExportHTML(){
     ? `<div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>`
     : '';
 
-  // 지도는 장소 표시 ON일 때만 노출
-  const mapHtml = (d.showPlace && d.placeMapImg)
+  // 지도는 "주소 표시 ON + 실제 주소 + 이미지 준비됨"일 때만 노출
+  const mapHtml = (d.showAddress && addrLine && d.placeMapImg)
     ? `<div class="export-map"><img src="${d.placeMapImg}" alt="지도 미리보기"></div>`
     : '';
 
@@ -1918,6 +1918,7 @@ function buildExportHTML(){
     </div>
   `;
 }
+
 
 
 
