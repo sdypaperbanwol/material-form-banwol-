@@ -224,6 +224,9 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   border:1px solid var(--sec-line);background:#eef3ff;color:#1a237e;
 }
 .toggle-label.off{background:#f5f5f5;color:#777;border-color:#ddd}
+   
+.form-hint{margin:8px 2px 14px;font-size:12px;color:#666}
+.form-hint b{color:#b71c1c}
 
    
 </style>
@@ -234,6 +237,8 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   <div class="grid">
     <div class="card no-print">
       <h2>안내문 작성</h2>
+<div class="form-hint">표시 스위치는 <b>배포물(문구 복사/이미지)</b>에만 영향을 줍니다. <b>인사지원팀 제출 시에는 모든 항목을 작성</b>해야 합니다.</div>
+
       <div class="body">
 
         <!-- 참여 대상 -->
@@ -241,13 +246,15 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           <div class="sec-title">참여 대상</div>
 
           <div class="row">
-            <label>
-              대상
-              <span class="field-toggle-inline">
-               <input id="showTeam" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-              </span>
-            </label>
+           <label>
+  대상
+  <span class="badge-req">제출 필수</span>
+  <span class="field-toggle-inline">
+    <input id="showTeam" type="checkbox" checked aria-label="배포용 안내문에 표시">
+    <span class="toggle-label">표시</span>
+  </span>
+</label>
+
             <div>
               <input id="team" type="hidden" value="">
               <div class="chip-group" id="teamChips" role="group" aria-label="대상">
@@ -270,13 +277,15 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 
          <!-- 제목 행: 이 블록으로 통째로 교체 -->
 <div class="row">
-  <label for="title">
-    제목
-    <span class="field-toggle-inline">
-      <input id="showTitle" type="checkbox" checked aria-label="안내문에 포함">
-      <span class="toggle-label">포함</span>
-    </span>
-  </label>
+<label for="title">
+  제목
+  <span class="badge-req">제출 필수</span>
+  <span class="field-toggle-inline">
+    <input id="showTitle" type="checkbox" checked aria-label="배포용 안내문에 표시">
+    <span class="toggle-label">표시</span>
+  </span>
+</label>
+
   <div>
     <input id="title" type="text" placeholder="예) 야유회 안내" />
   </div>
@@ -284,13 +293,15 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 
 
           <div class="row">
-          <label for="date">
+       <label for="date">
   일자
+  <span class="badge-req">제출 필수</span>
   <span class="field-toggle-inline">
-    <input id="showDate" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
+    <input id="showDate" type="checkbox" checked aria-label="배포용 안내문에 표시">
+    <span class="toggle-label">표시</span>
   </span>
 </label>
+
 
             <div>
               <input id="date" type="date" />
@@ -324,7 +335,11 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   </div>
 </div>
          <div class="row">
-  <label for="place">주소</label>
+ <label for="place">
+  주소
+  <span class="badge-req">제출 필수</span>
+</label>
+
   <div>
     <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
       <input id="place" type="text" placeholder="예) 안산시 단원구 고잔로 00 (도로명/지번 가능)" style="flex:1" />
@@ -358,13 +373,15 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           <div class="sec-title">운영 정보</div>
 
           <div class="row">
-         <label for="schedule">
+       <label for="schedule">
   일정
+  <span class="badge-req">제출 필수</span>
   <span class="field-toggle-inline">
-    <input id="showSchedule" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
+    <input id="showSchedule" type="checkbox" checked aria-label="배포용 안내문에 표시">
+    <span class="toggle-label">표시</span>
   </span>
 </label>
+
 
             <div>
               <textarea id="schedule" placeholder="예시)
@@ -375,13 +392,15 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-          <label for="bus">
+       <label for="bus">
   버스
+  <span class="badge-req">제출 필수</span>
   <span class="field-toggle-inline">
-    <input id="showBus" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
+    <input id="showBus" type="checkbox" checked aria-label="배포용 안내문에 표시">
+    <span class="toggle-label">표시</span>
   </span>
 </label>
+
 
             <div>
               <input id="bus" type="hidden" value="" />
@@ -413,13 +432,15 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-          <label for="contact">
+        <label for="contact">
   문의처
+  <span class="badge-req">제출 필수</span>
   <span class="field-toggle-inline">
-    <input id="showContact" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
+    <input id="showContact" type="checkbox" checked aria-label="배포용 안내문에 표시">
+    <span class="toggle-label">표시</span>
   </span>
 </label>
+
 
             <div>
               <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
@@ -1504,6 +1525,7 @@ async function waitForImagesLoaded(root){
 
   window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
   window.addEventListener('resize', updateBusBadgeVisibility);
+    document.getElementById('showBus')?.addEventListener('change', updateBusBadgeVisibility);
   (function bindBusChips(){
     const g = document.getElementById('busChips'); if(!g) return;
     g.addEventListener('click', (e)=>{
@@ -1534,12 +1556,13 @@ function refreshToggleLabels(){
     const labelEl = cb.parentElement?.querySelector?.('.toggle-label');
     if(!labelEl) return;
     const on = !!cb.checked;
-    labelEl.textContent = on ? '포함' : '생략';
+    labelEl.textContent = on ? '표시' : '숨김';
     labelEl.classList.toggle('off', !on);
-    cb.setAttribute('aria-label', on ? '안내문에 포함' : '안내문에서 생략');
-    cb.title = '문구 복사/이미지 저장 시 ' + (on ? '포함됩니다' : '제외됩니다');
+    cb.setAttribute('aria-label', on ? '배포용 안내문에 표시' : '배포용 안내문에서 숨김');
+    cb.title = '문구 복사/이미지 저장(배포물)에만 반영 — 제출에는 영향 없음';
   });
 }
+
 
 // 변경 감지 바인딩 + 최초 1회 반영
 TOGGLE_IDS.forEach(id=>{
