@@ -225,7 +225,9 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 }
 .toggle-label.off{background:#f5f5f5;color:#777;border-color:#ddd}
 
-   
+   .field-toggle-inline input[type="checkbox"]{ display:none; } /* 체크박스 숨김 */
+.toggle-label{ cursor:pointer; }                               /* 칩에 손가락 커서 */
+
 </style>
 
 </head>
@@ -1533,15 +1535,46 @@ function refreshToggleLabels(){
     if(!cb) return;
     const labelEl = cb.parentElement?.querySelector?.('.toggle-label');
     if(!labelEl) return;
-    const on = !!cb.checked;
 
-    // ▼ 여기만 교체
-    labelEl.textContent = on ? '표시' : '생략';
+    const on = !!cb.checked;
+    labelEl.textContent = on ? '표시' : '숨김';
     labelEl.classList.toggle('off', !on);
-    cb.setAttribute('aria-label', on ? '안내문에 표시' : '안내문에서 생략');
-    cb.title = '문구 복사/이미지 저장 시 ' + (on ? '표시됩니다' : '표시되지 않습니다');
+
+    // 접근성 & 툴팁(데스크탑)
+    labelEl.setAttribute('role', 'switch');
+    labelEl.setAttribute('aria-checked', String(on));
+    labelEl.title = '문구 복사/이미지 저장 시 ' + (on ? '표시됩니다' : '표시되지 않습니다');
+
+    // 체크박스 자체의 aria도 유지(백업)
+    cb.setAttribute('aria-label', on ? '안내문에 표시' : '안내문에서 숨김');
+      if (id === 'showBus') updateBusBadgeVisibility();
   });
 }
+// 표시/숨김 칩을 눌러도 토글되게 (키보드 접근성 포함)
+(function bindToggleLabelClicks(){
+  document.querySelectorAll('.field-toggle-inline').forEach(box=>{
+    const cb = box.querySelector('input[type="checkbox"]');
+    const tl = box.querySelector('.toggle-label');
+    if(!cb || !tl) return;
+
+    // 포커스 가능하게
+    tl.tabIndex = 0;
+
+    const flip = (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      cb.checked = !cb.checked;                                 // 상태 뒤집기
+      cb.dispatchEvent(new Event('change', { bubbles:true }));  // 기존 리스너 호출
+      refreshToggleLabels();                                     // 라벨/툴팁/ARIA 갱신
+    };
+
+    tl.addEventListener('click', flip);
+    tl.addEventListener('keydown', (e)=>{
+      if(e.key === ' ' || e.key === 'Enter') flip(e);
+    });
+  });
+})();
+
 
 
 // 변경 감지 바인딩 + 최초 1회 반영
