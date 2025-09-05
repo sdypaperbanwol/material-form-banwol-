@@ -379,21 +379,10 @@
          <div class="row">
   <label for="place">주소</label>
   <div>
-   <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
-  <!-- ✅ 네이버/카카오 선택 -->
-  <label class="toolbar" style="display:flex;gap:6px;align-items:center;border:none;box-shadow:none;padding:0;margin:0">
-    <span style="white-space:nowrap;font-weight:700;color:#243b6b">검증</span>
-    <select id="geoProvider" style="min-width:110px;padding:8px 10px;border:1px solid var(--line);border-radius:10px">
-      <option value="naver" selected>네이버</option>
-      <option value="kakao">카카오</option>
-    </select>
-  </label>
-
-  <!-- 주소 입력 -->
-  <input id="place" type="text" placeholder="예) 안산시 단원구 고잔로 00 (도로명/지번 가능)" style="flex:1" />
-  <button type="button" id="btnPickPlace" title="선택한 공급자로 주소/지점 검증">장소 찾기(검증)</button>
-</div>
-
+    <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
+      <input id="place" type="text" placeholder="예) 안산시 단원구 고잔로 00 (도로명/지번 가능)" style="flex:1" />
+      <button type="button" id="btnPickPlace" title="네이버에서 주소/지점 검증">장소 찾기(검증)</button>
+    </div>
 
     <!-- 이하 그대로 유지 (hidden/지도 썸네일/선택박스 등) -->
     <input id="placeUrl" type="hidden" value="" />
@@ -564,7 +553,7 @@
   <!-- LZ-String (구 공유코드 호환) -->
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzfPXgKlPTKX1zqyBtVjRD9UXwQQykQBEfqYY27J2EZv_-Bs42n5WFdnbOgXfG0XJL6/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSTQlde_u7ANPNJiQcuMIGvWbMnG89SI4XMlSN15NcHy0JFj1HiBoEl8Vj1Ub4tZ0W/exec';
 
   /* fetch 타임아웃 */
   async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
@@ -612,8 +601,7 @@ function setSelectedPlace(item){
     ''
   ).trim();
   const tel  = (item.telephone || item.tel || '').trim();
-  const link = resolveLinkByProvider(item); // (기존 resolveNaverLink → 공급자별)
-
+  const link = resolveNaverLink(item);
 
   // 입력칸 채우기: 장소명 → placeName, 주소 → place
   document.getElementById('placeName').value = name;  // 장소명
@@ -629,34 +617,6 @@ function setSelectedPlace(item){
 
   /* 유틸 */
   function isMobile(){ return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-    /* ==== Provider helpers (naver|kakao) ==== */
-function currentProvider(){
-  return document.getElementById('geoProvider')?.value === 'kakao' ? 'kakao' : 'naver';
-}
-function isKakaoPlaceUrl(u){
-  try{
-    const url = new URL(u);
-    return /(^|\.)kakao\.com$/.test(url.hostname) && /(^\/\?|^\/link\/|^\/?map|^\/place)/.test(url.pathname + url.search);
-  }catch(_){ return false; }
-}
-function buildKakaoSearchLink(rawName='', rawAddr=''){
-  const q = [rawName, rawAddr].filter(Boolean).join(' ').trim();
-  return 'https://map.kakao.com/?q=' + encodeURIComponent(q || rawAddr || rawName || '');
-}
-function resolveKakaoLink(item){
-  const link = item.place_url || item.link || item.url || '';
-  try{
-    if (isKakaoPlaceUrl(link)) return link;
-  }catch(_){}
-  return buildKakaoSearchLink(item.title || item.name || item.place_name || '', item.roadAddress || item.address || item.road_address_name || '');
-}
-function resolveLinkByProvider(item){
-  return currentProvider()==='kakao' ? resolveKakaoLink(item) : resolveNaverLink(item);
-}
-function buildSearchLinkByProvider(name, addr){
-  return currentProvider()==='kakao' ? buildKakaoSearchLink(name, addr) : buildNaverSearchLink(name, addr);
-}
-
   function legacyCopy(text){
     try{
       const ta = document.createElement('textarea');
@@ -900,26 +860,21 @@ function buildNaverSearchLink(rawName, rawAddr=''){
       const q = (this.queryEl.value||'').trim();
       if(!q){ this.listEl.innerHTML = '<div class="empty">검색어를 입력해 주세요.</div>'; return; }
       try{
-        // 공급자 분기
-const provider = currentProvider(); // 'naver' | 'kakao'
-const mode = provider === 'kakao' ? 'kakao_local' : 'naver_local';
-const url = `${GAS_URL}?mode=${mode}&query=${encodeURIComponent(q)}`;
-
+        const url = `${GAS_URL}?mode=naver_local&query=${encodeURIComponent(q)}`;
         const res = await fetchWithTimeout(url);
         const json = await res.json();
         if(!res.ok) throw new Error(json && json.error || ('HTTP '+res.status));
         const rows = Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
         if(!rows.length){ this.listEl.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>'; return; }
-     const mapRow = (r) => ({
+      const mapRow = (r) => ({
   name: r.name || r.title || r.place_name || '',
-  road: r.roadAddress || r.road_address || r.road || r.road_address_name || '',
+  road: r.roadAddress || r.road_address || r.road || '',
   jibun: r.jibunAddress || r.jibun_address || r.address || '',
   tel : r.telephone || r.tel || '',
-  url : r.place_url || r.placeUrl || r.mapUrl || r.link || r.url || '', // ★ 카카오 우선
+  url : r.mapUrl || r.link || r.url || '',
   mapx: r.mapx || r.x || r.lng || '',
   mapy: r.mapy || r.y || r.lat || ''
 });
-
 
        // this.listEl.innerHTML 생성 부분 교체
 this.listEl.innerHTML = rows.map(r=>{
@@ -951,21 +906,16 @@ this.listEl.querySelectorAll('.place-item').forEach(el=>{
     const mapx = decodeURIComponent(el.getAttribute('data-x')||''); // Local API 원시 좌표(신뢰X)
     const mapy = decodeURIComponent(el.getAttribute('data-y')||'');
 
-   // 공급자 읽기
-const provider = currentProvider();
-
-// 1) 링크도 공급자별
-const finalUrl = resolveLinkByProvider({
-  title: name, roadAddress: addr, address: addr,
-  telephone: tel, link: raw, mapx, mapy, place_url: raw
-});
+    const finalUrl = resolveNaverLink({
+      title: name, roadAddress: addr, address: addr,
+      telephone: tel, link: raw, mapx, mapy
+    });
 
     setSelectedPlace({
       title: name, roadAddress: addr, address: addr,
       telephone: tel, link: finalUrl, mapx, mapy
     });
-    setPickedPlaceLink(finalUrl, provider==='kakao' ? '카카오 지도' : (name || '네이버 지도'));
-
+    setPickedPlaceLink(finalUrl, name || '지도열기');
     
     (async ()=>{
       // 디버깅용: 단계별 시도 결과를 콘솔로
@@ -974,9 +924,10 @@ const finalUrl = resolveLinkByProvider({
       try {
         // 1) 지오코딩(가장 정확)
         let lat='', lng='';
- const tryGeocode = async (q) => {
-  const modeGeocode = provider === 'kakao' ? 'kakao_geocode' : 'geocode';
-  const r = await fetchWithTimeout(`${GAS_URL}?mode=${modeGeocode}&q=${encodeURIComponent(q)}`);
+        const tryGeocode = async (q) => {
+          if (!q) return null;
+          const url = `${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
+          const r   = await fetchWithTimeout(url);
           let j;
  try {
    j = await r.json();
@@ -1059,11 +1010,9 @@ if ((!lat || !lng) && adminOnly) {
         document.getElementById('placeLat').value = lat;
         document.getElementById('placeLng').value = lng;
 
-
-       // 3) Static Map 생성 (공급자 분기)
-const modeStatic = provider === 'kakao' ? 'kakao_static_map' : 'static_map';
-const api = `${GAS_URL}?mode=${modeStatic}&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=300&h=200`;
-
+        // 3) Static Map 생성
+        const level = 19; // 숫자 ↑ = 덜 확대(더 넓게)
+        const api = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=300&h=200`;
         const res = await fetchWithTimeout(api);
         const json = await res.json();
         dbg.steps.push({ step:'static_map', ok:(json && json.status==='ok'), json_status: json && json.status });
@@ -1126,13 +1075,13 @@ const api = `${GAS_URL}?mode=${modeStatic}&lat=${encodeURIComponent(lat)}&lng=${
   const seed = (document.getElementById('place').value || '').trim();
 
   // ① 네이버 지도/플레이스 URL을 직접 붙인 경우 → 곧바로 확정
- const provider = currentProvider();
-if (isUrl(seed) && ((provider==='kakao' && isKakaoPlaceUrl(seed)) || (provider==='naver' && isNaverPlaceUrl(seed)))) {
-  document.getElementById('placeLink').value = seed;
-  setPickedPlaceLink(seed, provider==='kakao' ? '카카오 지도' : '네이버 지도');
-  return;
-}
-
+  if (isUrl(seed) && isNaverPlaceUrl(seed)) {
+   // place 입력값은 그대로 두고, 링크만 확정
+   document.getElementById('placeLink').value = seed;
+   setPickedPlaceLink(seed, '네이버 지도');
+    // 주소 텍스트가 있으면 지오코딩도 시도(선택) → 없으면 생략 가능
+    return;
+  }
 
   // ② 주소처럼 보이면 → 바로 지오코딩으로 확정
   if (looksLikeKrAddress(seed)) {
@@ -1279,24 +1228,13 @@ function collectForShare(){
     return [dateTxt, target, '야유회'].filter(Boolean).join(' ');
   }
 
- function resolvedMapLink(d){
-  const place = (d.place||'').trim();
-  const picked = (d.placeUrl||'').trim();
-  if(picked) return picked;
-  if(isUrl(place)) return place;
-  const provider = currentProvider();
-  return provider==='kakao'
-    ? buildKakaoSearchLink(d.placeName || '', place)
-    : buildNaverSearchLink(d.placeName || '', place);
-}
-function mapLabelFromUrl(u){
-  try{
-    const h = new URL(u).hostname;
-    if (/kakao\.com$/.test(h)) return '카카오';
-    if (/naver\.me$/.test(h) || /naver\./.test(h)) return '네이버';
-    return '지도';
-  }catch(_){ return '지도'; }
-}
+  function resolvedMapLink(d){
+    const place = (d.place||'').trim();
+    const picked = (d.placeUrl||'').trim();
+    if(picked) return picked;                 // 검증된 지점 URL
+    if(isUrl(place)) return place;            // 사용자가 URL 직접 입력
+    return buildNaverSearchLink(place);       // 마지막 안전장치: 검색 링크
+  }
 
 function buildShareText(){
   const d = collect();
@@ -1317,27 +1255,22 @@ function buildShareText(){
     if (target) blocks.push(`🎯 [대상] ${target}`);
   }
 
-  // 일자 / 시간 (각각 독립 블록 → 서로 사이에도 빈 줄 1개)
+  // 일자 / 시간 (각각 독립 블록)
   if (d.showDate) blocks.push(`📅 [일자] ${dateStr}`);
   if (d.showTime && timeStr) blocks.push(`⏰ [시간] ${timeStr}`);
 
-  // 장소 / 주소 / (네이버) / (전화) — 항목별 1블록
+  // 장소 / 주소 / (네이버) / (전화)
   if (d.showPlace) {
     const placeName = (d.placeName || '').trim();
     const addrLine  = (d.place || d.placeAddr || '').trim();
 
     if (placeName) blocks.push(`📍 [장소] ${placeName}`);
     if (addrLine)  blocks.push(`🏠 [주소] ${addrLine}`);
-    const mapLink = (d.placeLink || '').trim() || resolvedMapLink(d);
-if (mapLink){
-  const label = mapLabelFromUrl(mapLink);
-  blocks.push(`🔗 (${label}) ${mapLink}`);
-}
-
+    if ((d.placeLink || '').trim()) blocks.push(`🔗 (네이버) ${d.placeLink.trim()}`);
     if ((d.placeTel  || '').trim()) blocks.push(`☎️ (전화) ${d.placeTel.trim()}`);
   }
 
-  // 일정 요약 (여러 줄은 블록 내부에 그대로)
+  // 일정 요약
   if (d.showSchedule) {
     const schedule = (d.schedule || '').split('\n').filter(Boolean);
     blocks.push(['📝 [일정 요약]', ...(schedule.length ? schedule : ['-'])].join('\n'));
@@ -1348,7 +1281,7 @@ if (mapLink){
     blocks.push(`🚌 [버스 대절] ${d.bus.trim()}`);
   }
 
-  // 특이사항 (여러 줄은 블록 내부에 그대로)
+  // 특이사항
   if (d.showNotes && (d.notes || '').trim()){
     const notes = d.notes.split('\n').filter(Boolean);
     blocks.push(['⚠️ [특이사항]', ...notes].join('\n'));
@@ -1359,16 +1292,14 @@ if (mapLink){
     blocks.push(`📞 [문의처] ${d.contact || '-'}`);
   }
 
-  // ✅ 블록 사이를 딱 1칸씩 띄워서 합치기
+  // 블록 사이에 빈 줄 1개
   return blocks.filter(Boolean).join('\n\n');
 }
 
 
 async function buildMapThumbByLatLng(lat, lng){
   try{
-    const provider = currentProvider();
-    const mode = (provider==='kakao') ? 'kakao_static_map' : 'static_map';
-    const url = `${GAS_URL}?mode=${mode}&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=440&h=300&level=19`;
+    const url = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=440&h=300&level=19`;
     const res = await fetchWithTimeout(url);
     const json = await res.json();
     if (!res.ok || json.status !== 'ok' || !json.dataUrl) throw new Error('static_map failed');
@@ -1378,7 +1309,6 @@ async function buildMapThumbByLatLng(lat, lng){
     return '';
   }
 }
-
     
 // ✅ buildMapThumbByLatLng(...) 바로 아래에 추가
 async function restoreMapIfNeededFromData(d){
@@ -1400,14 +1330,12 @@ async function restoreMapIfNeededFromData(d){
 }
 
     
-async function geocodeToLatLng(name, road, jibun, providerArg){
+async function geocodeToLatLng(name, road, jibun){
   const q = (road || jibun || name || '').trim();
   if (!q) return null;
   try{
-    const provider = providerArg || currentProvider(); // 인자 우선
-    const mode = (provider==='kakao') ? 'kakao_geocode' : 'geocode';
-    const url  = `${GAS_URL}?mode=${mode}&q=${encodeURIComponent(q)}`;
-    const res  = await fetchWithTimeout(url);
+    const url = `${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
+    const res = await fetchWithTimeout(url);
     const json = await res.json();
     if (!res.ok || json.status !== 'ok' || !json.found) return null;
     return { lat: json.lat, lng: json.lng };
@@ -1416,7 +1344,6 @@ async function geocodeToLatLng(name, road, jibun, providerArg){
     return null;
   }
 }
-
 
 function setMapPreview(dataUrl){
   const img = document.getElementById('placeThumbImg');
@@ -2023,13 +1950,12 @@ await waitForImagesLoaded(target);
 }
 
 async function useAddressDirect(addrStr){
-  const provider = currentProvider();
   const addr = (addrStr||'').trim();
   if(!addr) return;
 
   showLoading('주소 확인 중…','지도 좌표를 찾는 중입니다');
   try{
-     const geo = await geocodeToLatLng('', addr, '', provider);
+    const geo = await geocodeToLatLng('', addr, '');
     if(!geo){ alert('이 주소로 좌표를 찾지 못했습니다. 철자/형식을 확인해 주세요.'); return; }
 
     document.getElementById('placeAddr').value = addr;
@@ -2041,9 +1967,9 @@ async function useAddressDirect(addrStr){
     setMapPreview(dataUrl || '');
 
     // 링크는 검색 링크라도 확보
-    const link = buildSearchLinkByProvider('', addr);
-  document.getElementById('placeLink').value = link;
-  setPickedPlaceLink(link, provider==='kakao' ? '카카오 지도' : '네이버 지도');
+    const searchLink = buildNaverSearchLink('', addr);
+    document.getElementById('placeLink').value = searchLink;
+    setPickedPlaceLink(searchLink, '네이버 지도');
 
       // ✅ 장소명 자동 생성 (비어있을 때만) — 주소에서 간단 표시명 추출
     const nameEl = document.getElementById('placeName');
@@ -2059,4 +1985,3 @@ async function useAddressDirect(addrStr){
   </script>
 </body>
 </html>
-
