@@ -5,28 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>안내문 작성폼</title>
 <style>
-/* =======================================================================
-   BASE
-======================================================================= */
 :root{
   --brand:#e53935; --ink:#222; --muted:#666; --line:#ddd; --bg:#f7f7f9;
   --soft:#f2f5fa; --sec:#eef3ff; --sec-line:#d9e2ff;
-
-  /* 위 폼 카드와 아래 툴바 공통 최대폭 (데스크탑에서만 효과) */
   --content-max: 640px;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
 .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
-
 .grid{display:grid;grid-template-columns:1fr;gap:16px;justify-items:center}
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
 .card h2{margin:0;padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
 .card .body{padding:18px}
-
-/* 폼 카드(위) 폭을 툴바와 동일하게 통일 */
 .grid > .card.no-print{width:min(var(--content-max),100%);margin:0 auto}
-
 .sec{display:grid;gap:12px;padding:14px 12px;border:1px solid var(--line);border-radius:14px;background:#fff}
 .sec + .sec{margin-top:14px}
 .sec-title{
@@ -35,10 +26,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
   border:1px solid var(--sec-line);border-radius:999px;
   display:inline-block;padding:6px 12px;
 }
-
 .toolbar label{white-space:nowrap}
 #exportWidth{min-width:160px}
-
 .row{
   display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:start;
   padding:10px;border:1px dashed #eee;border-radius:12px;background:#fafbff
@@ -48,7 +37,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
   font-weight:800;padding:8px 10px;border-radius:10px;border:1px solid #e7eaf6;
   background:#f7f9ff;color:#243b6b;display:flex;align-items:center;justify-content:space-between;gap:8px;
 }
-
 .badge-req{font-size:11px;font-weight:900;color:#b71c1c;background:#ffebee;border:1px solid #ffcdd2;padding:2px 6px;border-radius:999px;}
 input[type=text], input[type=date], textarea, select{
   width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none
@@ -56,17 +44,14 @@ input[type=text], input[type=date], textarea, select{
 textarea{min-height:110px;resize:vertical}
 .row:focus-within{background:#ffffff;border-color:#cfd8ff;box-shadow:0 0 0 3px rgba(63,81,181,.08)}
 input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 2px rgba(63,81,181,.12) inset}
-
 .chip-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;padding:6px 14px;font-weight:700;min-width:44px;text-align:center;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .chip.selected{border-color:var(--brand);color:#fff;background:var(--brand)}
 #notesPresets .chip{border-radius:8px;padding:8px 12px;font-size:13px;text-align:left;line-height:1.4;white-space:normal;min-height:36px;display:flex;align-items:center}
-
 #busBadge{
   position:fixed;right:16px;bottom:16px;z-index:9999;background:#fff;border:1px solid var(--line);
   border-radius:12px;padding:6px 10px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.12);display:none
 }
-
 #loadingOverlay{
   position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:10000;display:none;
   align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:saturate(1.2) blur(2px)
@@ -76,10 +61,6 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 .loading-text{font-weight:700;color:#333}
 .loading-sub{font-size:12px;color:#777}
 .toolbar [disabled]{opacity:.6;cursor:not-allowed}
-
-/* =======================================================================
-   TOOLBAR
-======================================================================= */
 .toolbar{
   display:grid;gap:12px;margin:24px 0;padding:16px;
   border:1px solid var(--line);border-radius:16px;background:#fff;
@@ -97,57 +78,28 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 #btnExportIMG:hover{background:#ffe082}
 #btnReset{border-color:#cfd8dc;background:#eceff1;color:#455a64}
 #btnReset:hover{background:#e0e7ec}
-
 .toolbar-actions{display:grid;gap:12px}
 .toolbar-actions .half-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .toolbar > div:first-child{justify-content:space-between}
-
-/* =======================================================================
-   섹션 강조 (참여/기본/운영)
-======================================================================= */
-.sec[data-kind]{
-  --accent: var(--sec-line);
-  position:relative;border-width:2px;border-color:var(--accent);border-radius:16px;
-  box-shadow:0 6px 20px rgba(0,0,0,.05);padding-top:16px
-}
-.sec[data-kind]::before{
-  content:"";position:absolute;left:-2px;top:-2px;bottom:-2px;width:8px;background:var(--accent);border-radius:16px 0 0 16px
-}
-.sec[data-kind] .sec-title{
-  color:var(--accent);background:#fff;
-  border-color:color-mix(in srgb, var(--accent) 30%, #ffffff);
-  font-size:14px;letter-spacing:.2px;padding:8px 12px
-}
+.sec[data-kind]{--accent: var(--sec-line);position:relative;border-width:2px;border-color:var(--accent);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.05);padding-top:16px}
+.sec[data-kind]::before{content:"";position:absolute;left:-2px;top:-2px;bottom:-2px;width:8px;background:var(--accent);border-radius:16px 0 0 16px}
+.sec[data-kind] .sec-title{color:var(--accent);background:#fff;border-color:color-mix(in srgb, var(--accent) 30%, #ffffff);font-size:14px;letter-spacing:.2px;padding:8px 12px}
 .sec[data-kind="target"]{--accent:#e53935}
 .sec[data-kind="basic"] {--accent:#283593}
 .sec[data-kind="ops"]   {--accent:#00695c}
-
-/* 카드 상단 헤더 강조 */
-.card h2{
-  background:linear-gradient(90deg,#ffebee 0%,rgba(255,255,255,0) 65%);
-  border-bottom:2px solid #ffcdd2;color:#b71c1c
-}
-
-/* =======================================================================
-   PREVIEW / MODAL
-======================================================================= */
+.card h2{background:linear-gradient(90deg,#ffebee 0%,rgba(255,255,255,0) 65%);border-bottom:2px solid #ffcdd2;color:#b71c1c}
 #previewModal[hidden]{display:none!important}
 #previewModal{position:fixed!important;inset:0!important;z-index:20000!important;display:flex!important;align-items:center;justify-content:center;background:rgba(0,0,0,.45);padding:20px}
 .preview-card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:16px}
 .preview-actions{display:flex;gap:8px;align-items:center}
 .preview-toast{display:none;padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px;color:#2e7d32;background:#e8f5e9;border:1px solid #a5d6a7}
 .preview-toast.show{display:inline-block}
-
-/* =======================================================================
-   EXPORT (이미지/인쇄 렌더)
-======================================================================= */
 .export-title{font-weight:900;font-size:20px;margin:0 0 10px}
 .export-meta{margin:10px 0 16px;padding:10px 12px;background:#f7f9ff;border:1px solid #e6ebff;border-radius:10px}
 .export-meta b{display:inline-block;width:56px;color:#1a237e}
 .export-sec-title{margin:18px 0 8px;font-weight:800;color:#1a237e;border-left:4px solid #1a237e;padding-left:8px}
 .export-list{margin:6px 0 0 0;padding-left:18px;list-style-type:none}
 .export-list li{margin:4px 0}
-
 #exportDoc .export-grid{display:grid;grid-template-columns:1fr;gap:20px}
 #exportDoc.wide .export-grid{grid-template-columns:1fr 420px;gap:24px}
 #exportDoc .export-map{align-self:start}
@@ -157,20 +109,13 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 #exportDoc.wide .export-sections{grid-template-columns:1fr 1fr}
 #exportDoc .export-card{border:1px solid #e6ebff;background:#f7f9ff;border-radius:12px;padding:12px 14px}
 #exportDoc .export-card .export-sec-title{margin:0 0 6px;font-weight:800;color:#1a237e;border-left:4px solid #1a237e;padding-left:8px}
-
 #exportDoc.card-narrow #exportInner{padding:22px 24px}
 #exportDoc.card-narrow .export-title{font-size:18px;margin-bottom:8px}
 #exportDoc.card-narrow .export-meta{padding:8px 10px}
 #exportDoc.card-narrow .export-meta b{width:48px}
 #exportDoc.card-narrow .export-sec-title{font-size:14px;margin-top:14px}
 #exportDoc.card-narrow .export-list li{margin:3px 0}
-
-/* wide(가로)일 때: 메타 폭 제한 해제 */
 #exportDoc.wide .export-meta{max-width:none;margin-right:0}
-
-/* =======================================================================
-   PLACE MODAL
-======================================================================= */
 .place-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .place-picked{font-size:12px;color:#1565c0}
 .place-picked a{color:#1565c0;text-decoration:underline}
@@ -184,18 +129,12 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 .place-item b{display:block}
 .place-item small{display:block;color:#666}
 .empty{padding:16px;text-align:center;color:#777}
-
-/* =======================================================================
-   RESPONSIVE
-======================================================================= */
 @media (max-width:640px){
   .row{grid-template-columns:1fr;gap:6px;padding:12px}
   .row label{padding:6px 10px}
   .row > * + *{margin-top:2px}
   .sec{padding:12px 10px}
   .sec-title{font-size:12px}
-
-  /* 장소선택 모달 헤더 세로 배치 */
   .place-head{flex-direction:column;align-items:stretch;gap:10px}
   .place-head > div{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:8px}
   #placeQuery{grid-column:1 / -1;width:100%}
@@ -203,68 +142,36 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   #placeCloseBtn{grid-column:2}
   #placeSearchBtn,#placeCloseBtn{min-height:40px}
 }
-
-/* =======================================================================
-   TOGGLES & PRINT BUTTON
-======================================================================= */
 .field-toggle-inline{display:inline-flex;gap:6px;align-items:center}
-.toggle-label{
-  font-size:12px;font-weight:900;padding:2px 6px;border-radius:999px;
-  border:1px solid var(--sec-line);background:#eef3ff;color:#1a237e;cursor:pointer
-}
+.toggle-label{font-size:12px;font-weight:900;padding:2px 6px;border-radius:999px;border:1px solid var(--sec-line);background:#eef3ff;color:#1a237e;cursor:pointer}
 .toggle-label.off{background:#f5f5f5;color:#777;border-color:#ddd}
-.field-toggle-inline input[type="checkbox"]{display:none}
-
 #btnPrint{border-color:#ffd54f;background:#fff8e1;color:#ff6f00}
 #btnPrint:hover{background:#ffe082}
-
-/* =======================================================================
-   PRINT (단일 블록로 통합)
-======================================================================= */
-@page{margin:10mm} /* size 지정 안 함: 브라우저 레이아웃 선택 유지 */
-
+@page{margin:10mm}
 @media print{
-  /* 화면용 요소 숨김 */
   .no-print,.toolbar,#busBadge,#loadingOverlay,#previewModal,#placeModal{display:none!important}
-
-  /* 기본 색/배경 정리 */
   html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#fff}
   .wrap{max-width:900px}
   pre,textarea{font-family:inherit;font-size:14px}
-
-  /* 카드, 강조선 색상 최소화 */
   .sec[data-kind]{border-color:#999;box-shadow:none}
   .sec[data-kind]::before{display:none}
   .card h2{background:none;border-bottom:1px solid #bbb;color:#000}
-
-  /* exportDoc를 페이지 중앙으로 */
   #exportDoc{position:static!important;left:auto!important;top:auto!important;margin:0 auto!important}
-
-  /* 타이포/여백 압축 */
   #exportDoc{margin:0 auto!important;font-size:13px;line-height:1.5}
   #exportInner{padding:18px 20px!important}
-
   .export-title{font-size:18px;margin:4px 0 8px}
   .export-meta{margin:6px 0 10px;padding:8px 10px}
   .export-meta b{width:48px}
-
   #exportDoc .export-grid{gap:14px}
   #exportDoc .export-sections{gap:12px}
   #exportDoc .export-card{padding:10px 12px}
   #exportDoc .export-card .export-sec-title{font-size:13px;margin:8px 0 4px;padding-left:6px;border-left-width:3px}
   .export-list{margin:4px 0 0 0}
   .export-list li{margin:2px 0}
-
-  /* 지도 썸네일 길이 제한 */
   #exportDoc .export-map img{max-height:70mm;height:auto;object-fit:cover}
-
-  /* 세로/가로 공통: 메타 폭을 카드 폭과 일치 */
   #exportDoc .export-meta{max-width:none!important;margin-right:0!important;width:100%!important}
-
-  /* 인쇄는 한 열로 고정(폭 불일치 방지) */
   #exportDoc .export-sections{grid-template-columns:1fr!important}
 }
-/* ===== Split Button ===== */
 .split{ position:relative; display:flex; width:100%; gap:0 }
 .split .btn-export-main,
 .split .btn-export-toggle{
@@ -275,8 +182,6 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
 .split .btn-export-toggle{ width:44px; border-left:0; border-top-left-radius:0; border-bottom-left-radius:0; }
 .split .btn-export-main:hover,
 .split .btn-export-toggle:hover{ background:#ffe082; }
-
-/* ===== Dropdown Menu ===== */
 .menu[hidden]{ display:none !important; }
 .menu{
   position:absolute; right:0; top:calc(100% + 6px); min-width:220px; z-index:30000;
@@ -288,25 +193,18 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   font-weight:700;
 }
 .menu button:hover{ background:#f7f9ff; border-color:#e6ebff; }
-
-/* 작은 화면에선 버튼들 한 줄에 과하게 꽉 차지 않게 */
 @media (max-width: 480px){
   .split .btn-export-main{ font-size:14px; padding:12px; }
   .split .btn-export-toggle{ width:40px; padding:12px; }
 }
 .menu [role="menuitem"][aria-checked="true"]::before{ content:"✓ "; }
 .menu [role="menuitem"][aria-checked="true"]{ background:#f7f9ff; border-color:#e6ebff; }
-
 .split{ position:relative; display:flex; width:100%; gap:6px; align-items:stretch }
 .split .btn-export-toggle{
-  width:auto; min-width:84px; padding:14px 12px; /* ← 라벨 들어가도 보기 좋게 */
+  width:auto; min-width:84px; padding:14px 12px;
   display:flex; align-items:center; justify-content:center; gap:6px;
 }
-
-  
 </style>
-
-
 </head>
 <body>
 <div class="wrap">
@@ -318,13 +216,12 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
         <!-- 참여 대상 -->
         <div class="sec" data-kind="target">
           <div class="sec-title">참여 대상</div>
-
           <div class="row">
             <label>
               대상
               <span class="field-toggle-inline">
                <input id="showTeam" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
+               <span class="toggle-label">포함</span>
               </span>
             </label>
             <div>
@@ -335,8 +232,7 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
                 <div class="chip" data-val="C">C반</div>
                 <div class="chip" data-val="D">D반</div>
                 <div class="chip" data-val="기타">기타</div>
-                <input id="teamCustom" type="text" placeholder="직접 입력"
-                       style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
+                <input id="teamCustom" type="text" placeholder="직접 입력" style="display:none; margin-left:6px; padding:6px 10px; border-radius:8px; border:1px solid #ccc;"/>
               </div>
               <small style="color:var(--muted)">여러 반 선택 가능</small>
             </div>
@@ -347,99 +243,90 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
         <div class="sec" data-kind="basic">
           <div class="sec-title">기본 정보</div>
 
-        <!-- 제목 행: 이 블록으로 통째로 교체 -->
-<div class="row">
-  <label for="title">
-    제목
-    <span class="field-toggle-inline">
-      <input id="showTitle" type="checkbox" checked aria-label="안내문에 포함">
-      <span class="toggle-label">포함</span>
-    </span>
-  </label>
-  <div>
-    <input id="title" type="text" placeholder="예) 야유회 안내" />
-  </div>
-</div>
-
-
           <div class="row">
-          <label for="date">
-  일자
-  <span class="field-toggle-inline">
-    <input id="showDate" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-  </span>
-</label>
-
+            <label for="title">
+              제목
+              <span class="field-toggle-inline">
+                <input id="showTitle" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
             <div>
-              <input id="date" type="date" />
+              <input id="title" type="text" placeholder="예) 야유회 안내" />
             </div>
           </div>
 
           <div class="row">
-           <label for="time">
-  시간
-  <span class="field-toggle-inline">
-    <input id="showTime" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-  </span>
-</label>
+            <label for="date">
+              일자
+              <span class="field-toggle-inline">
+                <input id="showDate" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
+            <div><input id="date" type="date" /></div>
+          </div>
 
+          <div class="row">
+            <label for="time">
+              시간
+              <span class="field-toggle-inline">
+                <input id="showTime" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
+            <div><input id="time" type="time" /></div>
+          </div>
+
+          <div class="row">
+            <label for="placeName">
+              장소
+              <span class="field-toggle-inline">
+                <input id="showPlace" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
             <div>
-              <input id="time" type="time" />
+              <input id="placeName" type="text" placeholder="예) OO체육문화센터 2체육관, 중앙광장, 족구장 등" />
             </div>
           </div>
-<div class="row">
-<label for="placeName">
-  장소
-  <span class="field-toggle-inline">
-    <input id="showPlace" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-  </span>
-</label>
 
-  <div>
-    <input id="placeName" type="text" placeholder="예) OO체육문화센터 2체육관, 중앙광장, 족구장 등" />
-  </div>
-</div>
-         <div class="row">
-  <label for="place">
-  주소
-  <span class="field-toggle-inline">
-    <input id="showAddress" type="checkbox" checked aria-label="안내문에 표시">
-    <span class="toggle-label">표시</span>
-  </span>
-</label>
-  <div>
-    <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
-      <input id="place" type="text" placeholder="예) 안산시 단원구 고잔로 00 (도로명/지번 가능)" style="flex:1" />
-      <button type="button" id="btnPickPlace"
-  title="네이버에서 주소/지점을 검증해 링크를 만들고, (주소 표시 ON + 지도 준비 시) 이미지에 지도 썸네일을 넣습니다">
-  장소 찾기(검증)
-</button>
-
-    </div>
-
-    <!-- 이하 그대로 유지 (hidden/지도 썸네일/선택박스 등) -->
-    <input id="placeUrl" type="hidden" value="" />
-    <input id="placeAddr" type="hidden" value="" />
-    <input id="placeTel"  type="hidden" value="" />
-    <input id="placeLink" type="hidden" value="" />
-
-              <div id="placeThumb" style="display:none; margin-top:6px">
-                <img id="placeThumbImg" alt="지도 미리보기"
-                     style="max-width:220px;border:1px solid var(--line);border-radius:8px">
+          <div class="row">
+            <label for="place">
+              주소
+              <span class="field-toggle-inline">
+                <input id="showAddress" type="checkbox" checked aria-label="안내문에 표시">
+                <span class="toggle-label">표시</span>
+              </span>
+            </label>
+            <div>
+              <div class="place-actions" style="display:flex; gap:8px; align-items:center;">
+                <input id="place" type="text" placeholder="예) 안산시 단원구 고잔로 00 (도로명/지번 가능)" style="flex:1" />
+                <button type="button" id="btnPickPlace" title="네이버에서 주소/지점을 검증해 링크를 만들고, (주소 표시 ON + 지도 준비 시) 이미지에 지도 썸네일을 넣습니다">장소 찾기(검증)</button>
               </div>
 
+              <!-- 지도 유형 선택칩 + 히든 저장 -->
+              <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+                <strong style="font-size:12px;color:#243b6b">지도 유형</strong>
+                <label class="chip" style="cursor:pointer"><input type="radio" name="mapType" value="basic" checked style="display:none"> 기본</label>
+                <label class="chip" style="cursor:pointer"><input type="radio" name="mapType" value="satellite" style="display:none"> 위성</label>
+                <label class="chip" style="cursor:pointer"><input type="radio" name="mapType" value="hybrid" style="display:none"> 혼합(항공+라벨)</label>
+              </div>
+              <input id="mapType" type="hidden" value="basic">
+
+              <!-- hidden/썸네일/선택박스 -->
+              <input id="placeUrl" type="hidden" value="" />
+              <input id="placeAddr" type="hidden" value="" />
+              <input id="placeTel"  type="hidden" value="" />
+              <input id="placeLink" type="hidden" value="" />
+              <div id="placeThumb" style="display:none; margin-top:6px">
+                <img id="placeThumbImg" alt="지도 미리보기" style="max-width:220px;border:1px solid var(--line);border-radius:8px">
+              </div>
               <input id="placeLat" type="hidden" value="" />
               <input id="placeLng" type="hidden" value="" />
               <input id="placeMapImg" type="hidden" value="" />
-
               <div id="placePicked" class="place-picked" style="display:none; margin-top:6px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;"></div>
-
-              <small style="color:var(--muted)">
-  지점 선택 → 링크 생성. 문구엔 링크 포함, 이미지는 <b>주소 표시</b>+지도 준비 시에만 썸네일 포함.
-</small>
+              <small style="color:var(--muted)">지점 선택 → 링크 생성. 문구엔 링크 포함, 이미지는 <b>주소 표시</b>+지도 준비 시에만 썸네일 포함.</small>
             </div>
           </div>
         </div>
@@ -449,14 +336,13 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           <div class="sec-title">운영 정보</div>
 
           <div class="row">
-         <label for="schedule">
-  일정
-  <span class="field-toggle-inline">
-    <input id="showSchedule" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-  </span>
-</label>
-
+            <label for="schedule">
+              일정
+              <span class="field-toggle-inline">
+                <input id="showSchedule" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
             <div>
               <textarea id="schedule" placeholder="예시)
 - 09:00 집결 및 활동
@@ -466,14 +352,13 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-          <label for="bus">
-  버스
-  <span class="field-toggle-inline">
-    <input id="showBus" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-  </span>
-</label>
-
+            <label for="bus">
+              버스
+              <span class="field-toggle-inline">
+                <input id="showBus" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
             <div>
               <input id="bus" type="hidden" value="" />
               <div class="chip-group" id="busChips" role="radiogroup" aria-label="버스 대절 여부">
@@ -485,14 +370,13 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-           <label for="notes">
-  특이사항
-  <span class="field-toggle-inline">
-    <input id="showNotes" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-  </span>
-</label>
-
+            <label for="notes">
+              특이사항
+              <span class="field-toggle-inline">
+                <input id="showNotes" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
             <div>
               <div class="chip-group" id="notesPresets" role="group" aria-label="특이사항 템플릿"></div>
               <small style="color:var(--muted)">클릭 시 특이사항에 추가/제거됩니다(중복 방지)</small>
@@ -504,17 +388,14 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
           </div>
 
           <div class="row">
-          <label for="contact">
-  문의처
-  <span class="field-toggle-inline">
-    <input id="showContact" type="checkbox" checked aria-label="안내문에 포함">
-    <span class="toggle-label">포함</span>
-  </span>
-</label>
-
-            <div>
-              <input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" />
-            </div>
+            <label for="contact">
+              문의처
+              <span class="field-toggle-inline">
+                <input id="showContact" type="checkbox" checked aria-label="안내문에 포함">
+                <span class="toggle-label">포함</span>
+              </span>
+            </label>
+            <div><input id="contact" type="text" placeholder="예) A반 홍길동 (010-0000-0000)" /></div>
           </div>
 
         </div><!-- /.sec 운영 정보 -->
@@ -524,9 +405,7 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
   </div><!-- /.grid -->
 </div><!-- /.wrap -->
 
-
-    <div class="toolbar no-print">
-  <!-- 상단 옵션(유지) -->
+<div class="toolbar no-print">
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <label style="font-weight:700;color:#243b6b;display:inline-flex;gap:6px;align-items:center;">
       이미지 폭
@@ -537,409 +416,635 @@ input:focus, textarea:focus, select:focus{border-color:#9fa8da;box-shadow:0 0 0 
     </label>
   </div>
 
-  <!-- 새 레이아웃 -->
- <div class="toolbar-actions">
-  <!-- 1) 임시 저장 -->
-  <button id="btnShare" title="현재 입력을 서버에 임시 저장하고 복원용 링크를 만듭니다">
-    임시 저장(링크 생성)
-  </button>
+  <div class="toolbar-actions">
+    <button id="btnShare" title="현재 입력을 서버에 임시 저장하고 복원용 링크를 만듭니다">임시 저장(링크 생성)</button>
 
-  <!-- 2) 내보내기 스플릿 -->
-<div class="split" id="exportSplit">
-  <button id="btnExportMain" class="btn-export-main" title="바로 출력">내보내기</button>
-  <button id="btnExportToggle" class="btn-export-toggle" aria-haspopup="menu" aria-expanded="false" title="내보내기 옵션 열기">▾</button>
-  <div id="exportMenu" class="menu" role="menu" hidden>
-  <button type="button" id="mnuCopyText" role="menuitem">문구 복사</button>
-  <button type="button" id="mnuSavePNG" role="menuitem">이미지 저장(PNG)</button>
-  <button type="button" id="mnuPrint"   role="menuitem">출력</button>
-    </div>
-  </div>
-</div>
-      
-  <!-- 3) 인사지원팀 제출 -->
-  <button id="btnSubmit" title="인사지원팀 시트에 접수 기록을 남깁니다">
-    인사지원팀 제출(접수)
-  </button>
-
-  <!-- 4) 초기화 -->
-  <button id="btnReset" title="모든 입력을 지우고 처음 상태로 되돌립니다">
-    초기화
-  </button>
-</div>
-
-
-  <!-- 스크롤 배지 -->
-  <div id="busBadge" aria-hidden="true">버스: <span id="busBadgeVal">-</span></div>
-
-  <!-- 로딩 오버레이 -->
-  <div id="loadingOverlay" role="status" aria-live="polite">
-    <div class="spinner" aria-hidden="true"></div>
-    <div class="loading-text" id="loadingText">진행 중…</div>
-    <div class="loading-sub" id="loadingSub">잠시만 기다려주세요</div>
-  </div>
-
-  <!-- 공유 텍스트 미리보기 모달 -->
-  <div id="previewModal" hidden role="dialog" aria-modal="true" aria-labelledby="previewTitle">
-    <div class="preview-card" role="document">
-      <div class="preview-head"><h3 id="previewTitle">안내문 미리보기</h3></div>
-      <textarea id="previewTa"></textarea>
-      <div class="preview-hint">배포용으로 자유 수정 가능하나, 인사지원팀 제출 시에는 입력한 원본 내용과 동일해야 합니다.</div>
-      <div class="preview-actions">
-        <span id="previewToast" class="preview-toast">복사되었습니다!</span>
-        <button type="button" id="previewCopy">복사하기</button>
-        <button type="button" id="previewClose2">닫기</button>
+    <div class="split" id="exportSplit">
+      <button id="btnExportMain" class="btn-export-main" title="바로 출력">내보내기</button>
+      <button id="btnExportToggle" class="btn-export-toggle" aria-haspopup="menu" aria-expanded="false" title="내보내기 옵션 열기">▾</button>
+      <div id="exportMenu" class="menu" role="menu" hidden>
+        <button type="button" id="mnuCopyText" role="menuitem">문구 복사</button>
+        <button type="button" id="mnuSavePNG" role="menuitem">이미지 저장(PNG)</button>
+        <button type="button" id="mnuPrint"   role="menuitem">출력</button>
       </div>
     </div>
   </div>
 
-  <!-- 장소 선택 모달 -->
-  <div id="placeModal" hidden role="dialog" aria-modal="true" aria-labelledby="placeTitle">
-    <div class="place-card" role="document">
-      <div class="place-head">
-        <h3 id="placeTitle" style="margin:0">장소 선택</h3>
-        <div style="display:flex; gap:8px; align-items:center">
-          <input id="placeQuery" type="text" placeholder="지점명/주소로 재검색" style="width: min(360px, 60vw)">
-          <button id="placeSearchBtn" type="button">검색</button>
-          <button id="placeCloseBtn" type="button">닫기</button>
-        </div>
-      </div>
-      <div id="placeList" class="place-list"><div class="empty">검색어를 입력해 주세요.</div></div>
+  <button id="btnSubmit" title="인사지원팀 시트에 접수 기록을 남깁니다">인사지원팀 제출(접수)</button>
+  <button id="btnReset"  title="모든 입력을 지우고 처음 상태로 되돌립니다">초기화</button>
+</div>
+
+<div id="busBadge" aria-hidden="true">버스: <span id="busBadgeVal">-</span></div>
+
+<div id="loadingOverlay" role="status" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <div class="loading-text" id="loadingText">진행 중…</div>
+  <div class="loading-sub" id="loadingSub">잠시만 기다려주세요</div>
+</div>
+
+<div id="previewModal" hidden role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+  <div class="preview-card" role="document">
+    <div class="preview-head"><h3 id="previewTitle">안내문 미리보기</h3></div>
+    <textarea id="previewTa"></textarea>
+    <div class="preview-hint">배포용으로 자유 수정 가능하나, 인사지원팀 제출 시에는 입력한 원본 내용과 동일해야 합니다.</div>
+    <div class="preview-actions">
+      <span id="previewToast" class="preview-toast">복사되었습니다!</span>
+      <button type="button" id="previewCopy">복사하기</button>
+      <button type="button" id="previewClose2">닫기</button>
     </div>
   </div>
+</div>
 
-  <!-- LZ-String (구 공유코드 호환) -->
-  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-  <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxmVveeb2vspwcreHgjibHzm5YQ5Ctz2nRpZOll-_b_67ZfBpKJgdq1A_BnCMwJeVCR/exec';
+<div id="placeModal" hidden role="dialog" aria-modal="true" aria-labelledby="placeTitle">
+  <div class="place-card" role="document">
+    <div class="place-head">
+      <h3 id="placeTitle" style="margin:0">장소 선택</h3>
+      <div style="display:flex; gap:8px; align-items:center">
+        <input id="placeQuery" type="text" placeholder="지점명/주소로 재검색" style="width: min(360px, 60vw)">
+        <button id="placeSearchBtn" type="button">검색</button>
+        <button id="placeCloseBtn" type="button">닫기</button>
+      </div>
+    </div>
+    <div id="placeList" class="place-list"><div class="empty">검색어를 입력해 주세요.</div></div>
+  </div>
+</div>
 
-  /* fetch 타임아웃 */
-  async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
-    const controller = new AbortController();
-    const timer = setTimeout(()=>controller.abort(), timeoutMs);
-    try { return await fetch(url, {...opts, signal: controller.signal}); }
-    finally { clearTimeout(timer); }
-  }
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-  /* 로딩 오버레이 */
-  let loadingCount = 0, loadingTimer = null;
-  function setToolbarDisabled(disabled){
-    document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
-    document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
-    document.querySelectorAll('select').forEach(el => el.disabled = disabled);
-  }
-  function showLoading(main='진행 중…', sub='잠시만 기다려주세요', minMs=500){
-    loadingCount++;
-    const ov = document.getElementById('loadingOverlay');
-    document.getElementById('loadingText').textContent = main;
-    document.getElementById('loadingSub').textContent = sub;
-    ov.style.display = 'flex';
-    setToolbarDisabled(true);
-    clearTimeout(loadingTimer);
-    loadingTimer = setTimeout(()=>{ loadingTimer = null; }, minMs);
-  }
-  function hideLoading(){
-    if (loadingCount > 0) loadingCount--;
-    const finish = ()=>{
-      if (loadingCount === 0){
-        document.getElementById('loadingOverlay').style.display = 'none';
-        setToolbarDisabled(false);
-      }
-    };
-    if (loadingTimer){ setTimeout(()=>finish(), 120); loadingTimer = null; }
-    else { finish(); }
-  }
-// ✅ 교체
-function setSelectedPlace(item){
-  // 안전하게 필드 정리(키 이름 다양성 대응)
-  const name = (item.title || item.name || '').trim(); 
-  const addr = (
-    item.roadAddress || item.road_address ||
-    item.address     || item.jibunAddress || item.jibun_address ||
-    ''
-  ).trim();
-  const tel  = (item.telephone || item.tel || '').trim();
-  const link = resolveNaverLink(item);
+<!-- 내보내기 렌더용 히든 DOM -->
+<div id="exportDoc" style="position:absolute; left:-99999px; top:-99999px; width:794px; background:#fff;">
+  <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;"></div>
+</div>
 
-  // 입력칸 채우기: 장소명 → placeName, 주소 → place
-  document.getElementById('placeName').value = name;  // 장소명
-  document.getElementById('place').value     = addr;  // 주소(표시/입력칸)
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz9yBrpYdeeH5_KAwakTngq7RZZ3i0BcsaGtc1yMjZclWLW0g2zpKPm1kksCuyygtFd/exec';
 
-  // 히든값들도 동기화
-  document.getElementById('placeAddr').value = addr;  // 주소 히든
-  document.getElementById('placeTel').value  = tel;   // 전화
-  document.getElementById('placeLink').value = link;  // 네이버 링크
+/* ===== 공통 유틸/로딩 ===== */
+async function fetchWithTimeout(url, opts={}, timeoutMs=15000){
+  const controller = new AbortController(); const timer = setTimeout(()=>controller.abort(), timeoutMs);
+  try { return await fetch(url, {...opts, signal: controller.signal}); } finally { clearTimeout(timer); }
 }
-
-
-
-  /* 유틸 */
-  function isMobile(){ return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-  function legacyCopy(text){
-    try{
-      const ta = document.createElement('textarea');
-      ta.value = text; ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.opacity = '0';
-      document.body.appendChild(ta); ta.focus(); ta.select();
-      const ok = document.execCommand('copy'); document.body.removeChild(ta);
-      return ok;
-    }catch(_){ return false; }
-  }
-  async function safeDistribute({title='', text='', url='', pureText=false, forceManual=false}) {
-    const toCopy =
-      text
-        ? (title ? (title + '\n' + text) : text) + (url ? '\n' + url : '')
-        : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
-    if (forceManual) { openPreviewModal(toCopy); return { method: 'manual-forced' }; }
-    const shouldSkipWebShare = pureText === true;
-    if (!shouldSkipWebShare && isMobile() && navigator.share) {
-      try {
-        const payload = {}; if (title) payload.title = title; if (text) payload.text = text; if (url) payload.url = url;
-        await navigator.share(payload); return { method:'share' };
-      } catch(_) {}
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      try { await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; } catch(_){}
-    }
-    if (legacyCopy(toCopy)) return { method:'legacy' };
-    alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
-    return { method:'manual' };
-  }
-function resetAll() {
-  if (!confirm('모든 입력을 초기화하고, 주소의 k/code 파라미터도 제거할까요?')) return;
-
-  // 1) 텍스트/히든 입력값 초기화 (+ time, 좌표/지도 이미지 추가)
-  const ids = [
-      'team','title','date','time','schedule','bus',
-  'placeName', // ← 추가
-  'place','placeUrl','placeAddr','placeTel','placeLink',
-  'placeLat','placeLng','placeMapImg',
-  'notes','contact'
-  ];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-
-  // 2) 특이사항 칩 상태도 함께 해제
-  //    (값만 비우면 칩 class(selected) 안 풀리므로 아래 호출 필요)
-  if (typeof setNotesLines === 'function') {
-    setNotesLines([]); // textarea 비우고 칩 selection도 동기화
-  } else if (typeof syncNotesPresetSelection === 'function') {
-    syncNotesPresetSelection();
-  }
-
-  // 3) 팀 칩/기타 입력 초기화
-  setTeamHiddenFromArray([]);
-  renderTeamChips();
-  restoreCustomTeamFromTeamValue(); // 기타 입력칸 접기
-
-  // 4) 버스 선택/배지/체크 초기화
-  setBus('');
-  // ✅ 표시 토글들 기본값으로 초기화
-['showTeam','showTitle','showDate','showTime','showPlace','showSchedule','showBus','showNotes','showContact']
-  .forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; });
-
-  refreshToggleLabels(); // ← 여기 추가
-
-  // 5) 장소 미리보기/썸네일 박스 비우기
-  setPickedPlaceLink('', '');
-  setMapPreview(''); // ✅ 썸네일 숨김
-
-  // 6) URL의 k/code 파라미터 제거
-  const url = new URL(location.href);
-  url.searchParams.delete('k');
-  url.searchParams.delete('code');
-  history.replaceState(null, '', url.origin + url.pathname);
-
-  // 7) 스크롤/배지 등 UI 마무리
-  updateBusBadgeVisibility();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+let loadingCount=0, loadingTimer=null;
+function setToolbarDisabled(disabled){
+  document.querySelectorAll('.toolbar button').forEach(btn => btn.disabled = disabled);
+  document.querySelectorAll('input, textarea').forEach(el => el.readOnly = disabled);
+  document.querySelectorAll('select').forEach(el => el.disabled = disabled);
 }
-
-
-document.getElementById('btnReset')?.addEventListener('click', resetAll);
-
-  /* 날짜/대상 포맷 */
-  function weekdayKR(dateStr){
-    if(!dateStr) return '';
-    const d = new Date(dateStr+'T00:00:00');
-    const yo = ['일','월','화','수','목','금','토'][d.getDay()];
-    return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`;
-  }
-  function parseTeams(str){ return (str || '').split(',').map(s => s.trim()).filter(Boolean); }
-  function teamsToString(arr){ return Array.from(new Set(arr)).join(','); }
-  function getTeamsArray(){ return parseTeams(document.getElementById('team').value); }
-  function setTeamHiddenFromArray(arr){ document.getElementById('team').value = teamsToString(arr); }
-  function hasAnyCustomTeam(){ return getTeamsArray().some(v => v==='기타' || v.startsWith('기타:')); }
-  function formatTarget(teamStr){
-    const arr = (teamStr || '').split(',').map(s => s.trim()).filter(Boolean);
-    if (!arr.length) return '';
-    const mapped = arr.map(v => (/^기타:/.test(v) ? v.replace(/^기타:/,'') : (/^[A-D]$/i.test(v) ? v+'반' : v)));
-    return Array.from(new Set(mapped)).join(', ');
-  }
-  function renderTeamChips(){
-    const arr = getTeamsArray();
-    document.querySelectorAll('#teamChips .chip').forEach(chip=>{
-      const val = chip.dataset.val;
-      chip.classList.toggle('selected', val==='기타' ? hasAnyCustomTeam() : arr.includes(val));
-    });
-  }
-  function toggleTeam(val){
-    const arr = getTeamsArray();
-    const i = arr.indexOf(val);
-    if (i >= 0) arr.splice(i,1); else arr.push(val);
-    setTeamHiddenFromArray(arr); renderTeamChips();
-  }
-  (function bindTeamChips(){
-    const g = document.getElementById('teamChips'); if(!g) return;
-    g.addEventListener('click', e=>{
-      const chip = e.target.closest('.chip'); if(!chip) return;
-      if (chip.dataset.val === '기타') return;
-      toggleTeam(chip.dataset.val);
-    });
-  })();
-  function removeAllCustomTeamFromArray(arr){ return (arr||[]).filter(v => v!=='기타' && !v.startsWith('기타:')); }
-  function restoreCustomTeamFromTeamValue(){
-    const arr = getTeamsArray(); const custom = arr.find(v => v.startsWith('기타:'));
-    const input = document.getElementById('teamCustom'); if (!input) return;
-    if (custom){ input.style.display='inline-block'; input.value = custom.split(':').slice(1).join(':'); }
-    else { input.style.display='none'; input.value=''; }
-    renderTeamChips();
-  }
-    function isNaverPlaceUrl(u){
-  try{
-    const url = new URL(u);
-    const host = url.hostname;
-    const path = url.pathname || '';
-    // naver.me(공유 단축) 허용
-    if (/naver\.me$/.test(host)) return true;
-    // naver 지도/플레이스 도메인만 허용
-    if (!/(^|\.)naver\.com$/.test(host)) return false;
-    // 지도/플레이스 관련 경로만 허용
-    return /^(\/v5|\/p\/entry|\/entry\/place|\/map|\/place)/.test(path);
+function showLoading(main='진행 중…', sub='잠시만 기다려주세요', minMs=500){
+  loadingCount++; const ov = document.getElementById('loadingOverlay');
+  document.getElementById('loadingText').textContent = main;
+  document.getElementById('loadingSub').textContent  = sub;
+  ov.style.display='flex'; setToolbarDisabled(true); clearTimeout(loadingTimer);
+  loadingTimer = setTimeout(()=>{ loadingTimer=null; }, minMs);
+}
+function hideLoading(){
+  if (loadingCount>0) loadingCount--;
+  const finish = ()=>{ if (loadingCount===0){ document.getElementById('loadingOverlay').style.display='none'; setToolbarDisabled(false);} };
+  if (loadingTimer){ setTimeout(()=>finish(),120); loadingTimer=null; } else { finish(); }
+}
+function isMobile(){ return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+function legacyCopy(text){
+  try{ const ta=document.createElement('textarea'); ta.value=text; ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.top='-9999px'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok=document.execCommand('copy'); document.body.removeChild(ta); return ok;
   }catch(_){ return false; }
 }
-
-function resolveNaverLink(item){
-  const link = item.link || item.url || '';
-  try{
-    const u = new URL(link);
-    const host = u.hostname;
-    const path = u.pathname || '';
-    if (/naver\.me$/.test(host) || (/(^|\.)naver\.com$/.test(host) && /^(\/v5|\/place|\/p\/entry|\/entry\/place|\/map)/.test(path))) {
-      return link; // 네이버 지도/플레이스만 허용
-    }
-  }catch(_){}
-
-  // fallback: 상호명+주소 검색
-  return buildNaverSearchLink(item.title || '', item.roadAddress || item.address || '');
+async function safeDistribute({title='', text='', url='', pureText=false, forceManual=false}) {
+  const toCopy = text ? (title ? (title+'\n'+text) : text) + (url ? '\n'+url : '') : (title ? (title + (url ? '\n' : '')) : '') + (url || '');
+  if (forceManual) { openPreviewModal(toCopy); return { method: 'manual-forced' }; }
+  const shouldSkipWebShare = pureText === true;
+  if (!shouldSkipWebShare && isMobile() && navigator.share) {
+    try { const payload={}; if(title)payload.title=title; if(text)payload.text=text; if(url)payload.url=url;
+      await navigator.share(payload); return { method:'share' }; } catch(_) {}
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(toCopy); return { method:'clipboard' }; } catch(_){}
+  }
+  if (legacyCopy(toCopy)) return { method:'legacy' };
+  alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
+  return { method:'manual' };
+}
+function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]) ); }
+function waitForImagesLoaded(root){
+  const imgs = Array.from(root.querySelectorAll('img'));
+  const pendings = imgs.filter(img => !img.complete || img.naturalWidth === 0);
+  if (!pendings.length) return Promise.resolve();
+  return Promise.all(pendings.map(img => new Promise(res => {
+    img.addEventListener('load',  res, { once:true });
+    img.addEventListener('error', res, { once:true });
+  })));
 }
 
-
-
-  (function bindCustomTeam(){
-    const chips = document.getElementById('teamChips'); const customInput = document.getElementById('teamCustom');
-    if(!chips || !customInput) return;
-    chips.addEventListener('click', e=>{
-      const chip = e.target.closest('.chip'); if(!chip) return;
-      if(chip.dataset.val === '기타'){
-        const opening = (customInput.style.display === 'none' || customInput.style.display === '');
-        if(opening){ customInput.style.display='inline-block'; customInput.focus(); }
-        else{
-          const arr = removeAllCustomTeamFromArray(getTeamsArray());
-          setTeamHiddenFromArray(arr); customInput.value=''; customInput.style.display='none'; renderTeamChips();
-        }
+/* ===== 날짜/대상 ===== */
+function weekdayKR(dateStr){ if(!dateStr) return ''; const d=new Date(dateStr+'T00:00:00'); const yo=['일','월','화','수','목','금','토'][d.getDay()]; return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일(${yo})`; }
+function parseTeams(str){ return (str || '').split(',').map(s => s.trim()).filter(Boolean); }
+function teamsToString(arr){ return Array.from(new Set(arr)).join(','); }
+function getTeamsArray(){ return parseTeams(document.getElementById('team').value); }
+function setTeamHiddenFromArray(arr){ document.getElementById('team').value = teamsToString(arr); }
+function hasAnyCustomTeam(){ return getTeamsArray().some(v => v==='기타' || v.startsWith('기타:')); }
+function formatTarget(teamStr){
+  const arr = (teamStr || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!arr.length) return '';
+  const mapped = arr.map(v => (/^기타:/.test(v) ? v.replace(/^기타:/,'') : (/^[A-D]$/i.test(v) ? v+'반' : v)));
+  return Array.from(new Set(mapped)).join(', ');
+}
+function renderTeamChips(){
+  const arr = getTeamsArray();
+  document.querySelectorAll('#teamChips .chip').forEach(chip=>{
+    const val = chip.dataset.val;
+    chip.classList.toggle('selected', val==='기타' ? hasAnyCustomTeam() : arr.includes(val));
+  });
+}
+function toggleTeam(val){
+  const arr = getTeamsArray();
+  const i = arr.indexOf(val);
+  if (i >= 0) arr.splice(i,1); else arr.push(val);
+  setTeamHiddenFromArray(arr); renderTeamChips();
+}
+(function bindTeamChips(){
+  const g = document.getElementById('teamChips'); if(!g) return;
+  g.addEventListener('click', e=>{
+    const chip = e.target.closest('.chip'); if(!chip) return;
+    if (chip.dataset.val === '기타') return;
+    toggleTeam(chip.dataset.val);
+  });
+})();
+function removeAllCustomTeamFromArray(arr){ return (arr||[]).filter(v => v!=='기타' && !v.startsWith('기타:')); }
+function restoreCustomTeamFromTeamValue(){
+  const arr = getTeamsArray(); const custom = arr.find(v => v.startsWith('기타:'));
+  const input = document.getElementById('teamCustom'); if (!input) return;
+  if (custom){ input.style.display='inline-block'; input.value = custom.split(':').slice(1).join(':'); }
+  else { input.style.display='none'; input.value=''; }
+  renderTeamChips();
+}
+(function bindCustomTeam(){
+  const chips = document.getElementById('teamChips'); const customInput = document.getElementById('teamCustom');
+  if(!chips || !customInput) return;
+  chips.addEventListener('click', e=>{
+    const chip = e.target.closest('.chip'); if(!chip) return;
+    if(chip.dataset.val === '기타'){
+      const opening = (customInput.style.display === 'none' || customInput.style.display === '');
+      if(opening){ customInput.style.display='inline-block'; customInput.focus(); }
+      else{
+        const arr = removeAllCustomTeamFromArray(getTeamsArray());
+        setTeamHiddenFromArray(arr); customInput.value=''; customInput.style.display='none'; renderTeamChips();
       }
-    });
-    customInput.addEventListener('input', ()=>{
-      const val = customInput.value.trim();
-      let arr = removeAllCustomTeamFromArray(getTeamsArray());
-      if(val){ arr.push('기타:'+val); }
-      setTeamHiddenFromArray(arr); renderTeamChips();
-    });
-  })();
-  (function bindTeamChipsA11y(){
-    const g = document.getElementById('teamChips'); if(!g) return;
-    g.querySelectorAll('.chip[data-val]:not([data-val="기타"])').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','button'); });
-    g.addEventListener('keydown', e=>{
-      if (e.key!=='Enter' && e.key!==' ') return;
-      const chip = e.target.closest('.chip'); if(!chip || chip.dataset.val==='기타') return;
-      e.preventDefault(); toggleTeam(chip.dataset.val);
-    });
-  })();
+    }
+  });
+  customInput.addEventListener('input', ()=>{
+    const val = customInput.value.trim();
+    let arr = removeAllCustomTeamFromArray(getTeamsArray());
+    if(val){ arr.push('기타:'+val); }
+    setTeamHiddenFromArray(arr); renderTeamChips();
+  });
+})();
+(function bindTeamChipsA11y(){
+  const g = document.getElementById('teamChips'); if(!g) return;
+  g.querySelectorAll('.chip[data-val]:not([data-val="기타"])').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','button'); });
+  g.addEventListener('keydown', e=>{
+    if (e.key!=='Enter' && e.key!==' ') return;
+    const chip = e.target.closest('.chip'); if(!chip || chip.dataset.val==='기타') return;
+    e.preventDefault(); toggleTeam(chip.dataset.val);
+  });
+})();
 
-  /* ===== 장소(네이버) 처리: 검증 URL 선택 흐름 ===== */
-  function isUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
-// 상호명만 우선, 주소는 동/구까지만 잘라 보조
+/* ===== 지도 유틸 ===== */
+function isUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
+function looksLikeKrAddress(s=''){ s=(s||'').trim(); return /\d/.test(s) && /(로|길|번길|동|읍|면|리|로\d+번길)/.test(s); }
 function buildNaverSearchLink(rawName, rawAddr=''){
-  const name = (rawName||'').trim();
-  const addr = (rawAddr||'').trim()
-    // 번지부터 잘라내기 (예: "광덕서로 78 대한법조" → "광덕서로")
+  const name=(rawName||'').trim();
+  const addr=(rawAddr||'').trim()
     .replace(/\s+\d.*$/, '')
-    // "대한법조" 같은 건물명은 검색에 방해되는 경우가 많아 제거
     .replace(/대한법조|빌딩|타워|센터|상가|아파트|오피스텔|Mall|몰/gi, '')
     .trim();
-
   const q = name || addr || '';
   return 'https://map.naver.com/p/search/' + encodeURIComponent(q);
 }
-
-  function setPickedPlaceLink(url, label){
-    const box = document.getElementById('placePicked');
-    const hidden = document.getElementById('placeUrl');
-    hidden.value = url || '';
-    if(url){
-      box.innerHTML = `선택된 지도 링크: <a href="${url}" target="_blank" rel="noopener">${label||'열기'}</a>`;
-      box.style.display = 'block';
-    }else{
-      box.innerHTML = ''; box.style.display = 'none';
+function isNaverPlaceUrl(u){
+  try{
+    const url = new URL(u); const host=url.hostname; const path=url.pathname||'';
+    if (/naver\.me$/.test(host)) return true;
+    if (!/(^|\.)naver\.com$/.test(host)) return false;
+    return /^(\/v5|\/p\/entry|\/entry\/place|\/map|\/place)/.test(path);
+  }catch(_){ return false; }
+}
+function resolveNaverLink(item){
+  const link = item.link || item.url || '';
+  try{
+    const u=new URL(link); const host=u.hostname; const path=u.pathname||'';
+    if (/naver\.me$/.test(host) || (/(^|\.)naver\.com$/.test(host) && /^(\/v5|\/place|\/p\/entry|\/entry\/place|\/map)/.test(path))) {
+      return link;
     }
-  }
+  }catch(_){}
+  return buildNaverSearchLink(item.title || '', item.roadAddress || item.address || '');
+}
+function setSelectedPlace(item){
+  const name = (item.title || item.name || '').trim();
+  const addr = (item.roadAddress || item.road_address || item.address || item.jibunAddress || item.jibun_address || '').trim();
+  const tel  = (item.telephone || item.tel || '').trim();
+  const link = resolveNaverLink(item);
+  document.getElementById('placeName').value = name;
+  document.getElementById('place').value     = addr;
+  document.getElementById('placeAddr').value = addr;
+  document.getElementById('placeTel').value  = tel;
+  document.getElementById('placeLink').value = link;
+}
+function setPickedPlaceLink(url, label){
+  const box = document.getElementById('placePicked'); const hidden = document.getElementById('placeUrl');
+  hidden.value = url || '';
+  if(url){
+    box.innerHTML = `선택된 지도 링크: <a href="${url}" target="_blank" rel="noopener">${label||'열기'}</a>`;
+    box.style.display = 'block';
+  }else{ box.innerHTML = ''; box.style.display='none'; }
+}
+function setMapPreview(dataUrl){
+  const img=document.getElementById('placeThumbImg'); const box=document.getElementById('placeThumb');
+  if (dataUrl){ img.src=dataUrl; box.style.display='block'; } else { img.removeAttribute('src'); box.style.display='none'; }
+}
+function derivePlaceTitleFromAddress(addr=''){
+  addr=(addr||'').trim();
+  const roadMatch = addr.match(/([^\s]+?(?:로|길)\d*(?:-\d+)?)[\s,]+(\d+(?:-\d+)?)/);
+  if (roadMatch) return `${roadMatch[1]} ${roadMatch[2]}`;
+  const jibunMatch = addr.match(/([^\s]+?(동|읍|면|리))[\s,]+(\d+(?:-\d+)?)/);
+  if (jibunMatch) return `${jibunMatch[1]} ${jibunMatch[3]}`;
+  const tokens = addr.split(/\s+/).filter(Boolean);
+  if (tokens.length>=3){ for(let i=0;i<tokens.length;i++){ if (/[동읍면리]$/.test(tokens[i])){ const next=tokens[i+1]||''; return next?`${tokens[i]} ${next}`:tokens[i]; } } }
+  return tokens.slice(0,2).join(' ') || addr;
+}
 
-  // 후보 검색 모달
-  const placeModal = {
-    el: null, listEl: null, queryEl: null, open(initQ=''){
-      if(!this.el){
-        this.el = document.getElementById('placeModal');
-        this.listEl = document.getElementById('placeList');
-        this.queryEl = document.getElementById('placeQuery');
-        document.getElementById('placeCloseBtn').addEventListener('click', ()=> this.close());
-        document.getElementById('placeSearchBtn').addEventListener('click', ()=> this.search());
-        this.queryEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter') this.search(); });
-        this.el.addEventListener('click', (e)=>{ if(e.target===this.el) this.close(); });
+/* ===== 지도 유형(basic/satellite/hybrid) ===== */
+function getMapType(){ return document.getElementById('mapType')?.value || 'basic'; }
+function setMapType(v){
+  const val = (v==='satellite' || v==='hybrid') ? v : 'basic';
+  const hid = document.getElementById('mapType'); if (hid) hid.value = val;
+  document.querySelectorAll('input[name="mapType"]').forEach(r=>{
+    const chip = r.closest('.chip'); const on = (r.value===val);
+    if (chip) chip.classList.toggle('selected', on);
+    r.checked = on;
+  });
+}
+(function bindMapTypeRadios(){
+  document.querySelectorAll('input[name="mapType"]').forEach(r=>{
+    r.addEventListener('click', ()=>{
+      setMapType(r.value);
+      // 좌표 있다면 썸네일 즉시 재생성
+      const lat=document.getElementById('placeLat')?.value;
+      const lng=document.getElementById('placeLng')?.value;
+      if (lat && lng){
+        buildMapThumbByLatLng(lat,lng).then(dataUrl=>{
+          document.getElementById('placeMapImg').value = dataUrl || '';
+          setMapPreview(dataUrl || '');
+        });
       }
-      this.queryEl.value = (initQ||'').trim();
-      this.listEl.innerHTML = '<div class="empty">검색 중…</div>';
-      this.el.hidden = false;
-      this.search();
-    },
-    close(){ if(this.el) this.el.hidden = true; },
-    async search(){
-      const q = (this.queryEl.value||'').trim();
-      if(!q){ this.listEl.innerHTML = '<div class="empty">검색어를 입력해 주세요.</div>'; return; }
-      try{
-        const url = `${GAS_URL}?mode=naver_local&query=${encodeURIComponent(q)}`;
-        const res = await fetchWithTimeout(url);
-        const json = await res.json();
-        if(!res.ok) throw new Error(json && json.error || ('HTTP '+res.status));
-        const rows = Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
-        if(!rows.length){ this.listEl.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>'; return; }
-      const mapRow = (r) => ({
-  name: r.name || r.title || r.place_name || '',
-  road: r.roadAddress || r.road_address || r.road || '',
-  jibun: r.jibunAddress || r.jibun_address || r.address || '',
-  tel : r.telephone || r.tel || '',
-  url : r.mapUrl || r.link || r.url || '',
-  mapx: r.mapx || r.x || r.lng || '',
-  mapy: r.mapy || r.y || r.lat || ''
+    });
+  });
+  setMapType(document.getElementById('mapType')?.value || 'basic');
+})();
+
+/* ===== 특이사항 템플릿 ===== */
+const NOTES_PRESETS = [
+  '- 편한 복장, 물·우의 준비해 주세요.',
+  '- 버스 대절, 조금 여유 있게 집결해 주세요.',
+  '- 자차·대중교통으로 개별 집결해 주세요.',
+  '- 자차는 공영·노상 주차장을 이용해 주세요.',
+  '- 장소별 내부 주차장 마련되어 있습니다.',
+];
+function getNotesLines(){ return (document.getElementById('notes').value || '').split('\n').map(s=>s.trim()).filter(Boolean); }
+function setNotesLines(lines){ const ta=document.getElementById('notes'); ta.value=(lines||[]).join('\n'); syncNotesPresetSelection(); }
+function toggleNotePreset(text){ const lines=getNotesLines(); const i=lines.indexOf(text); if(i>=0)lines.splice(i,1); else lines.push(text); setNotesLines(lines); }
+function renderNotesPresets(){
+  const box=document.getElementById('notesPresets'); if(!box) return; box.innerHTML='';
+  NOTES_PRESETS.forEach(txt => {
+    const chip=document.createElement('div'); chip.className='chip'; chip.textContent=txt; chip.tabIndex=0;
+    chip.setAttribute('role','button'); chip.setAttribute('data-text', txt); box.appendChild(chip);
+  });
+  box.addEventListener('click', e => { const c=e.target.closest('.chip'); if(!c) return; toggleNotePreset(c.getAttribute('data-text')); });
+  box.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { const c=e.target.closest('.chip'); if(!c) return; e.preventDefault(); toggleNotePreset(c.getAttribute('data-text')); }});
+  syncNotesPresetSelection();
+}
+function syncNotesPresetSelection(){ const selected=new Set(getNotesLines()); document.querySelectorAll('#notesPresets .chip').forEach(chip=>{ const t=chip.getAttribute('data-text'); chip.classList.toggle('selected', selected.has(t)); }); }
+(function bindNotesInputSync(){ const ta=document.getElementById('notes'); if(!ta) return; ta.addEventListener('input', ()=>{ syncNotesPresetSelection(); }); })();
+renderNotesPresets();
+
+/* ===== 표시 토글 ===== */
+const TOGGLE_IDS = ['showTeam','showTitle','showDate','showTime','showPlace','showSchedule','showBus','showNotes','showContact','showAddress'];
+function refreshToggleLabels(){
+  TOGGLE_IDS.forEach(id=>{
+    const cb=document.getElementById(id); if(!cb) return;
+    const labelEl=cb.parentElement?.querySelector?.('.toggle-label'); if(!labelEl) return;
+    const on=!!cb.checked;
+    labelEl.textContent = on ? '표시' : '숨김';
+    labelEl.classList.toggle('off', !on);
+    labelEl.setAttribute('role','switch'); labelEl.setAttribute('aria-checked', String(on));
+    labelEl.title = '문구 복사/이미지 저장 시 ' + (on ? '표시됩니다' : '표시되지 않습니다');
+    cb.setAttribute('aria-label', on ? '안내문에 표시' : '안내문에서 숨김');
+    if (id === 'showBus') updateBusBadgeVisibility();
+  });
+}
+(function bindToggleLabelClicks(){
+  document.querySelectorAll('.field-toggle-inline').forEach(box=>{
+    const cb=box.querySelector('input[type="checkbox"]'); const tl=box.querySelector('.toggle-label');
+    if(!cb || !tl) return;
+    tl.tabIndex=0;
+    const flip=(e)=>{ e.preventDefault(); e.stopPropagation(); cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true})); refreshToggleLabels(); };
+    tl.addEventListener('click', flip);
+    tl.addEventListener('keydown', (e)=>{ if(e.key===' '||e.key==='Enter') flip(e); });
+  });
+})();
+TOGGLE_IDS.forEach(id=>{ document.getElementById(id)?.addEventListener('change', refreshToggleLabels); });
+refreshToggleLabels();
+
+/* ===== 버스 칩/배지 ===== */
+function setBus(val){
+  const hidden=document.getElementById('bus'); const chips=document.querySelectorAll('#busChips .chip');
+  hidden.value = val || '';
+  chips.forEach(c => c.classList.toggle('selected', c.getAttribute('data-val') === val));
+  document.getElementById('busBadgeVal').textContent = hidden.value || '-';
+  updateBusBadgeVisibility();
+}
+const showAfter=200;
+function updateBusBadgeVisibility(){
+  const badge=document.getElementById('busBadge'); const v=document.getElementById('bus').value || '';
+  const showBus=document.getElementById('showBus')?.checked ?? true;
+  if(window.scrollY>showAfter && v && showBus){ badge.style.display='block'; } else { badge.style.display='none'; }
+}
+window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
+window.addEventListener('resize', updateBusBadgeVisibility);
+(function bindBusChips(){
+  const g=document.getElementById('busChips'); if(!g) return;
+  g.addEventListener('click', (e)=>{ const target=e.target.closest('.chip'); if(!target) return; setBus(target.getAttribute('data-val')); });
+})();
+(function bindBusChipsA11y(){
+  const g=document.getElementById('busChips'); if(!g) return;
+  g.querySelectorAll('.chip').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','radio'); });
+  g.addEventListener('keydown', e=>{ if (e.key!=='Enter' && e.key!==' ') return; const chip=e.target.closest('.chip'); if(!chip) return; e.preventDefault(); setBus(chip.getAttribute('data-val')); });
+})();
+
+/* ===== 공유 텍스트 ===== */
+function formatTargetForShare(team){ return formatTarget(team); }
+function makeShareTitle(d){
+  const target=formatTarget(d.team); const dateTxt=d.date ? weekdayKR(d.date) : '';
+  const rawTitle=(d.title||'').trim(); if (rawTitle) return rawTitle;
+  return [dateTxt, target, '야유회'].filter(Boolean).join(' ');
+}
+function resolvedMapLink(d){
+  const place=(d.place||'').trim(); const picked=(d.placeUrl||'').trim();
+  if(picked) return picked; if(isUrl(place)) return place; return buildNaverSearchLink(place);
+}
+function buildShareText(){
+  const d = collect();
+  const dateStr = d.date ? weekdayKR(d.date) : '-';
+  const timeStr = (d.time || '').trim();
+  const blocks = [];
+  if (d.showTitle) { const header = makeShareTitle(d) || '안내문'; blocks.push(header); }
+  if (d.showTeam){ const target=formatTargetForShare(d.team); if (target) blocks.push(`🎯 [대상] ${target}`); }
+  if (d.showDate) blocks.push(`📅 [일자] ${dateStr}`);
+  if (d.showTime && timeStr) blocks.push(`⏰ [시간] ${timeStr}`);
+  if (d.showPlace){
+    const placeName=(d.placeName||'').trim();
+    if (placeName) blocks.push(`📍 [장소] ${placeName}`);
+    if ((d.placeLink||'').trim()) blocks.push(`🔗 (네이버) ${d.placeLink.trim()}`);
+    if ((d.placeTel||'').trim()) blocks.push(`☎️ (전화) ${d.placeTel.trim()}`);
+  }
+  const addrLine=(d.place||d.placeAddr||'').trim();
+  if (d.showAddress && addrLine){ blocks.push(`🏠 [주소] ${addrLine}`); }
+  if (d.showSchedule){
+    const schedule=(d.schedule||'').split('\n').filter(Boolean);
+    blocks.push(['📝 [일정 요약]', ...(schedule.length ? schedule : ['-'])].join('\n'));
+  }
+  if (d.showBus && (d.bus||'').trim()){ blocks.push(`🚌 [버스 대절] ${d.bus.trim()}`); }
+  if (d.showNotes && (d.notes||'').trim()){
+    const notes=d.notes.split('\n').filter(Boolean);
+    blocks.push(['⚠️ [특이사항]', ...notes].join('\n'));
+  }
+  if (d.showContact){ blocks.push(`📞 [문의처] ${d.contact || '-'}`); }
+  return blocks.filter(Boolean).join('\n\n');
+}
+
+/* ===== 수집/공유 ===== */
+function collect(){
+  const val = id => document.getElementById(id)?.value || '';
+  const on  = id => { const el = document.getElementById(id); return (el ? !!el.checked : true); };
+  return {
+    team: val('team'),
+    title: val('title'),
+    date: val('date'),
+    time: val('time'),
+    schedule: val('schedule'),
+    bus: val('bus'),
+    placeName: val('placeName'),
+    place: val('place'),
+    placeAddr: val('placeAddr'),
+    placeTel:  val('placeTel'),
+    placeLink: val('placeLink'),
+    placeUrl:  val('placeUrl'),
+    placeLat:  val('placeLat'),
+    placeLng:  val('placeLng'),
+    placeMapImg: val('placeMapImg'),
+    notes: val('notes'),
+    contact: val('contact'),
+    mapType: getMapType(),   // ★ 추가
+    showTeam: on('showTeam'),
+    showTitle: on('showTitle'),
+    showDate: on('showDate'),
+    showTime: on('showTime'),
+    showPlace: on('showPlace'),
+    showAddress: on('showAddress'),
+    showSchedule: on('showSchedule'),
+    showBus: on('showBus'),
+    showNotes: on('showNotes'),
+    showContact: on('showContact'),
+  };
+}
+function collectForShare(){ const d=collect(); d.placeMapImg=''; return d; }
+
+/* ===== 미리보기 모달 ===== */
+(function setupPreviewModal(){
+  const modal=document.getElementById('previewModal');
+  const ta=document.getElementById('previewTa');
+  const btnClose2=document.getElementById('previewClose2');
+  const btnCopy=document.getElementById('previewCopy');
+  const toast=document.getElementById('previewToast');
+  function openPreviewModal(text){
+    if (!modal || !ta) return; ta.value=text||'';
+    ta.style.height='auto'; ta.style.height=Math.max(220, Math.min(420, ta.scrollHeight))+'px';
+    toast?.classList.remove('show'); modal.hidden=false;
+    setTimeout(()=>{ ta.focus(); ta.select(); },0);
+    document.addEventListener('keydown', onEsc, { once:true });
+    modal.addEventListener('click', onBackdropClick);
+  }
+  function closePreviewModal(){ if(!modal) return; modal.hidden=true; modal.removeEventListener('click', onBackdropClick); }
+  function onBackdropClick(e){ if (e.target===modal) closePreviewModal(); }
+  function onEsc(e){ if (e.key==='Escape') closePreviewModal(); }
+  async function copyPreviewText(){
+    const text=ta.value||'';
+    if (navigator.clipboard && navigator.clipboard.writeText){ try{ await navigator.clipboard.writeText(text); showToast(); return; } catch(_){} }
+    try{ ta.select(); const ok=document.execCommand('copy'); if (ok){ showToast(); return; } }catch(_){}
+    alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
+  }
+  function showToast(){ if(!toast) return; toast.classList.add('show'); setTimeout(()=> toast.classList.remove('show'), 3000); }
+  window.openPreviewModal=openPreviewModal; window.closePreviewModal=closePreviewModal;
+  btnCopy?.addEventListener('click', copyPreviewText);
+  btnClose2?.addEventListener('click', closePreviewModal);
+})();
+
+/* ===== 내보내기 스플릿 ===== */
+(function setupExportSplit(){
+  const main=document.getElementById('btnExportMain');
+  const toggle=document.getElementById('btnExportToggle');
+  const menu=document.getElementById('exportMenu');
+  const split=document.getElementById('exportSplit');
+  if(!main||!toggle||!menu||!split) return;
+  let lastAction=localStorage.getItem('exportAction') || 'print';
+  const idMap={ text:'mnuCopyText', png:'mnuSavePNG', print:'mnuPrint' };
+  const labelMap={ text:'문구 복사', png:'이미지 저장(PNG)', print:'출력' };
+  function openMenu(){ menu.hidden=false; toggle.setAttribute('aria-expanded','true'); }
+  function closeMenu(){ menu.hidden=true;  toggle.setAttribute('aria-expanded','false'); }
+  function applySelectionUI(){
+    [...menu.querySelectorAll('[role="menuitem"]')].forEach(btn=>{
+      const isSel = btn.id === idMap[lastAction];
+      btn.setAttribute('aria-checked', String(isSel));
+      btn.classList.toggle('selected', isSel);
+    });
+    main.title = `${labelMap[lastAction]} 실행`;
+    main.textContent = `내보내기 (${labelMap[lastAction]})`;
+    toggle.textContent = '옵션 ▾';
+  }
+  menu.addEventListener('click', e=>{
+    const btn=e.target.closest('[role="menuitem"]'); if(!btn) return;
+    if (btn.id==='mnuCopyText') lastAction='text';
+    else if (btn.id==='mnuSavePNG') lastAction='png';
+    else lastAction='print';
+    localStorage.setItem('exportAction', lastAction);
+    applySelectionUI(); closeMenu();
+  });
+  main.addEventListener('click', async (e)=>{
+    e.preventDefault();
+    if (lastAction==='text'){
+      showLoading('텍스트 준비 중…','공유용 문장을 정리합니다',300);
+      try{ const text=buildShareText(); openPreviewModal(text); } finally{ hideLoading(); }
+    } else if (lastAction==='png'){
+      await exportAsImage();
+    } else {
+      await printExport();
+    }
+  });
+  toggle.addEventListener('click', (e)=>{ e.stopPropagation(); menu.hidden ? openMenu() : closeMenu(); });
+  document.addEventListener('click',  (e)=>{ if(!menu.hidden && !split.contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
+  applySelectionUI();
+})();
+
+/* ===== 임시 저장 ===== */
+document.getElementById('btnShare').addEventListener('click', async ()=>{
+  showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
+  try{
+    const cur=new URL(location.href);
+    const currentKey=cur.searchParams.get('k')||'';
+    const res=await fetchWithTimeout(GAS_URL,{ method:'POST', body: JSON.stringify({ mode:'share', key: currentKey, data: collectForShare() })});
+    const json=await res.json();
+    if(res.ok && json.status==='ok' && json.key){
+      cur.searchParams.set('k', json.key); cur.searchParams.delete('code'); history.replaceState(null,'',cur.toString());
+      const d=collect(); const titleText=d.showTitle ? makeShareTitle(d) : ''; const linkText=cur.toString();
+      openPreviewModal(titleText ? `${titleText}\n${linkText}` : linkText);
+    }else{ alert('임시 저장 실패: ' + (json.error || res.status)); }
+  }catch(err){ alert('임시 저장 중 오류: ' + (err?.message || err)); }
+  finally{ hideLoading(); }
 });
 
-       // this.listEl.innerHTML 생성 부분 교체
-this.listEl.innerHTML = rows.map(r=>{
-  const x = mapRow(r);
-  const addr = (x.road || x.jibun || '').trim() || (x.name || '');
+/* ===== 제출 ===== */
+async function submitToSheet(){
+  showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
+  try{
+    const data=collect();
+    const resolvedAddress=(data.place||data.placeAddr||'').trim();
+    const todayStr=new Date().toISOString().slice(0,10);
 
-  return `<div class="place-item"
+    const customOpen=document.getElementById('teamCustom')?.style.display!=='none';
+    const customVal=document.getElementById('teamCustom')?.value.trim();
+    if (customOpen && !customVal){ alert('대상(기타)을 선택하셨습니다. 내용을 입력해 주세요.'); document.getElementById('teamCustom').focus(); hideLoading(); return; }
+
+    const invalid=[];
+    if(!data.team) invalid.push(() => document.querySelector('#teamChips .chip')?.focus());
+    if(!data.title.trim()) invalid.push(() => document.getElementById('title').focus());
+    if (data.date && data.date < todayStr) { alert('오늘 이후 날짜만 선택 가능합니다.'); hideLoading(); document.getElementById('date').focus(); return; }
+    if(!data.date) invalid.push(() => document.getElementById('date').focus());
+    if(!data.place.trim()) invalid.push(() => document.getElementById('place').focus());
+    if(!(data.schedule||'').trim()) invalid.push(() => document.getElementById('schedule').focus());
+    if(!data.bus) invalid.push(() => document.querySelector('#busChips .chip')?.focus());
+    if(!data.contact.trim()) invalid.push(() => document.getElementById('contact').focus());
+    if (invalid.length){ alert('필수 항목을 입력/선택해 주세요.'); invalid[0](); hideLoading(); return; }
+
+    let shareKey='', clientUrl='';
+    const urlObj=new URL(location.href); const existingKey=urlObj.searchParams.get('k')||'';
+    if (existingKey){ shareKey=existingKey; clientUrl=urlObj.toString(); }
+    else {
+      try{
+        const shareRes=await fetchWithTimeout(GAS_URL,{ method:'POST', body: JSON.stringify({ mode:'share', data })});
+        let shareJson; try{ shareJson=await shareRes.json(); } catch{ const t=await shareRes.text(); throw new Error('임시저장 응답이 JSON이 아님: ' + t.slice(0,200)); }
+        if (shareRes.ok && shareJson.status==='ok' && shareJson.key){
+          shareKey=shareJson.key; urlObj.searchParams.delete('code'); urlObj.searchParams.set('k', shareKey);
+          clientUrl=urlObj.toString(); history.replaceState(null,'',clientUrl);
+        } else { clientUrl=location.href; }
+      }catch{ clientUrl=location.href; }
+    }
+
+    const payload={ ...data,
+      place_name:(data.placeName||'').trim(),
+      address: resolvedAddress,
+      place: (data.placeName||'').trim(), // (백엔드 호환)
+      submitted_at: new Date().toISOString(),
+      client_url: clientUrl,
+      share_key: shareKey,
+      mode:'append'
+    };
+
+    const res=await fetchWithTimeout(GAS_URL,{ method:'POST', body: JSON.stringify(payload) });
+    let json; try{ json=await res.json(); } catch{ const t=await res.text(); throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); }
+    if(res.ok && (json.status==='ok' || json.result==='ok')){ alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`); }
+    else{ alert(`제출 실패: ${json.error||res.status}`); }
+  }catch(err){
+    const msg=(err && err.name==='AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
+    alert('전송 중 오류: ' + msg);
+  }finally{ hideLoading(); }
+}
+document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
+
+/* ===== 지도 검색 모달/지오코딩/정적지도 ===== */
+const placeModal = {
+  el:null, listEl:null, queryEl:null,
+  open(initQ=''){
+    if(!this.el){
+      this.el=document.getElementById('placeModal');
+      this.listEl=document.getElementById('placeList');
+      this.queryEl=document.getElementById('placeQuery');
+      document.getElementById('placeCloseBtn').addEventListener('click', ()=> this.close());
+      document.getElementById('placeSearchBtn').addEventListener('click', ()=> this.search());
+      this.queryEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter') this.search(); });
+      this.el.addEventListener('click', (e)=>{ if(e.target===this.el) this.close(); });
+    }
+    this.queryEl.value=(initQ||'').trim();
+    this.listEl.innerHTML='<div class="empty">검색 중…</div>';
+    this.el.hidden=false;
+    this.search();
+  },
+  close(){ if(this.el) this.el.hidden=true; },
+  async search(){
+    const q=(this.queryEl.value||'').trim();
+    if(!q){ this.listEl.innerHTML='<div class="empty">검색어를 입력해 주세요.</div>'; return; }
+    try{
+      const url=`${GAS_URL}?mode=naver_local&query=${encodeURIComponent(q)}`;
+      const res=await fetchWithTimeout(url); const json=await res.json();
+      if(!res.ok) throw new Error(json && json.error || ('HTTP '+res.status));
+      const rows=Array.isArray(json.items||json.results||json) ? (json.items||json.results||json) : [];
+      if(!rows.length){ this.listEl.innerHTML='<div class="empty">검색 결과가 없습니다.</div>'; return; }
+      const mapRow = (r)=>({ name:r.name||r.title||r.place_name||'', road:r.roadAddress||r.road_address||r.road||'', jibun:r.jibunAddress||r.jibun_address||r.address||'', tel:r.telephone||r.tel||'', url:r.mapUrl||r.link||r.url||'', mapx:r.mapx||r.x||r.lng||'', mapy:r.mapy||r.y||r.lat||'' });
+      this.listEl.innerHTML = rows.map(r=>{
+        const x=mapRow(r);
+        const addr=(x.road || x.jibun || '').trim() || (x.name||'');
+        return `<div class="place-item"
               data-url="${encodeURIComponent(x.url)}"
               data-name="${encodeURIComponent(x.name)}"
               data-addr="${encodeURIComponent(addr)}"
@@ -950,1195 +1055,211 @@ this.listEl.innerHTML = rows.map(r=>{
             <b>${escapeHTML(x.name)}</b>
             <small>${escapeHTML(addr)}</small>
           </div>`;
-}).join('');
+      }).join('');
+      this.listEl.querySelectorAll('.place-item').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          const name=decodeURIComponent(el.getAttribute('data-name')||'');
+          const addr=decodeURIComponent(el.getAttribute('data-addr')||'');
+          const tel =decodeURIComponent(el.getAttribute('data-tel')||'');
+          const raw =decodeURIComponent(el.getAttribute('data-link')||'');
+          const mapx=decodeURIComponent(el.getAttribute('data-x')||'');
+          const mapy=decodeURIComponent(el.getAttribute('data-y')||'');
+          const finalUrl=resolveNaverLink({ title:name, roadAddress:addr, address:addr, telephone:tel, link:raw, mapx, mapy });
+          setSelectedPlace({ title:name, roadAddress:addr, address:addr, telephone:tel, link:finalUrl, mapx, mapy });
+          setPickedPlaceLink(finalUrl, name||'지도열기');
+          (async ()=>{
+            const dbg={ name, addr, mapx, mapy, steps:[] };
+            try{
+              // 지오코딩 우선
+              const tryGeocode=async(q)=>{
+                if(!q) return null;
+                const url=`${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
+                const r=await fetchWithTimeout(url); let j; try{ j=await r.json(); }catch(e){ dbg.steps.push({step:'geocode',q,ok:false,http:r.status,nonJson:true}); return null; }
+                dbg.steps.push({step:'geocode',q,ok:(j&&j.status==='ok'&&j.found),http:r.status,j});
+                if (j && j.status==='ok' && j.found && Number.isFinite(j.lat) && Number.isFinite(j.lng)) return { lat:j.lat, lng:j.lng };
+                return null;
+              };
+              const clean=(s='')=>s.replace(/\((?:[^()]|\([^()]*\))*\)/g,'').replace(/\s+\d+[-~]?\d*(?:호|번지|층|F|동|호실)?/g,'').replace(/대한법조|빌딩|타워|센터|상가|아파트|오피스텔|Mall|몰/gi,'').replace(/\s{2,}/g,' ').trim();
+              const addrRaw=(addr||'').trim(); const nameRaw=(name||'').trim();
+              const addrC=clean(addrRaw); const nameC=clean(nameRaw);
+              const adminOnly=addrRaw.split(/\s+/).slice(0,3).join(' ').trim();
+              const variants=[];
+              [ addrRaw, (nameRaw&&addrRaw)?`${nameRaw} ${addrRaw}`:'', addrC, (nameC&&addrC)?`${nameC} ${addrC}`:'', adminOnly && `${adminOnly} ${nameRaw||nameC||''}`.trim(), nameRaw||nameC, addrRaw && `대한민국 ${addrRaw}` ]
+                .forEach(q=>{ if(q && !variants.includes(q)) variants.push(q); });
+              let g=null; for (const q of variants){ const r=await tryGeocode(q); dbg.steps.push({step:'geocode',q,ok:!!r}); if (r){ g=r; break; } }
+              let lat=g?.lat??'', lng=g?.lng??'';
+              if ((!lat||!lng) && mapx && mapy){
+                const fx=parseFloat(mapx), fy=parseFloat(mapy);
+                if (isFinite(fx)&&isFinite(fy)&&fy>=30&&fy<=40&&fx>=124&&fx<=132){ lat=fy; lng=fx; }
+                else if (isFinite(fx)&&isFinite(fy)&&fx>=30&&fx<=40&&fy>=124&&fy<=132){ lat=fx; lng=fy; }
+              }
+              if (!lat || !lng) throw new Error('좌표 추출 실패');
+              document.getElementById('placeLat').value=lat;
+              document.getElementById('placeLng').value=lng;
 
-
- // ✅ 장소 클릭 시 좌표 확정 → Static Map 생성 (지오코딩 우선)
-// ✅ 장소 클릭 시 좌표 확정 → Static Map 생성 (지오코딩 우선 + 다단계 보강)
-this.listEl.querySelectorAll('.place-item').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    const name = decodeURIComponent(el.getAttribute('data-name')||'');
-    const addr = decodeURIComponent(el.getAttribute('data-addr')||'');
-    const tel  = decodeURIComponent(el.getAttribute('data-tel')||'');
-    const raw  = decodeURIComponent(el.getAttribute('data-link')||'');
-    const mapx = decodeURIComponent(el.getAttribute('data-x')||''); // Local API 원시 좌표(신뢰X)
-    const mapy = decodeURIComponent(el.getAttribute('data-y')||'');
-
-    const finalUrl = resolveNaverLink({
-      title: name, roadAddress: addr, address: addr,
-      telephone: tel, link: raw, mapx, mapy
-    });
-
-    setSelectedPlace({
-      title: name, roadAddress: addr, address: addr,
-      telephone: tel, link: finalUrl, mapx, mapy
-    });
-    setPickedPlaceLink(finalUrl, name || '지도열기');
-    
-    (async ()=>{
-      // 디버깅용: 단계별 시도 결과를 콘솔로
-      const dbg = { name, addr, mapx, mapy, steps: [] };
-
-      try {
-        // 1) 지오코딩(가장 정확)
-        let lat='', lng='';
-        const tryGeocode = async (q) => {
-          if (!q) return null;
-          const url = `${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
-          const r   = await fetchWithTimeout(url);
-          let j;
- try {
-   j = await r.json();
- } catch (e) {
-   console.warn('[geocode] non-JSON:', await r.text());
-   dbg.steps.push({ step:'geocode', q, ok:false, http:r.status, nonJson:true });
-   return null;
- }
- console.log('[geocode]', q, j); // ★ 원문 그대로 확인
- dbg.steps.push({ step:'geocode', q, ok:(j && j.status==='ok' && j.found), http:r.status, j });
- if (j && j.status==='ok' && j.found && Number.isFinite(j.lat) && Number.isFinite(j.lng)) {
-   return { lat: j.lat, lng: j.lng };
- }
-          return null;
-        };
-
-        // 지오코딩 시도 순서: (도로명/지번주소) → (상호 + 주소) → (상호만)
-       // 🔧 지오코딩 시도 보강
-const variants = [];
-const clean = (s='') => s
-  .replace(/\((?:[^()]|\([^()]*\))*\)/g, '')     // 괄호 내용 통째 제거
-  .replace(/\s+\d+[-~]?\d*(?:호|번지|층|F|동|호실)?/g, '') // 번지/호/층 등 제거
-  .replace(/대한법조|빌딩|타워|센터|상가|아파트|오피스텔|Mall|몰/gi, '')
-  .replace(/\s{2,}/g, ' ')
-  .trim();
-
- // 0) 원본 먼저(절대 건드리지 말고 그대로 시도)
- const addrRaw = (addr || '').trim();
- const nameRaw = (name || '').trim();
- const addrC   = clean(addrRaw);
- const nameC   = clean(nameRaw);
- const adminOnly = addrRaw.split(/\s+/).slice(0, 3).join(' ').trim(); // 시/구/동 정도
-
- [
-   addrRaw,                               // ★ 원본 주소(번지 포함) 최우선
-   (nameRaw && addrRaw) ? `${nameRaw} ${addrRaw}` : '', // 원본 상호+주소
-   addrC,                                 // 정제 주소(차선)
-   (nameC && addrC) ? `${nameC} ${addrC}` : '',
-   adminOnly && `${adminOnly} ${nameRaw || nameC || ''}`.trim(),
-   nameRaw || nameC,                      // 상호만(최후)
-   addrRaw && `대한민국 ${addrRaw}`,      // 국가 접두(최후)
- ].forEach(q => { if (q && !variants.includes(q)) variants.push(q); });
-let g = null;
-for (const q of variants) {
-  const r = await tryGeocode(q);
-  dbg.steps.push({ step:'geocode', q, ok: !!r });
-  if (r) { g = r; break; }
-}
-
-lat = g?.lat ?? ''; lng = g?.lng ?? '';
-
-// 👉 그래도 불발이면 여기서 끝내지 말고, 마지막 보호 장치로 시/구/동만으로 재시도
-if ((!lat || !lng) && adminOnly) {
-  const r2 = await tryGeocode(adminOnly);
-  dbg.steps.push({ step:'geocode_adminOnly', q: adminOnly, ok: !!r2 });
-  if (r2) { lat = r2.lat; lng = r2.lng; }
-}
-
-
-        if (g) { lat = g.lat; lng = g.lng; }
-
-        // 2) 보정: Local API 좌표가 이미 위경도 범위면 사용
-        if ((!lat || !lng) && mapx && mapy) {
-          const fx = parseFloat(mapx), fy = parseFloat(mapy);
-          // (a) 그대로 위경도일 가능성
-          if (isFinite(fx) && isFinite(fy) && fy>=30 && fy<=40 && fx>=124 && fx<=132) {
-            lat = fy; lng = fx;
-            dbg.steps.push({ step:'fallback_direct_ll', used:true, fx, fy });
-          }
-          // (b) 혹시 x/y가 뒤바뀐 경우
-          else if (isFinite(fx) && isFinite(fy) && fx>=30 && fx<=40 && fy>=124 && fy<=132) {
-            lat = fx; lng = fy;
-            dbg.steps.push({ step:'fallback_swapped_ll', used:true, fx, fy });
-          }
-        }
-
-        if (!lat || !lng) throw new Error('좌표 추출 실패 (지오코딩/보정 모두 실패)');
-
-        // hidden 저장
-        document.getElementById('placeLat').value = lat;
-        document.getElementById('placeLng').value = lng;
-
-        // 3) Static Map 생성
-        const level = 19; // 숫자 ↑ = 덜 확대(더 넓게)
-        const api = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=300&h=200`;
-        const res = await fetchWithTimeout(api);
-        const json = await res.json();
-        dbg.steps.push({ step:'static_map', ok:(json && json.status==='ok'), json_status: json && json.status });
-
-        if (json.status === 'ok' && json.dataUrl) {
-          document.getElementById('placeMapImg').value = json.dataUrl;
-          setMapPreview(json.dataUrl); // 썸네일 미리보기
-        } else {
-          throw new Error('StaticMap 생성 실패');
-        }
-     } catch (err) {
-  console.error('[static map error]', err, dbg);
-  setMapPreview('');
-  document.getElementById('placeLat').value = '';
-  document.getElementById('placeLng').value = '';
-  document.getElementById('placeMapImg').value = '';
-
-  // 🔍 어떤 단계에서 막혔는지 눈에 보이게
-  const last = (dbg && dbg.steps && dbg.steps[dbg.steps.length - 1]) || {};
-  let hint = '원인 미상';
- if (dbg && Array.isArray(dbg.steps)) {
-   const gFails = dbg.steps.filter(s => s.step==='geocode');
-   if (gFails.length) {
-     const lastG = gFails[gFails.length-1];
-     const j = lastG && lastG.j;
-     if (j && j.status && j.status!=='ok') hint = `지오코딩 응답(status=${j.status})`;
-     else if (j && j.error)                hint = `지오코딩 오류: ${j.error}`;
-     else                                  hint = '지오코딩 실패(매칭 안됨)';
-   } else if (last.step === 'static_map') {
-     hint = `정적지도 실패(status=${last.json_status ?? '?'})`;
-   }
- }
-
-  alert(
-    '지도 이미지를 불러오지 못했습니다.\n' +
-    '사유: ' + hint + '\n\n' +
-    '• 주소를 도로명으로 바꿔 재검색해 보세요.\n' +
-    '• 관리자 콘솔에서 NCP API 키/권한을 확인해 주세요.'
-  );
-} finally {
-  placeModal.close();
-}
-
-    })();
-  });
-});
-
-
-
-
-
-      }catch(err){
-        console.error(err);
-        this.listEl.innerHTML = `<div class="empty">검색 오류: ${escapeHTML(err.message||'알 수 없음')}</div>`;
-      }
+              // ★ 정적지도 호출에 style 반영
+              const api = `${GAS_URL}?mode=static_map`
+                + `&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
+                + `&w=300&h=200`
+                + `&style=${encodeURIComponent(getMapType())}`;
+              const res=await fetchWithTimeout(api); const json=await res.json();
+              if (json.status==='ok' && json.dataUrl){
+                document.getElementById('placeMapImg').value=json.dataUrl; setMapPreview(json.dataUrl);
+              } else { throw new Error('StaticMap 생성 실패'); }
+            }catch(err){
+              console.error('[static map error]', err, dbg);
+              setMapPreview(''); document.getElementById('placeLat').value=''; document.getElementById('placeLng').value=''; document.getElementById('placeMapImg').value='';
+              alert('지도 이미지를 불러오지 못했습니다.\n• 주소를 도로명으로 바꿔 재검색해 보세요.\n• 관리자 콘솔에서 NCP API 키/권한을 확인해 주세요.');
+            }finally{ placeModal.close(); }
+          })();
+        });
+      });
+    }catch(err){
+      console.error(err);
+      this.listEl.innerHTML = `<div class="empty">검색 오류: ${escapeHTML(err.message||'알 수 없음')}</div>`;
     }
-  };
-
-  document.getElementById('btnPickPlace').addEventListener('click', async ()=>{
-  const seed = (document.getElementById('place').value || '').trim();
-
-  // ① 네이버 지도/플레이스 URL을 직접 붙인 경우 → 링크 저장 + 지오코딩 시도
-if (isUrl(seed) && isNaverPlaceUrl(seed)) {
-  document.getElementById('placeLink').value = seed;
-  setPickedPlaceLink(seed, '네이버 지도');
-
-  // 장소명이나 주소 텍스트가 있으면 그것으로 지오코딩 시도
-  const nameGuess = (document.getElementById('placeName').value || '').trim();
-  const addrGuess = (document.getElementById('place').value || '').trim();
-  const q = looksLikeKrAddress(addrGuess) ? addrGuess : nameGuess;
-  if (q) { await useAddressDirect(q); }   // 성공 시 placeMapImg/썸네일 채워짐
-
-  return;
-}
-
-  // ② 주소처럼 보이면 → 바로 지오코딩으로 확정
-  if (looksLikeKrAddress(seed)) {
-    await useAddressDirect(seed);
+  }
+};
+document.getElementById('btnPickPlace').addEventListener('click', async ()=>{
+  const seed=(document.getElementById('place').value||'').trim();
+  if (isUrl(seed) && isNaverPlaceUrl(seed)){
+    document.getElementById('placeLink').value=seed; setPickedPlaceLink(seed,'네이버 지도');
+    const nameGuess=(document.getElementById('placeName').value||'').trim();
+    const addrGuess=(document.getElementById('place').value||'').trim();
+    const q=looksLikeKrAddress(addrGuess)?addrGuess:nameGuess;
+    if (q) { await useAddressDirect(q); }
     return;
   }
-
-  // ③ 그 외(상호명 등)는 후보 검색 모달로
+  if (looksLikeKrAddress(seed)){ await useAddressDirect(seed); return; }
   placeModal.open(seed);
 });
-
-
-  // 사용자가 장소 텍스트를 바꾸면 이전 선택 URL은 무효화(오동작 방지)
- document.getElementById('place').addEventListener('input', ()=>{
-  setPickedPlaceLink('', '');
-  document.getElementById('placeLat').value = '';
-  document.getElementById('placeLng').value = '';
-  document.getElementById('placeMapImg').value = '';
-  setMapPreview('');
+document.getElementById('place').addEventListener('input', ()=>{
+  setPickedPlaceLink('', ''); document.getElementById('placeLat').value=''; document.getElementById('placeLng').value='';
+  document.getElementById('placeMapImg').value=''; setMapPreview('');
 });
 
-
-  /* 특이사항 템플릿 */
-  const NOTES_PRESETS = [
-    '- 편한 복장, 물·우의 준비해 주세요.',
-    '- 버스 대절, 조금 여유 있게 집결해 주세요.',
-    '- 자차·대중교통으로 개별 집결해 주세요.',
-    '- 자차는 공영·노상 주차장을 이용해 주세요.',
-    '- 장소별 내부 주차장 마련되어 있습니다.',
-  ];
-  function getNotesLines(){
-    const raw = (document.getElementById('notes').value || '')
-      .split('\n').map(s => s.trim()).filter(Boolean);
-    return raw;
-  }
-  function setNotesLines(lines){
-    const ta = document.getElementById('notes');
-    ta.value = (lines || []).join('\n');
-    syncNotesPresetSelection();
-  }
-  function toggleNotePreset(text){
-    const lines = getNotesLines();
-    const i = lines.indexOf(text);
-    if (i >= 0) lines.splice(i, 1);
-    else lines.push(text);
-    setNotesLines(lines);
-  }
-  function renderNotesPresets(){
-    const box = document.getElementById('notesPresets'); if (!box) return;
-    box.innerHTML = '';
-    NOTES_PRESETS.forEach(txt => {
-      const chip = document.createElement('div');
-      chip.className = 'chip'; chip.textContent = txt; chip.tabIndex = 0;
-      chip.setAttribute('role','button'); chip.setAttribute('data-text', txt);
-      box.appendChild(chip);
-    });
-    box.addEventListener('click', e => {
-      const c = e.target.closest('.chip'); if (!c) return;
-      toggleNotePreset(c.getAttribute('data-text'));
-    });
-    box.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        const c = e.target.closest('.chip'); if (!c) return;
-        e.preventDefault(); toggleNotePreset(c.getAttribute('data-text'));
-      }
-    });
-    syncNotesPresetSelection();
-  }
-  function syncNotesPresetSelection(){
-    const selected = new Set(getNotesLines());
-    document.querySelectorAll('#notesPresets .chip').forEach(chip => {
-      const t = chip.getAttribute('data-text');
-      chip.classList.toggle('selected', selected.has(t));
-    });
-  }
-  (function bindNotesInputSync(){
-    const ta = document.getElementById('notes'); if (!ta) return;
-    ta.addEventListener('input', () => { syncNotesPresetSelection(); });
-  })();
-  renderNotesPresets();
-
-  /* 폼 수집 */
-function collect(){
-  const val = id => document.getElementById(id)?.value || '';
-  const on  = id => { const el = document.getElementById(id); return (el ? !!el.checked : true); };
-
-  return {
-    // 기존
-    team: val('team'),
-    title: val('title'),
-    date: val('date'),
-    time: val('time'),
-    schedule: val('schedule'),
-    bus: val('bus'),
-
-    // ✅ 새 필드
-    placeName: val('placeName'),   // ← 장소(텍스트)
-    // 기존 place는 이제 '주소' 입력칸
-    place: val('place'),
-
-    // (기존 히든 유지 — 사용 안 해도 무방)
-    placeAddr: val('placeAddr'),
-    placeTel:  val('placeTel'),
-    placeLink: val('placeLink'),
-    placeUrl:  val('placeUrl'),
-    placeLat:  val('placeLat'),
-    placeLng:  val('placeLng'),
-    placeMapImg: val('placeMapImg'),
-
-    notes: val('notes'),
-    contact: val('contact'),
-
-    // 토글
-    showTeam: on('showTeam'),
-    showTitle: on('showTitle'),
-    showDate: on('showDate'),
-    showTime: on('showTime'),
-    showPlace: on('showPlace'),
-    showAddress: on('showAddress'),   // ← 추가
-    showSchedule: on('showSchedule'),
-    showBus: on('showBus'),
-    showNotes: on('showNotes'),
-    showContact: on('showContact'),
-  };
-}
-
-function collectForShare(){
-  const d = collect();
-  d.placeMapImg = ''; // 임시저장 전에는 무조건 비우기
-  return d;
-}
-
-
-
-  /* 공유 텍스트 */
-  function decodeShare(b64){
-    try{ return JSON.parse(decodeURIComponent(escape(atob(b64)))); }
-    catch(e){ alert('공유 코드 해석 실패'); return null }
-  }
-  function makeShareTitle(d){
-    const target = formatTarget(d.team);
-    const dateTxt = d.date ? weekdayKR(d.date) : '';
-    const rawTitle = (d.title || '').trim();
-    if (rawTitle) return rawTitle;
-    return [dateTxt, target, '야유회'].filter(Boolean).join(' ');
-  }
-
-  function resolvedMapLink(d){
-    const place = (d.place||'').trim();
-    const picked = (d.placeUrl||'').trim();
-    if(picked) return picked;                 // 검증된 지점 URL
-    if(isUrl(place)) return place;            // 사용자가 URL 직접 입력
-    return buildNaverSearchLink(place);       // 마지막 안전장치: 검색 링크
-  }
-
-function buildShareText(){
-  const d = collect();
-  const dateStr = d.date ? weekdayKR(d.date) : '-';
-  const timeStr = (d.time || '').trim();
-
-  const blocks = [];
-
-  // 제목
-  if (d.showTitle) {
-    const header = makeShareTitle(d) || '안내문';
-    blocks.push(header);
-  }
-
-  // 대상
-  if (d.showTeam) {
-    const target = formatTarget(d.team);
-    if (target) blocks.push(`🎯 [대상] ${target}`);
-  }
-
-  // 일자 / 시간 (각각 독립 블록)
-  if (d.showDate) blocks.push(`📅 [일자] ${dateStr}`);
-  if (d.showTime && timeStr) blocks.push(`⏰ [시간] ${timeStr}`);
-
-  // 장소 / 주소 / (네이버) / (전화)
-  if (d.showPlace) {
-   const placeName = (d.placeName || '').trim();
-   if (placeName) blocks.push(`📍 [장소] ${placeName}`);
-   if ((d.placeLink || '').trim()) blocks.push(`🔗 (네이버) ${d.placeLink.trim()}`);
-   if ((d.placeTel  || '').trim()) blocks.push(`☎️ (전화) ${d.placeTel.trim()}`);
- }
- // 주소는 독립 토글
- const addrLine = (d.place || d.placeAddr || '').trim();
- if (d.showAddress && addrLine) {
-   blocks.push(`🏠 [주소] ${addrLine}`);
- }
-
-  // 일정 요약
-  if (d.showSchedule) {
-    const schedule = (d.schedule || '').split('\n').filter(Boolean);
-    blocks.push(['📝 [일정 요약]', ...(schedule.length ? schedule : ['-'])].join('\n'));
-  }
-
-  // 버스
-  if (d.showBus && (d.bus || '').trim()){
-    blocks.push(`🚌 [버스 대절] ${d.bus.trim()}`);
-  }
-
-  // 특이사항
-  if (d.showNotes && (d.notes || '').trim()){
-    const notes = d.notes.split('\n').filter(Boolean);
-    blocks.push(['⚠️ [특이사항]', ...notes].join('\n'));
-  }
-
-  // 문의처
-  if (d.showContact) {
-    blocks.push(`📞 [문의처] ${d.contact || '-'}`);
-  }
-
-  // 블록 사이에 빈 줄 1개
-  return blocks.filter(Boolean).join('\n\n');
-}
-
-
-async function buildMapThumbByLatLng(lat, lng){
-  try{
-    const url = `${GAS_URL}?mode=static_map&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&w=440&h=300&level=19`;
-    const res = await fetchWithTimeout(url);
-    const json = await res.json();
-    if (!res.ok || json.status !== 'ok' || !json.dataUrl) throw new Error('static_map failed');
-    return json.dataUrl; // data:image/png;base64,...
-  }catch(e){
-    console.warn('Static map error:', e);
-    return '';
-  }
-}
-    
-// ✅ buildMapThumbByLatLng(...) 바로 아래에 추가
-async function restoreMapIfNeededFromData(d){
-  if (!d) return;
-  // 이미 dataURL 이미지가 있으면 복원할 필요 없음
-  if (d.placeMapImg && d.placeMapImg.startsWith('data:image/')) return;
-  // 좌표가 있으면 정적지도 다시 생성
-  if (d.placeLat && d.placeLng){
-    try{
-      const dataUrl = await buildMapThumbByLatLng(d.placeLat, d.placeLng);
-      if (dataUrl){
-        document.getElementById('placeMapImg').value = dataUrl;
-        setMapPreview(dataUrl);
-      }
-    }catch(e){
-      console.warn('지도 복원 실패', e);
-    }
-  }
-}
-
-    
 async function geocodeToLatLng(name, road, jibun){
-  const q = (road || jibun || name || '').trim();
-  if (!q) return null;
+  const q=(road||jibun||name||'').trim(); if(!q) return null;
   try{
-    const url = `${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
-    const res = await fetchWithTimeout(url);
-    const json = await res.json();
-    if (!res.ok || json.status !== 'ok' || !json.found) return null;
+    const url=`${GAS_URL}?mode=geocode&q=${encodeURIComponent(q)}`;
+    const res=await fetchWithTimeout(url); const json=await res.json();
+    if (!res.ok || json.status!=='ok' || !json.found) return null;
     return { lat: json.lat, lng: json.lng };
-  }catch(e){
-    console.warn('Geocode error:', e);
-    return null;
-  }
+  }catch(e){ console.warn('Geocode error:', e); return null; }
 }
-
-function setMapPreview(dataUrl){
-  const img = document.getElementById('placeThumbImg');
-  const box = document.getElementById('placeThumb');
-  if (dataUrl){
-    img.src = dataUrl;
-    box.style.display = 'block';
-  } else {
-    img.removeAttribute('src');
-    box.style.display = 'none';
-  }
-}
-// ✅ html2canvas 캡처 전에 모든 이미지 로딩을 기다리는 유틸
-async function waitForImagesLoaded(root){
-  const imgs = Array.from(root.querySelectorAll('img'));
-  const pendings = imgs.filter(img => !img.complete || img.naturalWidth === 0);
-  if (!pendings.length) return;
-  await Promise.all(pendings.map(img => new Promise(res => {
-    img.addEventListener('load',  res, { once:true });
-    img.addEventListener('error', res, { once:true });
-  })));
-}
-
-
-
-
-  /* 미리보기 모달 */
-  (function setupPreviewModal(){
-    const modal = document.getElementById('previewModal');
-    const ta = document.getElementById('previewTa');
-    const btnClose2 = document.getElementById('previewClose2');
-    const btnCopy = document.getElementById('previewCopy');
-    const toast = document.getElementById('previewToast');
-
-    function openPreviewModal(text){
-      if (!modal || !ta) return;
-      ta.value = text || '';
-      ta.style.height = 'auto';
-      ta.style.height = Math.max(220, Math.min(420, ta.scrollHeight)) + 'px';
-      toast?.classList.remove('show');
-      modal.hidden = false;
-      setTimeout(()=>{ ta.focus(); ta.select(); }, 0);
-      document.addEventListener('keydown', onEsc, { once: true });
-      modal.addEventListener('click', onBackdropClick);
-    }
-    function closePreviewModal(){ if (!modal) return; modal.hidden = true; modal.removeEventListener('click', onBackdropClick); }
-    function onBackdropClick(e){ if (e.target === modal) closePreviewModal(); }
-    function onEsc(e){ if (e.key === 'Escape') closePreviewModal(); }
-    async function copyPreviewText(){
-      const text = ta.value || '';
-      if (navigator.clipboard && navigator.clipboard.writeText){ try{ await navigator.clipboard.writeText(text); showToast(); return; } catch(_){} }
-      try{ ta.select(); const ok = document.execCommand('copy'); if (ok) { showToast(); return; } }catch(_){}
-      alert('자동 복사가 제한되어 있어요. 텍스트를 길게 눌러 복사해주세요.');
-    }
-    function showToast(){ if (!toast) return; toast.classList.add('show'); setTimeout(()=> toast.classList.remove('show'), 3000); }
-    window.openPreviewModal = openPreviewModal;
-    window.closePreviewModal = closePreviewModal;
-    btnCopy?.addEventListener('click', copyPreviewText);
-    btnClose2?.addEventListener('click', closePreviewModal);
-  })();
-
-  /* 버튼 동작 */
-  /* ===== 내보내기 스플릿 바인딩 ===== */
-
-/* ===== 내보내기 스플릿 (옵션 선택 → 메인 버튼으로 실행) ===== */
-(function setupExportSplit(){
-  const main   = document.getElementById('btnExportMain');
-  const toggle = document.getElementById('btnExportToggle');
-  const menu   = document.getElementById('exportMenu');
-  const split  = document.getElementById('exportSplit');
-  if(!main || !toggle || !menu || !split) return;
-
-  // 기본값: 출력. 마지막 선택 기억(선택)
-  let lastAction = localStorage.getItem('exportAction') || 'print';
-  const labelMap = { text:'문구 복사', png:'이미지 저장(PNG)', print:'출력' };
-  const idMap    = { text:'mnuCopyText', png:'mnuSavePNG',     print:'mnuPrint' };
-
-  function openMenu(){ menu.hidden = false; toggle.setAttribute('aria-expanded','true'); }
-  function closeMenu(){ menu.hidden = true;  toggle.setAttribute('aria-expanded','false'); }
-
-  function applySelectionUI(){
-  [...menu.querySelectorAll('[role="menuitem"]')].forEach(btn=>{
-    const isSel = btn.id === idMap[lastAction];
-    btn.setAttribute('aria-checked', String(isSel));
-    btn.classList.toggle('selected', isSel);
-  });
-
-  const labelMap = { text:'문구 복사', png:'이미지 저장(PNG)', print:'출력' };
-  main.title = `${labelMap[lastAction]} 실행`;
-  main.textContent = `내보내기 (${labelMap[lastAction]})`;  // ← 표시 강화
-  toggle.textContent = '옵션 ▾';                            // ← 라벨 부여
-}
-
-
-  // ▼ 메뉴 아이템 클릭: “선택만” 하고 닫기 (실행 X)
-  menu.addEventListener('click', e=>{
-    const btn = e.target.closest('[role="menuitem"]');
-    if(!btn) return;
-    if (btn.id === 'mnuCopyText')      lastAction = 'text';
-    else if (btn.id === 'mnuSavePNG')  lastAction = 'png';
-    else                               lastAction = 'print';
-    localStorage.setItem('exportAction', lastAction);
-    applySelectionUI();
-    closeMenu();
-  });
-
-  // ▼ 메인 버튼 클릭: 여기서만 실제 실행
-  main.addEventListener('click', async (e)=>{
-    e.preventDefault();
-    if (lastAction === 'text'){
-      showLoading('텍스트 준비 중…','공유용 문장을 정리합니다',300);
-      try {
-        const text = buildShareText();
-        openPreviewModal(text);
-      } finally { hideLoading(); }
-    } else if (lastAction === 'png'){
-      await exportAsImage();
-    } else {
-      await printExport();
-    }
-  });
-
-  // 열고 닫기 제어
-  toggle.addEventListener('click', (e)=>{ e.stopPropagation(); menu.hidden ? openMenu() : closeMenu(); });
-  document.addEventListener('click',  (e)=>{ if(!menu.hidden && !split.contains(e.target)) closeMenu(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
-
-  applySelectionUI(); // 초기 반영
-})();
-
-
-
-
-  document.getElementById('btnShare').addEventListener('click', async ()=>{
-  showLoading('임시 저장 중…', '짧은 링크를 생성합니다');
+async function buildMapThumbByLatLng(lat,lng){
   try{
-    const cur = new URL(location.href);
-    const currentKey = cur.searchParams.get('k') || '';
-
-    const res = await fetchWithTimeout(GAS_URL, {
-      method:'POST',
-      body: JSON.stringify({ mode:'share', key: currentKey, data: collectForShare() })
-    });
-    const json = await res.json();
-    if(res.ok && json.status==='ok' && json.key){
-      cur.searchParams.set('k', json.key);
-      cur.searchParams.delete('code');
-      history.replaceState(null, '', cur.toString());
-
-      const d = collect();
-      const titleText = d.showTitle ? makeShareTitle(d) : '';
-      const linkText = cur.toString();
-      openPreviewModal(titleText ? `${titleText}\n${linkText}` : linkText);
-    }else{
-      alert('임시 저장 실패: ' + (json.error || res.status));
-    }
-  }catch(err){
-    alert('임시 저장 중 오류: ' + (err?.message || err));
-  }finally{ hideLoading(); }
-});
-
-
-  /* 제출 */
-  async function submitToSheet(){
-    showLoading('전송 중…', '인사지원팀 접수 기록을 저장합니다');
-    try{
-      const data = collect();
-      const resolvedAddress = (data.place || data.placeAddr || '').trim();
-      const todayStr = new Date().toISOString().slice(0,10);
-
-      // (기타 입력 강제)
-      const customOpen = document.getElementById('teamCustom')?.style.display !== 'none';
-      const customVal  = document.getElementById('teamCustom')?.value.trim();
-      if (customOpen && !customVal) {
-        alert('대상(기타)을 선택하셨습니다. 내용을 입력해 주세요.');
-        document.getElementById('teamCustom').focus();
-        hideLoading(); return;
-      }
-
-      // 필수 체크
-      const invalid = [];
-      if(!data.team) invalid.push(() => document.querySelector('#teamChips .chip')?.focus());
-      if(!data.title.trim()) invalid.push(() => document.getElementById('title').focus());
-      if (data.date && data.date < todayStr) {
-        alert('오늘 이후 날짜만 선택 가능합니다.'); hideLoading();
-        document.getElementById('date').focus(); return;
-      }
-      if(!data.date) invalid.push(() => document.getElementById('date').focus());
-      if(!data.place.trim()) invalid.push(() => document.getElementById('place').focus());
-      if(!(data.schedule||'').trim()) invalid.push(() => document.getElementById('schedule').focus());
-      if(!data.bus) invalid.push(() => document.querySelector('#busChips .chip')?.focus());
-      if(!data.contact.trim()) invalid.push(() => document.getElementById('contact').focus());
-      if (invalid.length){ alert('필수 항목을 입력/선택해 주세요.'); invalid[0](); hideLoading(); return; }
-
-      // 1) 주소창에 ?k= 있으면 재사용, 없으면 자동 임시저장
-      let shareKey='', clientUrl='';
-      const urlObj = new URL(location.href);
-      const existingKey = urlObj.searchParams.get('k') || '';
-
-      if (existingKey) {
-        shareKey = existingKey; clientUrl = urlObj.toString();
-      } else {
-        try {
-          const shareRes = await fetchWithTimeout(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ mode:'share', data })
-          });
-          let shareJson; try{ shareJson = await shareRes.json(); }
-          catch{ const t = await shareRes.text(); throw new Error('임시저장 응답이 JSON이 아님: ' + t.slice(0,200)); }
-          if (shareRes.ok && shareJson.status==='ok' && shareJson.key){
-            shareKey = shareJson.key;
-            urlObj.searchParams.delete('code');
-            urlObj.searchParams.set('k', shareKey);
-            clientUrl = urlObj.toString();
-            history.replaceState(null, '', clientUrl);
-          } else { clientUrl = location.href; }
-        } catch{ clientUrl = location.href; }
-      }
-
-      // 2) 제출 payload
-      const payload = {
-        ...data,
-        place_name: (data.placeName || '').trim(),
-  address: resolvedAddress,
-         place: (data.placeName || '').trim(),  // ↔ 기존 백엔드 '장소' 필드 호환
-        submitted_at: new Date().toISOString(),
-        client_url: clientUrl,
-        share_key: shareKey,
-        mode: 'append'
-      };
-
-      // 3) 제출
-      const res = await fetchWithTimeout(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
-      let json; try{ json = await res.json(); } catch{ const t = await res.text(); throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); }
-      if(res.ok && (json.status==='ok' || json.result==='ok')){
-        alert(`제출 완료! 접수번호: ${json.id||json.row||'확인됨'}`);
-      }else{
-        alert(`제출 실패: ${json.error||res.status}`);
-      }
-    }catch(err){
-      const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-      alert('전송 중 오류: ' + msg);
-    }finally{ hideLoading(); }
-  }
-  document.getElementById('btnSubmit').addEventListener('click', submitToSheet);
-
-  /* 버스 칩 + 배지 */
-  function setBus(val){
-    const hidden = document.getElementById('bus');
-    const chips = document.querySelectorAll('#busChips .chip');
-    hidden.value = val || '';
-    chips.forEach(c => c.classList.toggle('selected', c.getAttribute('data-val') === val));
-    document.getElementById('busBadgeVal').textContent = hidden.value || '-';
-    updateBusBadgeVisibility();
-  }
-  const showAfter = 200;
- function updateBusBadgeVisibility(){
-  const badge = document.getElementById('busBadge');
-  const v = document.getElementById('bus').value || '';
-  const showBus = document.getElementById('showBus')?.checked ?? true; // 기본 true
-  if(window.scrollY > showAfter && v && showBus){
-    badge.style.display = 'block';
-  } else {
-    badge.style.display = 'none';
-  }
+    const url=`${GAS_URL}?mode=static_map`
+      + `&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
+      + `&w=440&h=300&level=19`
+      + `&style=${encodeURIComponent(getMapType())}`;   // ★ 스타일 반영
+    const res=await fetchWithTimeout(url); const json=await res.json();
+    if (!res.ok || json.status!=='ok' || !json.dataUrl) throw new Error('static_map failed');
+    return json.dataUrl;
+  }catch(e){ console.warn('Static map error:', e); return ''; }
 }
-
-  window.addEventListener('scroll', updateBusBadgeVisibility, {passive:true});
-  window.addEventListener('resize', updateBusBadgeVisibility);
-  (function bindBusChips(){
-    const g = document.getElementById('busChips'); if(!g) return;
-    g.addEventListener('click', (e)=>{
-      const target = e.target.closest('.chip'); if(!target) return;
-      setBus(target.getAttribute('data-val'));
-    });
-  })();
-  (function bindBusChipsA11y(){
-    const g = document.getElementById('busChips'); if(!g) return;
-    g.querySelectorAll('.chip').forEach(chip=>{ chip.tabIndex=0; chip.setAttribute('role','radio'); });
-    g.addEventListener('keydown', e=>{
-      if (e.key!=='Enter' && e.key!==' ') return;
-      const chip = e.target.closest('.chip'); if(!chip) return;
-      e.preventDefault(); setBus(chip.getAttribute('data-val'));
-    });
-  })();
-
-// ===== 표시 토글 라벨 동기화 =====
-const TOGGLE_IDS = [
- 'showTeam','showTitle','showDate','showTime',
-  'showPlace','showSchedule','showBus','showNotes','showContact',
-  'showAddress' // ← 추가
- ];
-
-function refreshToggleLabels(){
-  TOGGLE_IDS.forEach(id=>{
-    const cb = document.getElementById(id);
-    if(!cb) return;
-    const labelEl = cb.parentElement?.querySelector?.('.toggle-label');
-    if(!labelEl) return;
-
-    const on = !!cb.checked;
-    labelEl.textContent = on ? '표시' : '숨김';
-    labelEl.classList.toggle('off', !on);
-
-    // 접근성 & 툴팁(데스크탑)
-    labelEl.setAttribute('role', 'switch');
-    labelEl.setAttribute('aria-checked', String(on));
-    labelEl.title = '문구 복사/이미지 저장 시 ' + (on ? '표시됩니다' : '표시되지 않습니다');
-
-    // 체크박스 자체의 aria도 유지(백업)
-    cb.setAttribute('aria-label', on ? '안내문에 표시' : '안내문에서 숨김');
-      if (id === 'showBus') updateBusBadgeVisibility();
-  });
-}
-// 표시/숨김 칩을 눌러도 토글되게 (키보드 접근성 포함)
-(function bindToggleLabelClicks(){
-  document.querySelectorAll('.field-toggle-inline').forEach(box=>{
-    const cb = box.querySelector('input[type="checkbox"]');
-    const tl = box.querySelector('.toggle-label');
-    if(!cb || !tl) return;
-
-    // 포커스 가능하게
-    tl.tabIndex = 0;
-
-    const flip = (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      cb.checked = !cb.checked;                                 // 상태 뒤집기
-      cb.dispatchEvent(new Event('change', { bubbles:true }));  // 기존 리스너 호출
-      refreshToggleLabels();                                     // 라벨/툴팁/ARIA 갱신
-    };
-
-    tl.addEventListener('click', flip);
-    tl.addEventListener('keydown', (e)=>{
-      if(e.key === ' ' || e.key === 'Enter') flip(e);
-    });
-  });
-})();
-
-
-
-// 변경 감지 바인딩 + 최초 1회 반영
-TOGGLE_IDS.forEach(id=>{
-  document.getElementById(id)?.addEventListener('change', refreshToggleLabels);
-});
-refreshToggleLabels();
-
-    
-  /* 오늘 이전 날짜 선택 금지 */
-  (function lockPastDate(){
-    const el = document.getElementById('date'); if(!el) return;
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth()+1).padStart(2,'0');
-    const dd = String(today.getDate()).padStart(2,'0');
-    el.min = `${yyyy}-${mm}-${dd}`;
-  })();
-
-  /* init */
-(async function init(){
-  const p = new URLSearchParams(location.search);
-  const k    = p.get('k'); 
-  const code = p.get('code');
-
-  if (k) { 
-    // ✅ k가 있으면 서버에서 로드(내부에서 썸네일 자동 복원)
-    try { await loadByKey(k); } catch(_) {}
-  } 
-  else if (code) {
-    // 공유코드(옛 포맷)로 복원
-    const data = decodeShare(code);
-    if (data) {
-      // ===== 필드 복원 =====
-      document.getElementById('team').value = data.team || '';
-      renderTeamChips(); 
-      restoreCustomTeamFromTeamValue();
-
-      document.getElementById('title').value    = data.title   || '';
-      document.getElementById('date').value     = data.date    || '';
-      document.getElementById('time').value     = data.time    || '';
-      document.getElementById('schedule').value = data.schedule||'';
-
-      document.getElementById('bus').value = data.bus || ''; 
-      setBus(document.getElementById('bus').value || '');
-
-      // 장소명(새 스키마 우선, 과거 place fallback)
-      document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
-
-      // 주소 입력칸
-      document.getElementById('place').value = data.place || '';
-      if (!document.getElementById('placeName').value.trim()) {
-        const guessAddr = data.placeAddr || (looksLikeKrAddress(data.place||'') ? data.place : '');
-        if (guessAddr) document.getElementById('placeName').value = derivePlaceTitleFromAddress(guessAddr);
-      }
-
-      // 지도 링크
-      document.getElementById('placeUrl').value = data.placeUrl || '';
-      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
-
-      // 히든 필드 복원
-      document.getElementById('placeAddr').value   = data.placeAddr   || '';
-      document.getElementById('placeTel').value    = data.placeTel    || '';
-      document.getElementById('placeLink').value   = data.placeLink   || '';
-      document.getElementById('placeLat').value    = data.placeLat    || '';
-      document.getElementById('placeLng').value    = data.placeLng    || '';
-      document.getElementById('placeMapImg').value = data.placeMapImg || '';
-
-      // 썸네일이 이미 있으면 바로 표시
-      if (data.placeMapImg) setMapPreview(data.placeMapImg);
-      // 지도 링크 박스도 노출(안전)
-      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
-
-      document.getElementById('notes').value   = data.notes   || '';
-      document.getElementById('contact').value = data.contact || '';
-
-      // 표시 토글 복원 (없으면 기본 true)
-      const setOn = (id, v) => {
-        const el = document.getElementById(id);
-        if (el) el.checked = (v === undefined ? true : !!v);
-      };
-      setOn('showTeam',     data.showTeam);
-      setOn('showTitle',    data.showTitle);
-      setOn('showDate',     data.showDate);
-      setOn('showTime',     data.showTime);
-      setOn('showPlace',    data.showPlace);
-      setOn('showSchedule', data.showSchedule);
-      setOn('showBus',      data.showBus);
-      setOn('showNotes',    data.showNotes);
-      setOn('showContact',  data.showContact);
-
-      // ✅ 추가: 좌표가 있으면 썸네일 자동 복원
-      await restoreMapIfNeededFromData(data);
-      refreshToggleLabels();   // ← 추가
-    }
-  } 
-  else {
-    // 초기 진입 기본값
-    document.getElementById('title').value = '야유회 안내';
-    document.getElementById('team').value = '';
-    renderTeamChips(); 
-    restoreCustomTeamFromTeamValue();
-  }
-refreshToggleLabels()
-  updateBusBadgeVisibility();
-})();
-
-
-  /* 임시 저장 불러오기 */
-async function loadByKey(k){
-  showLoading('불러오는 중…', '임시 저장된 내용을 가져옵니다');
+async function useAddressDirect(addrStr){
+  const addr=(addrStr||'').trim(); if(!addr) return;
+  showLoading('주소 확인 중…','지도 좌표를 찾는 중입니다');
   try{
-    const url = `${GAS_URL}?mode=load&key=${encodeURIComponent(k)}`;
-    const res = await fetchWithTimeout(url);
-    let json; 
-    try { json = await res.json(); } 
-    catch { 
-      const t = await res.text(); 
-      throw new Error('서버 응답이 JSON이 아님: ' + t.slice(0,200)); 
-    }
-
-    if (json.status === 'ok' && json.data){
-      const data = json.data;
-
-      // ===== 필드 복원 =====
-      document.getElementById('team').value = data.team || '';
-      renderTeamChips(); 
-      restoreCustomTeamFromTeamValue();
-
-      document.getElementById('title').value    = data.title   || '';
-      document.getElementById('date').value     = data.date    || '';
-      document.getElementById('time').value     = data.time    || '';
-      document.getElementById('schedule').value = data.schedule||'';
-
-      document.getElementById('bus').value = data.bus || ''; 
-      setBus(document.getElementById('bus').value || '');
-
-      // 장소(표시용 이름)
-      document.getElementById('placeName').value = (data.placeName || data.place_name || data.place || '').trim();
-
-      // 주소 입력칸
-      document.getElementById('place').value = data.place || '';
-      if (!document.getElementById('placeName').value.trim()) {
-        const guessAddr = data.placeAddr || (looksLikeKrAddress(data.place||'') ? data.place : '');
-        if (guessAddr) document.getElementById('placeName').value = derivePlaceTitleFromAddress(guessAddr);
-      }
-
-      // 지도 링크
-      document.getElementById('placeUrl').value = data.placeUrl || '';
-      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
-
-      // 히든 필드 복원
-      document.getElementById('placeAddr').value   = data.placeAddr   || '';
-      document.getElementById('placeTel').value    = data.placeTel    || '';
-      document.getElementById('placeLink').value   = data.placeLink   || '';
-      document.getElementById('placeLat').value    = data.placeLat    || '';
-      document.getElementById('placeLng').value    = data.placeLng    || '';
-      document.getElementById('placeMapImg').value = data.placeMapImg || '';
-
-      // 썸네일이 이미 저장돼 있으면 바로 표시
-      if (data.placeMapImg) setMapPreview(data.placeMapImg);
-      // 선택된 지도 링크 박스도 노출(안전)
-      if (data.placeUrl) setPickedPlaceLink(data.placeUrl, data.place || '지도');
-
-      document.getElementById('notes').value   = data.notes   || '';
-      document.getElementById('contact').value = data.contact || '';
-
-      // 표시 토글 복원 (없으면 기본 true)
-      const setOn = (id, v) => {
-        const el = document.getElementById(id);
-        if (el) el.checked = (v === undefined ? true : !!v);
-      };
-      setOn('showTeam',     data.showTeam);
-      setOn('showTitle',    data.showTitle);
-      setOn('showDate',     data.showDate);
-      setOn('showTime',     data.showTime);
-      setOn('showPlace',    data.showPlace);
-      setOn('showSchedule', data.showSchedule);
-      setOn('showBus',      data.showBus);
-      setOn('showNotes',    data.showNotes);
-      setOn('showContact',  data.showContact);
-
-      // ✅ 추가: 좌표가 있으면 썸네일 자동 복원
-      await restoreMapIfNeededFromData(data);
-
-    } 
-    else {
-      alert('임시 저장 불러오기 실패: ' + (json.error||'알 수 없음'));
-    }
-  } catch(err){
-    const msg = (err && err.name === 'AbortError') ? '네트워크 지연으로 요청이 취소되었습니다.' : err.message;
-    alert('불러오기 오류: ' + msg);
-  } finally { 
-    hideLoading(); 
-  }
+    const geo=await geocodeToLatLng('', addr, ''); if(!geo){ alert('이 주소로 좌표를 찾지 못했습니다. 철자/형식을 확인해 주세요.'); return; }
+    document.getElementById('placeAddr').value=addr;
+    document.getElementById('placeLat').value =geo.lat;
+    document.getElementById('placeLng').value =geo.lng;
+    const dataUrl=await buildMapThumbByLatLng(geo.lat, geo.lng);
+    document.getElementById('placeMapImg').value=dataUrl || ''; setMapPreview(dataUrl || '');
+    const searchLink=buildNaverSearchLink('', addr);
+    document.getElementById('placeLink').value=searchLink; setPickedPlaceLink(searchLink,'네이버 지도');
+    const nameEl=document.getElementById('placeName'); if (!nameEl.value.trim()) { nameEl.value=derivePlaceTitleFromAddress(addr); }
+  } finally{ hideLoading(); }
 }
 
-
-
-  /* 안내문 이미지 렌더용 */
-// 주소 문자열을 깔끔한 "표시용 장소명"으로 줄여줍니다.
-function derivePlaceTitleFromAddress(addr='') {
-  addr = (addr||'').trim();
-
-  // 1) 도로명 주소 케이스: "OO로/길 + 번지"
-  //   예) "서울특별시 관악구 남부순환로 1820" → "남부순환로 1820"
-  const roadMatch = addr.match(/([^\s]+?(?:로|길)\d*(?:-\d+)?)[\s,]+(\d+(?:-\d+)?)/);
-  if (roadMatch) {
-    const road = roadMatch[1];
-    const num  = roadMatch[2];
-    return `${road} ${num}`;
-  }
-
-  // 2) 지번 주소 케이스: "동/읍/면/리 + 번지"
-  //   예) "경기도 안산시 단원구 고잔동 525-2" → "고잔동 525-2"
-  const jibunMatch = addr.match(/([^\s]+?(동|읍|면|리))[\s,]+(\d+(?:-\d+)?)/);
-  if (jibunMatch) {
-    const dong = jibunMatch[1];
-    const num  = jibunMatch[3];
-    return `${dong} ${num}`;
-  }
-
-  // 3) 마지막 안전장치: 시/구/읍면동 등 행정동+다음 토큰 1~2개로 축약
-  const tokens = addr.split(/\s+/).filter(Boolean);
-  // 보통 [시, 구/군, 동/읍/면, 나머지…]
-  if (tokens.length >= 3) {
-    // "동/읍/면/리 + 다음 토큰" 조합 시도
-    for (let i=0;i<tokens.length;i++){
-      if (/[동읍면리]$/.test(tokens[i])) {
-        const next = tokens[i+1] || '';
-        if (next) return `${tokens[i]} ${next}`;
-        return tokens[i];
-      }
-    }
-  }
-  // 그래도 못 줄이면 첫 2~3개만
-  return tokens.slice(0,2).join(' ') || addr;
-}
-
-// 느슨 비교: 공백/쉼표 등 제거 후 동일성 판단 → 중복 표시 방지용
-function isSameLoose(a='', b=''){
-  const norm = s => (s||'').replace(/[,\s]/g,'').trim();
-  return norm(a) && norm(a) === norm(b);
-}
-
-    function mmToPx(mm){ return Math.round(mm * 3.7795275591); } // 96dpi 기준
-    
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
-  <!-- 안내문 이미지 렌더용 히든 DOM -->
-  <div id="exportDoc" style="position:absolute; left:-99999px; top:-99999px; width:794px; background:#fff;">
-    <div id="exportInner" style="padding:28px 32px; font:14px/1.7 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Malgun Gothic, sans-serif; color:#222;"></div>
-  </div>
-
-  <script>
-function escapeHTML(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]) ); }
-
+/* ===== 내보내기(이미지/인쇄) ===== */
 function buildExportHTML(){
-  const d = collect();
-  const dateStr  = d.date ? weekdayKR(d.date) : '-';
-  const timeStr  = (d.time || '').trim();
-  const teamLine = formatTarget(d.team);
-  const scheduleLines = (d.schedule || '').split('\n').map(s=>s.trim()).filter(Boolean);
-  const notesLines    = (d.notes    || '').split('\n').map(s=>s.trim()).filter(Boolean);
-  const busVal        = (d.bus || '').trim();
-
-  const toList = (arr)=> arr.length
-    ? '<ul class="export-list">' + arr.map(li=>`<li>${escapeHTML(li)}</li>`).join('') + '</ul>'
-    : '<ul class="export-list"><li>-</li></ul>';
-
-  // 메타(왼쪽 상단 상자) 행들
-  const meta = [];
+  const d=collect(); const dateStr=d.date ? weekdayKR(d.date) : '-'; const timeStr=(d.time||'').trim();
+  const teamLine=formatTarget(d.team);
+  const scheduleLines=(d.schedule||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  const notesLines=(d.notes||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  const busVal=(d.bus||'').trim();
+  const toList=(arr)=> arr.length ? '<ul class="export-list">' + arr.map(li=>`<li>${escapeHTML(li)}</li>`).join('') + '</ul>' : '<ul class="export-list"><li>-</li></ul>';
+  const meta=[];
   if (d.showTeam) meta.push(`<div><b>대상</b> ${escapeHTML(teamLine || '-')}</div>`);
   if (d.showDate) meta.push(`<div><b>일자</b> ${escapeHTML(dateStr)}</div>`);
   if (d.showTime && timeStr) meta.push(`<div><b>시간</b> ${escapeHTML(timeStr)}</div>`);
-  if (d.showPlace) {
-    const placeName = (d.placeName || '').trim();
+  if (d.showPlace){
+    const placeName=(d.placeName||'').trim();
     if (placeName) meta.push(`<div><b>장소</b> ${escapeHTML(placeName)}</div>`);
     if (d.placeTel) meta.push(`<div><b>전화</b> ${escapeHTML(d.placeTel)}</div>`);
   }
-  const addrLine = (d.place || d.placeAddr || '').trim();
-  if (d.showAddress && addrLine) {
-    meta.push(`<div><b>주소</b> ${escapeHTML(addrLine)}</div>`);
-  }
-  // 지도 썸네일은 더 이상 필요 없다면, 아래를 비활성화해도 됨
-  // const mapHtml = '';
-
+  const addrLine=(d.place||d.placeAddr||'').trim();
+  if (d.showAddress && addrLine) meta.push(`<div><b>주소</b> ${escapeHTML(addrLine)}</div>`);
   if (d.showBus && busVal) meta.push(`<div><b>버스</b> ${escapeHTML(busVal)}</div>`);
   if (d.showContact) meta.push(`<div><b>문의</b> ${escapeHTML(d.contact || '-')}</div>`);
-
-  // 본문 섹션 카드
-  const sectionCards = [];
-  if (d.showSchedule) {
-    sectionCards.push(`
-      <div class="export-card card-schedule">
-        <div class="export-sec-title">일정 요약</div>
-        ${toList(scheduleLines)}
-      </div>
-    `);
-  }
-  if (d.showNotes && notesLines.length){
-    sectionCards.push(`
-      <div class="export-card">
-        <div class="export-sec-title">특이사항</div>
-        ${toList(notesLines)}
-      </div>
-    `);
-  }
-
-  // 제목은 토글 시 감춤
-  const titleHtml = d.showTitle
-    ? `<div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>`
-    : '';
-
-  // 지도는 "주소 표시 ON + 실제 주소 + 이미지 준비됨"일 때만 노출
- const mapHtml = (d.showAddress && d.placeMapImg)
-  ? `<div class="export-map"><img src="${d.placeMapImg}" alt="지도 미리보기"></div>`
-  : '';
-  
-  return `
-    ${titleHtml}
+  const sectionCards=[];
+  if (d.showSchedule){ sectionCards.push(`<div class="export-card card-schedule"><div class="export-sec-title">일정 요약</div>${toList(scheduleLines)}</div>`); }
+  if (d.showNotes && notesLines.length){ sectionCards.push(`<div class="export-card"><div class="export-sec-title">특이사항</div>${toList(notesLines)}</div>`); }
+  const titleHtml = d.showTitle ? `<div class="export-title">${escapeHTML(d.title || '야유회 안내')}</div>` : '';
+  const mapHtml = (d.showAddress && d.placeMapImg) ? `<div class="export-map"><img src="${d.placeMapImg}" alt="지도 미리보기"></div>` : '';
+  return `${titleHtml}
     <div class="export-grid">
       <div>
         ${ meta.length ? `<div class="export-meta">${meta.join('')}</div>` : '' }
-        <div class="export-sections">
-          ${sectionCards.join('')}
-        </div>
+        <div class="export-sections">${sectionCards.join('')}</div>
       </div>
       ${mapHtml}
-    </div>
-  `;
+    </div>`;
+}
+function fillExportDom(){ const inner=document.getElementById('exportInner'); if(!inner) return; inner.innerHTML=buildExportHTML(); }
+async function exportAsImage(){
+  showLoading('이미지 생성 중…','잠시만 기다려주세요');
+  try{
+    fillExportDom();
+       const target = document.getElementById('exportDoc');
+    const inner  = document.getElementById('exportInner');
+    const sel    = document.getElementById('exportWidth');
+    const choice = sel ? sel.value : 'auto';
+
+    // 이전 상태 백업
+    const prevWidth  = target.style.width;
+    const hadNarrow  = target.classList.contains('card-narrow');
+    const hadWide    = target.classList.contains('wide');
+
+    // 렌더 폭 결정
+    let pxWidth;
+    if (choice === 'auto') {
+      target.style.width = 'auto';
+      const measured = inner.scrollWidth || 0;
+      pxWidth = Math.max(420, Math.min(560, measured + 12));
+    } else {
+      pxWidth = parseInt(choice, 10) || 560;
+    }
+    target.style.width = pxWidth + 'px';
+
+    const isWide = (choice === '1123' || pxWidth >= 980);
+    target.classList.toggle('wide', isWide);
+    if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
+
+    // 이미지 로딩 대기 후 캡처
+    await waitForImagesLoaded(target);
+    const canvas  = await html2canvas(target, { backgroundColor:'#fff', scale:2, useCORS:true });
+    const dataURL = canvas.toDataURL('image/png');
+
+    // 다운로드
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = (collect().title || '안내문') + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+
+    // 상태 복구
+    target.style.width = prevWidth;
+    target.classList.toggle('wide', hadWide);
+    if (!hadNarrow) target.classList.remove('card-narrow');
+  } finally {
+    hideLoading();
+  }
 }
 
-
-
-
-
-
-
-
-  function fillExportDom(){
-    const inner = document.getElementById('exportInner');
-    if(!inner) return;
-    inner.innerHTML = buildExportHTML();
-  }
-
-  async function exportAsImage(){
-    showLoading('이미지 생성 중…', '잠시만 기다려주세요');
-    try{
-      fillExportDom();
-      const target = document.getElementById('exportDoc');
-      const inner  = document.getElementById('exportInner');
-      const sel    = document.getElementById('exportWidth');
-      const choice = sel ? sel.value : 'auto';
-
-      const prevWidth = target.style.width;
-      const hadNarrow = target.classList.contains('card-narrow');
-
-      let pxWidth;
-      if (choice === 'auto') {
-        target.style.width = 'auto';
-        const measured = inner.scrollWidth || 0;
-        pxWidth = Math.max(420, Math.min(560, measured + 12));
-      } else {
-        pxWidth = parseInt(choice, 10) || 560;
-      }
-      target.style.width = pxWidth + 'px';
-      if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
-
-      const isWide = (choice === '1123' || pxWidth >= 980); // A4 가로 선택 시
-    target.classList.toggle('wide', isWide);
-      
-// ✅ 내보내기용 히든 DOM 안의 모든 <img> 로드 대기
-await waitForImagesLoaded(target);
-
-      const canvas = await html2canvas(target, {backgroundColor:'#fff', scale:2, useCORS:true});
-      const dataURL = canvas.toDataURL('image/png');
-
-      const a = document.createElement('a');
-      a.href = dataURL;
-      a.download = (collect().title || '안내문') + `.png`;
-      document.body.appendChild(a); a.click(); a.remove();
-
-      target.style.width = prevWidth;
-      if (!hadNarrow) target.classList.remove('card-narrow');
-    } finally { hideLoading(); }
-  }
-  document.getElementById('btnExportIMG')?.addEventListener('click', exportAsImage);
-
+/* ===== 인쇄 ===== */
 async function printExport(){
   showLoading('인쇄 준비 중…', '레이아웃을 구성합니다', 300);
   try{
@@ -2150,19 +1271,19 @@ async function printExport(){
     const sel    = document.getElementById('exportWidth');
     const choice = sel ? sel.value : 'auto';
 
-    // === 상태 백업 ===
+    // 이전 상태 백업
     const prev = {
       position: target.style.position,
-      left: target.style.left,
-      top: target.style.top,
-      margin: target.style.margin,
-      width: target.style.width,
-      zoom: target.style.zoom,
-      wide: target.classList.contains('wide'),
-      narrow: target.classList.contains('card-narrow')
+      left:     target.style.left,
+      top:      target.style.top,
+      margin:   target.style.margin,
+      width:    target.style.width,
+      zoom:     target.style.zoom,
+      wide:     target.classList.contains('wide'),
+      narrow:   target.classList.contains('card-narrow'),
     };
 
-    // 1) 폭 결정(이미지 저장 로직과 동일)
+    // 1) 폭 결정
     let pxWidth;
     if (choice === 'auto') {
       target.style.width = 'auto';
@@ -2173,25 +1294,24 @@ async function printExport(){
     }
     target.style.width = pxWidth + 'px';
 
-    const isWide = (choice === '1123' || pxWidth >= 980); // A4 가로 선택 시
+    const isWide = (choice === '1123' || pxWidth >= 980);
     target.classList.toggle('wide', isWide);
-    if (pxWidth <= 560) target.classList.add('card-narrow');
-    else target.classList.remove('card-narrow');
+    if (pxWidth <= 560) target.classList.add('card-narrow'); else target.classList.remove('card-narrow');
 
-    // 2) 인쇄용 사이즈(실제 mm) 및 화면 안으로 끌어오기
+    // 2) 화면 안으로 끌어오기 + 인쇄용 폭(mm)로 고정
     const pageWmm = isWide ? (297 - 20) : (210 - 20); // 좌우 10mm 여백 제외
     const pageHmm = isWide ? (210 - 20) : (297 - 20); // 상하 10mm 여백 제외
     const pageHpx = Math.round(pageHmm * 3.7795275591);
 
-    target.style.position = 'static';   // ★ 오프스크린 해제
-    target.style.left = 'auto';
-    target.style.top  = 'auto';
-    target.style.margin = '0 auto';
-    target.style.width = `${pageWmm}mm`; // 물리 폭 고정
+    target.style.position = 'static';
+    target.style.left     = 'auto';
+    target.style.top      = 'auto';
+    target.style.margin   = '0 auto';
+    target.style.width    = `${pageWmm}mm`;
 
-    // 3) 이미지 로딩 대기 + 높이 초과 시 자동 축소
+    // 3) 이미지 로딩 대기 + 높이 초과 시 자동 축소(zoom)
     await waitForImagesLoaded(target);
-    // 강제 reflow 2프레임 보장 → 브라우저가 실제 레이아웃 계산하도록
+    // 레이아웃 계산 2프레임 보장
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const contentH = target.getBoundingClientRect().height;
@@ -2203,11 +1323,11 @@ async function printExport(){
     // 4) 인쇄 후 원복
     const restore = () => {
       target.style.position = prev.position;
-      target.style.left = prev.left;
-      target.style.top  = prev.top;
-      target.style.margin = prev.margin;
-      target.style.width = prev.width;
-      target.style.zoom = prev.zoom;
+      target.style.left     = prev.left;
+      target.style.top      = prev.top;
+      target.style.margin   = prev.margin;
+      target.style.width    = prev.width;
+      target.style.zoom     = prev.zoom;
       target.classList.toggle('wide', prev.wide);
       target.classList.toggle('card-narrow', prev.narrow);
       window.removeEventListener('afterprint', restore);
@@ -2215,7 +1335,7 @@ async function printExport(){
     };
     window.addEventListener('afterprint', restore);
 
-    // 5) 프린트
+    // 5) 프린트 실행
     window.print();
   } catch(e){
     hideLoading();
@@ -2223,50 +1343,36 @@ async function printExport(){
   }
 }
 
-
-// 버튼 바인딩
-document.getElementById('btnPrint')?.addEventListener('click', printExport);
-
-    
-    function looksLikeKrAddress(s=''){
-  s = (s||'').trim();
-  // 숫자(번지) + 도로/길/동/읍/면/리 등 주소 토큰이 섞여 있으면 주소로 간주
-  return /\d/.test(s) && /(로|길|번길|동|읍|면|리|로\d+번길)/.test(s);
+/* ===== 초기화 버튼(누락 방지용 간단 구현) ===== */
+function resetAll(){
+  if (!confirm('모든 입력을 초기화하고 지도 썸네일/링크도 지울까요?')) return;
+  const ids = ['team','title','date','time','schedule','bus',
+               'placeName','place','placeUrl','placeAddr','placeTel','placeLink',
+               'placeLat','placeLng','placeMapImg','notes','contact'];
+  ids.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  // 팀 칩/기타 입력 초기화
+  setTeamHiddenFromArray([]); renderTeamChips(); restoreCustomTeamFromTeamValue();
+  // 버스
+  setBus('');
+  // 지도 썸네일/링크 박스 닫기
+  setPickedPlaceLink('', ''); setMapPreview('');
+  // 토글 리셋
+  ['showTeam','showTitle','showDate','showTime','showPlace','showSchedule','showBus','showNotes','showContact','showAddress']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.checked = true; });
+  refreshToggleLabels();
+  // 지도 유형 기본값
+  setMapType('basic');
+  // 스크롤 배지
+  updateBusBadgeVisibility();
+  window.scrollTo({ top:0, behavior:'smooth' });
 }
+document.getElementById('btnReset')?.addEventListener('click', resetAll);
 
-async function useAddressDirect(addrStr){
-  const addr = (addrStr||'').trim();
-  if(!addr) return;
+/* ===== 오늘 이전 날짜 선택 금지(작은 편의) ===== */
+(function lockPastDate(){
+  const el=document.getElementById('date'); if(!el) return;
+  const t=new Date(); const yyyy=t.getFullYear();
+  const mm=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0');
+  el.min = `${yyyy}-${mm}-${dd}`;
+})();
 
-  showLoading('주소 확인 중…','지도 좌표를 찾는 중입니다');
-  try{
-    const geo = await geocodeToLatLng('', addr, '');
-    if(!geo){ alert('이 주소로 좌표를 찾지 못했습니다. 철자/형식을 확인해 주세요.'); return; }
-
-    document.getElementById('placeAddr').value = addr;
-    document.getElementById('placeLat').value  = geo.lat;
-    document.getElementById('placeLng').value  = geo.lng;
-
-    const dataUrl = await buildMapThumbByLatLng(geo.lat, geo.lng);
-    document.getElementById('placeMapImg').value = dataUrl || '';
-    setMapPreview(dataUrl || '');
-
-    // 링크는 검색 링크라도 확보
-    const searchLink = buildNaverSearchLink('', addr);
-    document.getElementById('placeLink').value = searchLink;
-    setPickedPlaceLink(searchLink, '네이버 지도');
-
-      // ✅ 장소명 자동 생성 (비어있을 때만) — 주소에서 간단 표시명 추출
-    const nameEl = document.getElementById('placeName');
-    if (!nameEl.value.trim()) {
-      nameEl.value = derivePlaceTitleFromAddress(addr);
-    }
-  } finally{
-    hideLoading();
-  }
-}
-
-    
-  </script>
-</body>
-</html>
