@@ -18,13 +18,17 @@
 
     .header{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px}
     .title{margin:0;font-size:20px;letter-spacing:-.2px}
-    .subtitle{margin:4px 0 0 0;color:var(--muted);font-size:12.5px}
+    .subtitle{margin:4px 0 0 0;color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:6px}
+    .mini-spinner{display:inline-block;width:12px;height:12px;border:2px solid #cfd8ff;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
     .badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
     .badge{background:var(--badge);border:1px solid #d9e2ff;border-radius:999px;padding:3px 8px;font-size:12px}
     .badges .btn{margin-left:6px}
 
     .toolbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}
     .btn{appearance:none;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer}
+    .btn[disabled]{opacity:.55;cursor:not-allowed}
     .btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
     .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
 
@@ -55,20 +59,21 @@
     .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s}
     .toast.show{opacity:1}
 
+    /* 로딩 오버레이 */
+    .overlay{position:fixed;inset:0;background:rgba(17,24,39,.35);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .2s}
+    .overlay.show{opacity:1;pointer-events:auto}
+    .overlay .panel{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px 20px;display:flex;align-items:center;gap:10px;min-width:220px;justify-content:center}
+    .overlay .spinner{width:28px;height:28px;border:3px solid #e5e7eb;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
+
     @media print{
       body{background:#fff}
-      .btn,.toast{display:none}
+      .btn,.toast,.overlay{display:none}
       .wrap{max-width:1000px;margin:0;padding:0}
       .header{box-shadow:none;border:none}
       .grid{grid-template-columns:1fr 1fr}
     }
-/* 반월→시화 구간 구분선 */
-tbody tr.plant-sep td{
-  border-top: 2px solid #ff6b6b;   /* 빨간 선 */
-}
-
-  
-
+    /* 반월→시화 구간 구분선 */
+    tbody tr.plant-sep td{ border-top: 2px solid #ff6b6b; }
   </style>
 </head>
 <body>
@@ -77,7 +82,6 @@ tbody tr.plant-sep td{
       <h1 class="title">대양통운 공내 실시간 차량 현황</h1>
       <p class="subtitle" id="updated">업데이트 준비 중…</p>
 
-      <!-- 배지 2개만 유지 + 텔레그램 버튼을 바로 옆에 -->
       <div class="badges">
         <span class="badge">범위: 공내</span>
         <span class="badge">대양통운 전용</span>
@@ -85,7 +89,6 @@ tbody tr.plant-sep td{
         <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
       </div>
 
-      <!-- 툴바: 새로고침/간격/인쇄만 -->
       <div class="toolbar">
         <select id="interval" class="btn" title="새로고침 간격">
           <option value="30">30초</option>
@@ -97,10 +100,17 @@ tbody tr.plant-sep td{
       </div>
     </section>
 
-    <!-- 2베이 컨테이너: 좌(제품 상차 진행) / 우(원료 하차 진행 + 원료 하차대기) -->
     <section class="grid" id="sections">
       <!-- JS가 채움 -->
     </section>
+  </div>
+
+  <!-- 중앙 로딩 오버레이 -->
+  <div class="overlay" id="loadingOverlay" aria-hidden="true">
+    <div class="panel" role="status" aria-live="polite">
+      <div class="spinner" aria-label="로딩 중"></div>
+      <div><strong>새로고침 중…</strong><br><span style="color:#666;font-size:12px">잠시만 기다려주세요</span></div>
+    </div>
   </div>
 
   <div class="toast" id="toast">업데이트됨</div>
@@ -118,13 +128,16 @@ tbody tr.plant-sep td{
     const btnRefresh = document.getElementById('btnRefresh');
     const btnPrint   = document.getElementById('btnPrint');
     const toast      = document.getElementById('toast');
-    
-function timeLabelFromTitle(title){
-  return /대기/.test(title) ? '등록시간' : '입차시간';
-}
+    const overlay    = document.getElementById('loadingOverlay');
 
-    
-    
+    // 중복 호출 방지 플래그
+    let __loading = false;
+    let __timer   = null;
+
+    function timeLabelFromTitle(title){
+      return /대기/.test(title) ? '등록시간' : '입차시간';
+    }
+
     function showToast(msg){
       toast.textContent = msg || '완료';
       toast.classList.add('show');
@@ -136,55 +149,70 @@ function timeLabelFromTitle(title){
       return c.includes('00ff00') ? 'green' : 'cyan';
     }
 
- // (A) 새 함수: 연속번호 + 구분헤더
-function renderSectionCardGrouped(sec){
-  const title  = sec.title || '-';
-  const color  = sec.color || '#00FFFF';
-  const groups = Array.isArray(sec.groups) ? sec.groups : [];
-   const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
+    // 로딩 상태 토글 (manual은 오버레이, auto는 헤더 스피너만)
+    function setLoading(on, source){
+      __loading = !!on;
+      // 컨트롤 비활성화
+      btnRefresh.disabled = on;
+      elInterval.disabled = on;
+      if(on){
+        if(source === 'manual'){
+          overlay.classList.add('show');
+          overlay.setAttribute('aria-hidden','false');
+        }
+        elUpdated.innerHTML = '<span class="mini-spinner" aria-hidden="true"></span>업데이트 중…';
+      }else{
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden','true');
+      }
+    }
 
-  const ban = groups.find(g => g.plant === '반월')?.rows || [];
-  const sih = groups.find(g => g.plant === '시화')?.rows || [];
+    // (A) 새 함수: 연속번호 + 구분헤더
+    function renderSectionCardGrouped(sec){
+      const title  = sec.title || '-';
+      const color  = sec.color || '#00FFFF';
+      const groups = Array.isArray(sec.groups) ? sec.groups : [];
+      const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-  const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
+      const ban = groups.find(g => g.plant === '반월')?.rows || [];
+      const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-  let seq = 1;
-  const rowHTML = (r, plant, sep) => `
-    <tr${sep ? ' class="plant-sep"' : ''}>
-      <td>${seq++}</td>
-      <td>${r.car ?? ''}</td>
-      <td>${r.time ?? ''}</td>
-      <td>${plant}</td>
-    </tr>`;
+      const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
 
-  // 반월 → 시화 순으로 출력, 시화 첫 행에만 구분선
-  const rowsHTML =
-    ban.map(r => rowHTML(r, '반월', false)).join('') +
-    sih.map((r, i) => rowHTML(r, '시화', !!ban.length && i === 0)).join('');
+      let seq = 1;
+      const rowHTML = (r, plant, sep) => `
+        <tr${sep ? ' class="plant-sep"' : ''}>
+          <td>${seq++}</td>
+          <td>${r.car ?? ''}</td>
+          <td>${r.time ?? ''}</td>
+          <td>${plant}</td>
+        </tr>`;
 
-  const table = `
-    <table>
-      <thead>
-        <tr>
-          <th style="width:44px">No</th>
-          <th style="width:96px">차량</th>
-         <th style="width:74px">${timeLabel}</th>
-          <th style="width:56px">공장</th>
-        </tr>
-      </thead>
-      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
-    </table>`;
+      const rowsHTML =
+        ban.map(r => rowHTML(r, '반월', false)).join('') +
+        sih.map((r, i) => rowHTML(r, '시화', !!ban.length && i === 0)).join('');
 
-  return `
-    <article class="card">
-      <div class="stripe ${stripeClass(color)}"></div>
-      <div class="head"><h3>${title}</h3></div>
-      <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-      ${table}
-    </article>`;
-}
+      const table = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44px">No</th>
+              <th style="width:96px">차량</th>
+              <th style="width:74px">${timeLabel}</th>
+              <th style="width:56px">공장</th>
+            </tr>
+          </thead>
+          <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+        </table>`;
 
-
+      return `
+        <article class="card">
+          <div class="stripe ${stripeClass(color)}"></div>
+          <div class="head"><h3>${title}</h3></div>
+          <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+          ${table}
+        </article>`;
+    }
 
     // 섹션 찾기(타이틀 매칭), 없으면 null
     function pickByTitle(sections, keyword){
@@ -207,10 +235,9 @@ function renderSectionCardGrouped(sec){
         const secRawP = pickByTitle(sections, '원료 하차 진행') || sections[1] || null;
         const secRawW = pickByTitle(sections, '원료 하차대기') || sections[2] || null;
 
-       const leftHTML  = secProd ? renderSectionCardGrouped(secProd) : '';
-const rightHTML = [secRawP, secRawW].filter(Boolean).map(renderSectionCardGrouped).join('');
+        const leftHTML  = secProd ? renderSectionCardGrouped(secProd) : '';
+        const rightHTML = [secRawP, secRawW].filter(Boolean).map(renderSectionCardGrouped).join('');
 
-        // 2베이 컨테이너 구성 (모바일: 1열로 col-left → col-right 순서)
         elSections.innerHTML = `
           <div class="col col-left">
             ${ leftHTML || '<div class="card"><div class="empty">(제품 상차 진행 없음)</div></div>' }
@@ -245,10 +272,21 @@ const rightHTML = [secRawP, secRawW].filter(Boolean).map(renderSectionCardGroupe
       });
     }
 
-    async function loadSnapshot(){
+    // source: 'manual' | 'auto'
+    async function loadSnapshot(opts = {source:'auto'}){
+      const source = opts.source || 'auto';
+
+      // 이미 로딩 중이면: manual은 토스트 안내, auto는 조용히 스킵
+      if(__loading){
+        if(source === 'manual') showToast('이미 새로고침 중…');
+        return;
+      }
+
       try{
+        setLoading(true, source);
         let data = await loadSnapshotFetch();
-        render(data); showToast('업데이트됨');
+        render(data);
+        showToast('업데이트됨');
       }catch(err){
         console.warn('fetch 실패, JSONP 시도:', err);
         if (!USE_JSONP_FALLBACK){
@@ -257,27 +295,31 @@ const rightHTML = [secRawP, secRawW].filter(Boolean).map(renderSectionCardGroupe
         }
         try{
           const data = await loadSnapshotJSONP();
-          render(data); showToast('업데이트됨');
+          render(data);
+          showToast('업데이트됨');
         }catch(e){
           console.error(e);
           elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (JSONP 실패)</div></div></div>';
         }
+      }finally{
+        setLoading(false);
       }
     }
 
-    elInterval.addEventListener('change', ()=>{
-      if (window.__timer) clearInterval(window.__timer);
+    function startInterval(){
+      if(__timer) clearInterval(__timer);
       const sec = Number(elInterval.value || 60);
-      window.__timer = setInterval(loadSnapshot, sec * 1000);
-    });
-    btnRefresh.addEventListener('click', loadSnapshot);
+      __timer = setInterval(()=>loadSnapshot({source:'auto'}), sec * 1000);
+    }
+
+    elInterval.addEventListener('change', startInterval);
+    btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
     btnPrint.addEventListener('click', ()=> window.print());
 
     // init
     (function(){
-      loadSnapshot();
-      const sec = Number(elInterval.value || 60);
-      window.__timer = setInterval(loadSnapshot, sec * 1000);
+      loadSnapshot({source:'auto'});
+      startInterval();
     })();
   </script>
 </body>
