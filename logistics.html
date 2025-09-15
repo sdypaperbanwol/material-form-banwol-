@@ -62,21 +62,12 @@
       .header{box-shadow:none;border:none}
       .grid{grid-template-columns:1fr 1fr}
     }
+/* 반월→시화 구간 구분선 */
+tbody tr.plant-sep td{
+  border-top: 2px solid #ff6b6b;   /* 빨간 선 */
+}
 
-   /* 공장 구분 헤더(반월/시화) — 눈에 띄게 */
-tbody tr.group-row td{
-  background:#eef3ff;                /* 더 진한 파란 톤 */
-  border-top:2px solid #cfe0ff;      /* 위쪽 구분선 굵게 */
-  border-bottom:1px solid #dbe6ff;   /* 아래 라인 */
-  color:#243a73;
-  font-weight:700;
-  text-align:left;
-  letter-spacing:-.1px;
-  padding:8px 10px;
-}
-tbody tr.group-row td small{
-  color:#6c7a99; font-weight:400; margin-left:6px;
-}
+  
 
   </style>
 </head>
@@ -149,25 +140,19 @@ function renderSectionCardGrouped(sec){
 
   const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
 
-  // 연속 번호(plant 구간 넘어가도 계속 증가)
   let seq = 1;
-  const renderGroup = (rows, plant) => {
-    if (!rows.length) return '';
-    const header = `<tr class="group-row"><td colspan="4">${plant} <small>${rows.length}대</small></td></tr>`;
-    const body = rows.map(r => `
-      <tr>
-        <td>${seq++}</td>
-        <td>${r.car ?? ''}</td>
-        <td>${r.time ?? ''}</td>
-        <td>${plant}</td>
-      </tr>
-    `).join('');
-    return header + body;
-  };
+  const rowHTML = (r, plant, sep) => `
+    <tr${sep ? ' class="plant-sep"' : ''}>
+      <td>${seq++}</td>
+      <td>${r.car ?? ''}</td>
+      <td>${r.time ?? ''}</td>
+      <td>${plant}</td>
+    </tr>`;
 
-  const tbodyHTML = total
-    ? renderGroup(ban, '반월') + renderGroup(sih, '시화')
-    : '<tr><td colspan="4" class="empty">(없음)</td></tr>';
+  // 반월 → 시화 순으로 출력, 시화 첫 행에만 구분선
+  const rowsHTML =
+    ban.map(r => rowHTML(r, '반월', false)).join('') +
+    sih.map((r, i) => rowHTML(r, '시화', !!ban.length && i === 0)).join('');
 
   const table = `
     <table>
@@ -179,7 +164,7 @@ function renderSectionCardGrouped(sec){
           <th style="width:56px">공장</th>
         </tr>
       </thead>
-      <tbody>${tbodyHTML}</tbody>
+      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
     </table>`;
 
   return `
@@ -190,6 +175,7 @@ function renderSectionCardGrouped(sec){
       ${table}
     </article>`;
 }
+
 
 
     // 섹션 찾기(타이틀 매칭), 없으면 null
