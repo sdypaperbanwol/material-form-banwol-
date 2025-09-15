@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>대양통운 공내 실시간 차량 현황</title>
+  <meta name="description" content="대양통운 공내(입차 후~출차 전) 실시간 차량 현황 뷰어 – GitHub Pages 버전">
+  <style>
+    :root{
+      --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
+      --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff; --chip:#f0f3f7;
+      --brand:#0f62fe; --radius:16px; --shadow:0 6px 18px rgba(0,0,0,.05);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
+    .wrap{max-width:980px;margin:24px auto;padding:0 16px}
+
+    .header{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px}
+    .title{margin:0;font-size:20px;letter-spacing:-.2px}
+    .subtitle{margin:4px 0 0 0;color:var(--muted);font-size:12.5px}
+    .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .badge{background:var(--badge);border:1px solid #d9e2ff;border-radius:999px;padding:3px 8px;font-size:12px}
+
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--muted);font-size:12px}
+    .btn{appearance:none;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer}
+    .btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media (min-width:900px){ .grid{grid-template-columns:1fr 1fr} }
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card .head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+    .card .head h3{margin:0;font-size:15px}
+    .stripe{height:4px;border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
+    .stripe.cyan{background:var(--cyan)}
+    .stripe.green{background:var(--green)}
+
+    .summary{padding:8px 14px;color:var(--muted);border-bottom:1px solid var(--line);font-size:12.5px}
+
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#fafbfd;border-bottom:1px solid var(--line);color:#333;font-weight:600}
+    th,td{padding:8px 10px;text-align:center}
+    tbody tr:nth-child(odd){background:#fcfcfe}
+    tbody td{border-bottom:1px solid #f1f1f4}
+
+    .empty{padding:18px 14px;color:var(--muted)}
+    .legend{margin-top:14px;color:var(--muted);font-size:12.5px}
+
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s}
+    .toast.show{opacity:1}
+
+    @media print{
+      body{background:#fff}
+      .btn,.toast{display:none}
+      .wrap{max-width:1000px;margin:0;padding:0}
+      .header{box-shadow:none;border:none}
+      .grid{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="header">
+      <h1 class="title">대양통운 공내 실시간 차량 현황</h1>
+      <p class="subtitle" id="updated">업데이트 준비 중…</p>
+      <div class="badges">
+        <span class="badge">범위: 공내</span>
+        <span class="badge">대양통운 전용</span>
+        <span class="badge">입차 후 ~ 출차 전</span>
+        <span class="badge">표시시간: 진행=입차시간 / 대기=등록시간</span>
+      </div>
+      <div class="toolbar">
+        <div class="row">
+          <span class="chip">표 형식 · 반월→시화 순</span>
+          <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
+        </div>
+        <div class="row">
+          <select id="interval" class="btn" title="새로고침 간격">
+            <option value="30">30초</option>
+            <option value="60" selected>60초</option>
+            <option value="120">120초</option>
+          </select>
+          <button class="btn" id="btnRefresh">새로고침</button>
+          <button class="btn primary" id="btnPrint">인쇄/PDF</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" id="sections"></section>
+
+    <p class="legend">※ ‘대기’ 섹션은 <b>등록시간</b>(mm:ss), ‘진행’ 섹션은 <b>입차시간</b>(hh:mm) 기준으로 정렬/표시됩니다.</p>
+  </div>
+
+  <div class="toast" id="toast">업데이트됨</div>
+
+  <script>
+    // 1) 여기에 본인 Apps Script 웹앱 JSON 엔드포인트를 넣으세요.
+    //    doGet(e)에서 `?api=snapshot` 분기를 구현한 뒤, 해당 URL을 사용합니다.
+    //    예: https://script.google.com/macros/s/AKfycb.../exec?api=snapshot
+    const SNAPSHOT_URL = '<<여기에_본인_GAS_webapp_URL>>';
+
+    const elUpdated = document.getElementById('updated');
+    const elSections = document.getElementById('sections');
+    const elInterval = document.getElementById('interval');
+    const btnRefresh = document.getElementById('btnRefresh');
+    const btnPrint = document.getElementById('btnPrint');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg){
+      toast.textContent = msg || '완료';
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1200);
+    }
+
+    function timeLabelFromTitle(title){
+      return /대기/.test(title) ? '등록시간' : '입차시간';
+    }
+    function stripeClass(color){
+      const c = (color||'').toLowerCase();
+      if (c.includes('00ff00')) return 'green';
+      return 'cyan';
+    }
+
+    function render(data){
+      try{
+        const ts = data && data.updatedAt ? data.updatedAt : '';
+        elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
+        const sections = Array.isArray(data && data.sections) ? data.sections : [];
+        if(!sections.length){ elSections.innerHTML = '<div class="card"><div class="empty">데이터 없음</div></div>'; return; }
+
+        elSections.innerHTML = sections.map(sec => {
+          const title = sec.title || '-';
+          const color = sec.color || '#00FFFF';
+          const tl = timeLabelFromTitle(title);
+          const groups = Array.isArray(sec.groups) ? sec.groups : [];
+          const bcnt = (groups.find(g=>g.plant==='반월')?.rows || []).length;
+          const scnt = (groups.find(g=>g.plant==='시화')?.rows || []).length;
+          const total = bcnt + scnt;
+          const rowsFlat = groups.flatMap(g => (g.rows||[]).map(r => ({...r, plant:g.plant})) );
+
+          const table = `
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:44px">No</th>
+                  <th style="width:96px">차량</th>
+                  <th style="width:74px">${tl}</th>
+                  <th style="width:56px">공장</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${ rowsFlat.length ? rowsFlat.map(r => `
+                  <tr>
+                    <td>${r.no ?? ''}</td>
+                    <td>${r.car ?? ''}</td>
+                    <td>${r.time ?? ''}</td>
+                    <td>${r.plant ?? ''}</td>
+                  </tr>`).join('') : '<tr><td colspan="4" class="empty">(없음)</td></tr>'}
+              </tbody>
+            </table>`;
+
+          return `
+            <article class="card">
+              <div class="stripe ${stripeClass(color)}"></div>
+              <div class="head"><h3>${title}</h3></div>
+              <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+              ${table}
+            </article>`;
+        }).join('');
+      }catch(err){
+        console.error(err);
+        elSections.innerHTML = '<div class="card"><div class="empty">렌더링 중 오류</div></div>';
+      }
+    }
+
+    async function loadSnapshot(){
+      if (!SNAPSHOT_URL || SNAPSHOT_URL.includes('여기에_본인')) {
+        elSections.innerHTML = '<div class="card"><div class="empty">SNAPSHOT_URL을 설정하세요.</div></div>';
+        return;
+      }
+      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now(); // 캐시 회피
+      try{
+        const res = await fetch(url, { method:'GET', credentials:'omit' });
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+        render(data);
+        showToast('업데이트됨');
+      }catch(err){
+        console.error(err);
+        elSections.innerHTML = '<div class="card"><div class="empty">데이터를 불러올 수 없습니다. (CORS 또는 권한 확인)</div></div>';
+      }
+    }
+
+    btnRefresh.addEventListener('click', loadSnapshot);
+    btnPrint.addEventListener('click', ()=> window.print());
+    document.getElementById('interval').addEventListener('change', ()=>{
+      if (window.__timer) clearInterval(window.__timer);
+      const sec = Number(elInterval.value || 60);
+      window.__timer = setInterval(loadSnapshot, sec * 1000);
+    });
+
+    // init
+    (function(){
+      loadSnapshot();
+      const sec = Number(elInterval.value || 60);
+      window.__timer = setInterval(loadSnapshot, sec * 1000);
+    })();
+  </script>
+</body>
+</html>
