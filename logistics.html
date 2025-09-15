@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>대양통운 공내 실시간 차량 현황</title>
-  <meta name="description" content="대양통운 공내(입차 후~출차 전) 실시간 차량 현황 뷰어 – GitHub Pages 버전">
+  <meta name="description" content="대양통운 공내(입차 후~출차 전) 실시간 차량 현황 뷰어 – GitHub Pages용 logistics.html">
   <style>
     :root{
       --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
@@ -97,10 +97,15 @@
   <div class="toast" id="toast">업데이트됨</div>
 
   <script>
-    // 1) 여기에 본인 Apps Script 웹앱 JSON 엔드포인트를 넣으세요.
-    //    doGet(e)에서 `?api=snapshot` 분기를 구현한 뒤, 해당 URL을 사용합니다.
-    //    예: https://script.google.com/macros/s/AKfycb.../exec?api=snapshot
-    const SNAPSHOT_URL = '<<여기에_본인_GAS_webapp_URL>>';
+    // =============================
+    //  설정: GAS 스냅샷 엔드포인트
+    // =============================
+    // (권장) doGet(e)에서 `?api=snapshot` 분기를 구현 후, 아래 URL을 설정하세요.
+    // 예) const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycb.../exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbznDCNcpMwo5fnSTDCif-gve5mLOyThVE_yap7-ShNxv3WZU5Ndsv7Jht6vmJIxijVfew/exec?api=snapshot';
+
+    // CORS 문제 시 JSONP 활성화(서버도 callback 파라미터 지원 필요)
+    const USE_JSONP_FALLBACK = true;
 
     const elUpdated = document.getElementById('updated');
     const elSections = document.getElementById('sections');
@@ -115,14 +120,8 @@
       setTimeout(()=>toast.classList.remove('show'), 1200);
     }
 
-    function timeLabelFromTitle(title){
-      return /대기/.test(title) ? '등록시간' : '입차시간';
-    }
-    function stripeClass(color){
-      const c = (color||'').toLowerCase();
-      if (c.includes('00ff00')) return 'green';
-      return 'cyan';
-    }
+    function timeLabelFromTitle(title){ return /대기/.test(title) ? '등록시간' : '입차시간'; }
+    function stripeClass(color){ const c = (color||'').toLowerCase(); return c.includes('00ff00') ? 'green' : 'cyan'; }
 
     function render(data){
       try{
@@ -139,7 +138,7 @@
           const bcnt = (groups.find(g=>g.plant==='반월')?.rows || []).length;
           const scnt = (groups.find(g=>g.plant==='시화')?.rows || []).length;
           const total = bcnt + scnt;
-          const rowsFlat = groups.flatMap(g => (g.rows||[]).map(r => ({...r, plant:g.plant})) );
+          const flat = groups.flatMap(g => (g.rows||[]).map(r => ({...r, plant:g.plant})) );
 
           const table = `
             <table>
@@ -152,7 +151,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${ rowsFlat.length ? rowsFlat.map(r => `
+                ${ flat.length ? flat.map(r => `
                   <tr>
                     <td>${r.no ?? ''}</td>
                     <td>${r.car ?? ''}</td>
@@ -176,31 +175,53 @@
       }
     }
 
-    async function loadSnapshot(){
-      if (!SNAPSHOT_URL || SNAPSHOT_URL.includes('여기에_본인')) {
-        elSections.innerHTML = '<div class="card"><div class="empty">SNAPSHOT_URL을 설정하세요.</div></div>';
-        return;
-      }
+    async function loadSnapshotFetch(){
       const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now(); // 캐시 회피
+      const res = await fetch(url, { method:'GET', credentials:'omit' });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      return res.json();
+    }
+
+    function loadSnapshotJSONP(){
+      return new Promise((resolve, reject)=>{
+        const cbName = 'CB_' + Math.random().toString(36).slice(2);
+        const cleanup = (s)=>{ try{ delete window[cbName]; s && s.remove(); }catch(e){} };
+        window[cbName] = (data)=>{ cleanup(script); resolve(data); };
+        const script = document.createElement('script');
+        const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + 'callback=' + cbName + '&_ts=' + Date.now();
+        script.src = url;
+        script.onerror = ()=>{ cleanup(script); reject(new Error('JSONP load error')); };
+        document.body.appendChild(script);
+      });
+    }
+
+    async function loadSnapshot(){
       try{
-        const res = await fetch(url, { method:'GET', credentials:'omit' });
-        if (!res.ok) throw new Error('HTTP '+res.status);
-        const data = await res.json();
-        render(data);
-        showToast('업데이트됨');
+        let data = await loadSnapshotFetch();
+        render(data); showToast('업데이트됨');
       }catch(err){
-        console.error(err);
-        elSections.innerHTML = '<div class="card"><div class="empty">데이터를 불러올 수 없습니다. (CORS 또는 권한 확인)</div></div>';
+        console.warn('fetch 실패, JSONP 시도:', err);
+        if (!USE_JSONP_FALLBACK){
+          elSections.innerHTML = '<div class="card"><div class="empty">데이터를 불러올 수 없습니다. (CORS/권한 확인)</div></div>';
+          return;
+        }
+        try{
+          const data = await loadSnapshotJSONP();
+          render(data); showToast('업데이트됨');
+        }catch(e){
+          console.error(e);
+          elSections.innerHTML = '<div class="card"><div class="empty">데이터를 불러올 수 없습니다. (JSONP 실패)</div></div>';
+        }
       }
     }
 
-    btnRefresh.addEventListener('click', loadSnapshot);
-    btnPrint.addEventListener('click', ()=> window.print());
     document.getElementById('interval').addEventListener('change', ()=>{
       if (window.__timer) clearInterval(window.__timer);
       const sec = Number(elInterval.value || 60);
       window.__timer = setInterval(loadSnapshot, sec * 1000);
     });
+    document.getElementById('btnRefresh').addEventListener('click', loadSnapshot);
+    document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
 
     // init
     (function(){
@@ -209,5 +230,21 @@
       window.__timer = setInterval(loadSnapshot, sec * 1000);
     })();
   </script>
+
+  <!--
+    서버(GAS) 측 JSONP 지원 예시:
+    function doGet(e){
+      if (e && e.parameter && (e.parameter.api === 'snapshot' || e.parameter.callback)){
+        var data = TU_apiSnapshot();
+        if (e.parameter.callback){
+          return ContentService.createTextOutput(e.parameter.callback + '(' + JSON.stringify(data) + ')')
+            .setMimeType(ContentService.MimeType.JAVASCRIPT);
+        }
+        return ContentService.createTextOutput(JSON.stringify(data))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      return HtmlService.createTemplateFromFile('Index').evaluate();
+    }
+  -->
 </body>
 </html>
