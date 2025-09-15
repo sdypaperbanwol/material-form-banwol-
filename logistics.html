@@ -117,7 +117,13 @@ tbody tr.plant-sep td{
     const btnRefresh = document.getElementById('btnRefresh');
     const btnPrint   = document.getElementById('btnPrint');
     const toast      = document.getElementById('toast');
+    
+function timeLabelFromTitle(title){
+  return /대기/.test(title) ? '등록시간' : '입차시간';
+}
 
+    
+    
     function showToast(msg){
       toast.textContent = msg || '완료';
       toast.classList.add('show');
@@ -134,6 +140,7 @@ function renderSectionCardGrouped(sec){
   const title  = sec.title || '-';
   const color  = sec.color || '#00FFFF';
   const groups = Array.isArray(sec.groups) ? sec.groups : [];
+   const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
   const ban = groups.find(g => g.plant === '반월')?.rows || [];
   const sih = groups.find(g => g.plant === '시화')?.rows || [];
