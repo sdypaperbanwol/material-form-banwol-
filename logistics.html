@@ -63,14 +63,20 @@
       .grid{grid-template-columns:1fr 1fr}
     }
 
-    .group-row td{
-  background:#f5f7ff;
-  border-bottom:1px solid #e6ebff;
-  color:#2d3e6f;
-  font-weight:600;
+   /* 공장 구분 헤더(반월/시화) — 눈에 띄게 */
+tbody tr.group-row td{
+  background:#eef3ff;                /* 더 진한 파란 톤 */
+  border-top:2px solid #cfe0ff;      /* 위쪽 구분선 굵게 */
+  border-bottom:1px solid #dbe6ff;   /* 아래 라인 */
+  color:#243a73;
+  font-weight:700;
   text-align:left;
+  letter-spacing:-.1px;
+  padding:8px 10px;
 }
-.group-row td small{ color:#667; font-weight:400; margin-left:6px; }
+tbody tr.group-row td small{
+  color:#6c7a99; font-weight:400; margin-left:6px;
+}
 
   </style>
 </head>
@@ -132,19 +138,18 @@
       return c.includes('00ff00') ? 'green' : 'cyan';
     }
 
-   function renderSectionCard(sec){
-  const title = sec.title || '-';
-  const color = sec.color || '#00FFFF';
+ // (A) 새 함수: 연속번호 + 구분헤더
+function renderSectionCardGrouped(sec){
+  const title  = sec.title || '-';
+  const color  = sec.color || '#00FFFF';
   const groups = Array.isArray(sec.groups) ? sec.groups : [];
 
   const ban = groups.find(g => g.plant === '반월')?.rows || [];
   const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-  const bcnt = ban.length;
-  const scnt = sih.length;
-  const total = bcnt + scnt;
+  const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
 
-  // 연속 번호 + 그룹 구분선
+  // 연속 번호(plant 구간 넘어가도 계속 증가)
   let seq = 1;
   const renderGroup = (rows, plant) => {
     if (!rows.length) return '';
@@ -208,8 +213,8 @@
         const secRawP = pickByTitle(sections, '원료 하차 진행') || sections[1] || null;
         const secRawW = pickByTitle(sections, '원료 하차대기') || sections[2] || null;
 
-        const leftHTML  = secProd ? renderSectionCard(secProd) : '';
-        const rightHTML = [secRawP, secRawW].filter(Boolean).map(renderSectionCard).join('');
+       const leftHTML  = secProd ? renderSectionCardGrouped(secProd) : '';
+const rightHTML = [secRawP, secRawW].filter(Boolean).map(renderSectionCardGrouped).join('');
 
         // 2베이 컨테이너 구성 (모바일: 1열로 col-left → col-right 순서)
         elSections.innerHTML = `
