@@ -142,6 +142,7 @@ tbody tr.hit td{ background:#fff2cc !important; }
     // ===== 새 섹션 순서(백엔드 타이틀 그대로 사용) =====
 const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
 const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
+    const NO_HIT_TITLES = new Set(['제품 상차중']);
 
     function timeLabelFromTitle(title){
       return /대기/.test(title) ? '등록시간' : '입차시간';
@@ -193,19 +194,21 @@ const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
   const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
 
   let seq = 1;
-  const rowHTML = (r, plant, sep) => {
-    const cls = [];
-    if (sep) cls.push('plant-sep');
-    if (r.hit) cls.push('hit'); // L열 last4 하이라이트
-    const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
-    return `
-      <tr${classAttr}>
-        <td>${seq++}</td>
-        <td>${r.car ?? ''}</td>
-        <td>${r.time ?? ''}</td>
-        <td>${plant}</td>
-      </tr>`;
-  };
+ const rowHTML = (r, plant, sep) => {
+  const cls = [];
+  if (sep) cls.push('plant-sep');
+  if (r.hit && !NO_HIT_TITLES.has(title)) cls.push('hit'); // 제품 상차중은 제외
+  const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
+  return `
+    <tr${classAttr}>
+      <td>${seq++}</td>
+      <td>${r.car ?? ''}</td>
+      <td>${r.time ?? ''}</td>
+      <td>${plant}</td>
+    </tr>`;
+};
+
+
 
   const rowsHTML =
     ban.map(r => rowHTML(r, '반월', false)).join('') +
