@@ -32,7 +32,6 @@
     .btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
     .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
 
-    /* === 2-베이 레이아웃 === */
     .grid{display:grid;grid-template-columns:1fr;gap:14px}
     .col{display:grid;gap:14px}
     @media (min-width:900px){
@@ -45,8 +44,6 @@
     .stripe{height:4px;border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
     .stripe.cyan{background:var(--cyan)}
     .stripe.green{background:var(--green)}
-    .stripe.sub{background:var(--sub)}
-    .stripe.orange{background:var(--cont)}
 
     .summary{padding:8px 14px;color:var(--muted);border-bottom:1px solid var(--line);font-size:12.5px}
 
@@ -61,7 +58,6 @@
     .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s}
     .toast.show{opacity:1}
 
-    /* 로딩 오버레이 */
     .overlay{position:fixed;inset:0;background:rgba(17,24,39,.35);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .2s}
     .overlay.show{opacity:1;pointer-events:auto}
     .overlay .panel{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px 20px;display:flex;align-items:center;gap:10px;min-width:220px;justify-content:center}
@@ -74,12 +70,13 @@
       .header{box-shadow:none;border:none}
       .grid{grid-template-columns:1fr 1fr}
     }
-    /* 반월→시화 구간 구분선 */
+    /* 반월→시화 구분선 */
     tbody tr.plant-sep td{ border-top: 2px solid #ff6b6b; }
-    tbody tr.hit td{ background:#fff2cc !important; }
-
-    #manageModal{ z-index:10000; }
   </style>
+  <!-- 캐시 무력화 메타(선택) -->
+  <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="expires" content="0">
 </head>
 <body>
   <div class="wrap">
@@ -92,34 +89,14 @@
         <span class="badge">계근 기준</span>
       </div>
 
-      <!-- 툴바: 새로고침 / 통운차량 관리 / 텔레그램 열기만 유지 -->
+      <!-- 툴바: 새로고침 / 텔레그램 열기만 유지 -->
       <div class="toolbar">
         <button class="btn" id="btnRefresh">새로고침</button>
-        <button class="btn" id="btnManage">통운차량 관리</button>
         <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
       </div>
-
-      <!-- 통운차량 관리 모달 -->
-      <div class="overlay" id="manageModal" aria-hidden="true">
-        <div class="panel" style="min-width:420px;flex-direction:column;align-items:stretch">
-          <div style="font-weight:600;margin-bottom:8px">통운차량 관리 (마지막 4자리)</div>
-          <textarea id="markerInput" rows="8" style="width:100%;resize:vertical"
-            placeholder="예) 1234&#10;5678&#10;9012"></textarea>
-          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-            <button class="btn" id="btnCancelManage">취소</button>
-            <button class="btn primary" id="btnSaveManage">저장</button>
-          </div>
-          <div style="color:#777;font-size:12px;margin-top:6px">
-            • 숫자/공백/쉼표 구분, 마지막 4자리만 저장됩니다.<br/>
-            • 저장 후 목록에 포함된 차량만 음영 표시됩니다. (제품 상차중은 제외)
-          </div>
-        </div>
-      </div>
     </section>
 
-    <section class="grid" id="sections">
-      <!-- JS가 채움 -->
-    </section>
+    <section class="grid" id="sections"></section>
   </div>
 
   <!-- 중앙 로딩 오버레이 -->
@@ -133,10 +110,8 @@
   <div class="toast" id="toast">업데이트됨</div>
 
   <script>
-    // =============================
-    //  설정: GAS 스냅샷 엔드포인트
-    // =============================
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbx7p5Tca9_tTvOZGpGBrwl2p8VIsnZFvGnm63JVpKtCg5xE9uZgbYkfiCsE-BGFlbDWew/exec?api=snapshot';
+    // ============ 설정 ============
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbx8Fn7TTYp9Jrs4s5Bg9xFHkwG8GqngrqtyjUhR0qrvqzs7bCZ5a68Wr5EEuOb7j8mo0Q/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -145,24 +120,19 @@
     const toast      = document.getElementById('toast');
     const overlay    = document.getElementById('loadingOverlay');
 
-    // 좌/우 배치
     const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
     const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
 
-    // 하이라이트(음영) 제외할 섹션
-    const NO_HIT_TITLES = new Set(['제품 상차중']);
-
-    // '1111 / 22222 / 0000 …' 같은 한 자리 반복 번호 필터
+    // 한 자리 반복 번호 필터(가짜 번호 제거)
     function isMonoDigitPlate(s){
       const d = String(s || '').replace(/\D+/g, '');
-      if (d.length < 4) return false;           // 4자리 미만은 필터 안함
+      if (d.length < 4) return false;
       return d.split('').every(ch => ch === d[0]);
     }
 
-    // 자동 새로고침 주기(고정). 0으로 두면 자동 새로고침 끔.
+    // 자동 새로고침(원하면 0으로 꺼도 됨)
     const AUTO_REFRESH_MS = 60000; // 60초
 
-    // 중복 호출 방지 플래그
     let __loading = false;
     let __timer   = null;
 
@@ -181,10 +151,8 @@
       return c.includes('00ff00') ? 'green' : 'cyan';
     }
 
-    // 로딩 상태 토글 (manual은 오버레이, auto는 헤더 스피너만)
     function setLoading(on, source){
       __loading = !!on;
-      // 컨트롤 비활성화
       btnRefresh.disabled = on;
       if(on){
         if(source === 'manual'){
@@ -198,7 +166,7 @@
       }
     }
 
-    // (A) 새 함수: 연속번호 + 구분헤더
+    // 섹션 카드 (하이라이트 제거 버전)
     function renderSectionCardGrouped(sec){
       const title  = sec.title || '-';
       const color  = sec.color || '#00FFFF';
@@ -208,7 +176,6 @@
       const ban = groups.find(g => g.plant === '반월')?.rows || [];
       const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-      // ① 한 자리 반복 번호 제거
       const banF = ban.filter(r => !isMonoDigitPlate(r.car));
       const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
@@ -218,11 +185,8 @@
       const rowHTML = (r, plant, sep) => {
         const cls = [];
         if (sep) cls.push('plant-sep');
-        // ② 백엔드가 내려준 r.hit 사용, '제품 상차중'은 제외
-        if (r.hit && !NO_HIT_TITLES.has(title)) cls.push('hit');
-        const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
         return `
-          <tr${classAttr}>
+          <tr class="${cls.join(' ')}">
             <td>${seq++}</td>
             <td>${r.car ?? ''}</td>
             <td>${r.time ?? ''}</td>
@@ -256,11 +220,6 @@
         </article>`;
     }
 
-    // 섹션 찾기(타이틀 매칭), 없으면 null
-    function pickByTitle(sections, keyword){
-      return sections.find(s => (s.title||'').includes(keyword)) || null;
-    }
-
     function render(data){
       try{
         const ts = data && data.updatedAt ? data.updatedAt : '';
@@ -272,14 +231,10 @@
           return;
         }
 
-        // 제목 → 섹션 맵
         const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
+        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
 
-        // 좌/우 컬럼 구성
-        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);   // 제품·부자재·컨테이너
-        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);  // 원하·원대
-
-        // 혹시 API가 추가 섹션을 내려보내면 좌측 맨 아래에 붙이기
         const used = new Set([...left, ...right].map(s => s.title));
         raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
 
@@ -297,7 +252,7 @@
     }
 
     async function loadSnapshotFetch(){
-      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now(); // 캐시 회피
+      const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now();
       const res = await fetch(url, { method:'GET', credentials:'omit' });
       if (!res.ok) throw new Error('HTTP '+res.status);
       return res.json();
@@ -316,16 +271,12 @@
       });
     }
 
-    // source: 'manual' | 'auto'
     async function loadSnapshot(opts = {source:'auto'}){
       const source = opts.source || 'auto';
-
-      // 이미 로딩 중이면: manual은 토스트 안내, auto는 조용히 스킵
       if(__loading){
         if(source === 'manual') showToast('이미 새로고침 중…');
         return;
       }
-
       try{
         setLoading(true, source);
         let data = await loadSnapshotFetch();
@@ -352,88 +303,16 @@
 
     function startInterval(){
       if(__timer) clearInterval(__timer);
-      if(!AUTO_REFRESH_MS) return; // 0이면 자동 새로고침 비활성화
+      if(!AUTO_REFRESH_MS) return;
       __timer = setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS);
     }
 
-    // 이벤트
     btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
 
-    // init
     (function(){
       loadSnapshot({source:'auto'});
       startInterval();
     })();
-
-    // === 관리용 API ===
-    const EXEC_BASE = SNAPSHOT_URL.split('?')[0];     // .../exec
-    const API_SECRET = 'CHANGE_ME_1234';              // GAS에 설정한 값(설정 안했으면 빈 문자열로 둬도 됨)
-
-    // JSONP
-    function jsonp(url){
-      return new Promise((resolve,reject)=>{
-        const cb = 'CB_' + Math.random().toString(36).slice(2);
-        const s = document.createElement('script');
-        const cleanup = ()=>{ try{ delete window[cb]; s.remove(); }catch(e){} };
-        window[cb] = (data)=>{ cleanup(); resolve(data); };
-        s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
-        s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
-        document.body.appendChild(s);
-      });
-    }
-
-    // 모달 열기/닫기
-    const manageModal = document.getElementById('manageModal');
-    const markerInput = document.getElementById('markerInput');
-
-    document.getElementById('btnManage').addEventListener('click', async ()=>{
-      // 서버에서 현재 목록 로드
-      try{
-        const data = await jsonp(EXEC_BASE + '?api=hit_get');
-        const arr = Array.isArray(data && data.markers) ? data.markers : [];
-        markerInput.value = arr.join('\n');
-      }catch(e){
-        markerInput.value = '';
-      }
-      manageModal.classList.add('show');
-      manageModal.setAttribute('aria-hidden','false');
-    });
-
-    document.getElementById('btnCancelManage').addEventListener('click', ()=>{
-      manageModal.classList.remove('show');
-      manageModal.setAttribute('aria-hidden','true');
-    });
-
-    document.getElementById('btnSaveManage').addEventListener('click', async ()=>{
-      // 입력 파싱(숫자만, 마지막 4자리)
-      const raw = markerInput.value || '';
-      const parts = raw.split(/[\s,]+/).filter(Boolean);
-      const last4 = [...new Set(parts.map(s=>{
-        const d = String(s).replace(/\D+/g,'');
-        return d.length>=4 ? d.slice(-4) : '';
-      }).filter(Boolean))];
-
-      try{
-        const q = new URLSearchParams({
-          api:'hit_set',
-          list:last4.join(','),
-          secret: API_SECRET || ''
-        });
-        const res = await jsonp(EXEC_BASE + '?' + q.toString());
-        if (!(res && res.ok)){
-          showToast('저장 실패: ' + (res && res.error || '오류'));
-          return;
-        }
-        showToast('저장 완료 ('+res.count+'건)');
-        manageModal.classList.remove('show');
-        manageModal.setAttribute('aria-hidden','true');
-
-        // 새 목록 기준으로 다시 스냅샷 로드 → 화면 음영 즉시 반영
-        loadSnapshot({source:'manual'});
-      }catch(e){
-        showToast('저장 오류');
-      }
-    });
   </script>
 </body>
 </html>
