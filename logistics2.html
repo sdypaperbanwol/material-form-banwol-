@@ -79,6 +79,12 @@
     }
     /* 반월→시화 구분선 */
     tbody tr.plant-sep td{ border-top: 2px solid #ff6b6b; }
+
+    /* === 검색 강조(4자리 일치시) === */
+td.cell-hit { background:#fff2cc !important; }
+.badge.search-pill { background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px; }
+.tag-hit { display:inline-block; margin-left:6px; font-size:11px; padding:1px 6px; border-radius:999px; background:#fff2cc; border:1px solid #f0e1a6; }
+
   </style>
   <!-- 캐시 무력화 메타(선택) -->
   <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
@@ -106,7 +112,7 @@
         </select>
         <!-- NEW: 차량번호 검색 -->
         <input id="searchInput" class="input" placeholder="차량번호 검색 (부분 일치)" />
-
+        <span id="searchSummary" class="badge search-pill" style="display:none"></span>
         <button class="btn" id="btnRefresh">새로고침</button>
         <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
       </div>
@@ -145,6 +151,13 @@
       q: 'ui.search'
     };
 
+ let __searchCount = 0;
+
+  function last4(s){
+    const d = String(s||'').replace(/\D+/g,'');
+    return d.length>=4 ? d.slice(-4) : '';
+  }
+    
     // 좌/우 배치
     const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
     const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
@@ -215,46 +228,69 @@
       const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
       // NEW: 필터/검색 적용
-      const plantSel = document.getElementById('plantFilter').value; // all|banwol|sihwa
-      const q = (document.getElementById('searchInput').value || '').trim();
-      const qq = q.replace(/\s+/g,'');
+const plantSel = document.getElementById('plantFilter').value; // all|banwol|sihwa
+const q = (document.getElementById('searchInput').value || '').trim();
+const qq = q.replace(/\s+/g,'');          // 공백 제거
+const dqq = qq.replace(/\D+/g,'');        // 숫자만
+const isFour = /^\d{4}$/.test(dqq);       // 4자리 숫자 검색?
 
-      let merged = [
-        ...banF.map(r => ({...r, plant:'반월'})),
-        ...sihF.map(r => ({...r, plant:'시화'}))
-      ];
-      if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
-      if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
-      if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
+let merged = [
+  ...banF.map(r => ({...r, plant:'반월'})),
+  ...sihF.map(r => ({...r, plant:'시화'}))
+];
+if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
+if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
+if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
 
-      const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
-      const scnt = (plantSel==='banwol') ? 0 : sihF.length;
-      const total = merged.length;
+// 4자리 숫자 검색이면, “일치 행 수”를 카운트하고, 셀에만 음영 표시
+const hitsMap = new Map(); // index -> hit?
+if (isFour){
+  merged.forEach((r, idx) => {
+    const hit = last4(r.car) === dqq;
+    if (hit) { hitsMap.set(idx, true); __searchCount++; }
+  });
+} else {
+  // 4자리가 아니어도 검색어가 있으면 전체 매치 건수 카운트
+  if (qq) __searchCount += merged.length;
+}
 
-      let seq = 1;
-      const rowHTML = (r, sep) => {
-        const cls = [];
-        if (sep) cls.push('plant-sep');
-        return `
-          <tr class="${cls.join(' ')}">
-            <td>${seq++}</td>
-            <td>${r.car ?? ''}</td>
-            <td>${r.time ?? ''}</td>
-            <td>${r.plant}</td>
-          </tr>`;
-      };
+const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
+const scnt = (plantSel==='banwol') ? 0 : sihF.length;
+const total = merged.length;
 
-      // 시각 분리선: 반월→시화 경계 표시 (필터 all일 때만)
-      let rowsHTML = '';
-      if (plantSel === 'all') {
-        const leftPart  = merged.filter(r=>r.plant==='반월');
-        const rightPart = merged.filter(r=>r.plant==='시화');
-        rowsHTML += leftPart.map(r => rowHTML(r,false)).join('');
-        if (leftPart.length && rightPart.length) rowsHTML += rowHTML(rightPart[0], /*sep*/true) + rightPart.slice(1).map(r=>rowHTML(r,false)).join('');
-        else rowsHTML += rightPart.map(r=>rowHTML(r,false)).join('');
-      } else {
-        rowsHTML = merged.map((r,i)=>rowHTML(r,false)).join('');
-      }
+let seq = 1;
+const rowHTML = (r, i, sep) => {
+  const cls = [];
+  if (sep) cls.push('plant-sep');
+
+  // 차량 칸만 음영
+  const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
+  const hitTag = (isFour && hitsMap.get(i)) ? '<span class="tag-hit">last4</span>' : '';
+
+  return `
+    <tr class="${cls.join(' ')}">
+      <td>${seq++}</td>
+      <td class="${carCellClass}">${r.car ?? ''}${hitTag}</td>
+      <td>${r.time ?? ''}</td>
+      <td>${r.plant}</td>
+    </tr>`;
+};
+
+// 시각 분리선: 반월→시화 경계 (필터 all일 때만)
+let rowsHTML = '';
+if (plantSel === 'all') {
+  const leftPart  = merged.filter(r=>r.plant==='반월');
+  const rightPart = merged.filter(r=>r.plant==='시화');
+  rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
+  if (leftPart.length && rightPart.length) {
+    rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
+             +  rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
+  } else {
+    rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
+  }
+} else {
+  rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
+}
 
       const table = `
         <table>
@@ -292,9 +328,10 @@
     }
 
     function render(data){
-      try{
-        const ts = data && data.updatedAt ? data.updatedAt : '';
-        elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
+  try{
+    __searchCount = 0; // ← 렌더 시작 시 초기화
+    const ts = data && data.updatedAt ? data.updatedAt : '';
+    elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
 
         const raw = Array.isArray(data && data.sections) ? data.sections : [];
         if(!raw.length){
@@ -323,7 +360,29 @@
           <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
           <div class="col col-right">${ rightHTML2 || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
         `;
+ // NEW: 검색 결과 뱃지 업데이트
+    const q = (document.getElementById('searchInput').value || '').trim();
+    const badge = document.getElementById('searchSummary');
+    if (q) {
+      badge.style.display = 'inline-block';
+      badge.textContent = `${__searchCount}건 검색`;
+    } else {
+      badge.style.display = 'none';
+      badge.textContent = '';
+    }
 
+    // NEW: 접기 버튼 바인딩 (기존 그대로 유지)
+    elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
+        const body = btn.closest('.card').querySelector('.body');
+        const now = body.style.display !== 'none';
+        body.style.display = now ? 'none' : '';
+        collapseMap[key] = now; // 닫힌 상태 저장
+        saveCollapseMap(collapseMap);
+        btn.textContent = now ? '펼치기' : '접기';
+      });
+    });
         // NEW: 접기 버튼 바인딩
         elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
           btn.addEventListener('click', ()=>{
