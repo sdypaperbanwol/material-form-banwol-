@@ -215,156 +215,156 @@ td.cell-hit { background:#fff2cc !important; }
     const collapseMap = loadCollapseMap();
 
     // 섹션 카드 (하이라이트 제거 버전 + NEW: 접기/필터/검색)
-    function renderSectionCardGrouped(sec){
-      const title  = sec.title || '-';
-      const color  = sec.color || '#00FFFF';
-      const groups = Array.isArray(sec.groups) ? sec.groups : [];
-      const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
+  // 기존
+// function renderSectionCardGrouped(sec){
+function renderSectionCardGrouped(sec, ctx){
+  const title  = sec.title || '-';
+  const color  = sec.color || '#00FFFF';
+  const groups = Array.isArray(sec.groups) ? sec.groups : [];
+  const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-      const ban = groups.find(g => g.plant === '반월')?.rows || [];
-      const sih = groups.find(g => g.plant === '시화')?.rows || [];
+  const ban = groups.find(g => g.plant === '반월')?.rows || [];
+  const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-      const banF = ban.filter(r => !isMonoDigitPlate(r.car));
-      const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
+  const banF = ban.filter(r => !isMonoDigitPlate(r.car));
+  const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
-      // NEW: 필터/검색 적용
-const plantSel = document.getElementById('plantFilter').value; // all|banwol|sihwa
-const q = (document.getElementById('searchInput').value || '').trim();
-const qq = q.replace(/\s+/g,'');          // 공백 제거
-const dqq = qq.replace(/\D+/g,'');        // 숫자만
-const isFour = /^\d{4}$/.test(dqq);       // 4자리 숫자 검색?
+  // ▼▼ 여기부터 DOM 대신 ctx 사용 ▼▼
+  const plantSel = ctx.plantSel;          // 'all' | 'banwol' | 'sihwa'
+  const qq       = ctx.qq;                // 공백 제거된 검색어
+  const dqq      = ctx.dqq;               // 숫자만
+  const isFour   = ctx.isFour;            // 4자리 숫자 검색 여부
 
-let merged = [
-  ...banF.map(r => ({...r, plant:'반월'})),
-  ...sihF.map(r => ({...r, plant:'시화'}))
-];
-if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
-if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
-if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
+  let merged = [
+    ...banF.map(r => ({...r, plant:'반월'})),
+    ...sihF.map(r => ({...r, plant:'시화'}))
+  ];
+  if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
+  if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
+  if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
 
-// 4자리 숫자 검색이면, “일치 행 수”를 카운트하고, 셀에만 음영 표시
-const hitsMap = new Map(); // index -> hit?
-if (isFour){
-  merged.forEach((r, idx) => {
-    const hit = last4(r.car) === dqq;
-    if (hit) { hitsMap.set(idx, true); __searchCount++; }
-  });
-} else {
-  // 4자리가 아니어도 검색어가 있으면 전체 매치 건수 카운트
-  if (qq) __searchCount += merged.length;
-}
+  const hitsMap = new Map();
+  if (isFour){
+    merged.forEach((r, idx) => {
+      const hit = last4(r.car) === dqq;
+      if (hit) { hitsMap.set(idx, true); __searchCount++; }
+    });
+  } else {
+    if (qq) __searchCount += merged.length;
+  }
 
-const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
-const scnt = (plantSel==='banwol') ? 0 : sihF.length;
-const total = merged.length;
+  const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
+  const scnt = (plantSel==='banwol') ? 0 : sihF.length;
+  const total = merged.length;
 
-let seq = 1;
-const rowHTML = (r, i, sep) => {
-  const cls = [];
-  if (sep) cls.push('plant-sep');
+  let seq = 1;
+  const rowHTML = (r, i, sep) => {
+    const cls = [];
+    if (sep) cls.push('plant-sep');
+    const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
+    const hitTag = (isFour && hitsMap.get(i)) ? '<span class="tag-hit">last4</span>' : '';
+    return `
+      <tr class="${cls.join(' ')}">
+        <td>${seq++}</td>
+        <td class="${carCellClass}">${r.car ?? ''}${hitTag}</td>
+        <td>${r.time ?? ''}</td>
+        <td>${r.plant}</td>
+      </tr>`;
+  };
 
-  // 차량 칸만 음영
-  const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
-  const hitTag = (isFour && hitsMap.get(i)) ? '<span class="tag-hit">last4</span>' : '';
+  let rowsHTML = '';
+  if (plantSel === 'all') {
+    const leftPart  = merged.filter(r=>r.plant==='반월');
+    const rightPart = merged.filter(r=>r.plant==='시화');
+    rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
+    if (leftPart.length && rightPart.length) {
+      rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
+               +  rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
+    } else {
+      rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
+    }
+  } else {
+    rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
+  }
+
+  const table = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:44px">No</th>
+          <th style="width:96px">차량</th>
+          <th style="width:74px">${timeLabel}</th>
+          <th style="width:56px">공장</th>
+        </tr>
+      </thead>
+      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+    </table>`;
+
+  const collapsed   = !!collapseMap[title];
+  const bodyStyle   = collapsed ? 'style="display:none"' : '';
+  const toggleLabel = collapsed ? '펼치기' : '접기';
+
+  // ▼ 안내문도 ctx에서 온 filterActive 사용
+  const infoLine = ctx.filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
 
   return `
-    <tr class="${cls.join(' ')}">
-      <td>${seq++}</td>
-      <td class="${carCellClass}">${r.car ?? ''}${hitTag}</td>
-      <td>${r.time ?? ''}</td>
-      <td>${r.plant}</td>
-    </tr>`;
-};
-
-// 시각 분리선: 반월→시화 경계 (필터 all일 때만)
-let rowsHTML = '';
-if (plantSel === 'all') {
-  const leftPart  = merged.filter(r=>r.plant==='반월');
-  const rightPart = merged.filter(r=>r.plant==='시화');
-  rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
-  if (leftPart.length && rightPart.length) {
-    rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
-             +  rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
-  } else {
-    rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
-  }
-} else {
-  rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
+    <article class="card">
+      <div class="stripe ${stripeClass(color)}"></div>
+      <div class="head">
+        <h3>${title}</h3>
+        <div class="head-right">
+          <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+          <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
+        </div>
+      </div>
+      ${infoLine}
+      <div class="body" ${bodyStyle}>
+        ${table}
+      </div>
+    </article>`;
 }
 
-      const table = `
-        <table>
-          <thead>
-            <tr>
-              <th style="width:44px">No</th>
-              <th style="width:96px">차량</th>
-              <th style="width:74px">${timeLabel}</th>
-              <th style="width:56px">공장</th>
-            </tr>
-          </thead>
-          <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
-        </table>`;
 
-      // NEW: 접기 버튼
-      const collapsed = !!collapseMap[title];
-      const bodyStyle = collapsed ? 'style="display:none"' : '';
-      const toggleLabel = collapsed ? '펼치기' : '접기';
-      const filterActive = (plantSel !== 'all') || !!qq;
-      const infoLine = filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
-
-      return `
-    <article class="card">
-    <div class="stripe ${stripeClass(color)}"></div>
-    <div class="head">
-      <h3>${title}</h3>
-      <div class="head-right">
-        <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-        <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
-      </div>
-    </div>
-    ${infoLine}
-    <div class="body" ${bodyStyle}>
-      ${table}
-    </div>
-  </article>`;
-    }
-
-    function render(data){
+   function render(data){
   try{
-    __searchCount = 0; // ← 렌더 시작 시 초기화
+    __searchCount = 0;
+
     const ts = data && data.updatedAt ? data.updatedAt : '';
     elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
 
-        const raw = Array.isArray(data && data.sections) ? data.sections : [];
-        if(!raw.length){
-          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
-          return;
-        }
+    const raw = Array.isArray(data && data.sections) ? data.sections : [];
+    if(!raw.length){
+      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
+      return;
+    }
 
-        // 제목 → 섹션 맵
-        const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+    const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+    const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
+    const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
+    const used = new Set([...left, ...right].map(s => s.title));
+    raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
 
-        // 좌/우 컬럼 구성
-        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);   // 제품·부자재·컨테이너
-        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);  // 원하·원대
+    // ▼▼ 여기서 단 한번만 UI 상태 계산
+    const plantSel = document.getElementById('plantFilter').value; // 'all'|'banwol'|'sihwa'
+    const q  = (document.getElementById('searchInput').value || '').trim();
+    const qq = q.replace(/\s+/g,'');
+    const dqq = qq.replace(/\D+/g,'');
+    const isFour = /^\d{4}$/.test(dqq);
+    const filterActive = (plantSel !== 'all') || !!qq;
 
-        // 혹시 API가 추가 섹션을 내려보내면 좌측 맨 아래에 붙이기
-        const used = new Set([...left, ...right].map(s => s.title));
-        raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
+    const ctx = { plantSel, q, qq, dqq, isFour, filterActive };
 
-        const leftHTML  = left.map(renderSectionCardGrouped).join('');
-        const rightHTML = right.map(renderSectionCardGrouped).join('');
+    const leftHTML  = left .map(sec => renderSectionCardGrouped(sec,  ctx)).join('');
+    const rightHTML = right.map(sec => renderSectionCardGrouped(sec, ctx)).join('');
 
+    elSections.innerHTML = `
+      <div class="col col-left">${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
+      <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
+    `;
 
-       elSections.innerHTML = `
-  <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-  <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
-`;
-
- // NEW: 검색 결과 뱃지 업데이트
-    const q = (document.getElementById('searchInput').value || '').trim();
+    // 검색 결과 뱃지
     const badge = document.getElementById('searchSummary');
-    if (q) {
+    if (qq) {
       badge.style.display = 'inline-block';
       badge.textContent = `${__searchCount}건 검색`;
     } else {
@@ -372,36 +372,25 @@ if (plantSel === 'all') {
       badge.textContent = '';
     }
 
-    // NEW: 접기 버튼 바인딩 (기존 그대로 유지)
+    // 접기 버튼 바인딩 (중복 블록 하나만 남기기)
     elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
         const body = btn.closest('.card').querySelector('.body');
         const now = body.style.display !== 'none';
         body.style.display = now ? 'none' : '';
-        collapseMap[key] = now; // 닫힌 상태 저장
+        collapseMap[key] = now;
         saveCollapseMap(collapseMap);
         btn.textContent = now ? '펼치기' : '접기';
       });
     });
-        // NEW: 접기 버튼 바인딩
-        elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
-            const body = btn.closest('.card').querySelector('.body');
-            const now = body.style.display !== 'none';
-            body.style.display = now ? 'none' : '';
-            collapseMap[key] = now; // 닫힌 상태를 true로 저장
-            saveCollapseMap(collapseMap);
-            btn.textContent = now ? '펼치기' : '접기';
-          });
-        });
 
-      }catch(err){
-        console.error(err);
-        elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
-      }
-    }
+  } catch(err){
+    console.error(err);
+    elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
+  }
+}
+
 
     async function loadSnapshotFetch(){
       const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now();
