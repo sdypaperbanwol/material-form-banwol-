@@ -262,14 +262,14 @@ function renderSectionCardGrouped(sec, ctx){
     const cls = [];
     if (sep) cls.push('plant-sep');
     const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
-    const hitTag = (isFour && hitsMap.get(i)) ? '<span class="tag-hit">last4</span>' : '';
-    return `
-      <tr class="${cls.join(' ')}">
-        <td>${seq++}</td>
-        <td class="${carCellClass}">${r.car ?? ''}${hitTag}</td>
-        <td>${r.time ?? ''}</td>
-        <td>${r.plant}</td>
-      </tr>`;
+    
+   return `
+  <tr class="${cls.join(' ')}">
+    <td>${seq++}</td>
+    <td class="${carCellClass}">${r.car ?? ''}</td>
+    <td>${r.time ?? ''}</td>
+    <td>${r.plant}</td>
+  </tr>`;
   };
 
   let rowsHTML = '';
