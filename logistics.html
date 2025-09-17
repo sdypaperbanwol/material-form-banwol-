@@ -8,7 +8,8 @@
   <style>
     :root{
       --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
-      --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff; --chip:#f0f3f7;
+      --cyan:#00FFFF; --green:#00FF00; --sub:#7ED957; --cont:#FF7A00;
+      --badge:#eef3ff; --chip:#f0f3f7;
       --brand:#0f62fe; --radius:16px; --shadow:0 6px 18px rgba(0,0,0,.05);
     }
     *{box-sizing:border-box}
@@ -45,6 +46,8 @@
     .stripe{height:4px;border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
     .stripe.cyan{background:var(--cyan)}
     .stripe.green{background:var(--green)}
+    .stripe.sub{background:var(--sub)}
+    .stripe.orange{background:var(--cont)}
 
     .summary{padding:8px 14px;color:var(--muted);border-bottom:1px solid var(--line);font-size:12.5px}
 
@@ -139,7 +142,7 @@
     // =============================
     //  설정: GAS 스냅샷 엔드포인트
     // =============================
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzu_8Yyss_xWxbJETWK5k_ziK645AzlP8eDjItnaRORcSyAWqd7vqorylrxzs1ejoWypg/exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxozz0EJ9kdRy8K2gVd7NhZ0jod1_zEZ2FaTaqj8NJ6meSC0wL4uKizUx9Fhx6I0beyCw/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -178,10 +181,13 @@ function isMonoDigitPlate(s){
       setTimeout(()=>toast.classList.remove('show'), 1200);
     }
 
-    function stripeClass(color){
-      const c = String(color||'').toLowerCase();
-      return c.includes('00ff00') ? 'green' : 'cyan';
-    }
+   function stripeClass(color){
+   const c = String(color||'').toLowerCase();
+   if (c.includes('ff7a00')) return 'orange'; // 컨테이너
+   if (c.includes('7ed957')) return 'sub';    // 부자재
+   if (c.includes('00ff00')) return 'green';  // 원료
+   return 'cyan';                              // 제품(기본)
+   }
 
     // 로딩 상태 토글 (manual은 오버레이, auto는 헤더 스피너만)
     function setLoading(on, source){
