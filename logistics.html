@@ -8,7 +8,7 @@
   <style>
     :root{
       --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
-       --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff; --chip:#f0f3f7;
+      --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff; --chip:#f0f3f7;
       --brand:#0f62fe; --radius:16px; --shadow:0 6px 18px rgba(0,0,0,.05);
     }
     *{box-sizing:border-box}
@@ -90,36 +90,31 @@
       <div class="badges">
         <span class="badge">신대양제지 반월/시화</span>
         <span class="badge">계근 기준</span>
-        
       </div>
 
+      <!-- 툴바: 새로고침 / 통운차량 관리 / 텔레그램 열기만 유지 -->
       <div class="toolbar">
-        <select id="interval" class="btn" title="새로고침 간격">
-          <option value="30">30초</option>
-          <option value="60" selected>60초</option>
-          <option value="120">120초</option>
-        </select>
         <button class="btn" id="btnRefresh">새로고침</button>
         <button class="btn" id="btnManage">통운차량 관리</button>
         <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
-        <button class="btn primary" id="btnPrint">인쇄/PDF</button>
       </div>
 
+      <!-- 통운차량 관리 모달 -->
       <div class="overlay" id="manageModal" aria-hidden="true">
-  <div class="panel" style="min-width:420px;flex-direction:column;align-items:stretch">
-    <div style="font-weight:600;margin-bottom:8px">통운차량 관리 (마지막 4자리)</div>
-    <textarea id="markerInput" rows="8" style="width:100%;resize:vertical"
-      placeholder="예) 1234&#10;5678&#10;9012"></textarea>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-      <button class="btn" id="btnCancelManage">취소</button>
-      <button class="btn primary" id="btnSaveManage">저장</button>
-    </div>
-    <div style="color:#777;font-size:12px;margin-top:6px">
-      • 숫자/공백/쉼표 구분, 마지막 4자리만 저장됩니다.<br/>
-      • 저장 후 목록에 포함된 차량만 음영 표시됩니다. (제품 상차중은 제외)
-    </div>
-  </div>
-</div>
+        <div class="panel" style="min-width:420px;flex-direction:column;align-items:stretch">
+          <div style="font-weight:600;margin-bottom:8px">통운차량 관리 (마지막 4자리)</div>
+          <textarea id="markerInput" rows="8" style="width:100%;resize:vertical"
+            placeholder="예) 1234&#10;5678&#10;9012"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+            <button class="btn" id="btnCancelManage">취소</button>
+            <button class="btn primary" id="btnSaveManage">저장</button>
+          </div>
+          <div style="color:#777;font-size:12px;margin-top:6px">
+            • 숫자/공백/쉼표 구분, 마지막 4자리만 저장됩니다.<br/>
+            • 저장 후 목록에 포함된 차량만 음영 표시됩니다. (제품 상차중은 제외)
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="grid" id="sections">
@@ -146,25 +141,26 @@
 
     const elUpdated  = document.getElementById('updated');
     const elSections = document.getElementById('sections');
-    const elInterval = document.getElementById('interval');
     const btnRefresh = document.getElementById('btnRefresh');
-    const btnPrint   = document.getElementById('btnPrint');
     const toast      = document.getElementById('toast');
     const overlay    = document.getElementById('loadingOverlay');
+
     // 좌/우 배치
-const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
-const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
+    const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
+    const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
 
-// 하이라이트(음영) 제외할 섹션
-const NO_HIT_TITLES = new Set(['제품 상차중']);
+    // 하이라이트(음영) 제외할 섹션
+    const NO_HIT_TITLES = new Set(['제품 상차중']);
 
-// '1111 / 22222 / 0000 …' 같은 한 자리 반복 번호 필터
-function isMonoDigitPlate(s){
-  const d = String(s || '').replace(/\D+/g, '');
-  if (d.length < 4) return false;           // 4자리 미만은 필터 안함
-  return d.split('').every(ch => ch === d[0]);
-}
+    // '1111 / 22222 / 0000 …' 같은 한 자리 반복 번호 필터
+    function isMonoDigitPlate(s){
+      const d = String(s || '').replace(/\D+/g, '');
+      if (d.length < 4) return false;           // 4자리 미만은 필터 안함
+      return d.split('').every(ch => ch === d[0]);
+    }
 
+    // 자동 새로고침 주기(고정). 0으로 두면 자동 새로고침 끔.
+    const AUTO_REFRESH_MS = 60000; // 60초
 
     // 중복 호출 방지 플래그
     let __loading = false;
@@ -180,17 +176,16 @@ function isMonoDigitPlate(s){
       setTimeout(()=>toast.classList.remove('show'), 1200);
     }
 
-  function stripeClass(color){
-   const c = String(color||'').toLowerCase();
-   return c.includes('00ff00') ? 'green' : 'cyan';
- }
+    function stripeClass(color){
+      const c = String(color||'').toLowerCase();
+      return c.includes('00ff00') ? 'green' : 'cyan';
+    }
 
     // 로딩 상태 토글 (manual은 오버레이, auto는 헤더 스피너만)
     function setLoading(on, source){
       __loading = !!on;
       // 컨트롤 비활성화
       btnRefresh.disabled = on;
-      elInterval.disabled = on;
       if(on){
         if(source === 'manual'){
           overlay.classList.add('show');
@@ -205,62 +200,61 @@ function isMonoDigitPlate(s){
 
     // (A) 새 함수: 연속번호 + 구분헤더
     function renderSectionCardGrouped(sec){
-  const title  = sec.title || '-';
-  const color  = sec.color || '#00FFFF';
-  const groups = Array.isArray(sec.groups) ? sec.groups : [];
-  const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
+      const title  = sec.title || '-';
+      const color  = sec.color || '#00FFFF';
+      const groups = Array.isArray(sec.groups) ? sec.groups : [];
+      const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-  const ban = groups.find(g => g.plant === '반월')?.rows || [];
-  const sih = groups.find(g => g.plant === '시화')?.rows || [];
+      const ban = groups.find(g => g.plant === '반월')?.rows || [];
+      const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-  // ① 한 자리 반복 번호 제거
-  const banF = ban.filter(r => !isMonoDigitPlate(r.car));
-  const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
+      // ① 한 자리 반복 번호 제거
+      const banF = ban.filter(r => !isMonoDigitPlate(r.car));
+      const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
-  const bcnt = banF.length, scnt = sihF.length, total = bcnt + scnt;
+      const bcnt = banF.length, scnt = sihF.length, total = bcnt + scnt;
 
-  let seq = 1;
-  const rowHTML = (r, plant, sep) => {
-    const cls = [];
-    if (sep) cls.push('plant-sep');
-    // ② 백엔드가 내려준 r.hit 사용, '제품 상차중'은 제외
-    if (r.hit && !NO_HIT_TITLES.has(title)) cls.push('hit');
-    const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
-    return `
-      <tr${classAttr}>
-        <td>${seq++}</td>
-        <td>${r.car ?? ''}</td>
-        <td>${r.time ?? ''}</td>
-        <td>${plant}</td>
-      </tr>`;
-  };
+      let seq = 1;
+      const rowHTML = (r, plant, sep) => {
+        const cls = [];
+        if (sep) cls.push('plant-sep');
+        // ② 백엔드가 내려준 r.hit 사용, '제품 상차중'은 제외
+        if (r.hit && !NO_HIT_TITLES.has(title)) cls.push('hit');
+        const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
+        return `
+          <tr${classAttr}>
+            <td>${seq++}</td>
+            <td>${r.car ?? ''}</td>
+            <td>${r.time ?? ''}</td>
+            <td>${plant}</td>
+          </tr>`;
+      };
 
-  const rowsHTML =
-    banF.map(r => rowHTML(r, '반월', false)).join('') +
-    sihF.map((r, i) => rowHTML(r, '시화', !!banF.length && i === 0)).join('');
+      const rowsHTML =
+        banF.map(r => rowHTML(r, '반월', false)).join('') +
+        sihF.map((r, i) => rowHTML(r, '시화', !!banF.length && i === 0)).join('');
 
-  const table = `
-    <table>
-      <thead>
-        <tr>
-          <th style="width:44px">No</th>
-          <th style="width:96px">차량</th>
-          <th style="width:74px">${timeLabel}</th>
-          <th style="width:56px">공장</th>
-        </tr>
-      </thead>
-      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
-    </table>`;
+      const table = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44px">No</th>
+              <th style="width:96px">차량</th>
+              <th style="width:74px">${timeLabel}</th>
+              <th style="width:56px">공장</th>
+            </tr>
+          </thead>
+          <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+        </table>`;
 
-  return `
-    <article class="card">
-      <div class="stripe ${stripeClass(color)}"></div>
-      <div class="head"><h3>${title}</h3></div>
-      <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-      ${table}
-    </article>`;
-}
-
+      return `
+        <article class="card">
+          <div class="stripe ${stripeClass(color)}"></div>
+          <div class="head"><h3>${title}</h3></div>
+          <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+          ${table}
+        </article>`;
+    }
 
     // 섹션 찾기(타이틀 매칭), 없으면 null
     function pickByTitle(sections, keyword){
@@ -268,40 +262,39 @@ function isMonoDigitPlate(s){
     }
 
     function render(data){
-  try{
-    const ts = data && data.updatedAt ? data.updatedAt : '';
-    elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
+      try{
+        const ts = data && data.updatedAt ? data.updatedAt : '';
+        elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
 
-    const raw = Array.isArray(data && data.sections) ? data.sections : [];
-    if(!raw.length){
-      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
-      return;
+        const raw = Array.isArray(data && data.sections) ? data.sections : [];
+        if(!raw.length){
+          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
+          return;
+        }
+
+        // 제목 → 섹션 맵
+        const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+
+        // 좌/우 컬럼 구성
+        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);   // 제품·부자재·컨테이너
+        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);  // 원하·원대
+
+        // 혹시 API가 추가 섹션을 내려보내면 좌측 맨 아래에 붙이기
+        const used = new Set([...left, ...right].map(s => s.title));
+        raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
+
+        const leftHTML  = left.map(renderSectionCardGrouped).join('');
+        const rightHTML = right.map(renderSectionCardGrouped).join('');
+
+        elSections.innerHTML = `
+          <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
+          <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
+        `;
+      }catch(err){
+        console.error(err);
+        elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
+      }
     }
-
-    // 제목 → 섹션 맵
-    const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
-
-    // 좌/우 컬럼 구성
-    const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);   // 제품·부자재·컨테이너
-    const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);  // 원하·원대
-
-    // 혹시 API가 추가 섹션을 내려보내면 좌측 맨 아래에 붙이기
-    const used = new Set([...left, ...right].map(s => s.title));
-    raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
-
-    const leftHTML  = left.map(renderSectionCardGrouped).join('');
-    const rightHTML = right.map(renderSectionCardGrouped).join('');
-
-    elSections.innerHTML = `
-      <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-      <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
-    `;
-  }catch(err){
-    console.error(err);
-    elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
-  }
-}
-
 
     async function loadSnapshotFetch(){
       const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now(); // 캐시 회피
@@ -359,13 +352,12 @@ function isMonoDigitPlate(s){
 
     function startInterval(){
       if(__timer) clearInterval(__timer);
-      const sec = Number(elInterval.value || 60);
-      __timer = setInterval(()=>loadSnapshot({source:'auto'}), sec * 1000);
+      if(!AUTO_REFRESH_MS) return; // 0이면 자동 새로고침 비활성화
+      __timer = setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS);
     }
 
-    elInterval.addEventListener('change', startInterval);
+    // 이벤트
     btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
-    btnPrint.addEventListener('click', ()=> window.print());
 
     // init
     (function(){
@@ -374,72 +366,74 @@ function isMonoDigitPlate(s){
     })();
 
     // === 관리용 API ===
-const EXEC_BASE = SNAPSHOT_URL.split('?')[0];     // .../exec
-const API_SECRET = 'CHANGE_ME_1234';              // GAS에 설정한 값(설정 안했으면 빈 문자열로 둬도 됨)
+    const EXEC_BASE = SNAPSHOT_URL.split('?')[0];     // .../exec
+    const API_SECRET = 'CHANGE_ME_1234';              // GAS에 설정한 값(설정 안했으면 빈 문자열로 둬도 됨)
 
-// JSONP
-function jsonp(url){
-  return new Promise((resolve,reject)=>{
-    const cb = 'CB_' + Math.random().toString(36).slice(2);
-    const s = document.createElement('script');
-    const cleanup = ()=>{ try{ delete window[cb]; s.remove(); }catch(e){} };
-    window[cb] = (data)=>{ cleanup(); resolve(data); };
-    s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
-    s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
-    document.body.appendChild(s);
-  });
-}
-
-// 모달 열기/닫기
-const manageModal = document.getElementById('manageModal');
-const markerInput = document.getElementById('markerInput');
-document.getElementById('btnManage').addEventListener('click', async ()=>{
-  // 서버에서 현재 목록 로드
-  try{
-    const data = await jsonp(EXEC_BASE + '?api=hit_get');
-    const arr = Array.isArray(data && data.markers) ? data.markers : [];
-    markerInput.value = arr.join('\n');
-  }catch(e){
-    markerInput.value = '';
-  }
-  manageModal.classList.add('show');
-  manageModal.setAttribute('aria-hidden','false');
-});
-document.getElementById('btnCancelManage').addEventListener('click', ()=>{
-  manageModal.classList.remove('show');
-  manageModal.setAttribute('aria-hidden','true');
-});
-document.getElementById('btnSaveManage').addEventListener('click', async ()=>{
-  // 입력 파싱(숫자만, 마지막 4자리)
-  const raw = markerInput.value || '';
-  const parts = raw.split(/[\s,]+/).filter(Boolean);
-  const last4 = [...new Set(parts.map(s=>{
-    const d = String(s).replace(/\D+/g,'');
-    return d.length>=4 ? d.slice(-4) : '';
-  }).filter(Boolean))];
-
-  try{
-    const q = new URLSearchParams({
-      api:'hit_set',
-      list:last4.join(','),
-      secret: API_SECRET || ''
-    });
-    const res = await jsonp(EXEC_BASE + '?' + q.toString());
-    if (!(res && res.ok)){
-      showToast('저장 실패: ' + (res && res.error || '오류'));
-      return;
+    // JSONP
+    function jsonp(url){
+      return new Promise((resolve,reject)=>{
+        const cb = 'CB_' + Math.random().toString(36).slice(2);
+        const s = document.createElement('script');
+        const cleanup = ()=>{ try{ delete window[cb]; s.remove(); }catch(e){} };
+        window[cb] = (data)=>{ cleanup(); resolve(data); };
+        s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
+        s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+        document.body.appendChild(s);
+      });
     }
-    showToast('저장 완료 ('+res.count+'건)');
-    manageModal.classList.remove('show');
-    manageModal.setAttribute('aria-hidden','true');
 
-    // 새 목록 기준으로 다시 스냅샷 로드 → 화면 음영 즉시 반영
-    loadSnapshot({source:'manual'});
-  }catch(e){
-    showToast('저장 오류');
-  }
-});
+    // 모달 열기/닫기
+    const manageModal = document.getElementById('manageModal');
+    const markerInput = document.getElementById('markerInput');
 
+    document.getElementById('btnManage').addEventListener('click', async ()=>{
+      // 서버에서 현재 목록 로드
+      try{
+        const data = await jsonp(EXEC_BASE + '?api=hit_get');
+        const arr = Array.isArray(data && data.markers) ? data.markers : [];
+        markerInput.value = arr.join('\n');
+      }catch(e){
+        markerInput.value = '';
+      }
+      manageModal.classList.add('show');
+      manageModal.setAttribute('aria-hidden','false');
+    });
+
+    document.getElementById('btnCancelManage').addEventListener('click', ()=>{
+      manageModal.classList.remove('show');
+      manageModal.setAttribute('aria-hidden','true');
+    });
+
+    document.getElementById('btnSaveManage').addEventListener('click', async ()=>{
+      // 입력 파싱(숫자만, 마지막 4자리)
+      const raw = markerInput.value || '';
+      const parts = raw.split(/[\s,]+/).filter(Boolean);
+      const last4 = [...new Set(parts.map(s=>{
+        const d = String(s).replace(/\D+/g,'');
+        return d.length>=4 ? d.slice(-4) : '';
+      }).filter(Boolean))];
+
+      try{
+        const q = new URLSearchParams({
+          api:'hit_set',
+          list:last4.join(','),
+          secret: API_SECRET || ''
+        });
+        const res = await jsonp(EXEC_BASE + '?' + q.toString());
+        if (!(res && res.ok)){
+          showToast('저장 실패: ' + (res && res.error || '오류'));
+          return;
+        }
+        showToast('저장 완료 ('+res.count+'건)');
+        manageModal.classList.remove('show');
+        manageModal.setAttribute('aria-hidden','true');
+
+        // 새 목록 기준으로 다시 스냅샷 로드 → 화면 음영 즉시 반영
+        loadSnapshot({source:'manual'});
+      }catch(e){
+        showToast('저장 오류');
+      }
+    });
   </script>
 </body>
 </html>
