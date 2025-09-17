@@ -234,14 +234,7 @@ const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
 }
 
 
-    // 섹션 정렬: DESIRED_ORDER 우선, 없으면 원본 순서 유지
-    function orderSections(sections){
-      const byTitle = Object.fromEntries(sections.map(s => [s.title, s]));
-      const ordered = DESIRED_ORDER.map(t => byTitle[t]).filter(Boolean);
-      const rest = sections.filter(s => !DESIRED_ORDER.includes(s.title));
-      return ordered.concat(rest);
-    }
-    
+      
 // 숫자만 뽑아서 길이≥4이고 같은 숫자 반복인지 체크 (예: 1111, 00000 등)
 function isMonoDigitPlate(car){
   const digits = String(car || '').replace(/\D+/g, '');
