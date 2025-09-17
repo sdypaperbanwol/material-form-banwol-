@@ -309,22 +309,24 @@ if (plantSel === 'all') {
       const collapsed = !!collapseMap[title];
       const bodyStyle = collapsed ? 'style="display:none"' : '';
       const toggleLabel = collapsed ? '펼치기' : '접기';
+      const filterActive = (plantSel !== 'all') || !!qq;
+      const infoLine = filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
 
       return `
-        <article class="card">
-          <div class="stripe ${stripeClass(color)}"></div>
-          <div class="head">
-            <h3>${title}</h3>
-            <div class="head-right">
-              <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-              <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
-            </div>
-          </div>
-          <div class="summary">※ 검색/필터가 적용된 결과입니다.</div>
-          <div class="body" ${bodyStyle}>
-            ${table}
-          </div>
-        </article>`;
+    <article class="card">
+    <div class="stripe ${stripeClass(color)}"></div>
+    <div class="head">
+      <h3>${title}</h3>
+      <div class="head-right">
+        <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+        <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
+      </div>
+    </div>
+    ${infoLine}
+    <div class="body" ${bodyStyle}>
+      ${table}
+    </div>
+  </article>`;
     }
 
     function render(data){
@@ -351,15 +353,14 @@ if (plantSel === 'all') {
         raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
 
         const leftHTML  = left.map(renderSectionCardGrouped).join('');
-        const rightHTML = right.map(renderSectionCardCardGrouped = renderSectionCardGrouped, right).map(renderSectionCardGrouped).join('');
+        const rightHTML = right.map(renderSectionCardGrouped).join('');
 
-        // 위 한 줄은 가독성용; 실제로는 아래처럼 렌더
-        const rightHTML2 = right.map(renderSectionCardGrouped).join('');
 
-        elSections.innerHTML = `
-          <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-          <div class="col col-right">${ rightHTML2 || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
-        `;
+       elSections.innerHTML = `
+  <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
+  <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
+`;
+
  // NEW: 검색 결과 뱃지 업데이트
     const q = (document.getElementById('searchInput').value || '').trim();
     const badge = document.getElementById('searchSummary');
