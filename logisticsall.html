@@ -75,10 +75,7 @@
     /* 반월→시화 구간 구분선 */
     tbody tr.plant-sep td{ border-top: 2px solid #ff6b6b; }
 
-    /* 표에서 L열 last4 매칭 차량 하이라이트 */
-tbody tr.hit td{ background:#fff2cc !important; }
-
-    
+    #manageModal{ z-index:10000; }
   </style>
 </head>
 <body>
@@ -89,8 +86,8 @@ tbody tr.hit td{ background:#fff2cc !important; }
 
       <div class="badges">
         <span class="badge">범위: 공장 내</span>
-        <span class="badge">입·하차 전체(5섹션)</span>
-        <span class="badge">계근/입차 기준</span>
+        <span class="badge">제품 상차 차량 전용</span>
+        <span class="badge">계근 기준</span>
         <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
       </div>
 
@@ -101,8 +98,25 @@ tbody tr.hit td{ background:#fff2cc !important; }
           <option value="120">120초</option>
         </select>
         <button class="btn" id="btnRefresh">새로고침</button>
+        <button class="btn" id="btnManage">통운차량 관리</button>
         <button class="btn primary" id="btnPrint">인쇄/PDF</button>
       </div>
+
+      <div class="overlay" id="manageModal" aria-hidden="true">
+  <div class="panel" style="min-width:420px;flex-direction:column;align-items:stretch">
+    <div style="font-weight:600;margin-bottom:8px">통운차량 관리 (마지막 4자리)</div>
+    <textarea id="markerInput" rows="8" style="width:100%;resize:vertical"
+      placeholder="예) 1234&#10;5678&#10;9012"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button class="btn" id="btnCancelManage">취소</button>
+      <button class="btn primary" id="btnSaveManage">저장</button>
+    </div>
+    <div style="color:#777;font-size:12px;margin-top:6px">
+      • 숫자/공백/쉼표 구분, 마지막 4자리만 저장됩니다.<br/>
+      • 저장 후 목록에 포함된 차량만 음영 표시됩니다. (제품 상차중은 제외)
+    </div>
+  </div>
+</div>
     </section>
 
     <section class="grid" id="sections">
@@ -124,7 +138,7 @@ tbody tr.hit td{ background:#fff2cc !important; }
     // =============================
     //  설정: GAS 스냅샷 엔드포인트
     // =============================
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzklAFS7sm41JtyDGmLmMSARCQAZ-o9OETxee4d0ObzFvXHqWmmm8repLu2OyYNkWMH/exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwvM2OjLYDu4ecWRsf-hPINJV1CDCoFXkGPPrjnNbyjvpFUj7vMlcwAHGHaW6kq-KwS7w/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -138,11 +152,6 @@ tbody tr.hit td{ background:#fff2cc !important; }
     // 중복 호출 방지 플래그
     let __loading = false;
     let __timer   = null;
-
-    // ===== 새 섹션 순서(백엔드 타이틀 그대로 사용) =====
-const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
-const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
-    const NO_HIT_TITLES = new Set(['제품 상차중']);
 
     function timeLabelFromTitle(title){
       return /대기/.test(title) ? '등록시간' : '입차시간';
@@ -162,6 +171,7 @@ const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
     // 로딩 상태 토글 (manual은 오버레이, auto는 헤더 스피너만)
     function setLoading(on, source){
       __loading = !!on;
+      // 컨트롤 비활성화
       btnRefresh.disabled = on;
       elInterval.disabled = on;
       if(on){
@@ -176,109 +186,90 @@ const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
       }
     }
 
-    // 카드 렌더(반월→시화, 시화 첫 줄에 구분선)
+    // (A) 새 함수: 연속번호 + 구분헤더
     function renderSectionCardGrouped(sec){
-  const title  = sec.title || '-';
-  const color  = sec.color || '#00FFFF';
-  const groups = Array.isArray(sec.groups) ? sec.groups : [];
-  const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
+      const title  = sec.title || '-';
+      const color  = sec.color || '#00FFFF';
+      const groups = Array.isArray(sec.groups) ? sec.groups : [];
+      const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-  // 원본
-  const banAll = groups.find(g => g.plant === '반월')?.rows || [];
-  const sihAll = groups.find(g => g.plant === '시화')?.rows || [];
+      const ban = groups.find(g => g.plant === '반월')?.rows || [];
+      const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-  // ▼ 한 자리 숫자 반복(1111/22222/0000 등) 차량 제거
-  const ban = banAll.filter(r => !isMonoDigitPlate(r.car));
-  const sih = sihAll.filter(r => !isMonoDigitPlate(r.car));
+      const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
 
-  const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
+      let seq = 1;
+      const rowHTML = (r, plant, sep) => `
+        <tr${sep ? ' class="plant-sep"' : ''}>
+          <td>${seq++}</td>
+          <td>${r.car ?? ''}</td>
+          <td>${r.time ?? ''}</td>
+          <td>${plant}</td>
+        </tr>`;
 
-  let seq = 1;
- const rowHTML = (r, plant, sep) => {
-  const cls = [];
-  if (sep) cls.push('plant-sep');
-  if (r.hit && !NO_HIT_TITLES.has(title)) cls.push('hit'); // 제품 상차중은 제외
-  const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
-  return `
-    <tr${classAttr}>
-      <td>${seq++}</td>
-      <td>${r.car ?? ''}</td>
-      <td>${r.time ?? ''}</td>
-      <td>${plant}</td>
-    </tr>`;
-};
+      const rowsHTML =
+        ban.map(r => rowHTML(r, '반월', false)).join('') +
+        sih.map((r, i) => rowHTML(r, '시화', !!ban.length && i === 0)).join('');
 
+      const table = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44px">No</th>
+              <th style="width:96px">차량</th>
+              <th style="width:74px">${timeLabel}</th>
+              <th style="width:56px">공장</th>
+            </tr>
+          </thead>
+          <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+        </table>`;
 
-
-  const rowsHTML =
-    ban.map(r => rowHTML(r, '반월', false)).join('') +
-    sih.map((r, i) => rowHTML(r, '시화', !!ban.length && i === 0)).join('');
-
-  const table = `
-    <table>
-      <thead>
-        <tr>
-          <th style="width:44px">No</th>
-          <th style="width:96px">차량</th>
-          <th style="width:74px">${timeLabel}</th>
-          <th style="width:56px">공장</th>
-        </tr>
-      </thead>
-      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
-    </table>`;
-
-  return `
-    <article class="card">
-      <div class="stripe ${stripeClass(color)}"></div>
-      <div class="head"><h3>${title}</h3></div>
-      <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-      ${table}
-    </article>`;
-}
-
-
-      
-// 숫자만 뽑아서 길이≥4이고 같은 숫자 반복인지 체크 (예: 1111, 00000 등)
-function isMonoDigitPlate(car){
-  const digits = String(car || '').replace(/\D+/g, '');
-  if (digits.length < 4) return false;
-  return /^([0-9])\1+$/.test(digits);
-}
-
-    function render(data){
-  try{
-    const ts = data && data.updatedAt ? data.updatedAt : '';
-    elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
-
-    const raw = Array.isArray(data && data.sections) ? data.sections : [];
-    if(!raw.length){
-      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
-      return;
+      return `
+        <article class="card">
+          <div class="stripe ${stripeClass(color)}"></div>
+          <div class="head"><h3>${title}</h3></div>
+          <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+          ${table}
+        </article>`;
     }
 
-    // 제목 → 섹션 맵
-    const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+    // 섹션 찾기(타이틀 매칭), 없으면 null
+    function pickByTitle(sections, keyword){
+      return sections.find(s => (s.title||'').includes(keyword)) || null;
+    }
 
-    // 요구한 순서대로 좌/우 컬럼 구성
-    const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
-    const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
+    function render(data){
+      try{
+        const ts = data && data.updatedAt ? data.updatedAt : '';
+        elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
 
-    // 혹시 API가 추가 섹션을 내려보내면(예: 새 분류) 좌측 맨 아래에 붙여서 버리지 않음
-    const used = new Set([...left, ...right].map(s => s.title));
-    raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
+        const sections = Array.isArray(data && data.sections) ? data.sections : [];
+        if(!sections.length){
+          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
+          return;
+        }
 
-    const leftHTML  = left.map(renderSectionCardGrouped).join('');
-    const rightHTML = right.map(renderSectionCardGrouped).join('');
+        // 기대 순서: [제품 상차 진행, 원료 하차 진행, 원료 하차대기]
+        const secProd = pickByTitle(sections, '제품 상차 진행') || sections[0] || null;
+        const secRawP = pickByTitle(sections, '원료 하차 진행') || sections[1] || null;
+        const secRawW = pickByTitle(sections, '원료 하차대기') || sections[2] || null;
 
-    elSections.innerHTML = `
-      <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-      <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
-    `;
-  }catch(err){
-    console.error(err);
-    elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
-  }
-}
+        const leftHTML  = secProd ? renderSectionCardGrouped(secProd) : '';
+        const rightHTML = [secRawP, secRawW].filter(Boolean).map(renderSectionCardGrouped).join('');
+
+        elSections.innerHTML = `
+          <div class="col col-left">
+            ${ leftHTML || '<div class="card"><div class="empty">(제품 상차 진행 없음)</div></div>' }
+          </div>
+          <div class="col col-right">
+            ${ rightHTML || '<div class="card"><div class="empty">(원료 하차 섹션 없음)</div></div>' }
+          </div>
+        `;
+      }catch(err){
+        console.error(err);
+        elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
+      }
+    }
 
     async function loadSnapshotFetch(){
       const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now(); // 캐시 회피
@@ -304,6 +295,7 @@ function isMonoDigitPlate(car){
     async function loadSnapshot(opts = {source:'auto'}){
       const source = opts.source || 'auto';
 
+      // 이미 로딩 중이면: manual은 토스트 안내, auto는 조용히 스킵
       if(__loading){
         if(source === 'manual') showToast('이미 새로고침 중…');
         return;
@@ -348,6 +340,74 @@ function isMonoDigitPlate(car){
       loadSnapshot({source:'auto'});
       startInterval();
     })();
+
+    // === 관리용 API ===
+const EXEC_BASE = SNAPSHOT_URL.split('?')[0];     // .../exec
+const API_SECRET = 'CHANGE_ME_1234';              // GAS에 설정한 값(설정 안했으면 빈 문자열로 둬도 됨)
+
+// JSONP
+function jsonp(url){
+  return new Promise((resolve,reject)=>{
+    const cb = 'CB_' + Math.random().toString(36).slice(2);
+    const s = document.createElement('script');
+    const cleanup = ()=>{ try{ delete window[cb]; s.remove(); }catch(e){} };
+    window[cb] = (data)=>{ cleanup(); resolve(data); };
+    s.onerror = ()=>{ cleanup(); reject(new Error('JSONP error')); };
+    s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+    document.body.appendChild(s);
+  });
+}
+
+// 모달 열기/닫기
+const manageModal = document.getElementById('manageModal');
+const markerInput = document.getElementById('markerInput');
+document.getElementById('btnManage').addEventListener('click', async ()=>{
+  // 서버에서 현재 목록 로드
+  try{
+    const data = await jsonp(EXEC_BASE + '?api=hit_get');
+    const arr = Array.isArray(data && data.markers) ? data.markers : [];
+    markerInput.value = arr.join('\n');
+  }catch(e){
+    markerInput.value = '';
+  }
+  manageModal.classList.add('show');
+  manageModal.setAttribute('aria-hidden','false');
+});
+document.getElementById('btnCancelManage').addEventListener('click', ()=>{
+  manageModal.classList.remove('show');
+  manageModal.setAttribute('aria-hidden','true');
+});
+document.getElementById('btnSaveManage').addEventListener('click', async ()=>{
+  // 입력 파싱(숫자만, 마지막 4자리)
+  const raw = markerInput.value || '';
+  const parts = raw.split(/[\s,]+/).filter(Boolean);
+  const last4 = [...new Set(parts.map(s=>{
+    const d = String(s).replace(/\D+/g,'');
+    return d.length>=4 ? d.slice(-4) : '';
+  }).filter(Boolean))];
+
+  try{
+    const q = new URLSearchParams({
+      api:'hit_set',
+      list:last4.join(','),
+      secret: API_SECRET || ''
+    });
+    const res = await jsonp(EXEC_BASE + '?' + q.toString());
+    if (!(res && res.ok)){
+      showToast('저장 실패: ' + (res && res.error || '오류'));
+      return;
+    }
+    showToast('저장 완료 ('+res.count+'건)');
+    manageModal.classList.remove('show');
+    manageModal.setAttribute('aria-hidden','true');
+
+    // 새 목록 기준으로 다시 스냅샷 로드 → 화면 음영 즉시 반영
+    loadSnapshot({source:'manual'});
+  }catch(e){
+    showToast('저장 오류');
+  }
+});
+
   </script>
 </body>
 </html>
