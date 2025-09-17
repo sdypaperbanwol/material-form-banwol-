@@ -177,57 +177,62 @@ const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
 
     // 카드 렌더(반월→시화, 시화 첫 줄에 구분선)
     function renderSectionCardGrouped(sec){
-      const title  = sec.title || '-';
-      const color  = sec.color || '#00FFFF';
-      const groups = Array.isArray(sec.groups) ? sec.groups : [];
-      const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
+  const title  = sec.title || '-';
+  const color  = sec.color || '#00FFFF';
+  const groups = Array.isArray(sec.groups) ? sec.groups : [];
+  const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-      const ban = groups.find(g => g.plant === '반월')?.rows || [];
-      const sih = groups.find(g => g.plant === '시화')?.rows || [];
+  // 원본
+  const banAll = groups.find(g => g.plant === '반월')?.rows || [];
+  const sihAll = groups.find(g => g.plant === '시화')?.rows || [];
 
-      const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
+  // ▼ 한 자리 숫자 반복(1111/22222/0000 등) 차량 제거
+  const ban = banAll.filter(r => !isMonoDigitPlate(r.car));
+  const sih = sihAll.filter(r => !isMonoDigitPlate(r.car));
 
-      let seq = 1;
-     const rowHTML = (r, plant, sep) => {
-  const cls = [];
-  if (sep) cls.push('plant-sep');
-  if (r.hit) cls.push('hit');            // ← 백엔드가 내려준 hit 사용
-  const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
+  const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
+
+  let seq = 1;
+  const rowHTML = (r, plant, sep) => {
+    const cls = [];
+    if (sep) cls.push('plant-sep');
+    if (r.hit) cls.push('hit'); // L열 last4 하이라이트
+    const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
+    return `
+      <tr${classAttr}>
+        <td>${seq++}</td>
+        <td>${r.car ?? ''}</td>
+        <td>${r.time ?? ''}</td>
+        <td>${plant}</td>
+      </tr>`;
+  };
+
+  const rowsHTML =
+    ban.map(r => rowHTML(r, '반월', false)).join('') +
+    sih.map((r, i) => rowHTML(r, '시화', !!ban.length && i === 0)).join('');
+
+  const table = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:44px">No</th>
+          <th style="width:96px">차량</th>
+          <th style="width:74px">${timeLabel}</th>
+          <th style="width:56px">공장</th>
+        </tr>
+      </thead>
+      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+    </table>`;
+
   return `
-    <tr${classAttr}>
-      <td>${seq++}</td>
-      <td>${r.car ?? ''}</td>
-      <td>${r.time ?? ''}</td>
-      <td>${plant}</td>
-    </tr>`;
-};
+    <article class="card">
+      <div class="stripe ${stripeClass(color)}"></div>
+      <div class="head"><h3>${title}</h3></div>
+      <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+      ${table}
+    </article>`;
+}
 
-
-      const rowsHTML =
-        ban.map(r => rowHTML(r, '반월', false)).join('') +
-        sih.map((r, i) => rowHTML(r, '시화', !!ban.length && i === 0)).join('');
-
-      const table = `
-        <table>
-          <thead>
-            <tr>
-              <th style="width:44px">No</th>
-              <th style="width:96px">차량</th>
-              <th style="width:74px">${timeLabel}</th>
-              <th style="width:56px">공장</th>
-            </tr>
-          </thead>
-          <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
-        </table>`;
-
-      return `
-        <article class="card">
-          <div class="stripe ${stripeClass(color)}"></div>
-          <div class="head"><h3>${title}</h3></div>
-          <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-          ${table}
-        </article>`;
-    }
 
     // 섹션 정렬: DESIRED_ORDER 우선, 없으면 원본 순서 유지
     function orderSections(sections){
@@ -236,6 +241,13 @@ const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
       const rest = sections.filter(s => !DESIRED_ORDER.includes(s.title));
       return ordered.concat(rest);
     }
+    
+// 숫자만 뽑아서 길이≥4이고 같은 숫자 반복인지 체크 (예: 1111, 00000 등)
+function isMonoDigitPlate(car){
+  const digits = String(car || '').replace(/\D+/g, '');
+  if (digits.length < 4) return false;
+  return /^([0-9])\1+$/.test(digits);
+}
 
     function render(data){
   try{
