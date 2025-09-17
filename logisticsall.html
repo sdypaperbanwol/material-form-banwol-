@@ -74,6 +74,11 @@
     }
     /* 반월→시화 구간 구분선 */
     tbody tr.plant-sep td{ border-top: 2px solid #ff6b6b; }
+
+    /* 표에서 L열 last4 매칭 차량 하이라이트 */
+tbody tr.hit td{ background:#fff2cc !important; }
+
+    
   </style>
 </head>
 <body>
@@ -119,7 +124,7 @@
     // =============================
     //  설정: GAS 스냅샷 엔드포인트
     // =============================
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxFN9TYUA_DXp9DFYtZ-WJ3JDZrVYtltDYAKXkpL7BLYxL35xKJ_Gtrz9VgvQ9EJzfZJg/exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyusoA6WCvsP7aoTYv-DuVdeXUD2XuIUoQ9oXZpgo0x8NJrmWStVxR1411AMckiim1F3g/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -188,13 +193,20 @@
       const bcnt = ban.length, scnt = sih.length, total = bcnt + scnt;
 
       let seq = 1;
-      const rowHTML = (r, plant, sep) => `
-        <tr${sep ? ' class="plant-sep"' : ''}>
-          <td>${seq++}</td>
-          <td>${r.car ?? ''}</td>
-          <td>${r.time ?? ''}</td>
-          <td>${plant}</td>
-        </tr>`;
+     const rowHTML = (r, plant, sep) => {
+  const cls = [];
+  if (sep) cls.push('plant-sep');
+  if (r.hit) cls.push('hit');            // ← 백엔드가 내려준 hit 사용
+  const classAttr = cls.length ? ` class="${cls.join(' ')}"` : '';
+  return `
+    <tr${classAttr}>
+      <td>${seq++}</td>
+      <td>${r.car ?? ''}</td>
+      <td>${r.time ?? ''}</td>
+      <td>${plant}</td>
+    </tr>`;
+};
+
 
       const rowsHTML =
         ban.map(r => rowHTML(r, '반월', false)).join('') +
