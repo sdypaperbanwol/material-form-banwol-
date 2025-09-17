@@ -32,6 +32,12 @@
     .btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
     .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
 
+    /* NEW: 필터/검색 입력 최소 스타일 */
+    .input, .select{
+      border:1px solid var(--line);background:#fff;border-radius:10px;
+      padding:8px 10px;font-size:13px
+    }
+
     .grid{display:grid;grid-template-columns:1fr;gap:14px}
     .col{display:grid;gap:14px}
     @media (min-width:900px){
@@ -39,8 +45,9 @@
     }
 
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .card .head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+    .card .head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px}
     .card .head h3{margin:0;font-size:15px}
+    .head-right{display:flex;align-items:center;gap:8px}
     .stripe{height:4px;border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
     .stripe.cyan{background:var(--cyan)}
     .stripe.green{background:var(--green)}
@@ -89,14 +96,25 @@
         <span class="badge">계근 기준</span>
       </div>
 
-      <!-- 툴바: 새로고침 / 텔레그램 열기만 유지 -->
+      <!-- 툴바: 새로고침 / 텔레그램 + (NEW) 필터/검색 -->
       <div class="toolbar">
+        <!-- NEW: 공장 필터 -->
+        <select id="plantFilter" class="select" title="공장 필터">
+          <option value="all">전체</option>
+          <option value="banwol">반월만</option>
+          <option value="sihwa">시화만</option>
+        </select>
+        <!-- NEW: 차량번호 검색 -->
+        <input id="searchInput" class="input" placeholder="차량번호 검색 (부분 일치)" />
+
         <button class="btn" id="btnRefresh">새로고침</button>
         <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
       </div>
     </section>
 
-    <section class="grid" id="sections"></section>
+    <section class="grid" id="sections">
+      <!-- JS가 채움 -->
+    </section>
   </div>
 
   <!-- 중앙 로딩 오버레이 -->
@@ -111,7 +129,7 @@
 
   <script>
     // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbx8Fn7TTYp9Jrs4s5Bg9xFHkwG8GqngrqtyjUhR0qrvqzs7bCZ5a68Wr5EEuOb7j8mo0Q/exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbx7p5Tca9_tTvOZGpGBrwl2p8VIsnZFvGnm63JVpKtCg5xE9uZgbYkfiCsE-BGFlbDWew/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -120,6 +138,14 @@
     const toast      = document.getElementById('toast');
     const overlay    = document.getElementById('loadingOverlay');
 
+    // NEW: 로컬 저장키(접기 상태/검색 유지용)
+    const LS_KEYS = {
+      collapse: 'ui.collapse.map',
+      plant: 'ui.plant',
+      q: 'ui.search'
+    };
+
+    // 좌/우 배치
     const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
     const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
 
@@ -166,7 +192,16 @@
       }
     }
 
-    // 섹션 카드 (하이라이트 제거 버전)
+    // NEW: 접기 상태 저장/로드
+    function loadCollapseMap(){
+      try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse) || '{}'); }catch(_){ return {}; }
+    }
+    function saveCollapseMap(map){
+      try{ localStorage.setItem(LS_KEYS.collapse, JSON.stringify(map||{})); }catch(_){}
+    }
+    const collapseMap = loadCollapseMap();
+
+    // 섹션 카드 (하이라이트 제거 버전 + NEW: 접기/필터/검색)
     function renderSectionCardGrouped(sec){
       const title  = sec.title || '-';
       const color  = sec.color || '#00FFFF';
@@ -179,10 +214,25 @@
       const banF = ban.filter(r => !isMonoDigitPlate(r.car));
       const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
-      const bcnt = banF.length, scnt = sihF.length, total = bcnt + scnt;
+      // NEW: 필터/검색 적용
+      const plantSel = document.getElementById('plantFilter').value; // all|banwol|sihwa
+      const q = (document.getElementById('searchInput').value || '').trim();
+      const qq = q.replace(/\s+/g,'');
+
+      let merged = [
+        ...banF.map(r => ({...r, plant:'반월'})),
+        ...sihF.map(r => ({...r, plant:'시화'}))
+      ];
+      if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
+      if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
+      if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
+
+      const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
+      const scnt = (plantSel==='banwol') ? 0 : sihF.length;
+      const total = merged.length;
 
       let seq = 1;
-      const rowHTML = (r, plant, sep) => {
+      const rowHTML = (r, sep) => {
         const cls = [];
         if (sep) cls.push('plant-sep');
         return `
@@ -190,13 +240,21 @@
             <td>${seq++}</td>
             <td>${r.car ?? ''}</td>
             <td>${r.time ?? ''}</td>
-            <td>${plant}</td>
+            <td>${r.plant}</td>
           </tr>`;
       };
 
-      const rowsHTML =
-        banF.map(r => rowHTML(r, '반월', false)).join('') +
-        sihF.map((r, i) => rowHTML(r, '시화', !!banF.length && i === 0)).join('');
+      // 시각 분리선: 반월→시화 경계 표시 (필터 all일 때만)
+      let rowsHTML = '';
+      if (plantSel === 'all') {
+        const leftPart  = merged.filter(r=>r.plant==='반월');
+        const rightPart = merged.filter(r=>r.plant==='시화');
+        rowsHTML += leftPart.map(r => rowHTML(r,false)).join('');
+        if (leftPart.length && rightPart.length) rowsHTML += rowHTML(rightPart[0], /*sep*/true) + rightPart.slice(1).map(r=>rowHTML(r,false)).join('');
+        else rowsHTML += rightPart.map(r=>rowHTML(r,false)).join('');
+      } else {
+        rowsHTML = merged.map((r,i)=>rowHTML(r,false)).join('');
+      }
 
       const table = `
         <table>
@@ -211,12 +269,25 @@
           <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
         </table>`;
 
+      // NEW: 접기 버튼
+      const collapsed = !!collapseMap[title];
+      const bodyStyle = collapsed ? 'style="display:none"' : '';
+      const toggleLabel = collapsed ? '펼치기' : '접기';
+
       return `
         <article class="card">
           <div class="stripe ${stripeClass(color)}"></div>
-          <div class="head"><h3>${title}</h3></div>
-          <div class="summary">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-          ${table}
+          <div class="head">
+            <h3>${title}</h3>
+            <div class="head-right">
+              <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+              <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
+            </div>
+          </div>
+          <div class="summary">※ 검색/필터가 적용된 결과입니다.</div>
+          <div class="body" ${bodyStyle}>
+            ${table}
+          </div>
         </article>`;
     }
 
@@ -231,20 +302,41 @@
           return;
         }
 
+        // 제목 → 섹션 맵
         const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
-        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
-        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
 
+        // 좌/우 컬럼 구성
+        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);   // 제품·부자재·컨테이너
+        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);  // 원하·원대
+
+        // 혹시 API가 추가 섹션을 내려보내면 좌측 맨 아래에 붙이기
         const used = new Set([...left, ...right].map(s => s.title));
         raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
 
         const leftHTML  = left.map(renderSectionCardGrouped).join('');
-        const rightHTML = right.map(renderSectionCardGrouped).join('');
+        const rightHTML = right.map(renderSectionCardCardGrouped = renderSectionCardGrouped, right).map(renderSectionCardGrouped).join('');
+
+        // 위 한 줄은 가독성용; 실제로는 아래처럼 렌더
+        const rightHTML2 = right.map(renderSectionCardGrouped).join('');
 
         elSections.innerHTML = `
           <div class="col col-left">${ leftHTML || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-          <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
+          <div class="col col-right">${ rightHTML2 || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
         `;
+
+        // NEW: 접기 버튼 바인딩
+        elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
+            const body = btn.closest('.card').querySelector('.body');
+            const now = body.style.display !== 'none';
+            body.style.display = now ? 'none' : '';
+            collapseMap[key] = now; // 닫힌 상태를 true로 저장
+            saveCollapseMap(collapseMap);
+            btn.textContent = now ? '펼치기' : '접기';
+          });
+        });
+
       }catch(err){
         console.error(err);
         elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
@@ -280,6 +372,8 @@
       try{
         setLoading(true, source);
         let data = await loadSnapshotFetch();
+        // NEW: 스냅샷 캐시(검색 즉시 반영용)
+        try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
         render(data);
         showToast('업데이트됨');
       }catch(err){
@@ -290,6 +384,7 @@
         }
         try{
           const data = await loadSnapshotJSONP();
+          try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
           render(data);
           showToast('업데이트됨');
         }catch(e){
@@ -307,8 +402,33 @@
       __timer = setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS);
     }
 
+    // 이벤트
     btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
 
+    // NEW: 필터/검색 이벤트 → 서버 재호출 없이 현지 렌더링만 갱신
+    const plantSel = document.getElementById('plantFilter');
+    const searchInput = document.getElementById('searchInput');
+
+    // 초기 복구
+    plantSel.value = localStorage.getItem(LS_KEYS.plant) || 'all';
+    searchInput.value = localStorage.getItem(LS_KEYS.q) || '';
+
+    function rerenderFromCache(){
+      const cache = localStorage.getItem('snapshot.cache');
+      if (!cache) return;
+      try{ render(JSON.parse(cache)); }catch(_){}
+    }
+
+    plantSel.addEventListener('change', ()=>{
+      localStorage.setItem(LS_KEYS.plant, plantSel.value);
+      rerenderFromCache();
+    });
+    searchInput.addEventListener('input', ()=>{
+      localStorage.setItem(LS_KEYS.q, searchInput.value);
+      rerenderFromCache();
+    });
+
+    // init
     (function(){
       loadSnapshot({source:'auto'});
       startInterval();
