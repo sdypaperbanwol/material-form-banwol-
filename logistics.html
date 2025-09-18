@@ -136,80 +136,57 @@ td.cell-hit { background:#fff2cc !important; }
 
   <script>
     // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwrVMUxlgtLJo-DbTDOm39FcykvmM4vKnGqzLC-RpudIKvnYgT4ZUV8ReJs76pR60nL/exec?api=snapshot';
-    const USE_JSONP_FALLBACK = true;
+   const USE_JSONP_FALLBACK = true;
 
-    const elUpdated  = document.getElementById('updated');
-    const elSections = document.getElementById('sections');
-    const btnRefresh = document.getElementById('btnRefresh');
-    const toast      = document.getElementById('toast');
-    const overlay    = document.getElementById('loadingOverlay');
+const elUpdated  = document.getElementById('updated');
+const elSections = document.getElementById('sections');
+const btnRefresh = document.getElementById('btnRefresh');
+const toast      = document.getElementById('toast');
+const overlay    = document.getElementById('loadingOverlay');
 
-    // NEW: 로컬 저장키(접기 상태/검색 유지용)
-    const LS_KEYS = {
-      collapse: 'ui.collapse.map',
-      plant: 'ui.plant',
-      q: 'ui.search'
-    };
+// === 수동 새로고침: 백엔드 refresh → 스냅샷 표시 ===
+const API_BASE   = 'https://script.google.com/macros/s/AKfycbwrVMUxlgtLJo-DbTDOm39FcykvmM4vKnGqzLC-RpudIKvnYgT4ZUV8ReJs76pR60nL/exec';
+const API_SECRET = 'CHANGE_ME_1234';
+const SNAPSHOT_URL = `${API_BASE}?api=snapshot`;
+const REFRESH_URL  = `${API_BASE}?api=refresh&secret=${encodeURIComponent(API_SECRET)}`;
 
- let __searchCount = 0;
-
-  function last4(s){
-    const d = String(s||'').replace(/\D+/g,'');
-    return d.length>=4 ? d.slice(-4) : '';
-  }
-    
-    // 좌/우 배치
-    const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
-    const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
-
-    // 한 자리 반복 번호 필터(가짜 번호 제거)
-    function isMonoDigitPlate(s){
-      const d = String(s || '').replace(/\D+/g, '');
-      if (d.length < 4) return false;
-      return d.split('').every(ch => ch === d[0]);
-    }
-
-    // 자동 새로고침(원하면 0으로 꺼도 됨)
-    const AUTO_REFRESH_MS = 0; // 60초
-
-    let __loading = false;
-    let __timer   = null;
-
-    function timeLabelFromTitle(title){
-      return /대기/.test(title) ? '등록시간' : '입차시간';
-    }
-
-    function showToast(msg){
-      toast.textContent = msg || '완료';
-      toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'), 1200);
-    }
-
-    function stripeClass(color){
-      const c = String(color||'').toLowerCase();
-      return c.includes('00ff00') ? 'green' : 'cyan';
-    }
-
-    function setLoading(on, source){
-      __loading = !!on;
-     if (btnRefresh) btnRefresh.disabled = on;
-      if(on){
-        if(source === 'manual'){
-          overlay.classList.add('show');
-          overlay.setAttribute('aria-hidden','false');
-        }
-        elUpdated.innerHTML = '<span class="mini-spinner" aria-hidden="true"></span>업데이트 중…';
-      }else{
-        overlay.classList.remove('show');
-        overlay.setAttribute('aria-hidden','true');
-      }
-    }
-
-    // 이벤트 바인딩도 보호
 if (btnRefresh) {
-  btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
+  btnRefresh.addEventListener('click', async () => {
+    if (__loading) return;
+    setLoading(true, 'manual');
+    try {
+      const res = await fetch(`${REFRESH_URL}&_=${Date.now()}`)
+        .then(r => r.json())
+        .catch(() => ({}));
+
+      // (선택) 쿨다운/바쁨 안내
+      if (res && res.ok === false) {
+        if (res.error === 'cooldown') {
+          showToast(`조금 뒤에 다시 시도하세요 (대기 ${Math.ceil((res.retryAfterMs||0)/1000)}초)`);
+        } else if (res.error === 'busy') {
+          showToast('서버가 바쁩니다. 잠시 후 다시 시도하세요.');
+        } else if (res.error === 'unauthorized') {
+          showToast('인증 실패(API_SECRET 확인).');
+        }
+      }
+
+      // 갱신된 스냅샷 로드
+      await loadSnapshot({ source:'manual' });
+    } finally {
+      setLoading(false);
+    }
+  });
 }
+
+// NEW: 로컬 저장키(접기 상태/검색 유지용)
+const LS_KEYS = {
+  collapse: 'ui.collapse.map',
+  plant: 'ui.plant',
+  q: 'ui.search'
+};
+
+let __searchCount = 0;
+
 
     
     // NEW: 접기 상태 저장/로드
@@ -458,10 +435,7 @@ function renderSectionCardGrouped(sec, ctx){
       __timer = setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS);
     }
 
-    // 이벤트
-    btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
-
-    // NEW: 필터/검색 이벤트 → 서버 재호출 없이 현지 렌더링만 갱신
+       // NEW: 필터/검색 이벤트 → 서버 재호출 없이 현지 렌더링만 갱신
     const plantSel = document.getElementById('plantFilter');
     const searchInput = document.getElementById('searchInput');
 
