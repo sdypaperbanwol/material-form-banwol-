@@ -104,17 +104,17 @@ td.cell-hit { background:#fff2cc !important; }
 
       <!-- 툴바: 새로고침 / 텔레그램 + (NEW) 필터/검색 -->
       <div class="toolbar">
-        <!-- NEW: 공장 필터 -->
+               <button class="btn" id="btnRefresh">새로고침</button>
+        <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
+         <!-- NEW: 공장 필터 -->
         <select id="plantFilter" class="select" title="공장 필터">
           <option value="all">전체</option>
           <option value="banwol">반월만</option>
           <option value="sihwa">시화만</option>
         </select>
         <!-- NEW: 차량번호 검색 -->
-        <input id="searchInput" class="input" placeholder="차량번호 검색 (부분 일치)" />
+        <input id="searchInput" class="input" placeholder="차량번호 검색)" />
         <span id="searchSummary" class="badge search-pill" style="display:none"></span>
-        <button class="btn" id="btnRefresh">새로고침</button>
-        <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
       </div>
     </section>
 
@@ -135,7 +135,7 @@ td.cell-hit { background:#fff2cc !important; }
 
   <script>
     // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbx7p5Tca9_tTvOZGpGBrwl2p8VIsnZFvGnm63JVpKtCg5xE9uZgbYkfiCsE-BGFlbDWew/exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwYHZ6e1oCRhsJEU33W-wSkjXyPVmG4S3Df5OQMrbtThOY-WZVXb6kPK4lYyh0tKHzl0A/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
