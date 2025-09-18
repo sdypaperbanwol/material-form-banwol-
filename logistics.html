@@ -109,7 +109,7 @@ td.cell-hit { background:#fff2cc !important; }
           <option value="banwol">반월만</option>
           <option value="sihwa">시화만</option>
         </select>
-               <button class="btn" id="btnRefresh">새로고침</button>
+       
         <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
          <!-- NEW: 공장 필터 -->
 
@@ -136,7 +136,7 @@ td.cell-hit { background:#fff2cc !important; }
 
   <script>
     // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwYHZ6e1oCRhsJEU33W-wSkjXyPVmG4S3Df5OQMrbtThOY-WZVXb6kPK4lYyh0tKHzl0A/exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzP02GU3nK03LKfEP_cS1iOK3atsZ_7jbv8fGaj0wvJbxkHI2ueP6deUEhJI-gANILD/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -171,7 +171,7 @@ td.cell-hit { background:#fff2cc !important; }
     }
 
     // 자동 새로고침(원하면 0으로 꺼도 됨)
-    const AUTO_REFRESH_MS = 60000; // 60초
+    const AUTO_REFRESH_MS = 0; // 60초
 
     let __loading = false;
     let __timer   = null;
