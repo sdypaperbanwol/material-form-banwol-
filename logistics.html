@@ -136,7 +136,7 @@ td.cell-hit { background:#fff2cc !important; }
 
   <script>
     // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzP02GU3nK03LKfEP_cS1iOK3atsZ_7jbv8fGaj0wvJbxkHI2ueP6deUEhJI-gANILD/exec?api=snapshot';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwrVMUxlgtLJo-DbTDOm39FcykvmM4vKnGqzLC-RpudIKvnYgT4ZUV8ReJs76pR60nL/exec?api=snapshot';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -206,6 +206,10 @@ td.cell-hit { background:#fff2cc !important; }
       }
     }
 
+    // 이벤트 바인딩도 보호
+if (btnRefresh) {
+}
+    
     // NEW: 접기 상태 저장/로드
     function loadCollapseMap(){
       try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse) || '{}'); }catch(_){ return {}; }
