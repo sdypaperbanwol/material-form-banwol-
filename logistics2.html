@@ -32,11 +32,7 @@
     .btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
     .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
 
-    /* NEW: 필터/검색 입력 최소 스타일 */
-    .input, .select{
-      border:1px solid var(--line);background:#fff;border-radius:10px;
-      padding:8px 10px;font-size:13px
-    }
+    .input, .select{ border:1px solid var(--line);background:#fff;border-radius:10px; padding:8px 10px;font-size:13px }
 
     .grid{display:grid;grid-template-columns:1fr;gap:14px}
     .col{display:grid;gap:14px}
@@ -77,16 +73,15 @@
       .header{box-shadow:none;border:none}
       .grid{grid-template-columns:1fr 1fr}
     }
+
     /* 반월→시화 구분선 */
     tbody tr.plant-sep td{ border-top: 2px solid #ff6b6b; }
 
-    /* === 검색 강조(4자리 일치시) === */
-td.cell-hit { background:#fff2cc !important; }
-.badge.search-pill { background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px; }
-.tag-hit { display:inline-block; margin-left:6px; font-size:11px; padding:1px 6px; border-radius:999px; background:#fff2cc; border:1px solid #f0e1a6; }
-
+    /* 검색 강조(4자리 일치시) */
+    td.cell-hit { background:#fff2cc !important; }
+    .badge.search-pill { background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px; }
   </style>
-  <!-- 캐시 무력화 메타(선택) -->
+
   <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
   <meta http-equiv="pragma" content="no-cache">
   <meta http-equiv="expires" content="0">
@@ -102,26 +97,35 @@ td.cell-hit { background:#fff2cc !important; }
         <span class="badge">계근 기준</span>
       </div>
 
-      <!-- 툴바: 새로고침 / 텔레그램 + (NEW) 필터/검색 -->
       <div class="toolbar">
-                <select id="plantFilter" class="select" title="공장 필터">
+        <!-- 모드(실시간/기록) -->
+        <label style="display:flex;align-items:center;gap:6px">
+          <select id="modeSelect" class="select" title="보기 모드">
+            <option value="realtime">실시간</option>
+            <option value="history">기록</option>
+          </select>
+        </label>
+
+        <!-- 기록 날짜 -->
+        <input id="historyDate" class="input" type="date" style="min-width:140px" />
+
+        <!-- 공장 필터 -->
+        <select id="plantFilter" class="select" title="공장 필터">
           <option value="all">전체</option>
           <option value="banwol">반월만</option>
           <option value="sihwa">시화만</option>
         </select>
-               <button class="btn" id="btnRefresh">새로고침</button>
-        <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
-         <!-- NEW: 공장 필터 -->
 
-        <!-- NEW: 차량번호 검색 -->
-        <input id="searchInput" class="input" placeholder="차량번호 검색)" />
+        <button class="btn" id="btnRefresh">새로고침</button>
+        <a class="btn" href="https://t.me/Logistics_Vehicle_List_bot" target="_blank" rel="noopener">텔레그램 열기</a>
+
+        <!-- 차량번호 검색 -->
+        <input id="searchInput" class="input" placeholder="차량번호 검색" />
         <span id="searchSummary" class="badge search-pill" style="display:none"></span>
       </div>
     </section>
 
-    <section class="grid" id="sections">
-      <!-- JS가 채움 -->
-    </section>
+    <section class="grid" id="sections"></section>
   </div>
 
   <!-- 중앙 로딩 오버레이 -->
@@ -135,61 +139,48 @@ td.cell-hit { background:#fff2cc !important; }
   <div class="toast" id="toast">업데이트됨</div>
 
   <script>
-    // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwYHZ6e1oCRhsJEU33W-wSkjXyPVmG4S3Df5OQMrbtThOY-WZVXb6kPK4lYyh0tKHzl0A/exec?api=snapshot';
+    // ================= 설정/상수 =================
+    // 실시간 스냅샷 API (네가 방금 사용한 스냅샷용 배포)
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwcAT42aYKR2cK1UUCQGiQTN4HaLN9xBNKAtALzffM-IgRaks6HPUwhZdVeRVijapOJ/exec?api=snapshot';
+    // 기록 조회(백엔드 history 라우트가 붙은 배포)
+    const EXEC_BASE    = 'https://script.google.com/macros/s/AKfycbwcAT42aYKR2cK1UUCQGiQTN4HaLN9xBNKAtALzffM-IgRaks6HPUwhZdVeRVijapOJ/exec';
     const USE_JSONP_FALLBACK = true;
 
-    const elUpdated  = document.getElementById('updated');
-    const elSections = document.getElementById('sections');
-    const btnRefresh = document.getElementById('btnRefresh');
-    const toast      = document.getElementById('toast');
-    const overlay    = document.getElementById('loadingOverlay');
-
-    // NEW: 로컬 저장키(접기 상태/검색 유지용)
     const LS_KEYS = {
       collapse: 'ui.collapse.map',
       plant: 'ui.plant',
-      q: 'ui.search'
+      q: 'ui.search',
+      mode: 'ui.mode',
+      histDate: 'ui.historyDate'
     };
 
- let __searchCount = 0;
+    // DOM
+    const elUpdated   = document.getElementById('updated');
+    const elSections  = document.getElementById('sections');
+    const btnRefresh  = document.getElementById('btnRefresh');
+    const toast       = document.getElementById('toast');
+    const overlay     = document.getElementById('loadingOverlay');
+    const modeSel     = document.getElementById('modeSelect');
+    const dateInput   = document.getElementById('historyDate');
+    const plantSelDom = document.getElementById('plantFilter');
+    const searchInp   = document.getElementById('searchInput');
 
-  function last4(s){
-    const d = String(s||'').replace(/\D+/g,'');
-    return d.length>=4 ? d.slice(-4) : '';
-  }
-    
-    // 좌/우 배치
+    // 뷰 설정
     const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
     const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
+    const AUTO_REFRESH_MS = 60000; // 실시간 모드 자동 새로고침 주기(ms)
 
-    // 한 자리 반복 번호 필터(가짜 번호 제거)
-    function isMonoDigitPlate(s){
-      const d = String(s || '').replace(/\D+/g, '');
-      if (d.length < 4) return false;
-      return d.split('').every(ch => ch === d[0]);
-    }
-
-    // 자동 새로고침(원하면 0으로 꺼도 됨)
-    const AUTO_REFRESH_MS = 60000; // 60초
-
+    // 상태
     let __loading = false;
     let __timer   = null;
+    let __searchCount = 0;
 
-    function timeLabelFromTitle(title){
-      return /대기/.test(title) ? '등록시간' : '입차시간';
-    }
-
-    function showToast(msg){
-      toast.textContent = msg || '완료';
-      toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'), 1200);
-    }
-
-    function stripeClass(color){
-      const c = String(color||'').toLowerCase();
-      return c.includes('00ff00') ? 'green' : 'cyan';
-    }
+    // ================= 유틸 =================
+    function showToast(msg){ toast.textContent = msg || '완료'; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1200); }
+    function stripeClass(color){ const c = String(color||'').toLowerCase(); return c.includes('00ff00') ? 'green' : 'cyan'; }
+    function timeLabelFromTitle(title){ return /대기/.test(title) ? '등록시간' : '입차시간'; }
+    function isMonoDigitPlate(s){ const d = String(s || '').replace(/\D+/g, ''); if (d.length < 4) return false; return d.split('').every(ch => ch === d[0]); }
+    function last4(s){ const d = String(s||'').replace(/\D+/g,''); return d.length>=4 ? d.slice(-4) : ''; }
 
     function setLoading(on, source){
       __loading = !!on;
@@ -206,200 +197,192 @@ td.cell-hit { background:#fff2cc !important; }
       }
     }
 
-    // NEW: 접기 상태 저장/로드
-    function loadCollapseMap(){
-      try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse) || '{}'); }catch(_){ return {}; }
-    }
-    function saveCollapseMap(map){
-      try{ localStorage.setItem(LS_KEYS.collapse, JSON.stringify(map||{})); }catch(_){}
-    }
+    // 접기상태 저장/로드
+    function loadCollapseMap(){ try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse) || '{}'); }catch(_){ return {}; } }
+    function saveCollapseMap(map){ try{ localStorage.setItem(LS_KEYS.collapse, JSON.stringify(map||{})); }catch(_){ } }
     const collapseMap = loadCollapseMap();
 
-    // 섹션 카드 (하이라이트 제거 버전 + NEW: 접기/필터/검색)
-  // 기존
-// function renderSectionCardGrouped(sec){
-function renderSectionCardGrouped(sec, ctx){
-  const title  = sec.title || '-';
-  const color  = sec.color || '#00FFFF';
-  const groups = Array.isArray(sec.groups) ? sec.groups : [];
-  const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
+    // ================= 렌더(섹션 1개) =================
+    function renderSectionCardGrouped(sec, ctx){
+      const title  = sec.title || '-';
+      const color  = sec.color || '#00FFFF';
+      const groups = Array.isArray(sec.groups) ? sec.groups : [];
+      const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-  const ban = groups.find(g => g.plant === '반월')?.rows || [];
-  const sih = groups.find(g => g.plant === '시화')?.rows || [];
+      const ban = groups.find(g => g.plant === '반월')?.rows || [];
+      const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-  const banF = ban.filter(r => !isMonoDigitPlate(r.car));
-  const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
+      const banF = ban.filter(r => !isMonoDigitPlate(r.car));
+      const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
-  // ▼▼ 여기부터 DOM 대신 ctx 사용 ▼▼
-  const plantSel = ctx.plantSel;          // 'all' | 'banwol' | 'sihwa'
-  const qq       = ctx.qq;                // 공백 제거된 검색어
-  const dqq      = ctx.dqq;               // 숫자만
-  const isFour   = ctx.isFour;            // 4자리 숫자 검색 여부
+      const plantSel = ctx.plantSel; // all | banwol | sihwa
+      const qq       = ctx.qq;
+      const dqq      = ctx.dqq;
+      const isFour   = ctx.isFour;
 
-  let merged = [
-    ...banF.map(r => ({...r, plant:'반월'})),
-    ...sihF.map(r => ({...r, plant:'시화'}))
-  ];
-  if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
-  if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
-  if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
+      let merged = [
+        ...banF.map(r => ({...r, plant:'반월'})),
+        ...sihF.map(r => ({...r, plant:'시화'}))
+      ];
+      if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
+      if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
+      if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
 
-  const hitsMap = new Map();
-  if (isFour){
-    merged.forEach((r, idx) => {
-      const hit = last4(r.car) === dqq;
-      if (hit) { hitsMap.set(idx, true); __searchCount++; }
-    });
-  } else {
-    if (qq) __searchCount += merged.length;
-  }
+      const hitsMap = new Map();
+      if (isFour){
+        merged.forEach((r, idx) => {
+          const hit = last4(r.car) === dqq;
+          if (hit) { hitsMap.set(idx, true); __searchCount++; }
+        });
+      } else {
+        if (qq) __searchCount += merged.length;
+      }
 
-  const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
-  const scnt = (plantSel==='banwol') ? 0 : sihF.length;
-  const total = merged.length;
+      const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
+      const scnt = (plantSel==='banwol') ? 0 : sihF.length;
+      const total = merged.length;
 
-  let seq = 1;
-  const rowHTML = (r, i, sep) => {
-    const cls = [];
-    if (sep) cls.push('plant-sep');
-    const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
-    
-   return `
-  <tr class="${cls.join(' ')}">
-    <td>${seq++}</td>
-    <td class="${carCellClass}">${r.car ?? ''}</td>
-    <td>${r.time ?? ''}</td>
-    <td>${r.plant}</td>
-  </tr>`;
-  };
+      let seq = 1;
+      const rowHTML = (r, i, sep) => {
+        const cls = [];
+        if (sep) cls.push('plant-sep');
+        const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
+        return `
+          <tr class="${cls.join(' ')}">
+            <td>${seq++}</td>
+            <td class="${carCellClass}">${r.car ?? ''}</td>
+            <td>${r.time ?? ''}</td>
+            <td>${r.plant}</td>
+          </tr>`;
+      };
 
-  let rowsHTML = '';
-  if (plantSel === 'all') {
-    const leftPart  = merged.filter(r=>r.plant==='반월');
-    const rightPart = merged.filter(r=>r.plant==='시화');
-    rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
-    if (leftPart.length && rightPart.length) {
-      rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
-               +  rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
-    } else {
-      rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
-    }
-  } else {
-    rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
-  }
+      // 반월→시화 경계선
+      let rowsHTML = '';
+      if (plantSel === 'all') {
+        const leftPart  = merged.filter(r=>r.plant==='반월');
+        const rightPart = merged.filter(r=>r.plant==='시화');
+        rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
+        if (leftPart.length && rightPart.length) {
+          rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
+                    + rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
+        } else {
+          rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
+        }
+      } else {
+        rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
+      }
 
-  const table = `
-    <table>
-      <thead>
-        <tr>
-          <th style="width:44px">No</th>
-          <th style="width:96px">차량</th>
-          <th style="width:74px">${timeLabel}</th>
-          <th style="width:56px">공장</th>
-        </tr>
-      </thead>
-      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
-    </table>`;
+      const table = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44px">No</th>
+              <th style="width:96px">차량</th>
+              <th style="width:74px">${timeLabel}</th>
+              <th style="width:56px">공장</th>
+            </tr>
+          </thead>
+          <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+        </table>`;
 
-  const collapsed   = !!collapseMap[title];
-  const bodyStyle   = collapsed ? 'style="display:none"' : '';
-  const toggleLabel = collapsed ? '펼치기' : '접기';
+      const collapsed   = !!collapseMap[title];
+      const bodyStyle   = collapsed ? 'style="display:none"' : '';
+      const toggleLabel = collapsed ? '펼치기' : '접기';
+      const infoLine    = ctx.filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
 
-  // ▼ 안내문도 ctx에서 온 filterActive 사용
-  const infoLine = ctx.filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
-
-  return `
-    <article class="card">
-      <div class="stripe ${stripeClass(color)}"></div>
-      <div class="head">
-        <h3>${title}</h3>
-        <div class="head-right">
-          <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-          <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
-        </div>
-      </div>
-      ${infoLine}
-      <div class="body" ${bodyStyle}>
-        ${table}
-      </div>
-    </article>`;
-}
-
-
-   function render(data){
-  try{
-    __searchCount = 0;
-
-    const ts = data && data.updatedAt ? data.updatedAt : '';
-    elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
-
-    const raw = Array.isArray(data && data.sections) ? data.sections : [];
-    if(!raw.length){
-      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
-      return;
+      return `
+        <article class="card">
+          <div class="stripe ${stripeClass(color)}"></div>
+          <div class="head">
+            <h3>${title}</h3>
+            <div class="head-right">
+              <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+              <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
+            </div>
+          </div>
+          ${infoLine}
+          <div class="body" ${bodyStyle}>
+            ${table}
+          </div>
+        </article>`;
     }
 
-    const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
-    const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
-    const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
-    const used = new Set([...left, ...right].map(s => s.title));
-    raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
+    // ================= 렌더(전체) =================
+    function render(data){
+      try{
+        __searchCount = 0;
 
-    // ▼▼ 여기서 단 한번만 UI 상태 계산
-    const plantSel = document.getElementById('plantFilter').value; // 'all'|'banwol'|'sihwa'
-    const q  = (document.getElementById('searchInput').value || '').trim();
-    const qq = q.replace(/\s+/g,'');
-    const dqq = qq.replace(/\D+/g,'');
-    const isFour = /^\d{4}$/.test(dqq);
-    const filterActive = (plantSel !== 'all') || !!qq;
+        const ts = data && data.updatedAt ? data.updatedAt : '';
+        // 헤더 문구(기록 모드에서 별도 설정해도 스냅샷이면 시간 찍힘)
+        if (modeSel.value === 'realtime') {
+          elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
+        }
 
-    const ctx = { plantSel, q, qq, dqq, isFour, filterActive };
+        const raw = Array.isArray(data && data.sections) ? data.sections : [];
+        if(!raw.length){
+          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
+          return;
+        }
 
-    const leftHTML  = left .map(sec => renderSectionCardGrouped(sec,  ctx)).join('');
-    const rightHTML = right.map(sec => renderSectionCardGrouped(sec, ctx)).join('');
+        const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
+        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
+        const used = new Set([...left, ...right].map(s => s.title));
+        raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
 
-    elSections.innerHTML = `
-      <div class="col col-left">${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-      <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
-    `;
+        // 단 한 번만 UI 상태 계산
+        const plantSel = plantSelDom.value; // 'all'|'banwol'|'sihwa'
+        const q  = (searchInp.value || '').trim();
+        const qq = q.replace(/\s+/g,'');
+        const dqq = qq.replace(/\D+/g,'');
+        const isFour = /^\d{4}$/.test(dqq);
+        const filterActive = (plantSel !== 'all') || !!qq;
+        const ctx = { plantSel, q, qq, dqq, isFour, filterActive };
 
-    // 검색 결과 뱃지
-    const badge = document.getElementById('searchSummary');
-    if (qq) {
-      badge.style.display = 'inline-block';
-      badge.textContent = `${__searchCount}건 검색`;
-    } else {
-      badge.style.display = 'none';
-      badge.textContent = '';
+        const leftHTML  = left .map(sec => renderSectionCardGrouped(sec,  ctx)).join('');
+        const rightHTML = right.map(sec => renderSectionCardGrouped(sec, ctx)).join('');
+
+        elSections.innerHTML = `
+          <div class="col col-left">${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
+          <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
+        `;
+
+        // 검색 결과 뱃지
+        const badge = document.getElementById('searchSummary');
+        if (qq) {
+          badge.style.display = 'inline-block';
+          badge.textContent = `${__searchCount}건 검색`;
+        } else {
+          badge.style.display = 'none';
+          badge.textContent = '';
+        }
+
+        // 접기 버튼 바인딩
+        elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
+            const body = btn.closest('.card').querySelector('.body');
+            const now = body.style.display !== 'none';
+            body.style.display = now ? 'none' : '';
+            collapseMap[key] = now;
+            saveCollapseMap(collapseMap);
+            btn.textContent = now ? '펼치기' : '접기';
+          });
+        });
+
+      } catch(err){
+        console.error(err);
+        elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
+      }
     }
 
-    // 접기 버튼 바인딩 (중복 블록 하나만 남기기)
-    elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
-        const body = btn.closest('.card').querySelector('.body');
-        const now = body.style.display !== 'none';
-        body.style.display = now ? 'none' : '';
-        collapseMap[key] = now;
-        saveCollapseMap(collapseMap);
-        btn.textContent = now ? '펼치기' : '접기';
-      });
-    });
-
-  } catch(err){
-    console.error(err);
-    elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
-  }
-}
-
-
+    // ================= 데이터 로더 =================
     async function loadSnapshotFetch(){
       const url = SNAPSHOT_URL + (SNAPSHOT_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now();
       const res = await fetch(url, { method:'GET', credentials:'omit' });
       if (!res.ok) throw new Error('HTTP '+res.status);
       return res.json();
     }
-
     function loadSnapshotJSONP(){
       return new Promise((resolve, reject)=>{
         const cbName = 'CB_' + Math.random().toString(36).slice(2);
@@ -413,34 +396,65 @@ function renderSectionCardGrouped(sec, ctx){
       });
     }
 
-    async function loadSnapshot(opts = {source:'auto'}){
+    function buildHistoryUrl(){
+      const date = dateInput.value || new Date().toISOString().slice(0,10);
+      const plant = (plantSelDom.value === 'banwol') ? 'banwol' : (plantSelDom.value === 'sihwa' ? 'sihwa' : 'all');
+      const q = (searchInp.value || '').trim();
+      const u = new URL(EXEC_BASE);
+      u.searchParams.set('api', 'history');
+      u.searchParams.set('date', date);
+      u.searchParams.set('plant', plant);
+      if (q) u.searchParams.set('q', q);
+      return u.toString();
+    }
+    async function loadHistoryFetch(){
+      const url = buildHistoryUrl() + '&_ts=' + Date.now();
+      const res = await fetch(url, { method:'GET', credentials:'omit' });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      return res.json();
+    }
+    function loadHistoryJSONP(){
+      return new Promise((resolve, reject)=>{
+        const cbName = 'CB_' + Math.random().toString(36).slice(2);
+        const cleanup = (s)=>{ try{ delete window[cbName]; s && s.remove(); }catch(e){} };
+        window[cbName] = (data)=>{ cleanup(script); resolve(data); };
+        const script = document.createElement('script');
+        const url = buildHistoryUrl() + '&callback=' + cbName + '&_ts=' + Date.now();
+        script.src = url;
+        script.onerror = ()=>{ cleanup(script); reject(new Error('JSONP load error')); };
+        document.body.appendChild(script);
+      });
+    }
+
+    async function loadData(opts = {source:'auto'}) {
+      const mode = (modeSel.value || 'realtime');
       const source = opts.source || 'auto';
+
       if(__loading){
         if(source === 'manual') showToast('이미 새로고침 중…');
         return;
       }
+
       try{
         setLoading(true, source);
-        let data = await loadSnapshotFetch();
-        // NEW: 스냅샷 캐시(검색 즉시 반영용)
-        try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
+        let data;
+        if (mode === 'realtime') {
+          try{ data = await loadSnapshotFetch(); }
+          catch(_){ if (!USE_JSONP_FALLBACK) throw _; data = await loadSnapshotJSONP(); }
+          try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
+          const ts = data && data.updatedAt ? data.updatedAt : '';
+          elUpdated.textContent = ts ? `업데이트: ${ts} (KST)` : '업데이트 시간 없음';
+        } else {
+          try{ data = await loadHistoryFetch(); }
+          catch(_){ if (!USE_JSONP_FALLBACK) throw _; data = await loadHistoryJSONP(); }
+          const d = dateInput.value || '';
+          elUpdated.textContent = d ? `기록 보기: ${d}` : '기록 보기';
+        }
         render(data);
         showToast('업데이트됨');
       }catch(err){
-        console.warn('fetch 실패, JSONP 시도:', err);
-        if (!USE_JSONP_FALLBACK){
-          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (CORS/권한 확인)</div></div></div>';
-          return;
-        }
-        try{
-          const data = await loadSnapshotJSONP();
-          try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
-          render(data);
-          showToast('업데이트됨');
-        }catch(e){
-          console.error(e);
-          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (JSONP 실패)</div></div></div>';
-        }
+        console.error(err);
+        elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다.</div></div></div>';
       }finally{
         setLoading(false);
       }
@@ -449,38 +463,60 @@ function renderSectionCardGrouped(sec, ctx){
     function startInterval(){
       if(__timer) clearInterval(__timer);
       if(!AUTO_REFRESH_MS) return;
-      __timer = setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS);
+      // 실시간 모드일 때만 자동새로고침
+      __timer = setInterval(()=>{
+        if ((modeSel.value||'realtime') === 'realtime') loadData({source:'auto'});
+      }, AUTO_REFRESH_MS);
     }
 
-    // 이벤트
-    btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
-
-    // NEW: 필터/검색 이벤트 → 서버 재호출 없이 현지 렌더링만 갱신
-    const plantSel = document.getElementById('plantFilter');
-    const searchInput = document.getElementById('searchInput');
+    // ================= 이벤트 & 초기화 =================
+    function applyModeUI(){
+      const isHist = (modeSel.value === 'history');
+      dateInput.disabled = !isHist;
+    }
 
     // 초기 복구
-    plantSel.value = localStorage.getItem(LS_KEYS.plant) || 'all';
-    searchInput.value = localStorage.getItem(LS_KEYS.q) || '';
+    (function initUIFromLocal(){
+      modeSel.value   = localStorage.getItem(LS_KEYS.mode)     || 'realtime';
+      dateInput.value = localStorage.getItem(LS_KEYS.histDate) || new Date().toISOString().slice(0,10);
+      plantSelDom.value = localStorage.getItem(LS_KEYS.plant)  || 'all';
+      searchInp.value = localStorage.getItem(LS_KEYS.q)        || '';
+      applyModeUI();
+    })();
 
-    function rerenderFromCache(){
-      const cache = localStorage.getItem('snapshot.cache');
-      if (!cache) return;
-      try{ render(JSON.parse(cache)); }catch(_){}
-    }
-
-    plantSel.addEventListener('change', ()=>{
-      localStorage.setItem(LS_KEYS.plant, plantSel.value);
-      rerenderFromCache();
+    // 이벤트 바인딩
+    modeSel.addEventListener('change', ()=>{
+      localStorage.setItem(LS_KEYS.mode, modeSel.value);
+      applyModeUI();
+      loadData({source:'manual'});
     });
-    searchInput.addEventListener('input', ()=>{
-      localStorage.setItem(LS_KEYS.q, searchInput.value);
-      rerenderFromCache();
+    dateInput.addEventListener('change', ()=>{
+      localStorage.setItem(LS_KEYS.histDate, dateInput.value);
+      if (modeSel.value === 'history') loadData({source:'manual'});
     });
+    plantSelDom.addEventListener('change', ()=>{
+      localStorage.setItem(LS_KEYS.plant, plantSelDom.value);
+      if (modeSel.value === 'history') {
+        loadData({source:'manual'});
+      } else {
+        const cache = localStorage.getItem('snapshot.cache');
+        if (cache) try{ render(JSON.parse(cache)); }catch(_){}
+      }
+    });
+    searchInp.addEventListener('input', ()=>{
+      localStorage.setItem(LS_KEYS.q, searchInp.value);
+      if (modeSel.value === 'history') {
+        loadData({source:'manual'});
+      } else {
+        const cache = localStorage.getItem('snapshot.cache');
+        if (cache) try{ render(JSON.parse(cache)); }catch(_){}
+      }
+    });
+    btnRefresh.addEventListener('click', ()=> loadData({source:'manual'}));
 
-    // init
+    // 초기 실행
     (function(){
-      loadSnapshot({source:'auto'});
+      loadData({source:'auto'});
       startInterval();
     })();
   </script>
