@@ -13,7 +13,7 @@
       display:flex;
       gap:12px;
       align-items:center;
-      justify-content:center;   /* ⬅︎ 가운데 정렬 추가 */
+      justify-content:center;
       flex-wrap:wrap;
       width:100%;
       text-align:center;
@@ -22,7 +22,7 @@
     .topbar strong { font-size:18px; }
     .timestamp { color: var(--muted); }
 
-    /* 새로고침 비활성화 시 비주얼 표시 */
+    /* 버튼 */
     button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
     button:hover { background:#f5f5f5; }
     button[disabled] { opacity:.5; cursor:not-allowed; }
@@ -68,6 +68,9 @@
   // ==== 설정 ====
   const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyxNerH4RGxiJ8Ygz3qnMvqhmfp9B-di2Amuj4XyvFde0kX6P7E-VshI1I75EVNCC3Y/exec";
   const API_TOKEN  = "DY_SCALE";
+
+  // snapshot_direct 공통 URL (시트 경로 사용 안 함)
+  const SNAPSHOT_URL = `${WEBAPP_URL}?action=snapshot_direct&token=${encodeURIComponent(API_TOKEN)}`;
 
   // 반응형 분기 기준(px)
   const BREAKPOINT = 700;
@@ -192,19 +195,20 @@
   // ========== 데이터 로드 ==========
   let __lastData = null;
 
-  async function loadSnapshot() {
+  // 2) 최초 로드: snapshot_direct 사용
+  async function loadSnapshot(){
     const tsEl = document.getElementById('ts');
-    tsEl.textContent = "불러오는 중…";
+    tsEl.textContent = '불러오는 중…';
     try {
-      const res = await fetch(WEBAPP_URL, { cache: "no-store", mode: "cors" });
-      if (!res.ok) throw new Error(res.status + " " + res.statusText);
+      const res = await fetch(SNAPSHOT_URL, { cache:'no-store', mode:'cors' });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       applyData(data);
     } catch (e) {
-      callWithJSONP(WEBAPP_URL).then(applyData).catch(err=>{
-        tsEl.textContent = "불러오기 실패";
-        alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
+      // JSONP 폴백 (같은 URL + callback)
+      callWithJSONP(SNAPSHOT_URL).then(applyData).catch(err=>{
+        tsEl.textContent = '불러오기 실패';
+        alert('스냅샷 로드 실패: ' + (err?.message || err));
       });
     }
   }
@@ -218,9 +222,9 @@
   // --------- 중복 클릭 방지 & 버튼 비활성화 ---------
   let isUpdating = false;
 
-  // 강제 갱신 → 최신 스냅샷 받기 (서버에서 한 번에)
+  // 3) 새로고침: snapshot_direct + force=1 (백엔드 캐시 무시)
   async function forceUpdateThenLoad(){
-    if (isUpdating) return;                 // ⬅︎ 재진입 차단
+    if (isUpdating) return;
     isUpdating = true;
 
     const btn = document.getElementById('btnUpdate');
@@ -228,19 +232,19 @@
     const prevLabel = btn.textContent;
 
     try {
-      btn.disabled = true;                  // ⬅︎ 비활성화
+      btn.disabled = true;
       btn.setAttribute('aria-busy','true');
-      btn.textContent = '갱신 중…';        // ⬅︎ 라벨 변경
-      tsEl.textContent = "갱신 중…";
+      btn.textContent = '갱신 중…';
+      tsEl.textContent = '갱신 중…';
 
-      const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
+      const url = `${SNAPSHOT_URL}&force=1`;
       const data = await callWithFallback(url);
-      applyData(data); // 서버에서 최신 스냅샷 바로 수신
+      applyData(data);
     } catch(e){
-      tsEl.textContent = "갱신 실패";
+      tsEl.textContent = '갱신 실패';
       alert(e.message || e);
     } finally {
-      btn.disabled = false;                 // ⬅︎ 복구
+      btn.disabled = false;
       btn.removeAttribute('aria-busy');
       btn.textContent = prevLabel;
       isUpdating = false;
