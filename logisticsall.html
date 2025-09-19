@@ -38,6 +38,8 @@
   .grid { grid-template-columns: 1fr; }
 }
 
+
+
     button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
     button:hover { background:#f5f5f5; }
   </style>
@@ -52,195 +54,221 @@
   <!-- 페어 렌더링 컨테이너 -->
   <div class="grid" id="pairs"></div>
 
-  <script>
-    // ==== 설정 ====
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyxNerH4RGxiJ8Ygz3qnMvqhmfp9B-di2Amuj4XyvFde0kX6P7E-VshI1I75EVNCC3Y/exec";
-    const API_TOKEN  = "DY_SCALE";
+<script>
+  // ==== 설정 ====
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyxNerH4RGxiJ8Ygz3qnMvqhmfp9B-di2Amuj4XyvFde0kX6P7E-VshI1I75EVNCC3Y/exec";
+  const API_TOKEN  = "DY_SCALE";
 
-    const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
+  // 반응형 분기 기준(px)
+  const BREAKPOINT = 700;
 
-    // 섹션별 시간 모드: 모두 HH:MM
-    const TIME_MODE_BY_SECTION = {
-      "제품 입차중":   "HM",
-      "원료 하차중":   "HM",
-      "원료 도착":     "HM",
-      "부자재 입차중": "HM",
-      "컨테이너 입차중":"HM"
-    };
-    function timeModeFor(title){ return TIME_MODE_BY_SECTION[title] ?? "HM"; }
+  const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
 
-    // 안전 이스케이프
-    function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  // 섹션별 시간 모드: 모두 HH:MM
+  const TIME_MODE_BY_SECTION = {
+    "제품 입차중":   "HM",
+    "원료 하차중":   "HM",
+    "원료 도착":     "HM",
+    "부자재 입차중": "HM",
+    "컨테이너 입차중":"HM"
+  };
+  function timeModeFor(title){ return TIME_MODE_BY_SECTION[title] ?? "HM"; }
 
-    // 시간 포맷터: HM/HMS/MS 지원 + KST 보정
-    function formatTime(val, mode){
-      if (val == null || val === "") return "";
-      const s = String(val).trim();
-      if (/^0+$/.test(s.replace(/\D/g,""))) return "";
+  // 안전 이스케이프
+  function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
-      // ISO/Date → KST
-      if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
-        const d = new Date(s);
-        if (!isNaN(d.getTime())) {
-          const parts = new Intl.DateTimeFormat('ko-KR', {
-            timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-          }).formatToParts(d);
-          const HH = parts.find(x=>x.type==='hour')?.value ?? '00';
-          const MM = parts.find(x=>x.type==='minute')?.value ?? '00';
-          const SS = parts.find(x=>x.type==='second')?.value ?? '00';
-          if (mode === 'HM')  return `${HH}:${MM}`;
-          if (mode === 'MS')  return `${MM}:${SS}`;
-          /* HMS */           return `${HH}:${MM}:${SS}`;
-        }
-      }
+  // 시간 포맷터: HM/HMS/MS 지원 + KST 보정
+  function formatTime(val, mode){
+    if (val == null || val === "") return "";
+    const s = String(val).trim();
+    if (/^0+$/.test(s.replace(/\D/g,""))) return "";
 
-      // HH:MM[:SS]
-      let m = s.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
-      if (m){
-        const HH=m[1], MM=m[2], SS=m[3]||"00";
+    // ISO/Date → KST
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        const parts = new Intl.DateTimeFormat('ko-KR', {
+          timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        }).formatToParts(d);
+        const HH = parts.find(x=>x.type==='hour')?.value ?? '00';
+        const MM = parts.find(x=>x.type==='minute')?.value ?? '00';
+        const SS = parts.find(x=>x.type==='second')?.value ?? '00';
         if (mode === 'HM')  return `${HH}:${MM}`;
         if (mode === 'MS')  return `${MM}:${SS}`;
-        /* HMS */           return `${HH}:${MM}:${SS}`;
-      }
-
-      // 숫자만: HHMMSS / HHMM / MMSS
-      const digits = s.replace(/\D/g,"");
-      if (digits.length >= 6){
-        const t6 = digits.slice(-6);
-        const HH=t6.slice(0,2), MM=t6.slice(2,4), SS=t6.slice(4,6);
-        if (mode === 'HM')  return `${HH}:${MM}`;
-        if (mode === 'MS')  return `${MM}:${SS}`;
-        /* HMS */           return `${HH}:${MM}:${SS}`;
-      }
-      if (digits.length === 4){
-        const A=digits.slice(0,2), B=digits.slice(2,4);
-        if (mode === 'HM')  return `${A}:${B}`;
-        if (mode === 'MS')  return `${A}:${B}`;
-        /* HMS */           return `${A}:${B}:00`;
-      }
-      return s;
-    }
-
-    function tableHTML(title, rows) {
-      const mode = timeModeFor(title);
-      const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
-      const body = rows && rows.length
-        ? rows.map(r => {
-            const no = esc(r[0]);
-            const car = esc(r[1]);
-            const t  = esc(formatTime(r[2], mode));
-            return `<tr><td>${no}</td><td>${car}</td><td>${t}</td></tr>`;
-          }).join("")
-        : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
-      return `<table>
-        <colgroup><col><col><col></colgroup>
-        <thead>${hdr}</thead><tbody>${body}</tbody></table>`;
-    }
-
-    function sectionHTML(title, data) {
-      const count = data?.count || 0;
-      const rows = data?.rows || [];
-      return `<div class="section">
-        <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
-        ${tableHTML(title, rows)}
-      </div>`;
-    }
-
-    // 페어 렌더링
-    function renderPairs(left, right) {
-      const host = document.getElementById('pairs');
-      const rows = [];
-      rows.push(`<div class="pair-title">반월</div>`, `<div class="pair-title">시화</div>`);
-      for (const t of SECTIONS) {
-        rows.push(sectionHTML(t, left?.[t]), sectionHTML(t, right?.[t]));
-      }
-      host.innerHTML = rows.join("");
-    }
-
-    // 스냅샷 로드
-    async function load() {
-      const tsEl = document.getElementById('ts');
-      tsEl.textContent = "불러오는 중…";
-      try {
-        const res = await fetch(WEBAPP_URL, { cache: "no-store", mode: "cors" });
-        if (!res.ok) throw new Error(res.status + " " + res.statusText);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        applyData(data);
-      } catch (e) {
-        // JSONP 폴백
-        callWithJSONP(WEBAPP_URL).then(applyData).catch(err=>{
-          tsEl.textContent = "불러오기 실패";
-          alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
-        });
+        return `${HH}:${MM}:${SS}`;
       }
     }
 
-    function applyData(data){
-      document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
-      renderPairs(data.left, data.right);
+    // HH:MM[:SS]
+    let m = s.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (m){
+      const HH=m[1], MM=m[2], SS=m[3]||"00";
+      if (mode === 'HM')  return `${HH}:${MM}`;
+      if (mode === 'MS')  return `${MM}:${SS}`;
+      return `${HH}:${MM}:${SS}`;
     }
 
-    // 강제 갱신 → 불러오기 (버튼: "새로고침")
-async function forceUpdateThenLoad(){
-  const tsEl = document.getElementById('ts');
-  tsEl.textContent = "갱신 중…";
-  try {
-    const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
-    const data = await callWithFallback(url); // fetch→JSONP 폴백
-    applyData(data); // 바로 최신 스냅샷 반영
-  } catch(e){
-    tsEl.textContent = "갱신 실패";
-    alert(e.message || e);
+    // 숫자만: HHMMSS / HHMM / MMSS
+    const digits = s.replace(/\D/g,"");
+    if (digits.length >= 6){
+      const t6 = digits.slice(-6);
+      const HH=t6.slice(0,2), MM=t6.slice(2,4), SS=t6.slice(4,6);
+      if (mode === 'HM')  return `${HH}:${MM}`;
+      if (mode === 'MS')  return `${MM}:${SS}`;
+      return `${HH}:${MM}:${SS}`;
+    }
+    if (digits.length === 4){
+      const A=digits.slice(0,2), B=digits.slice(2,4);
+      if (mode === 'HM')  return `${A}:${B}`;
+      if (mode === 'MS')  return `${A}:${B}`;
+      return `${A}:${B}:00`;
+    }
+    return s;
   }
-}
 
+  function tableHTML(title, rows) {
+    const mode = timeModeFor(title);
+    const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
+    const body = rows && rows.length
+      ? rows.map(r => {
+          const no = esc(r[0]);
+          const car = esc(r[1]);
+          const t  = esc(formatTime(r[2], mode));
+          return `<tr><td>${no}</td><td>${car}</td><td>${t}</td></tr>`;
+        }).join("")
+      : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
+    return `<table>
+      <colgroup><col><col><col></colgroup>
+      <thead>${hdr}</thead><tbody>${body}</tbody></table>`;
+  }
 
-    // fetch → 실패 시 JSONP 폴백 호출기
-    async function callWithFallback(url){
-      try {
-        const r = await fetch(url, { cache:'no-store', mode:'cors' });
-        const j = await r.json();
-        if (j.error) throw new Error(j.error);
-        return j;
-      } catch {
-        return callWithJSONP(url);
-      }
+  function sectionHTML(title, data) {
+    const count = data?.count || 0;
+    const rows = data?.rows || [];
+    return `<div class="section">
+      <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
+      ${tableHTML(title, rows)}
+    </div>`;
+  }
+
+  // ========== 렌더링 ==========
+  function renderPairs(left, right) {
+    const host = document.getElementById('pairs');
+    const rows = [];
+    rows.push(`<div class="pair-title">반월</div>`, `<div class="pair-title">시화</div>`);
+    for (const t of SECTIONS) {
+      rows.push(sectionHTML(t, left?.[t]), sectionHTML(t, right?.[t]));
     }
+    host.innerHTML = rows.join("");
+    host.classList.add('grid'); // 2열
+  }
 
-    // JSONP 호출기
-    function callWithJSONP(url){
-      return new Promise((resolve, reject)=>{
-        const cb = "__dy_cb_"+Date.now();
-        const s = document.createElement('script');
-        const full = url + (url.includes('?') ? '&' : '?') + `callback=${cb}&t=${Date.now()}`;
-        s.src = full;
-        s.async = true;
-        let done = false;
+  function renderStacked(left, right) {
+    const host = document.getElementById('pairs');
+    const rows = [];
+    rows.push(`<div class="pair-title">반월</div>`);
+    for (const t of SECTIONS) rows.push(sectionHTML(t, left?.[t]));
+    rows.push(`<div class="pair-title">시화</div>`);
+    for (const t of SECTIONS) rows.push(sectionHTML(t, right?.[t]));
+    host.innerHTML = rows.join("");
+    host.classList.remove('grid'); // 1열(블록 흐름)
+  }
 
-        window[cb] = (data)=>{
-          if (done) return;
-          done = true;
-          try{ delete window[cb]; document.body.removeChild(s); }catch{}
-          if (data && !data.error) resolve(data);
-          else reject(new Error(data?.error || 'JSONP 응답 오류'));
-        };
-        s.onerror = ()=>{
-          if (done) return;
-          done = true;
-          try{ delete window[cb]; document.body.removeChild(s); }catch{}
-          reject(new Error('JSONP 스크립트 로드 실패'));
-        };
+  function renderResponsive(left, right) {
+    if (window.innerWidth <= BREAKPOINT) renderStacked(left, right);
+    else renderPairs(left, right);
+  }
 
-        document.body.appendChild(s);
+  // ========== 데이터 로드 ==========
+  let __lastData = null;
+
+  async function loadSnapshot() {
+    const tsEl = document.getElementById('ts');
+    tsEl.textContent = "불러오는 중…";
+    try {
+      const res = await fetch(WEBAPP_URL, { cache: "no-store", mode: "cors" });
+      if (!res.ok) throw new Error(res.status + " " + res.statusText);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      applyData(data);
+    } catch (e) {
+      callWithJSONP(WEBAPP_URL).then(applyData).catch(err=>{
+        tsEl.textContent = "불러오기 실패";
+        alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
       });
     }
+  }
 
-    // 버튼 이벤트
-    document.getElementById('btnUpdate').addEventListener('click', forceUpdateThenLoad);
+  function applyData(data){
+    __lastData = data;
+    document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
+    renderResponsive(data.left, data.right);
+  }
 
-    // 최초엔 스냅샷만 로드(보여주기)
-    load();
-  </script>
+  // 강제 갱신 → 최신 스냅샷 받기 (서버에서 한 번에)
+  async function forceUpdateThenLoad(){
+    const tsEl = document.getElementById('ts');
+    tsEl.textContent = "갱신 중…";
+    try {
+      const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
+      const data = await callWithFallback(url);
+      applyData(data); // 서버에서 최신 스냅샷 바로 수신
+    } catch(e){
+      tsEl.textContent = "갱신 실패";
+      alert(e.message || e);
+    }
+  }
+
+  // fetch → 실패 시 JSONP 폴백
+  async function callWithFallback(url){
+    try {
+      const r = await fetch(url, { cache:'no-store', mode:'cors' });
+      const j = await r.json();
+      if (j.error) throw new Error(j.error);
+      return j;
+    } catch {
+      return callWithJSONP(url);
+    }
+  }
+  function callWithJSONP(url){
+    return new Promise((resolve, reject)=>{
+      const cb = "__dy_cb_"+Date.now();
+      const s = document.createElement('script');
+      const full = url + (url.includes('?') ? '&' : '?') + `callback=${cb}&t=${Date.now()}`;
+      s.src = full;
+      s.async = true;
+      let done = false;
+
+      window[cb] = (data)=>{
+        if (done) return;
+        done = true;
+        try{ delete window[cb]; document.body.removeChild(s); }catch{}
+        if (data && !data.error) resolve(data);
+        else reject(new Error(data?.error || 'JSONP 응답 오류'));
+      };
+      s.onerror = ()=>{
+        if (done) return;
+        done = true;
+        try{ delete window[cb]; document.body.removeChild(s); }catch{}
+        reject(new Error('JSONP 스크립트 로드 실패'));
+      };
+
+      document.body.appendChild(s);
+    });
+  }
+
+  // 버튼
+  document.getElementById('btnUpdate').addEventListener('click', forceUpdateThenLoad);
+
+  // 최초 로드
+  loadSnapshot();
+
+  // 화면 크기 변경 시 재-렌더 (데이터는 다시 안 긁고, 현재 스냅샷으로만 레이아웃 전환)
+  window.addEventListener('resize', ()=>{
+    if (!__lastData) return;
+    renderResponsive(__lastData.left, __lastData.right);
+  });
+</script>
+
 </body>
 </html>
