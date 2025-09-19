@@ -19,7 +19,17 @@
       gap: var(--gap);
       margin-inline: auto;
     }
-    .pair-title { font-weight:700; margin: 4px 0 8px; }
+    /* 공장 타이틀 가운데 */
+.pair-title {
+  text-align: center;
+}
+.grid{
+  display: grid;
+  grid-template-columns: 520px 520px; /* 기존값 */
+  gap: 16px;                          /* 기존 gap */
+  justify-content: center;            /* 그리드 중앙 */
+  margin-inline: auto;                /* 컨테이너 자체 중앙 */
+}
 
     .section { border:1px solid var(--card); border-radius:10px; padding:12px; }
     .section h3 { margin:0 0 8px 0; font-size:16px; display:flex; gap:8px; align-items:baseline; }
@@ -36,6 +46,16 @@
     /* 변경: 모바일만 1열로 (700px 이하) */
 @media (max-width: 700px) {
   .grid { grid-template-columns: 1fr; }
+}
+
+/* PC(>700px)에서는 상단바 가운데 정렬 */
+@media (min-width: 701px) {
+  .topbar {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+  .topbar .controls { margin-left: 0; } /* 있다면: 우측 밀림 방지 */
 }
 
 
