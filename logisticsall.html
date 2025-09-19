@@ -1,40 +1,87 @@
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbygJHqoFd7TejxGv-_k3UuJon2SCAYuJR50GyKW6Bk0lrmV0bC7k_ejc3IUR-e2KWO1qg/exec';
-
-// KST 기준 YYYY-MM-DD (로컬 타임존과 무관하게 고정)
-function todayKST() {
-  const dtf = new Intl.DateTimeFormat('en-CA', { // en-CA => 2025-09-19 형식
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-  return dtf.format(new Date()); // "YYYY-MM-DD"
+// ✅ 표 렌더 공통 (데이터 키가 공장 API마다 약간 다를 수 있어 방어적으로 처리)
+function normRow(o){
+  const car = o.carnum || o.carNum || o.car_no || o.car || "";
+  const last4 = o.last4 || (car ? (car.match(/(\d{4})$/)?.[1] || "") : "");
+  const status = o.status || o.state || o.prog || o.progress || "";
+  const pclass = o.productClassification || o.product_classification || o.pclass || "";
+  const when = o.enteredAt || o.in_time || o.inTime || o.regDate || o.time || "";
+  return {
+    plant: o.plant || "",
+    section: o.section || "",
+    car, last4, status, pclass, when
+  };
 }
 
-async function fetchUnified(pc='00', car='') {
-  const day = todayKST();
-  const url = new URL(API);
-  url.searchParams.set('api', 'unified');
-  url.searchParams.set('day', day);
-  url.searchParams.set('productClassification', pc);
-  if (car) url.searchParams.set('carnum', car);
-
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  if (data && data.ok === false) throw new Error(data.error || 'Unknown backend error');
-  return data; // {ok, meta, incoming, arrival, vehicle}
+function renderTable(el, list){
+  if (!Array.isArray(list) || list.length === 0){
+    el.innerHTML = `<div style="padding:10px;border:1px solid #eee;border-radius:8px;color:#777">데이터 없음</div>`;
+    return;
+  }
+  const rows = list.map(normRow).map(r => `
+    <tr>
+      <td>${r.plant}</td>
+      <td>${r.car}</td>
+      <td>${r.last4}</td>
+      <td>${r.pclass}</td>
+      <td>${r.status}</td>
+      <td>${r.when}</td>
+    </tr>
+  `).join("");
+  el.innerHTML = `
+    <div style="overflow:auto;border:1px solid #eee;border-radius:8px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead style="background:#f7f8fa">
+          <tr>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">공장</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">차량번호</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">뒤4자리</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">분류코드</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">상태</th>
+            <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">시간/기타</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
-// 예시 실행
-fetchUnified('00','')
-  .then(({incoming, arrival, vehicle, meta}) => {
-    console.log('meta', meta);
-    console.log('incoming', incoming.length, 'arrival', arrival.length, 'vehicle', vehicle.length);
-    // renderIncoming(incoming); renderArrival(arrival); renderVehicle(vehicle);
-  })
-  .catch(err => {
-    console.error('unified fetch error:', err);
-  });
+// ✅ 한번에 호출 + 렌더
+async function loadAndRender(){
+  const pc = document.getElementById('pc').value || '00';
+  const car = document.getElementById('car').value || '';
+  document.getElementById('meta').textContent = '불러오는 중…';
+
+  try{
+    const { incoming, arrival, vehicle, meta } = await fetchUnified(pc, car);
+    document.getElementById('meta').textContent =
+      `기준일: ${meta?.day} (분류:${meta?.productClassification}) · 생성: ${meta?.generatedAt}`;
+
+    // 수량
+    document.getElementById('cntIncoming').textContent = `(${incoming?.length||0}건)`;
+    document.getElementById('cntArrival').textContent  = `(${arrival?.length||0}건)`;
+    document.getElementById('cntVehicle').textContent  = `(${vehicle?.length||0}건)`;
+
+    // 테이블
+    renderTable(document.getElementById('incoming'), incoming);
+    renderTable(document.getElementById('arrival'),  arrival);
+    renderTable(document.getElementById('vehicle'),  vehicle);
+  }catch(err){
+    console.error(err);
+    document.getElementById('meta').textContent = `에러: ${err.message || err}`;
+    ['incoming','arrival','vehicle'].forEach(id=>{
+      document.getElementById(id).innerHTML =
+        `<div style="padding:10px;border:1px solid #f3d2d2;background:#fff5f5;color:#b30000;border-radius:8px">
+           데이터를 가져오지 못했습니다.
+         </div>`;
+    });
+  }
+}
+
+// ✅ 새로고침 버튼/초기 로드
+document.getElementById('btnRefresh').addEventListener('click', loadAndRender);
+document.addEventListener('DOMContentLoaded', loadAndRender);
 </script>
