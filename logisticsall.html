@@ -58,36 +58,47 @@
 
     // 시간 포맷터: 다양한 입력을 HH:MM 또는 MM:SS로 정리
     function formatTime(val, mode){
-      if (val == null || val === "") return "";
-      const s = String(val);
+    if (val == null || val === "") return "";
+    const s = String(val).trim();
 
-      // 1) HH:MM[:SS]
-      let m = s.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
-      if (m){
-        const HH=m[1], MM=m[2], SS=m[3]||"00";
-        return mode==="MS" ? `${MM}:${SS}` : `${HH}:${MM}`;
-      }
+    // 0만 잔뜩이면 공란
+    if (/^0+$/.test(s.replace(/\D/g,""))) return "";
 
-      // 2) ISO-like ...THH:MM[:SS]Z  (시트 날짜객체 직렬화)
-      m = s.match(/T(\d{2}):(\d{2})(?::(\d{2}))?Z?$/);
-      if (m){
-        const HH=m[1], MM=m[2], SS=m[3]||"00";
-        return mode==="MS" ? `${MM}:${SS}` : `${HH}:${MM}`;
+    // 1) ISO/Date 가능하면 → KST로 변환해 HH:MM:SS 추출
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        const p = new Intl.DateTimeFormat('ko-KR', {
+          timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        }).formatToParts(d);
+        const HH = p.find(x=>x.type==='hour')?.value ?? '00';
+        const MM = p.find(x=>x.type==='minute')?.value ?? '00';
+        const SS = p.find(x=>x.type==='second')?.value ?? '00';
+        return (mode === 'MS') ? `${MM}:${SS}` : `${HH}:${MM}`;
       }
-
-      // 3) 숫자만 (HHMMSS / HHMM / MMSS)
-      const digits = s.replace(/\D/g, "");
-      if (digits.length >= 6){
-        const t6 = digits.slice(-6); // HHMMSS
-        const HH=t6.slice(0,2), MM=t6.slice(2,4), SS=t6.slice(4,6);
-        return mode==="MS" ? `${MM}:${SS}` : `${HH}:${MM}`;
-      }
-      if (digits.length === 4){
-        const A=digits.slice(0,2), B=digits.slice(2,4);
-        return `${A}:${B}`; // mode에 상관없이 두 자리:두 자리
-      }
-      return s;
     }
+
+    // 2) HH:MM[:SS]
+    let m = s.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (m){
+      const HH=m[1], MM=m[2], SS=m[3]||"00";
+      return (mode === "MS") ? `${MM}:${SS}` : `${HH}:${MM}`;
+    }
+
+    // 3) 숫자만 → HHMMSS / HHMM / MMSS 처리
+    const digits = s.replace(/\D/g,"");
+    if (digits.length >= 6){
+      const t6 = digits.slice(-6); // HHMMSS
+      const HH=t6.slice(0,2), MM=t6.slice(2,4), SS=t6.slice(4,6);
+      return (mode === "MS") ? `${MM}:${SS}` : `${HH}:${MM}`;
+    }
+    if (digits.length === 4){
+      const A=digits.slice(0,2), B=digits.slice(2,4);
+      return `${A}:${B}`; // HM/MS 모두 두 자리:두 자리
+    }
+
+    return s; // 모르는 형식은 원문
+  }
 
     function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
