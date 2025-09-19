@@ -11,11 +11,11 @@
     .topbar strong { font-size:18px; }
     .timestamp { color: var(--muted); }
 
-    /* ===== 페어(반월/시화) 그리드: 두 칼럼 좁게 + 가운데 정렬 ===== */
-    .grid { 
+    /* 페어(반월/시화) 그리드: 두 칼럼 좁게 + 가운데 정렬 */
+    .grid {
       display: grid;
-      grid-template-columns: 520px 520px; /* 필요시 숫자만 조정 */
-      justify-content: center;            /* 가운데 정렬 */
+      grid-template-columns: 520px 520px; /* 필요하면 숫자만 조정 */
+      justify-content: center;
       gap: var(--gap);
       margin-inline: auto;
     }
@@ -45,21 +45,20 @@
   <div class="topbar">
     <strong>실시간 차량현황(시트 뷰)</strong>
     <span class="timestamp" id="ts"></span>
-    <button id="btnRefresh">새로고침</button>
+    <button id="btnUpdate">새로고침</button>
   </div>
 
   <!-- 페어 렌더링 컨테이너 -->
   <div class="grid" id="pairs"></div>
 
   <script>
-    // ==== 본인 GAS 웹앱 exec URL ====
+    // ==== 설정 ====
     const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxlQLPPpvsWc-OmbHYAfeVfvKyqznP-XkH8aNYsVAC_QHuevc2BGMLmIVMkYkx_Bu-0/exec";
+    const API_TOKEN  = "DY_SCALE";
 
-    // 섹션 순서 고정 (시트와 동일)
     const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
 
-    // 섹션별 시간 모드: (요청 기준) 모두 HH:MM
-    // 필요하면 여기서 특정 섹션만 "HMS"(HH:MM:SS)로 바꿔도 됨.
+    // 섹션별 시간 모드: 모두 HH:MM
     const TIME_MODE_BY_SECTION = {
       "제품 입차중":   "HM",
       "원료 하차중":   "HM",
@@ -72,7 +71,7 @@
     // 안전 이스케이프
     function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
-    // 시간 포맷터: HM/HMS/MS 지원 + KST 보정(시트가 ISO로 내려올 때)
+    // 시간 포맷터: HM/HMS/MS 지원 + KST 보정
     function formatTime(val, mode){
       if (val == null || val === "") return "";
       const s = String(val).trim();
@@ -114,9 +113,8 @@
       }
       if (digits.length === 4){
         const A=digits.slice(0,2), B=digits.slice(2,4);
-        // 관례상 HHMM로 간주
         if (mode === 'HM')  return `${A}:${B}`;
-        if (mode === 'MS')  return `${A}:${B}`;        // 모호하지만 그대로
+        if (mode === 'MS')  return `${A}:${B}`;
         /* HMS */           return `${A}:${B}:00`;
       }
       return s;
@@ -147,22 +145,18 @@
       </div>`;
     }
 
-    // ===== 페어 렌더링: 같은 행에 [반월/시화] 섹션 쌍 배치 =====
+    // 페어 렌더링
     function renderPairs(left, right) {
       const host = document.getElementById('pairs');
       const rows = [];
-
-      // 첫 행: 타이틀(반월 / 시화)
       rows.push(`<div class="pair-title">반월</div>`, `<div class="pair-title">시화</div>`);
-
-      // 이후: 각 섹션을 좌/우 같은 행에
       for (const t of SECTIONS) {
         rows.push(sectionHTML(t, left?.[t]), sectionHTML(t, right?.[t]));
       }
       host.innerHTML = rows.join("");
     }
 
-    // ===== 데이터 로드 (fetch → 실패 시 JSONP 폴백) =====
+    // 스냅샷 로드
     async function load() {
       const tsEl = document.getElementById('ts');
       tsEl.textContent = "불러오는 중…";
@@ -173,7 +167,8 @@
         if (data.error) throw new Error(data.error);
         applyData(data);
       } catch (e) {
-        loadJSONP().catch(err => {
+        // JSONP 폴백
+        callWithJSONP(WEBAPP_URL).then(applyData).catch(err=>{
           tsEl.textContent = "불러오기 실패";
           alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
         });
@@ -185,38 +180,63 @@
       renderPairs(data.left, data.right);
     }
 
-    function loadJSONP() {
-      return new Promise((resolve, reject) => {
-        const cbName = "__dy_cb_" + Date.now();
-        const url = `${WEBAPP_URL}?callback=${cbName}&t=${Date.now()}`;
-        const script = document.createElement('script');
-        script.src = url;
-        script.async = true;
+    // 강제 갱신 → 불러오기 (버튼: "새로고침")
+    async function forceUpdateThenLoad(){
+      const tsEl = document.getElementById('ts');
+      tsEl.textContent = "갱신 중…";
+      try {
+        await callWithFallback(`${WEBAPP_URL}?action=update&token=${encodeURIComponent(API_TOKEN)}`);
+        await load(); // 갱신 후 스냅샷 재조회
+      } catch(e){
+        tsEl.textContent = "갱신 실패";
+        alert(e.message || e);
+      }
+    }
 
+    // fetch → 실패 시 JSONP 폴백 호출기
+    async function callWithFallback(url){
+      try {
+        const r = await fetch(url, { cache:'no-store', mode:'cors' });
+        const j = await r.json();
+        if (j.error) throw new Error(j.error);
+        return j;
+      } catch {
+        return callWithJSONP(url);
+      }
+    }
+
+    // JSONP 호출기
+    function callWithJSONP(url){
+      return new Promise((resolve, reject)=>{
+        const cb = "__dy_cb_"+Date.now();
+        const s = document.createElement('script');
+        const full = url + (url.includes('?') ? '&' : '?') + `callback=${cb}&t=${Date.now()}`;
+        s.src = full;
+        s.async = true;
         let done = false;
-        window[cbName] = (data) => {
+
+        window[cb] = (data)=>{
           if (done) return;
           done = true;
-          try { delete window[cbName]; document.body.removeChild(script); } catch {}
-          if (data && !data.error) { applyData(data); resolve(); }
-          else { reject(new Error(data?.error || "JSONP 응답 오류")); }
+          try{ delete window[cb]; document.body.removeChild(s); }catch{}
+          if (data && !data.error) resolve(data);
+          else reject(new Error(data?.error || 'JSONP 응답 오류'));
         };
-
-        script.onerror = () => {
+        s.onerror = ()=>{
           if (done) return;
           done = true;
-          try { delete window[cbName]; document.body.removeChild(script); } catch {}
-          reject(new Error("JSONP 스크립트 로드 실패"));
+          try{ delete window[cb]; document.body.removeChild(s); }catch{}
+          reject(new Error('JSONP 스크립트 로드 실패'));
         };
 
-        document.body.appendChild(script);
+        document.body.appendChild(s);
       });
     }
 
-    // 수동 새로고침만
-    document.getElementById('btnRefresh').addEventListener('click', load);
+    // 버튼 이벤트
+    document.getElementById('btnUpdate').addEventListener('click', forceUpdateThenLoad);
 
-    // 최초 로드
+    // 최초엔 스냅샷만 로드(보여주기)
     load();
   </script>
 </body>
