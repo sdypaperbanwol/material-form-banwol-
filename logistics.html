@@ -62,6 +62,7 @@
 
     button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
     button:hover { background:#f5f5f5; }
+    button[disabled] { background:#eee; border-color:#ddd; color:#999; cursor:not-allowed; opacity:.7; }
   </style>
 </head>
 <body>
@@ -78,7 +79,6 @@
   // ==== 설정 ====
   const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqFg4MeZTevSFk8pk-XgUGWCnjuJTSN0qBFIDVkhgJYGxSBUGw13dZNdJ7RFAfkG_o/exec";
   const API_TOKEN  = "DY_SCALE";
-
   const BREAKPOINT = 700;
   const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
   const TIME_MODE_BY_SECTION = {
@@ -86,6 +86,9 @@
   };
   const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
   const timeModeFor = title => TIME_MODE_BY_SECTION[title] ?? "HM";
+
+  let isUpdating = false;  // 중복 클릭 방지 플래
+
 
   function formatTime(val, mode){
     if (val == null || val === "") return "";
@@ -158,17 +161,33 @@
   }
 
   async function forceUpdateThenLoad(){
-    const url = updateSnapUrl(); // 갱신 + 최신 스냅샷
-    const tsEl = document.getElementById('ts');
-    tsEl.textContent = "갱신 중…";
-    try {
-      const data = await callWithFallback(url);
-      applyData(data);
-    } catch(e){
-      tsEl.textContent = "갱신 실패";
-      alert(e.message || e);
-    }
+  if (isUpdating) return;
+  isUpdating = true;
+
+  const btn = document.getElementById('btnUpdate');
+  const tsEl = document.getElementById('ts');
+
+  const oldLabel = btn.textContent;     // ← 기존 라벨 저장
+  btn.textContent = '갱신 중…';          // ← 라벨 변경
+  btn.disabled = true;
+  btn.setAttribute('aria-busy','true');
+  tsEl.textContent = "갱신 중…";
+
+  try {
+    const data = await callWithFallback(updateSnapUrl());
+    applyData(data);
+  } catch (e){
+    tsEl.textContent = "갱신 실패";
+    alert(e.message || e);
+  } finally {
+    isUpdating = false;
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+    btn.textContent = oldLabel;         // ← 라벨 복원
   }
+}
+
+
 
   async function callWithFallback(url){
     try {
