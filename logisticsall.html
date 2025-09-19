@@ -33,9 +33,10 @@
     colgroup col:nth-child(3) { width: 100px; }
 
     /* 모바일/좁은 화면에서는 1열로 */
-    @media (max-width: 1100px) {
-      .grid { grid-template-columns: 1fr; }
-    }
+    /* 변경: 모바일만 1열로 (700px 이하) */
+@media (max-width: 700px) {
+  .grid { grid-template-columns: 1fr; }
+}
 
     button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
     button:hover { background:#f5f5f5; }
@@ -53,7 +54,7 @@
 
   <script>
     // ==== 설정 ====
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxlQLPPpvsWc-OmbHYAfeVfvKyqznP-XkH8aNYsVAC_QHuevc2BGMLmIVMkYkx_Bu-0/exec";
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyxNerH4RGxiJ8Ygz3qnMvqhmfp9B-di2Amuj4XyvFde0kX6P7E-VshI1I75EVNCC3Y/exec";
     const API_TOKEN  = "DY_SCALE";
 
     const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
@@ -181,17 +182,19 @@
     }
 
     // 강제 갱신 → 불러오기 (버튼: "새로고침")
-    async function forceUpdateThenLoad(){
-      const tsEl = document.getElementById('ts');
-      tsEl.textContent = "갱신 중…";
-      try {
-        await callWithFallback(`${WEBAPP_URL}?action=update&token=${encodeURIComponent(API_TOKEN)}`);
-        await load(); // 갱신 후 스냅샷 재조회
-      } catch(e){
-        tsEl.textContent = "갱신 실패";
-        alert(e.message || e);
-      }
-    }
+async function forceUpdateThenLoad(){
+  const tsEl = document.getElementById('ts');
+  tsEl.textContent = "갱신 중…";
+  try {
+    const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
+    const data = await callWithFallback(url); // fetch→JSONP 폴백
+    applyData(data); // 바로 최신 스냅샷 반영
+  } catch(e){
+    tsEl.textContent = "갱신 실패";
+    alert(e.message || e);
+  }
+}
+
 
     // fetch → 실패 시 JSONP 폴백 호출기
     async function callWithFallback(url){
