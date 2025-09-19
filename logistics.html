@@ -7,9 +7,25 @@
   <style>
     :root { --gap: 16px; --card: #ddd; --muted:#777; }
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
-    .topbar { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+
+    /* 상단바: 가운데 정렬 */
+    .topbar {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:center;   /* ⬅︎ 가운데 정렬 추가 */
+      flex-wrap:wrap;
+      width:100%;
+      text-align:center;
+      margin-bottom:12px;
+    }
     .topbar strong { font-size:18px; }
     .timestamp { color: var(--muted); }
+
+    /* 새로고침 비활성화 시 비주얼 표시 */
+    button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
+    button:hover { background:#f5f5f5; }
+    button[disabled] { opacity:.5; cursor:not-allowed; }
 
     /* 페어(반월/시화) 그리드: 두 칼럼 좁게 + 가운데 정렬 */
     .grid {
@@ -32,16 +48,10 @@
     colgroup col:nth-child(2) { width: 120px; }
     colgroup col:nth-child(3) { width: 100px; }
 
-    /* 모바일/좁은 화면에서는 1열로 */
-    /* 변경: 모바일만 1열로 (700px 이하) */
-@media (max-width: 700px) {
-  .grid { grid-template-columns: 1fr; }
-}
-
-
-
-    button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
-    button:hover { background:#f5f5f5; }
+    /* 모바일/좁은 화면에서는 1열로 (700px 이하) */
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -205,17 +215,35 @@
     renderResponsive(data.left, data.right);
   }
 
+  // --------- 중복 클릭 방지 & 버튼 비활성화 ---------
+  let isUpdating = false;
+
   // 강제 갱신 → 최신 스냅샷 받기 (서버에서 한 번에)
   async function forceUpdateThenLoad(){
+    if (isUpdating) return;                 // ⬅︎ 재진입 차단
+    isUpdating = true;
+
+    const btn = document.getElementById('btnUpdate');
     const tsEl = document.getElementById('ts');
-    tsEl.textContent = "갱신 중…";
+    const prevLabel = btn.textContent;
+
     try {
+      btn.disabled = true;                  // ⬅︎ 비활성화
+      btn.setAttribute('aria-busy','true');
+      btn.textContent = '갱신 중…';        // ⬅︎ 라벨 변경
+      tsEl.textContent = "갱신 중…";
+
       const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
       const data = await callWithFallback(url);
       applyData(data); // 서버에서 최신 스냅샷 바로 수신
     } catch(e){
       tsEl.textContent = "갱신 실패";
       alert(e.message || e);
+    } finally {
+      btn.disabled = false;                 // ⬅︎ 복구
+      btn.removeAttribute('aria-busy');
+      btn.textContent = prevLabel;
+      isUpdating = false;
     }
   }
 
