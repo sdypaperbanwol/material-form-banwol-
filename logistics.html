@@ -193,22 +193,25 @@
   let __lastData = null;
 
   async function loadSnapshot() {
-    const tsEl = document.getElementById('ts');
-    tsEl.textContent = "불러오는 중…";
-    try {
-      const SNAPSHOT_URL = `${WEBAPP_URL}?action=snapshot&t=${Date.now()}`;
-      const res = await fetch(SNAPSHOT_URL, { cache: "no-store", mode: "cors" });
-      if (!res.ok) throw new Error(res.status + " " + res.statusText);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      applyData(data);
-    } catch (e) {
-      callWithJSONP(WEBAPP_URL).then(applyData).catch(err=>{
-        tsEl.textContent = "불러오기 실패";
-        alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
-      });
-    }
+  const tsEl = document.getElementById('ts');
+  tsEl.textContent = "불러오는 중…";
+  try {
+
+   const SNAPSHOT_URL = `${WEBAPP_URL}?action=snapshot&t=${Date.now()}`;
+   const res = await fetch(SNAPSHOT_URL, { cache: "no-store", mode: "cors" });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    applyData(data);
+  } catch (e) {
+
+   // ⬅️ 폴백도 "같은 URL"로 (action, t 유지)
+   callWithJSONP(SNAPSHOT_URL).then(applyData).catch(err=>{
+      tsEl.textContent = "불러오기 실패";
+      alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
+    });
   }
+}
+
 
   function applyData(data){
     __lastData = data;
