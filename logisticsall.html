@@ -1,169 +1,133 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>공장 내 실시간 차량 현황</title>
-  <meta name="description" content="반월/시화 입차중 · 원료 하차(대기/진행) · 공내 차량 스냅샷 통합 뷰어">
+  <title>실시간 차량현황(시트 뷰)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root{
-      --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
-      --radius:14px;
+    :root { --gap: 16px; --card: #ddd; --muted:#777; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
+    .topbar { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .topbar strong { font-size:18px; }
+    .timestamp { color: var(--muted); }
+    .controls { margin-left:auto; display:flex; gap:8px; align-items:center; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+    .plant { display:flex; flex-direction:column; gap: var(--gap); }
+    .plant-title { font-weight:700; margin: 4px 0; }
+    .section { border:1px solid var(--card); border-radius:10px; padding:12px; }
+    .section h3 { margin:0 0 8px 0; font-size:16px; display:flex; gap:8px; align-items:baseline; }
+    .muted { color: var(--muted); font-weight:500; }
+    table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+    th, td { border:1px solid #ccc; text-align:center; vertical-align:middle; padding:6px; }
+    th { font-weight:700; }
+    /* 번호/차량번호/시간 = 3열, 스프레드시트와 비슷하게 */
+    colgroup col:nth-child(1) { width: 80px; }
+    colgroup col:nth-child(2) { width: 120px; }
+    colgroup col:nth-child(3) { width: 100px; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
-    .wrap{max-width:1100px;margin:24px auto;padding:0 14px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 6px 18px rgba(0,0,0,.04)}
-    h2{margin:0;font-size:20px}
-    h3{margin:0 0 8px;font-size:16px}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
-    .toolbar > *{height:36px}
-    button{padding:0 12px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer}
-    select,input{border:1px solid var(--line);border-radius:10px;padding:0 10px}
-    .meta{color:var(--muted);margin:8px 0 14px}
-    .grid{display:grid;grid-template-columns:1fr;gap:16px}
-    .section{padding:12px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}
-    thead tr{background:#f7f8fa}
-    .empty{padding:12px;border:1px dashed #e3e3e3;border-radius:10px;color:#777;background:#fff}
-    .err{padding:12px;border:1px solid #f3d2d2;border-radius:10px;background:#fff5f5;color:#b30000}
-    .counts{color:#777;font-weight:500}
+    button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
+    button:hover { background:#f5f5f5; }
+    input[type="number"] { width:80px; padding:6px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px">
-      <h2>공장 내 실시간 차량 현황</h2>
-      <div class="meta" id="meta">로딩 중…</div>
-    </div>
-
-    <div class="toolbar">
+  <div class="topbar">
+    <strong>실시간 차량현황(시트 뷰)</strong>
+    <span class="timestamp" id="ts"></span>
+    <div class="controls">
+      <label class="muted">자동새로고침(초)</label>
+      <input type="number" id="autoSec" min="0" step="5" placeholder="0=끄기" />
       <button id="btnRefresh">새로고침</button>
-      <select id="pc" title="분류 코드">
-        <option value="00" selected>전체(00)</option>
-        <option value="01">부자재(01)</option>
-        <option value="02">제품(02)</option>
-        <option value="03">컨테이너(03)</option>
-      </select>
-      <input id="car" placeholder="차량번호 일부(선택)" title="차량번호 일부" />
     </div>
+  </div>
 
-    <div class="grid">
-      <div class="card section">
-        <h3>입차중 <span class="counts" id="cntIncoming"></span></h3>
-        <div id="incoming"></div>
-      </div>
-      <div class="card section">
-        <h3>원료 하차(대기/진행) <span class="counts" id="cntArrival"></span></h3>
-        <div id="arrival"></div>
-      </div>
-      <div class="card section">
-        <h3>공장 내 차량(스냅샷) <span class="counts" id="cntVehicle"></span></h3>
-        <div id="vehicle"></div>
-      </div>
+  <div class="grid">
+    <div class="plant">
+      <div class="plant-title">반월</div>
+      <div id="left"></div>
+    </div>
+    <div class="plant">
+      <div class="plant-title">시화</div>
+      <div id="right"></div>
     </div>
   </div>
 
   <script>
-    // ✅ 배포한 GAS 웹앱 URL
-    const API = 'https://script.google.com/macros/s/AKfycbxeZjxZcQ1M23wlLUtZWz2TaYcCzPOF_NTwlIlTA_1KFjfcj3ugkp_HAEKe9AUWtixoxg/exec';
+    // ====== 여기에 본인 웹앱 URL을 넣으세요 ======
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxFrykZ6IscD3G90lqu-rxlowQ5bv_A9z2nIintEbq1rlCLvGGrqwd3a5MlEBCOOEAh/exec';
 
-    // ✅ KST 기준 YYYY-MM-DD
-    function todayKST() {
-      const dtf = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' });
-      return dtf.format(new Date()); // "YYYY-MM-DD"
+    const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
+
+    function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+
+    function tableHTML(rows) {
+      const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
+      const body = rows && rows.length
+        ? rows.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")
+        : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
+      return `
+        <table>
+          <colgroup><col><col><col></colgroup>
+          <thead>${hdr}</thead>
+          <tbody>${body}</tbody>
+        </table>`;
     }
 
-    async function fetchUnified(pc='00', car='') {
-      const day = todayKST();
-      const url = new URL(API);
-      url.searchParams.set('api', 'unified');
-      url.searchParams.set('day', day);
-      url.searchParams.set('productClassification', pc);
-      if (car) url.searchParams.set('carnum', car);
-
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (data && data.ok === false) throw new Error(data.error || 'Unknown backend error');
-      return data; // {ok, meta, incoming, arrival, vehicle}
+    function sectionHTML(title, data) {
+      const count = data?.count || 0;
+      const rows = data?.rows || [];
+      return `
+        <div class="section">
+          <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
+          ${tableHTML(rows)}
+        </div>`;
     }
 
-    // ---- 렌더 유틸 ----
-    function normRow(o){
-      const car = o.carnum || o.carNum || o.car_no || o.car || '';
-      const last4 = o.last4 || (car ? (car.match(/(\\d{4})$/)?.[1] || '') : '');
-      const status = o.status || o.state || o.prog || o.progress || '';
-      const pclass = o.productClassification || o.product_classification || o.pclass || '';
-      const when = o.enteredAt || o.in_time || o.inTime || o.regDate || o.time || '';
-      return { plant: (o.plant||'').toLowerCase(), section: (o.section||'').toLowerCase(), car, last4, status, pclass, when };
+    function renderSide(container, side) {
+      container.innerHTML = SECTIONS.map(t => sectionHTML(t, side?.[t])).join("");
     }
 
-    function renderTable(el, list){
-      if (!Array.isArray(list) || list.length === 0){
-        el.innerHTML = `<div class="empty">데이터 없음</div>`;
-        return;
-      }
-      const rows = list.map(normRow).map(r => `
-        <tr>
-          <td>${r.plant}</td>
-          <td>${r.car}</td>
-          <td>${r.last4}</td>
-          <td>${r.pclass}</td>
-          <td>${r.status}</td>
-          <td>${r.when}</td>
-        </tr>
-      `).join('');
-      el.innerHTML = `
-        <div style="overflow:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>공장</th>
-                <th>차량번호</th>
-                <th>뒤4자리</th>
-                <th>분류코드</th>
-                <th>상태</th>
-                <th>시간/기타</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      `;
-    }
+    async function load() {
+      const tsEl = document.getElementById('ts');
+      try {
+        tsEl.textContent = "불러오는 중…";
+        const res = await fetch(WEBAPP_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error(res.status + " " + res.statusText);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
 
-    async function loadAndRender(){
-      const pc = document.getElementById('pc').value || '00';
-      const car = document.getElementById('car').value || '';
-      document.getElementById('meta').textContent = '불러오는 중…';
-
-      try{
-        const { incoming, arrival, vehicle, meta } = await fetchUnified(pc, car);
-        document.getElementById('meta').textContent =
-          \`기준일: \${meta?.day} (분류:\${meta?.productClassification}) · 생성: \${meta?.generatedAt}\`;
-
-        document.getElementById('cntIncoming').textContent = \`(\${incoming?.length||0}건)\`;
-        document.getElementById('cntArrival').textContent  = \`(\${arrival?.length||0}건)\`;
-        document.getElementById('cntVehicle').textContent  = \`(\${vehicle?.length||0}건)\`;
-
-        renderTable(document.getElementById('incoming'), incoming);
-        renderTable(document.getElementById('arrival'),  arrival);
-        renderTable(document.getElementById('vehicle'),  vehicle);
-      }catch(err){
-        console.error(err);
-        document.getElementById('meta').textContent = \`에러: \${err.message || err}\`;
-        ['incoming','arrival','vehicle'].forEach(id=>{
-          document.getElementById(id).innerHTML =
-            '<div class="err">데이터를 가져오지 못했습니다.</div>';
-        });
+        document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
+        renderSide(document.getElementById('left'),  data.left);
+        renderSide(document.getElementById('right'), data.right);
+      } catch (e) {
+        tsEl.textContent = "불러오기 실패";
+        alert("스냅샷 로드 실패: " + e.message);
       }
     }
 
-    document.getElementById('btnRefresh').addEventListener('click', loadAndRender);
-    document.addEventListener('DOMContentLoaded', loadAndRender);
+    // 수동 새로고침
+    document.getElementById('btnRefresh').addEventListener('click', load);
+
+    // 자동 새로고침
+    let timer=null;
+    const autoEl = document.getElementById('autoSec');
+    autoEl.addEventListener('change', ()=>{
+      if (timer) { clearInterval(timer); timer=null; }
+      const sec = parseInt(autoEl.value,10);
+      if (!isNaN(sec) && sec>0) timer = setInterval(load, sec*1000);
+    });
+
+    // URL ?auto=60 지원
+    (function initAuto(){
+      const params = new URLSearchParams(location.search);
+      const v = parseInt(params.get('auto')||'0',10);
+      if (v>0) { autoEl.value=v; autoEl.dispatchEvent(new Event('change')); }
+    })();
+
+    // 첫 로드
+    load();
   </script>
 </body>
 </html>
