@@ -54,80 +54,116 @@
     </div>
   </div>
 
-  <script>
-    // ====== 여기에 본인 웹앱 URL을 넣으세요 ======
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzABzyAXD3Ff20hakqv-QdNvhuxaByUVCFT3YUNWsodvuZzjbfosWQ9_GzhIa5_j2rp/exec';
+ <script>
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzABzyAXD3Ff20hakqv-QdNvhuxaByUVCFT3YUNWsodvuZzjbfosWQ9_GzhIa5_j2rp/exec";
+  const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
 
-    const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
+  function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
-    function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  function tableHTML(rows) {
+    const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
+    const body = rows && rows.length
+      ? rows.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")
+      : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
+    return `<table>
+      <colgroup><col><col><col></colgroup>
+      <thead>${hdr}</thead><tbody>${body}</tbody></table>`;
+  }
 
-    function tableHTML(rows) {
-      const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
-      const body = rows && rows.length
-        ? rows.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")
-        : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
-      return `
-        <table>
-          <colgroup><col><col><col></colgroup>
-          <thead>${hdr}</thead>
-          <tbody>${body}</tbody>
-        </table>`;
-    }
+  function sectionHTML(title, data) {
+    const count = data?.count || 0;
+    const rows = data?.rows || [];
+    return `<div class="section">
+      <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
+      ${tableHTML(rows)}
+    </div>`;
+  }
 
-    function sectionHTML(title, data) {
-      const count = data?.count || 0;
-      const rows = data?.rows || [];
-      return `
-        <div class="section">
-          <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
-          ${tableHTML(rows)}
-        </div>`;
-    }
+  function renderSide(container, side) {
+    container.innerHTML = SECTIONS.map(t => sectionHTML(t, side?.[t])).join("");
+  }
 
-    function renderSide(container, side) {
-      container.innerHTML = SECTIONS.map(t => sectionHTML(t, side?.[t])).join("");
-    }
-
-    async function load() {
-      const tsEl = document.getElementById('ts');
-      try {
-        tsEl.textContent = "불러오는 중…";
-        const res = await fetch(WEBAPP_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error(res.status + " " + res.statusText);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-
-        document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
-        renderSide(document.getElementById('left'),  data.left);
-        renderSide(document.getElementById('right'), data.right);
-      } catch (e) {
+  async function load() {
+    const tsEl = document.getElementById('ts');
+    tsEl.textContent = "불러오는 중…";
+    try {
+      // 1차: 표준 fetch(JSON)
+      const res = await fetch(WEBAPP_URL, { cache: "no-store", mode: "cors" });
+      if (!res.ok) throw new Error(res.status + " " + res.statusText);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      applyData(data);
+    } catch (e) {
+      // 2차: JSONP 폴백 (CORS 우회)
+      loadJSONP().catch(err => {
         tsEl.textContent = "불러오기 실패";
-        alert("스냅샷 로드 실패: " + e.message);
-      }
+        alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
+      });
     }
+  }
 
-    // 수동 새로고침
-    document.getElementById('btnRefresh').addEventListener('click', load);
+  function applyData(data){
+    document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
+    renderSide(document.getElementById('left'),  data.left);
+    renderSide(document.getElementById('right'), data.right);
+  }
 
-    // 자동 새로고침
-    let timer=null;
-    const autoEl = document.getElementById('autoSec');
-    autoEl.addEventListener('change', ()=>{
-      if (timer) { clearInterval(timer); timer=null; }
-      const sec = parseInt(autoEl.value,10);
-      if (!isNaN(sec) && sec>0) timer = setInterval(load, sec*1000);
+  // JSONP 로더
+  function loadJSONP() {
+    return new Promise((resolve, reject) => {
+      const cbName = "__dy_cb_" + Date.now();
+      const url = `${WEBAPP_URL}?callback=${cbName}&t=${Date.now()}`; // 캐시 방지 t=
+      const script = document.createElement('script');
+      script.src = url;
+      script.async = true;
+
+      let done = false;
+      window[cbName] = (data) => {
+        if (done) return;
+        done = true;
+        try {
+          delete window[cbName];
+          document.body.removeChild(script);
+        } catch {}
+        if (data && !data.error) {
+          applyData(data);
+          resolve();
+        } else {
+          reject(new Error(data?.error || "JSONP 응답 오류"));
+        }
+      };
+
+      script.onerror = () => {
+        if (done) return;
+        done = true;
+        try {
+          delete window[cbName];
+          document.body.removeChild(script);
+        } catch {}
+        reject(new Error("JSONP 스크립트 로드 실패"));
+      };
+
+      document.body.appendChild(script);
     });
+  }
 
-    // URL ?auto=60 지원
-    (function initAuto(){
-      const params = new URLSearchParams(location.search);
-      const v = parseInt(params.get('auto')||'0',10);
-      if (v>0) { autoEl.value=v; autoEl.dispatchEvent(new Event('change')); }
-    })();
+  // 버튼/자동새로고침 로직은 기존 그대로...
+  document.getElementById('btnRefresh').addEventListener('click', load);
+  let timer=null;
+  const autoEl = document.getElementById('autoSec');
+  autoEl.addEventListener('change', ()=>{
+    if (timer) { clearInterval(timer); timer=null; }
+    const sec = parseInt(autoEl.value,10);
+    if (!isNaN(sec) && sec>0) timer = setInterval(load, sec*1000);
+  });
+  (function initAuto(){
+    const params = new URLSearchParams(location.search);
+    const v = parseInt(params.get('auto')||'0',10);
+    if (v>0) { autoEl.value=v; autoEl.dispatchEvent(new Event('change')); }
+  })();
 
-    // 첫 로드
-    load();
-  </script>
+  load();
+</script>
+
 </body>
 </html>
