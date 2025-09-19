@@ -10,36 +10,48 @@
 
     /* 상단바: 가운데 정렬 */
     .topbar {
-      display:flex; gap:12px; align-items:center; justify-content:center;
-      flex-wrap:wrap; width:100%; text-align:center; margin-bottom:12px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:center;   /* ⬅︎ 가운데 정렬 추가 */
+      flex-wrap:wrap;
+      width:100%;
+      text-align:center;
+      margin-bottom:12px;
     }
     .topbar strong { font-size:18px; }
     .timestamp { color: var(--muted); }
 
-    /* 버튼 */
+    /* 새로고침 비활성화 시 비주얼 표시 */
     button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
     button:hover { background:#f5f5f5; }
     button[disabled] { opacity:.5; cursor:not-allowed; }
 
-    /* 반월/시화 2열 */
+    /* 페어(반월/시화) 그리드: 두 칼럼 좁게 + 가운데 정렬 */
     .grid {
-      display:grid; grid-template-columns:520px 520px; justify-content:center;
-      gap:var(--gap); margin-inline:auto;
+      display: grid;
+      grid-template-columns: 520px 520px; /* 필요하면 숫자만 조정 */
+      justify-content: center;
+      gap: var(--gap);
+      margin-inline: auto;
     }
-    .pair-title { font-weight:700; margin:4px 0 8px; }
+    .pair-title { font-weight:700; margin: 4px 0 8px; }
 
     .section { border:1px solid var(--card); border-radius:10px; padding:12px; }
     .section h3 { margin:0 0 8px 0; font-size:16px; display:flex; gap:8px; align-items:baseline; }
-    .muted { color:var(--muted); font-weight:500; }
+    .muted { color: var(--muted); font-weight:500; }
 
-    table { border-collapse:collapse; width:100%; table-layout:fixed; }
+    table { border-collapse: collapse; width: 100%; table-layout: fixed; }
     th, td { border:1px solid #ccc; text-align:center; vertical-align:middle; padding:6px; }
     th { font-weight:700; }
-    colgroup col:nth-child(1){ width:80px; }
-    colgroup col:nth-child(2){ width:120px; }
-    colgroup col:nth-child(3){ width:100px; }
+    colgroup col:nth-child(1) { width: 80px; }
+    colgroup col:nth-child(2) { width: 120px; }
+    colgroup col:nth-child(3) { width: 100px; }
 
-    @media (max-width:700px){ .grid { grid-template-columns:1fr; } }
+    /* 모바일/좁은 화면에서는 1열로 (700px 이하) */
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -49,152 +61,242 @@
     <button id="btnUpdate">새로고침</button>
   </div>
 
+  <!-- 페어 렌더링 컨테이너 -->
   <div class="grid" id="pairs"></div>
 
 <script>
   // ==== 설정 ====
-  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyxNerH4RGxiJ8Ygz3qnMvqhmfp9B-di2Amuj4XyvFde0kX6P7E-VshI1I75EVNCC3Y/exec";
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqFg4MeZTevSFk8pk-XgUGWCnjuJTSN0qBFIDVkhgJYGxSBUGw13dZNdJ7RFAfkG_o/exec";
   const API_TOKEN  = "DY_SCALE";
 
-  // snapshot_direct 전용(시트 경로 X)
-  const baseSnapshot = `${WEBAPP_URL}?action=snapshot_direct&token=${encodeURIComponent(API_TOKEN)}`;
-  // 캐시 무력화용 URL 빌더
-  const makeUrl = (force=false) => `${baseSnapshot}${force ? '&force=1' : ''}&t=${Date.now()}`;
-
+  // 반응형 분기 기준(px)
   const BREAKPOINT = 700;
-  const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
-  const TIME_MODE_BY_SECTION = { "제품 입차중":"HM","원료 하차중":"HM","원료 도착":"HM","부자재 입차중":"HM","컨테이너 입차중":"HM" };
-  const timeModeFor = t => TIME_MODE_BY_SECTION[t] ?? "HM";
-  const esc = s => String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
 
+  const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
+
+  // 섹션별 시간 모드: 모두 HH:MM
+  const TIME_MODE_BY_SECTION = {
+    "제품 입차중":   "HM",
+    "원료 하차중":   "HM",
+    "원료 도착":     "HM",
+    "부자재 입차중": "HM",
+    "컨테이너 입차중":"HM"
+  };
+  function timeModeFor(title){ return TIME_MODE_BY_SECTION[title] ?? "HM"; }
+
+  // 안전 이스케이프
+  function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+
+  // 시간 포맷터: HM/HMS/MS 지원 + KST 보정
   function formatTime(val, mode){
     if (val == null || val === "") return "";
     const s = String(val).trim();
     if (/^0+$/.test(s.replace(/\D/g,""))) return "";
+
+    // ISO/Date → KST
     if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
       const d = new Date(s);
       if (!isNaN(d.getTime())) {
-        const p = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(d);
-        const HH=p.find(x=>x.type==='hour')?.value??'00', MM=p.find(x=>x.type==='minute')?.value??'00', SS=p.find(x=>x.type==='second')?.value??'00';
-        return mode==='HM' ? `${HH}:${MM}` : mode==='MS' ? `${MM}:${SS}` : `${HH}:${MM}:${SS}`;
+        const parts = new Intl.DateTimeFormat('ko-KR', {
+          timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        }).formatToParts(d);
+        const HH = parts.find(x=>x.type==='hour')?.value ?? '00';
+        const MM = parts.find(x=>x.type==='minute')?.value ?? '00';
+        const SS = parts.find(x=>x.type==='second')?.value ?? '00';
+        if (mode === 'HM')  return `${HH}:${MM}`;
+        if (mode === 'MS')  return `${MM}:${SS}`;
+        return `${HH}:${MM}:${SS}`;
       }
     }
+
+    // HH:MM[:SS]
     let m = s.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (m){ const HH=m[1],MM=m[2],SS=m[3]||"00"; return mode==='HM'?`${HH}:${MM}`:mode==='MS'?`${MM}:${SS}`:`${HH}:${MM}:${SS}`; }
+    if (m){
+      const HH=m[1], MM=m[2], SS=m[3]||"00";
+      if (mode === 'HM')  return `${HH}:${MM}`;
+      if (mode === 'MS')  return `${MM}:${SS}`;
+      return `${HH}:${MM}:${SS}`;
+    }
+
+    // 숫자만: HHMMSS / HHMM / MMSS
     const digits = s.replace(/\D/g,"");
-    if (digits.length >= 6){ const t6=digits.slice(-6); const HH=t6.slice(0,2),MM=t6.slice(2,4),SS=t6.slice(4,6); return mode==='HM'?`${HH}:${MM}`:mode==='MS'?`${MM}:${SS}`:`${HH}:${MM}:${SS}`; }
-    if (digits.length === 4){ const A=digits.slice(0,2),B=digits.slice(2,4); return mode==='HM'?`${A}:${B}`:mode==='MS'?`${A}:${B}`:`${A}:${B}:00`; }
+    if (digits.length >= 6){
+      const t6 = digits.slice(-6);
+      const HH=t6.slice(0,2), MM=t6.slice(2,4), SS=t6.slice(4,6);
+      if (mode === 'HM')  return `${HH}:${MM}`;
+      if (mode === 'MS')  return `${MM}:${SS}`;
+      return `${HH}:${MM}:${SS}`;
+    }
+    if (digits.length === 4){
+      const A=digits.slice(0,2), B=digits.slice(2,4);
+      if (mode === 'HM')  return `${A}:${B}`;
+      if (mode === 'MS')  return `${A}:${B}`;
+      return `${A}:${B}:00`;
+    }
     return s;
   }
 
-  function tableHTML(title, rows){
+  function tableHTML(title, rows) {
     const mode = timeModeFor(title);
+    const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
     const body = rows && rows.length
-      ? rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(formatTime(r[2],mode))}</td></tr>`).join("")
+      ? rows.map(r => {
+          const no = esc(r[0]);
+          const car = esc(r[1]);
+          const t  = esc(formatTime(r[2], mode));
+          return `<tr><td>${no}</td><td>${car}</td><td>${t}</td></tr>`;
+        }).join("")
       : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
     return `<table>
       <colgroup><col><col><col></colgroup>
-      <thead><tr><th>번호</th><th>차량번호</th><th>시간</th></tr></thead>
-      <tbody>${body}</tbody>
-    </table>`;
+      <thead>${hdr}</thead><tbody>${body}</tbody></table>`;
   }
-  const sectionHTML = (title, data) => `<div class="section"><h3>${esc(title)} <span class="muted">(${data?.count||0}대)</span></h3>${tableHTML(title, data?.rows||[])}</div>`;
 
-  function renderPairs(left, right){
-    const host = document.getElementById('pairs');
-    const rows = [`<div class="pair-title">반월</div>`,`<div class="pair-title">시화</div>`];
-    for (const t of SECTIONS) rows.push(sectionHTML(t,left?.[t]), sectionHTML(t,right?.[t]));
-    host.innerHTML = rows.join(""); host.classList.add('grid');
+  function sectionHTML(title, data) {
+    const count = data?.count || 0;
+    const rows = data?.rows || [];
+    return `<div class="section">
+      <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
+      ${tableHTML(title, rows)}
+    </div>`;
   }
-  function renderStacked(left, right){
-    const host = document.getElementById('pairs');
-    const rows = [`<div class="pair-title">반월</div>`]; for (const t of SECTIONS) rows.push(sectionHTML(t,left?.[t]));
-    rows.push(`<div class="pair-title">시화</div>`); for (const t of SECTIONS) rows.push(sectionHTML(t,right?.[t]));
-    host.innerHTML = rows.join(""); host.classList.remove('grid');
-  }
-  function renderResponsive(left, right){ (window.innerWidth<=BREAKPOINT?renderStacked:renderPairs)(left,right); }
 
+  // ========== 렌더링 ==========
+  function renderPairs(left, right) {
+    const host = document.getElementById('pairs');
+    const rows = [];
+    rows.push(`<div class="pair-title">반월</div>`, `<div class="pair-title">시화</div>`);
+    for (const t of SECTIONS) {
+      rows.push(sectionHTML(t, left?.[t]), sectionHTML(t, right?.[t]));
+    }
+    host.innerHTML = rows.join("");
+    host.classList.add('grid'); // 2열
+  }
+
+  function renderStacked(left, right) {
+    const host = document.getElementById('pairs');
+    const rows = [];
+    rows.push(`<div class="pair-title">반월</div>`);
+    for (const t of SECTIONS) rows.push(sectionHTML(t, left?.[t]));
+    rows.push(`<div class="pair-title">시화</div>`);
+    for (const t of SECTIONS) rows.push(sectionHTML(t, right?.[t]));
+    host.innerHTML = rows.join("");
+    host.classList.remove('grid'); // 1열(블록 흐름)
+  }
+
+  function renderResponsive(left, right) {
+    if (window.innerWidth <= BREAKPOINT) renderStacked(left, right);
+    else renderPairs(left, right);
+  }
+
+  // ========== 데이터 로드 ==========
   let __lastData = null;
 
-  // 최초 로드: snapshot_direct (+ 캐시버스터)
-  async function loadSnapshot(){
+  async function loadSnapshot() {
     const tsEl = document.getElementById('ts');
-    tsEl.textContent = '불러오는 중…';
-    const url = makeUrl(false);
+    tsEl.textContent = "불러오는 중…";
     try {
-      const res = await fetch(url, { cache:'no-store', mode:'cors' });
+      const res = await fetch(WEBAPP_URL, { cache: "no-store", mode: "cors" });
+      if (!res.ok) throw new Error(res.status + " " + res.statusText);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       applyData(data);
     } catch (e) {
-      callWithJSONP(url).then(applyData).catch(err=>{
-        tsEl.textContent = '불러오기 실패';
-        alert('스냅샷 로드 실패: ' + (err?.message || err));
+      callWithJSONP(WEBAPP_URL).then(applyData).catch(err=>{
+        tsEl.textContent = "불러오기 실패";
+        alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
       });
     }
   }
 
   function applyData(data){
     __lastData = data;
-    // 서버가 주는 stamp를 그대로 표시 (서버시각 확인용)
     document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
     renderResponsive(data.left, data.right);
   }
 
-  // 중복 클릭 방지 & 버튼 비활성화
+  // --------- 중복 클릭 방지 & 버튼 비활성화 ---------
   let isUpdating = false;
+
+  // 강제 갱신 → 최신 스냅샷 받기 (서버에서 한 번에)
   async function forceUpdateThenLoad(){
-    if (isUpdating) return;
+    if (isUpdating) return;                 // ⬅︎ 재진입 차단
     isUpdating = true;
+
     const btn = document.getElementById('btnUpdate');
     const tsEl = document.getElementById('ts');
-    const prev = btn.textContent;
-    try{
-      btn.disabled = true; btn.setAttribute('aria-busy','true'); btn.textContent = '갱신 중…';
-      tsEl.textContent = '갱신 중…';
-      // 강제 최신화: force=1 + 캐시버스터
-      const data = await callWithFallback(makeUrl(true));
-      applyData(data);
-    }catch(e){
-      tsEl.textContent = '갱신 실패';
+    const prevLabel = btn.textContent;
+
+    try {
+      btn.disabled = true;                  // ⬅︎ 비활성화
+      btn.setAttribute('aria-busy','true');
+      btn.textContent = '갱신 중…';        // ⬅︎ 라벨 변경
+      tsEl.textContent = "갱신 중…";
+
+      const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
+      const data = await callWithFallback(url);
+      applyData(data); // 서버에서 최신 스냅샷 바로 수신
+    } catch(e){
+      tsEl.textContent = "갱신 실패";
       alert(e.message || e);
-    }finally{
-      btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = prev; isUpdating = false;
+    } finally {
+      btn.disabled = false;                 // ⬅︎ 복구
+      btn.removeAttribute('aria-busy');
+      btn.textContent = prevLabel;
+      isUpdating = false;
     }
   }
 
-  // fetch 실패 시 JSONP 폴백
+  // fetch → 실패 시 JSONP 폴백
   async function callWithFallback(url){
-    try{
+    try {
       const r = await fetch(url, { cache:'no-store', mode:'cors' });
       const j = await r.json();
       if (j.error) throw new Error(j.error);
       return j;
-    }catch{
+    } catch {
       return callWithJSONP(url);
     }
   }
   function callWithJSONP(url){
-    return new Promise((resolve,reject)=>{
-      const cb="__dy_cb_"+Date.now();
-      const s=document.createElement('script');
-      const full = url + (url.includes('?')?'&':'?') + `callback=${cb}`;
-      s.src=full; s.async=true; let done=false;
-      window[cb]=(data)=>{ if(done) return; done=true;
+    return new Promise((resolve, reject)=>{
+      const cb = "__dy_cb_"+Date.now();
+      const s = document.createElement('script');
+      const full = url + (url.includes('?') ? '&' : '?') + `callback=${cb}&t=${Date.now()}`;
+      s.src = full;
+      s.async = true;
+      let done = false;
+
+      window[cb] = (data)=>{
+        if (done) return;
+        done = true;
         try{ delete window[cb]; document.body.removeChild(s); }catch{}
-        if(data && !data.error) resolve(data); else reject(new Error(data?.error || 'JSONP 응답 오류'));
+        if (data && !data.error) resolve(data);
+        else reject(new Error(data?.error || 'JSONP 응답 오류'));
       };
-      s.onerror=()=>{ if(done) return; done=true;
+      s.onerror = ()=>{
+        if (done) return;
+        done = true;
         try{ delete window[cb]; document.body.removeChild(s); }catch{}
         reject(new Error('JSONP 스크립트 로드 실패'));
       };
+
       document.body.appendChild(s);
     });
   }
 
+  // 버튼
   document.getElementById('btnUpdate').addEventListener('click', forceUpdateThenLoad);
+
+  // 최초 로드
   loadSnapshot();
-  window.addEventListener('resize', ()=>{ if(__lastData) renderResponsive(__lastData.left,__lastData.right); });
+
+  // 화면 크기 변경 시 재-렌더 (데이터는 다시 안 긁고, 현재 스냅샷으로만 레이아웃 전환)
+  window.addEventListener('resize', ()=>{
+    if (!__lastData) return;
+    renderResponsive(__lastData.left, __lastData.right);
+  });
 </script>
+
 </body>
 </html>
