@@ -43,7 +43,24 @@
     @media (min-width:900px){
       .grid{grid-template-columns:1fr 1fr}
     }
+    
+/* 모바일 1열일 때 맨 마지막 카드 아래 여백 추가 */
+@media (max-width: 899px){
+  .grid > .col:last-child > .card:last-child{
+    margin-bottom:24px; /* 원하는 값으로 조절 */
+  }
+  /* 화면 전체도 살짝 여유 */
+  .wrap{ padding-bottom: 16px; }
+}
 
+
+/* 카드도 전부 네모로 만들고 싶다면(선택) */
+.card{ border-radius:0; }
+/* 헤더(.header)는 둥글게 유지하고 싶다면 그대로 두시면 됩니다. */
+
+    /* 스트라이프(색 띠) 모서리 네모 */
+.stripe{ border-top-left-radius:0; border-top-right-radius:0; }
+    
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
     .card .head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px}
     .card .head h3{margin:0;font-size:15px}
