@@ -1,306 +1,569 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>실시간 차량현황(시트 뷰)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>공장 내 실시간 차량 현황</title>
+  <meta name="description" content="공장 내 실시간 차량 현황 – GitHub Pages용 logistics.html">
   <style>
-    :root { --gap: 16px; --card: #ddd; --muted:#777; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
-
-    /* 상단바: 가운데 정렬 */
-    .topbar {
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:center;   /* ⬅︎ 가운데 정렬 추가 */
-      flex-wrap:wrap;
-      width:100%;
-      text-align:center;
-      margin-bottom:12px;
+    :root{
+      --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
+      --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff; --chip:#f0f3f7;
+      --brand:#0f62fe; --radius:16px; --shadow:0 6px 18px rgba(0,0,0,.05);
     }
-    .topbar strong { font-size:18px; }
-    .timestamp { color: var(--muted); }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
+    .wrap{max-width:980px;margin:24px auto;padding:0 16px}
 
-    /* 새로고침 비활성화 시 비주얼 표시 */
-    button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
-    button:hover { background:#f5f5f5; }
-    button[disabled] { opacity:.5; cursor:not-allowed; }
+    .header{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px}
+    .title{margin:0;font-size:20px;letter-spacing:-.2px}
+    .subtitle{margin:4px 0 0 0;color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:6px}
+    .mini-spinner{display:inline-block;width:12px;height:12px;border:2px solid #cfd8ff;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* 페어(반월/시화) 그리드: 두 칼럼 좁게 + 가운데 정렬 */
-    .grid {
-      display: grid;
-      grid-template-columns: 520px 520px; /* 필요하면 숫자만 조정 */
-      justify-content: center;
-      gap: var(--gap);
-      margin-inline: auto;
+    .badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+    .badge{background:var(--badge);border:1px solid #d9e2ff;border-radius:999px;padding:3px 8px;font-size:12px}
+    .badges .btn{margin-left:6px}
+
+    .toolbar{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .btn{appearance:none;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer}
+    .btn[disabled]{opacity:.55;cursor:not-allowed}
+    .btn:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+    /* NEW: 필터/검색 입력 최소 스타일 */
+    .input, .select{
+      border:1px solid var(--line);background:#fff;border-radius:10px;
+      padding:8px 10px;font-size:13px
     }
-    .pair-title { font-weight:700; margin: 4px 0 8px; }
 
-    .section { border:1px solid var(--card); border-radius:10px; padding:12px; }
-    .section h3 { margin:0 0 8px 0; font-size:16px; display:flex; gap:8px; align-items:baseline; }
-    .muted { color: var(--muted); font-weight:500; }
-
-    table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-    th, td { border:1px solid #ccc; text-align:center; vertical-align:middle; padding:6px; }
-    th { font-weight:700; }
-    colgroup col:nth-child(1) { width: 80px; }
-    colgroup col:nth-child(2) { width: 120px; }
-    colgroup col:nth-child(3) { width: 100px; }
-
-    /* 모바일/좁은 화면에서는 1열로 (700px 이하) */
-    @media (max-width: 700px) {
-      .grid { grid-template-columns: 1fr; }
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    .col{display:grid;gap:14px}
+    @media (min-width:900px){
+      .grid{grid-template-columns:1fr 1fr}
     }
+
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card .head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .card .head h3{margin:0;font-size:15px}
+    .head-right{display:flex;align-items:center;gap:8px}
+    .stripe{height:4px;border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
+    .stripe.cyan{background:var(--cyan)}
+    .stripe.green{background:var(--green)}
+
+    .summary{padding:8px 14px;color:var(--muted);border-bottom:1px solid var(--line);font-size:12.5px}
+
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#fafbfd;border-bottom:1px solid var(--line);color:#333;font-weight:600}
+    th,td{padding:8px 10px;text-align:center}
+    tbody tr:nth-child(odd){background:#fcfcfe}
+    tbody td{border-bottom:1px solid #f1f1f4}
+
+    .empty{padding:18px 14px;color:var(--muted)}
+
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s}
+    .toast.show{opacity:1}
+
+    .overlay{position:fixed;inset:0;background:rgba(17,24,39,.35);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .2s}
+    .overlay.show{opacity:1;pointer-events:auto}
+    .overlay .panel{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px 20px;display:flex;align-items:center;gap:10px;min-width:220px;justify-content:center}
+    .overlay .spinner{width:28px;height:28px;border:3px solid #e5e7eb;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
+
+    @media print{
+      body{background:#fff}
+      .btn,.toast,.overlay{display:none}
+      .wrap{max-width:1000px;margin:0;padding:0}
+      .header{box-shadow:none;border:none}
+      .grid{grid-template-columns:1fr 1fr}
+    }
+    /* 반월→시화 구분선 */
+    tbody tr.plant-sep td{ border-top: 2px solid #ff6b6b; }
+
+    /* === 검색 강조(4자리 일치시) === */
+td.cell-hit { background:#fff2cc !important; }
+.badge.search-pill { background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px; }
+.tag-hit { display:inline-block; margin-left:6px; font-size:11px; padding:1px 6px; border-radius:999px; background:#fff2cc; border:1px solid #f0e1a6; }
+
   </style>
+  <!-- 캐시 무력화 메타(선택) -->
+  <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="expires" content="0">
 </head>
 <body>
-  <div class="topbar">
-    <strong>실시간 차량현황(시트 뷰)</strong>
-    <span class="timestamp" id="ts"></span>
-    <button id="btnUpdate">새로고침</button>
+  <div class="wrap">
+    <section class="header">
+      <h1 class="title">공장 내 실시간 차량 현황</h1>
+      <p class="subtitle" id="updated">업데이트 준비 중…</p>
+
+      <div class="badges">
+        <span class="badge">신대양제지 반월/시화</span>
+        <span class="badge">계근 기준</span>
+      </div>
+
+      <!-- 툴바: 새로고침 / 텔레그램 + (NEW) 필터/검색 -->
+<div class="toolbar">
+  <select id="plantFilter" class="select" title="공장 필터">
+    <option value="all">전체</option>
+    <option value="banwol">반월만</option>
+    <option value="sihwa">시화만</option>
+  </select>
+
+  <button class="btn" id="btnRefresh">새로고침</button>
+ 
+
+  <input id="searchInput" class="input" placeholder="차량번호 검색" />
+  <span id="searchSummary" class="badge search-pill" style="display:none"></span>
+</div> <!-- .toolbar 끝 -->
+
+</section> <!-- 🔧 header 섹션 닫기 -->
+
+<section class="grid" id="sections">
+  <!-- JS가 채움 -->
+</section>
+
+
+
+  <!-- 중앙 로딩 오버레이 -->
+  <div class="overlay" id="loadingOverlay" aria-hidden="true">
+    <div class="panel" role="status" aria-live="polite">
+      <div class="spinner" aria-label="로딩 중"></div>
+      <div><strong>새로고침 중…</strong><br><span style="color:#666;font-size:12px">잠시만 기다려주세요</span></div>
+    </div>
   </div>
 
-  <!-- 페어 렌더링 컨테이너 -->
-  <div class="grid" id="pairs"></div>
+  <div class="toast" id="toast">업데이트됨</div>
 
-<script>
-  // ==== 설정 ====
-  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwWlnFMpN52_vrTbnmL9sXNeeCBXqRCvWtWMV6DAtHKsKBN0L6ggUBdp_2IY3n7fME/exec";
-  const API_TOKEN  = "DY_SCALE";
+  <script>
+    // ============ 설정 ============
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxxap0krxCww8hAk4VFrXU14uDYQSsZrT8Lox8Y5c9_XjmZx2EtHWMv96aPXWmOdKHi/exec';
+    const USE_JSONP_FALLBACK = true;
 
-  // 반응형 분기 기준(px)
-  const BREAKPOINT = 700;
+    const elUpdated  = document.getElementById('updated');
+    const elSections = document.getElementById('sections');
+    const btnRefresh = document.getElementById('btnRefresh');
+    const toast      = document.getElementById('toast');
+    const overlay    = document.getElementById('loadingOverlay');
 
-  const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
+    // NEW: 로컬 저장키(접기 상태/검색 유지용)
+    const LS_KEYS = {
+      collapse: 'ui.collapse.map',
+      plant: 'ui.plant',
+      q: 'ui.search'
+    };
 
-  // 섹션별 시간 모드: 모두 HH:MM
-  const TIME_MODE_BY_SECTION = {
-    "제품 입차중":   "HM",
-    "원료 하차중":   "HM",
-    "원료 도착":     "HM",
-    "부자재 입차중": "HM",
-    "컨테이너 입차중":"HM"
-  };
-  function timeModeFor(title){ return TIME_MODE_BY_SECTION[title] ?? "HM"; }
+ let __searchCount = 0;
 
-  // 안전 이스케이프
-  function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  function last4(s){
+    const d = String(s||'').replace(/\D+/g,'');
+    return d.length>=4 ? d.slice(-4) : '';
+  }
+    
+    // 좌/우 배치
+    const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
+    const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
 
-  // 시간 포맷터: HM/HMS/MS 지원 + KST 보정
-  function formatTime(val, mode){
-    if (val == null || val === "") return "";
-    const s = String(val).trim();
-    if (/^0+$/.test(s.replace(/\D/g,""))) return "";
+    // 한 자리 반복 번호 필터(가짜 번호 제거)
+    function isMonoDigitPlate(s){
+      const d = String(s || '').replace(/\D+/g, '');
+      if (d.length < 4) return false;
+      return d.split('').every(ch => ch === d[0]);
+    }
 
-    // ISO/Date → KST
-    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
-      const d = new Date(s);
-      if (!isNaN(d.getTime())) {
-        const parts = new Intl.DateTimeFormat('ko-KR', {
-          timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-        }).formatToParts(d);
-        const HH = parts.find(x=>x.type==='hour')?.value ?? '00';
-        const MM = parts.find(x=>x.type==='minute')?.value ?? '00';
-        const SS = parts.find(x=>x.type==='second')?.value ?? '00';
-        if (mode === 'HM')  return `${HH}:${MM}`;
-        if (mode === 'MS')  return `${MM}:${SS}`;
-        return `${HH}:${MM}:${SS}`;
+    // 자동 새로고침(원하면 0으로 꺼도 됨)
+    const AUTO_REFRESH_MS = 0;
+
+    let __loading = false;
+    let __timer   = null;
+
+    function timeLabelFromTitle(title){
+      return /대기/.test(title) ? '등록시간' : '입차시간';
+    }
+// 입차시간=HH:MM, "원료 대기" 등록시간=MM:SS 전용 포맷터
+function fmtTimeDisplay(raw, timeLabel, mmssOnly=false) {
+  if (raw == null) return '';
+  const s0 = String(raw).trim();
+  if (!s0) return '';
+
+  // (1) 이미 콜론 포함 → HH:MM만 남기기
+  const mHM = s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if (mHM) {
+    const HH = mHM[1].padStart(2,'0');
+    const MM = mHM[2];
+    return `${HH}:${MM}`;
+  }
+
+  // (2) 숫자만 들어온 케이스 처리
+  const digits = s0.replace(/\D/g,'');
+  if (digits.length >= 6) {               // HHMMSS → HH:MM
+    const HH = digits.slice(0,2);
+    const MM = digits.slice(2,4);
+    return `${HH}:${MM}`;
+  }
+  if (digits.length === 4) {              // HHMM → HH:MM
+    const HH = digits.slice(0,2);
+    const MM = digits.slice(2,4);
+    return `${HH}:${MM}`;
+  }
+
+  // (3) ISO/GMT 같은 날짜문자열 → HH:MM
+  if (/GMT|^\d{4}-\d{2}-\d{2}T/.test(s0)) {
+    const d = new Date(s0);
+    if (!isNaN(d)) {
+      const HH = String(d.getHours()).padStart(2,'0');
+      const MM = String(d.getMinutes()).padStart(2,'0');
+      return `${HH}:${MM}`;
+    }
+  }
+
+  // (4) 못 맞추면 원본 리턴(값이 비지 않게)
+  return s0;
+}
+
+
+
+    function showToast(msg){
+      toast.textContent = msg || '완료';
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1200);
+    }
+
+    function stripeClass(color){
+      const c = String(color||'').toLowerCase();
+      return c.includes('00ff00') ? 'green' : 'cyan';
+    }
+
+    function setLoading(on, source){
+      __loading = !!on;
+       if (btnRefresh) btnRefresh.disabled = on;
+      if(on){
+        if(source === 'manual'){
+          overlay.classList.add('show');
+          overlay.setAttribute('aria-hidden','false');
+        }
+        elUpdated.innerHTML = '<span class="mini-spinner" aria-hidden="true"></span>업데이트 중…';
+      }else{
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden','true');
       }
     }
 
-    // HH:MM[:SS]
-    let m = s.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (m){
-      const HH=m[1], MM=m[2], SS=m[3]||"00";
-      if (mode === 'HM')  return `${HH}:${MM}`;
-      if (mode === 'MS')  return `${MM}:${SS}`;
-      return `${HH}:${MM}:${SS}`;
+    // NEW: 접기 상태 저장/로드
+    function loadCollapseMap(){
+      try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse) || '{}'); }catch(_){ return {}; }
     }
-
-    // 숫자만: HHMMSS / HHMM / MMSS
-    const digits = s.replace(/\D/g,"");
-    if (digits.length >= 6){
-      const t6 = digits.slice(-6);
-      const HH=t6.slice(0,2), MM=t6.slice(2,4), SS=t6.slice(4,6);
-      if (mode === 'HM')  return `${HH}:${MM}`;
-      if (mode === 'MS')  return `${MM}:${SS}`;
-      return `${HH}:${MM}:${SS}`;
+    function saveCollapseMap(map){
+      try{ localStorage.setItem(LS_KEYS.collapse, JSON.stringify(map||{})); }catch(_){}
     }
-    if (digits.length === 4){
-      const A=digits.slice(0,2), B=digits.slice(2,4);
-      if (mode === 'HM')  return `${A}:${B}`;
-      if (mode === 'MS')  return `${A}:${B}`;
-      return `${A}:${B}:00`;
-    }
-    return s;
-  }
+    const collapseMap = loadCollapseMap();
 
-  function tableHTML(title, rows) {
-    const mode = timeModeFor(title);
-    const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
-    const body = rows && rows.length
-      ? rows.map(r => {
-          const no = esc(r[0]);
-          const car = esc(r[1]);
-          const t  = esc(formatTime(r[2], mode));
-          return `<tr><td>${no}</td><td>${car}</td><td>${t}</td></tr>`;
-        }).join("")
-      : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
-    return `<table>
-      <colgroup><col><col><col></colgroup>
-      <thead>${hdr}</thead><tbody>${body}</tbody></table>`;
-  }
+    // 섹션 카드 (하이라이트 제거 버전 + NEW: 접기/필터/검색)
+  // 기존
+// function renderSectionCardGrouped(sec){
+function renderSectionCardGrouped(sec, ctx){
+  const title  = sec.title || '-';
+  const color  = sec.color || '#00FFFF';
+  const groups = Array.isArray(sec.groups) ? sec.groups : [];
+  const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-  function sectionHTML(title, data) {
-    const count = data?.count || 0;
-    const rows = data?.rows || [];
-    return `<div class="section">
-      <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
-      ${tableHTML(title, rows)}
-    </div>`;
-  }
+  const ban = groups.find(g => g.plant === '반월')?.rows || [];
+  const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-  // ========== 렌더링 ==========
-  function renderPairs(left, right) {
-    const host = document.getElementById('pairs');
-    const rows = [];
-    rows.push(`<div class="pair-title">반월</div>`, `<div class="pair-title">시화</div>`);
-    for (const t of SECTIONS) {
-      rows.push(sectionHTML(t, left?.[t]), sectionHTML(t, right?.[t]));
-    }
-    host.innerHTML = rows.join("");
-    host.classList.add('grid'); // 2열
-  }
+  const banF = ban.filter(r => !isMonoDigitPlate(r.car));
+  const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
-  function renderStacked(left, right) {
-    const host = document.getElementById('pairs');
-    const rows = [];
-    rows.push(`<div class="pair-title">반월</div>`);
-    for (const t of SECTIONS) rows.push(sectionHTML(t, left?.[t]));
-    rows.push(`<div class="pair-title">시화</div>`);
-    for (const t of SECTIONS) rows.push(sectionHTML(t, right?.[t]));
-    host.innerHTML = rows.join("");
-    host.classList.remove('grid'); // 1열(블록 흐름)
-  }
+  // ▼▼ 여기부터 DOM 대신 ctx 사용 ▼▼
+  const plantSel = ctx.plantSel;          // 'all' | 'banwol' | 'sihwa'
+  const qq       = ctx.qq;                // 공백 제거된 검색어
+  const dqq      = ctx.dqq;               // 숫자만
+  const isFour   = ctx.isFour;            // 4자리 숫자 검색 여부
 
-  function renderResponsive(left, right) {
-    if (window.innerWidth <= BREAKPOINT) renderStacked(left, right);
-    else renderPairs(left, right);
-  }
+  let merged = [
+    ...banF.map(r => ({...r, plant:'반월'})),
+    ...sihF.map(r => ({...r, plant:'시화'}))
+  ];
+  if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
+  if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
+  if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
 
-  // ========== 데이터 로드 ==========
-  let __lastData = null;
-
-  async function loadSnapshot() {
-  const tsEl = document.getElementById('ts');
-  tsEl.textContent = "불러오는 중…";
-  try {
-
-   const SNAPSHOT_URL = `${WEBAPP_URL}?action=snapshot&t=${Date.now()}`;
-   const res = await fetch(SNAPSHOT_URL, { cache: "no-store", mode: "cors" });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    applyData(data);
-  } catch (e) {
-
-   // ⬅️ 폴백도 "같은 URL"로 (action, t 유지)
-   callWithJSONP(SNAPSHOT_URL).then(applyData).catch(err=>{
-      tsEl.textContent = "불러오기 실패";
-      alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
+  const hitsMap = new Map();
+  if (isFour){
+    merged.forEach((r, idx) => {
+      const hit = last4(r.car) === dqq;
+      if (hit) { hitsMap.set(idx, true); __searchCount++; }
     });
+  } else {
+    if (qq) __searchCount += merged.length;
+  }
+
+  const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
+  const scnt = (plantSel==='banwol') ? 0 : sihF.length;
+  const total = merged.length;
+
+  let seq = 1;
+   const rowHTML = (r, i, sep) => {
+    const cls = [];
+    if (sep) cls.push('plant-sep');
+    const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
+    // "원료 대기"만 MM:SS 강제
+    const mmssOnly = (title === '원료 대기');
+    const _t = fmtTimeDisplay(r.time, timeLabel, mmssOnly);
+const timeText = _t && _t.trim() ? _t : (r.time ?? '');
+
+   return `
+  <tr class="${cls.join(' ')}">
+    <td>${seq++}</td>
+    <td class="${carCellClass}">${r.car ?? ''}</td>
+    <td>${timeText}</td>
+    <td>${r.plant}</td>
+  </tr>`;
+  };
+
+  let rowsHTML = '';
+  if (plantSel === 'all') {
+    const leftPart  = merged.filter(r=>r.plant==='반월');
+    const rightPart = merged.filter(r=>r.plant==='시화');
+    rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
+    if (leftPart.length && rightPart.length) {
+      rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
+               +  rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
+    } else {
+      rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
+    }
+  } else {
+    rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
+  }
+
+  const table = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:44px">No</th>
+          <th style="width:96px">차량</th>
+          <th style="width:74px">${timeLabel}</th>
+          <th style="width:56px">공장</th>
+        </tr>
+      </thead>
+      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+    </table>`;
+
+  const collapsed   = !!collapseMap[title];
+  const bodyStyle   = collapsed ? 'style="display:none"' : '';
+  const toggleLabel = collapsed ? '펼치기' : '접기';
+
+  // ▼ 안내문도 ctx에서 온 filterActive 사용
+  const infoLine = ctx.filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
+
+  return `
+    <article class="card">
+      <div class="stripe ${stripeClass(color)}"></div>
+      <div class="head">
+        <h3>${title}</h3>
+        <div class="head-right">
+          <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+          <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
+        </div>
+      </div>
+      ${infoLine}
+      <div class="body" ${bodyStyle}>
+        ${table}
+      </div>
+    </article>`;
+}
+
+
+   function render(data){
+  try{
+    __searchCount = 0;
+
+    const ts = data && data.updatedAt ? data.updatedAt : '';
+    elUpdated.textContent = ts ? `업데이트: ${ts}` : '업데이트 시간 없음';
+
+    const raw = Array.isArray(data && data.sections) ? data.sections : [];
+    if(!raw.length){
+      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
+      return;
+    }
+
+    const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+    const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
+    const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
+    const used = new Set([...left, ...right].map(s => s.title));
+    raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
+
+    // ▼▼ 여기서 단 한번만 UI 상태 계산
+    const plantSel = document.getElementById('plantFilter').value; // 'all'|'banwol'|'sihwa'
+    const q  = (document.getElementById('searchInput').value || '').trim();
+    const qq = q.replace(/\s+/g,'');
+    const dqq = qq.replace(/\D+/g,'');
+    const isFour = /^\d{4}$/.test(dqq);
+    const filterActive = (plantSel !== 'all') || !!qq;
+
+    const ctx = { plantSel, q, qq, dqq, isFour, filterActive };
+
+    const leftHTML  = left .map(sec => renderSectionCardGrouped(sec,  ctx)).join('');
+    const rightHTML = right.map(sec => renderSectionCardGrouped(sec, ctx)).join('');
+
+    elSections.innerHTML = `
+      <div class="col col-left">${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
+      <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
+    `;
+
+    // 검색 결과 뱃지
+    const badge = document.getElementById('searchSummary');
+    if (qq) {
+      badge.style.display = 'inline-block';
+      badge.textContent = `${__searchCount}건 검색`;
+    } else {
+      badge.style.display = 'none';
+      badge.textContent = '';
+    }
+
+    // 접기 버튼 바인딩 (중복 블록 하나만 남기기)
+    elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
+        const body = btn.closest('.card').querySelector('.body');
+        const now = body.style.display !== 'none';
+        body.style.display = now ? 'none' : '';
+        collapseMap[key] = now;
+        saveCollapseMap(collapseMap);
+        btn.textContent = now ? '펼치기' : '접기';
+      });
+    });
+
+  } catch(err){
+    console.error(err);
+    elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
   }
 }
 
 
-  function applyData(data){
-    __lastData = data;
-    document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
-    renderResponsive(data.left, data.right);
-  }
-
-  // --------- 중복 클릭 방지 & 버튼 비활성화 ---------
-  let isUpdating = false;
-
-  // 강제 갱신 → 최신 스냅샷 받기 (서버에서 한 번에)
-  async function forceUpdateThenLoad(){
-    if (isUpdating) return;                 // ⬅︎ 재진입 차단
-    isUpdating = true;
-
-    const btn = document.getElementById('btnUpdate');
-    const tsEl = document.getElementById('ts');
-    const prevLabel = btn.textContent;
-
-    try {
-      btn.disabled = true;                  // ⬅︎ 비활성화
-      btn.setAttribute('aria-busy','true');
-      btn.textContent = '갱신 중…';        // ⬅︎ 라벨 변경
-      tsEl.textContent = "갱신 중…";
-
-      const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
-      const data = await callWithFallback(url);
-      applyData(data); // 서버에서 최신 스냅샷 바로 수신
-    } catch(e){
-      tsEl.textContent = "갱신 실패";
-      alert(e.message || e);
-    } finally {
-      btn.disabled = false;                 // ⬅︎ 복구
-      btn.removeAttribute('aria-busy');
-      btn.textContent = prevLabel;
-      isUpdating = false;
+    async function loadSnapshotFetch(){
+      const url = SNAPSHOT_URL + '?action=snapshot_live&_ts=' + Date.now();
+      const res = await fetch(url, { method:'GET', credentials:'omit' });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      return res.json();
     }
-  }
 
-  // fetch → 실패 시 JSONP 폴백
-  async function callWithFallback(url){
-    try {
-      const r = await fetch(url, { cache:'no-store', mode:'cors' });
-      const j = await r.json();
-      if (j.error) throw new Error(j.error);
-      return j;
-    } catch {
-      return callWithJSONP(url);
+async function triggerRefreshLive() {
+  const url = SNAPSHOT_URL + '?action=refresh_live&token=DY_SCALE&_ts=' + Date.now();
+  try { await fetch(url, { method:'GET', mode:'no-cors' }); } catch(_) {}
+}
+
+
+    function loadSnapshotJSONP(){
+      return new Promise((resolve, reject)=>{
+        const cbName = 'CB_' + Math.random().toString(36).slice(2);
+        const cleanup = (s)=>{ try{ delete window[cbName]; s && s.remove(); }catch(e){} };
+        window[cbName] = (data)=>{ cleanup(script); resolve(data); };
+        const script = document.createElement('script');
+        const url = SNAPSHOT_URL + '?action=snapshot_live&callback=' + cbName + '&_ts=' + Date.now();
+        script.src = url;
+        script.onerror = ()=>{ cleanup(script); reject(new Error('JSONP load error')); };
+        document.body.appendChild(script);
+      });
     }
+
+  async function loadSnapshot(opts = {source:'auto'}){
+  const source = opts.source || 'auto';
+  if(__loading){
+    if(source === 'manual') showToast('이미 새로고침 중…');
+    return;
   }
-  function callWithJSONP(url){
-    return new Promise((resolve, reject)=>{
-      const cb = "__dy_cb_"+Date.now();
-      const s = document.createElement('script');
-      const full = url + (url.includes('?') ? '&' : '?') + `callback=${cb}&t=${Date.now()}`;
-      s.src = full;
-      s.async = true;
-      let done = false;
+  try{
+    setLoading(true, source);
+    // 👉 수동 새로고침일 때만 백엔드 라이브 강제 새로고침
+    if (source === 'manual') { await triggerRefreshLive(); }
 
-      window[cb] = (data)=>{
-        if (done) return;
-        done = true;
-        try{ delete window[cb]; document.body.removeChild(s); }catch{}
-        if (data && !data.error) resolve(data);
-        else reject(new Error(data?.error || 'JSONP 응답 오류'));
-      };
-      s.onerror = ()=>{
-        if (done) return;
-        done = true;
-        try{ delete window[cb]; document.body.removeChild(s); }catch{}
-        reject(new Error('JSONP 스크립트 로드 실패'));
-      };
+    let data = await loadSnapshotFetch();   // ← try 안으로
+    // 스냅샷 캐시
+    try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
+    render(data);
+    showToast('업데이트됨');
+  }catch(err){
+    console.warn('fetch 실패, JSONP 시도:', err);
+    if (!USE_JSONP_FALLBACK){
+      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (CORS/권한 확인)</div></div></div>';
+      return;
+    }
+    try{
+      // 수동일 때 보수적으로 JSONP 트리거
+      if (source === 'manual') {
+        const base = SNAPSHOT_URL.split('?')[0];
+        const cb   = 'CB_' + Math.random().toString(36).slice(2);
+        await new Promise((res)=> {
+          const s = document.createElement('script');
+          window[cb] = ()=>{ try{ delete window[cb]; }catch(_){ } s.remove(); res(); };
+          s.onerror  = ()=>{ try{ delete window[cb]; }catch(_){ } s.remove(); res(); };
+          s.src = `${base}?action=refresh_live&token=DY_SCALE&callback=${cb}&_ts=${Date.now()}`;
+          document.head.appendChild(s);
+        });
+      }
+      const data = await loadSnapshotJSONP();
+      try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
+      render(data);
+      showToast('업데이트됨');
+    }catch(e){
+      console.error(e);
+      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (JSONP 실패)</div></div></div>';
+    }
+  }finally{
+    setLoading(false);
+  }
+}
 
-      document.body.appendChild(s);
+
+    function startInterval(){
+      if(__timer) clearInterval(__timer);
+      if(!AUTO_REFRESH_MS) return;
+      __timer = setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS);
+    }
+
+    // 이벤트
+    btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
+
+    // NEW: 필터/검색 이벤트 → 서버 재호출 없이 현지 렌더링만 갱신
+    const plantSel = document.getElementById('plantFilter');
+    const searchInput = document.getElementById('searchInput');
+
+    // 초기 복구
+    plantSel.value = localStorage.getItem(LS_KEYS.plant) || 'all';
+    searchInput.value = localStorage.getItem(LS_KEYS.q) || '';
+
+    function rerenderFromCache(){
+      const cache = localStorage.getItem('snapshot.cache');
+      if (!cache) return;
+      try{ render(JSON.parse(cache)); }catch(_){}
+    }
+
+    plantSel.addEventListener('change', ()=>{
+      localStorage.setItem(LS_KEYS.plant, plantSel.value);
+      rerenderFromCache();
     });
-  }
+    searchInput.addEventListener('input', ()=>{
+      localStorage.setItem(LS_KEYS.q, searchInput.value);
+      rerenderFromCache();
+    });
 
-  // 버튼
-  document.getElementById('btnUpdate').addEventListener('click', forceUpdateThenLoad);
+    // init
+    (function(){
+      loadSnapshot({source:'auto'});
+      startInterval();
+    })();
 
-  // 최초 로드
-  loadSnapshot();
+// 백엔드 강제 갱신 호출 (응답은 안써도 됨)
+async function triggerUpdateSnapshot() {
+  // SNAPSHOT_URL에서 베이스 exec URL만 추출
+  const base = SNAPSHOT_URL.split('?')[0];
+  const url  = `${base}?action=update_snapshot&token=DY_SCALE&_ts=${Date.now()}`;
 
-  // 화면 크기 변경 시 재-렌더 (데이터는 다시 안 긁고, 현재 스냅샷으로만 레이아웃 전환)
-  window.addEventListener('resize', ()=>{
-    if (!__lastData) return;
-    renderResponsive(__lastData.left, __lastData.right);
-  });
-</script>
+  // CORS 환경에서도 트리거만 되면 되니 no-cors로 발사
+  try { await fetch(url, { method: 'GET', mode: 'no-cors' }); }
+  catch (_) { /* 무시: 트리거만 되면 OK */ }
+}
 
+  </script>
 </body>
 </html>
