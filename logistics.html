@@ -172,6 +172,11 @@
   let __loading=false, __timer=null;
   function timeLabelFromTitle(title){ return /대기/.test(title)?'등록시간':'입차시간'; }
 
+  // 뷰 상태/캐시 (추가)
+  let __currentView = 'live';
+  let __weighFetchedAt = 0;
+  const WEIGH_TTL_MS = 0; // 0 = 탭 전환 시 재요청 안함(캐시가 있으면 그대로 사용)
+
   function fmtTimeDisplay(raw){
     if (raw == null) return '';
     const s0 = String(raw).trim(); if(!s0) return '';
@@ -244,7 +249,7 @@
 
     const table = `
       <table>
-        <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${timeLabel}</th><th style="width:56px">공장</th></tr></thead>
+        <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">입차시간</th><th style="width:56px">공장</th></tr></thead>
         <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
       </table>`;
 
@@ -415,7 +420,7 @@
     return `${y}-${m}-${d}`;
   }
 
-  // ⬇️ 계근 조회(제품) 표: 요구사항에 맞춰 CARNUM/INTIME/OUTIME/TOTWEI/SILWEI만 사용 (6열)
+  // ⬇️ 계근 조회(제품) 표: CARNUM/INTIME/OUTIME/TOTWEI/SILWEI 사용 (6열)
   function buildWeighTable(title, list, query){
     const rows = Array.isArray(list)? list : [];
     const q  = String(query||'').trim();
@@ -501,6 +506,7 @@
   // ⬇️ 제목에서 (업데이트: …) 제거한 상태로 렌더
   function renderWeighingPanel(payload){
     window.__lastWeigh = payload;
+    __weighFetchedAt = Date.now(); // ★ 페치 타임스탬프 기록
     const box=document.getElementById('weighingPanel'); if(!box) return;
 
     const ban = payload?.banwol ?? [];
@@ -560,7 +566,9 @@
   const elLivePanel =document.getElementById('sections');
   const btnViewLive =document.getElementById('btnViewLive');
   const btnViewWeigh=document.getElementById('btnViewWeigh');
+
   function setView(mode){
+    __currentView = mode; // ★ 현재 뷰 저장
     const live=(mode==='live');
     elLivePanel.style.display = live? '' : 'none';
     elWeighPanel.style.display= live? 'none' : '';
@@ -570,8 +578,23 @@
     btnViewWeigh.setAttribute('aria-selected', String(!live));
   }
   setView('live');
+
+  // 탭 전환: 캐시가 있으면 재요청 없이 전환
+  btnViewWeigh.addEventListener('click', ()=>{
+    const hasCache = !!window.__lastWeigh;
+    const fresh = WEIGH_TTL_MS > 0 ? (Date.now() - __weighFetchedAt < WEIGH_TTL_MS) : hasCache;
+    if (fresh) setView('weigh'); else loadWeighingToday();
+  });
   btnViewLive.addEventListener('click', ()=>{ setView('live'); });
-  btnViewWeigh.addEventListener('click', ()=>{ loadWeighingToday(); });
+
+  // 🔧 새로고침 버튼: 현재 탭 기준으로 동작 (추가)
+  btnRefresh.addEventListener('click', () => {
+    if (btnViewLive.classList.contains('active')) {
+      loadSnapshot({ source: 'manual' });   // 입차 조회(실시간)
+    } else if (btnViewWeigh.classList.contains('active')) {
+      loadWeighingToday();                   // 계근 조회(제품)
+    }
+  });
 
   // ===== init =====
   (function(){ loadSnapshot({source:'auto'}); startInterval(); })();
