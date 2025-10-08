@@ -390,59 +390,58 @@
 
   // 대소문자/언더스코어 무시 + 유사 키 보정 pick
   // 대소문자/언더스코어/공백 무시 + 유사 키 광범위 보정
-function pickCI(obj, keys){
+// 🔁 이걸로 교체하세요: 필드(kind)에 맞는 보조 후보만 탐색
+function pickField(obj, kind, primaryKeys = []) {
   if (!obj) return '';
   const norm = k => String(k||'').toLowerCase().replace(/[\s_]/g,'');
   const dict = {};
   Object.keys(obj).forEach(k => { dict[norm(k)] = obj[k]; });
 
-  // 1) 직접 후보 우선 매칭
-  for (const key of keys){
+  // 1) 우선 순위 키들부터
+  for (const key of primaryKeys){
     const nk = norm(key);
     if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
   }
 
-  // 2) 카테고리별 보조 매칭(현장 별칭 흡수)
-  // 출차
-  const OUT_CANDS = [
-    'outtime','outdatetime','outdttm','outdt','outdate','out','outtm',
-    'exittime','leavetime','departtime','checkouttime'
-  ];
-  for (const k of OUT_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
+  // 2) kind별 보조 후보만 제한적으로 탐색
+  const CANDS = {
+    car: [
+      'carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'
+    ],
+    in: [
+      'intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime'
+    ],
+    out: [
+      'outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm','outtm',
+      'exittime','leavetime','departtime','checkouttime'
+    ],
+    gross: [
+      'totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt',
+      'grosswt','grtwei','grweight','grwei','totwei','total'
+    ],
+    net: [
+      'netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'
+    ],
+    receive: [
+      'receiveweight','receive','recv','recvqty','recv_qty','receiveqty','receive_qty',
+      'insu','insuweight','insul','received','receivewei',
+      'accept_qty','acceptweight','accept_weight','acceptwei','acceptqty'
+    ]
+  };
 
-  // 총중량
-  const GROSS_CANDS = [
-    'totalweight','totweight','gross','grossweight','gtwei','ttlwei',
-    'weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei','total'
-  ];
-  for (const k of GROSS_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
-
-  // 실중량
-  const NET_CANDS = [
-    'netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'
-  ];
-  for (const k of NET_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
-
-  // 인수량
-  const RECV_CANDS = [
-    'receiveweight','receive','recv','recvqty','recv_qty','receiveqty','receive_qty',
-    'insu','insuweight','insul',
-    'received','receivewei',
-    'acceptqty','accept_weight','acceptweight','acceptwei'
-  ];
-  for (const k of RECV_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
-
-  // 입차(보조; 혹시 keys에 못 찾은 경우)
-  const IN_CANDS = ['intime','indatetime','indttm','indt','indate','in','intm','checkintime'];
-  for (const k of IN_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
-
+  const list = CANDS[kind] || [];
+  for (const k of list){
+    if (dict[k] !== undefined && String(dict[k]).trim() !== '') return dict[k];
+  }
   return '';
 }
 
 
- function buildWeighTable(title, list, query){
+
+function buildWeighTable(title, list, query){
   const rows = Array.isArray(list)? list : [];
-  // 검색어 준비(공백 제거/뒤 4자리 매칭 지원)
+
+  // 검색어 준비
   const q = String(query||'').trim();
   const qq = q.replace(/\s+/g,'');
   const dqq = qq.replace(/\D+/g,'');
@@ -450,33 +449,20 @@ function pickCI(obj, keys){
 
   const filtered = rows.filter((r)=>{
     if (!qq) return true;
-    const car = String(pickCI(r, [
-      'car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO'
-    ]) || '');
+    const car = String(pickField(r, 'car', ['car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO']) || '');
     if (isFour) return car.replace(/\D/g,'').endsWith(dqq);
     return car.includes(qq);
   });
 
   const body = filtered.length ? filtered.map((r,i)=>{
-    const rawCar = pickCI(r, ['car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO']) || '';
-    const tin    = pickCI(r, ['in','INTIME','IN_TIME','IN_DATE','IN_DATETIME','IN','INDT','IN_DT','INDATE','IN_DATE_TIME','INDTTM']);
-    const tout   = pickCI(r, [
-      'out','OUTTIME','OUT_TIME','OUT_DATE','OUT_DATETIME','OUT','OUTDT','OUT_DT','OUTDATE','OUT_DATE_TIME','OUTDTTM','OUTTM',
-      // 보조 별칭
-      'EXITTIME','LEAVETIME','DEPARTTIME','CHECKOUTTIME'
-    ]);
-    const gross  = pickCI(r, [
-      'gross','TOTALWEIGHT','TOTWEIGHT','GROSS','GROSSWEIGHT','GTWEI','TTLWEI','WEIGHT_TOTAL','TOTAL_WT','GROSS_WT','GRTWEI','GR_WEIGHT','GRWEI','TOTWEI','TOTAL'
-    ]);
-    const net    = pickCI(r, [
-      'net','NETWEIGHT','NET','NW','REALWEIGHT','SILJUNG','SILWEI','NET_WT','WEIGHT_NET','REAL_WT','NETWEI'
-    ]);
-    const recv   = pickCI(r, [
-      'receive','RECEIVEWEIGHT','RECEIVE','RECV','RECVQTY','RECV_QTY','RECEIVEQTY','RECEIVE_QTY',
-      'INSU','INSUWEIGHT','INSUL','RECEIVED','RECEIVEWEI','ACCEPT_QTY','ACCEPTWEIGHT','ACCEPT_WEIGHT','ACCEPTWEI'
-    ]);
+    const rawCar = pickField(r, 'car', ['car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO']) || '';
+    const tin    = pickField(r, 'in',    ['in','INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME']);
+    const tout   = pickField(r, 'out',   ['out','OUTTIME','OUT_TIME','OUT_DATETIME','OUT_DATE','OUTDTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUTTM']);
+    const gross  = pickField(r, 'gross', ['gross','TOTALWEIGHT','TOTWEIGHT','GROSSWEIGHT','TOTAL','TOTAL_WT','GROSS_WT','TTLWEI','GTWEI']);
+    const net    = pickField(r, 'net',   ['net','NETWEIGHT','NET_WT','REALWEIGHT','SILWEI']);
+    const recv   = pickField(r, 'receive',['receive','RECEIVEWEIGHT','RECV','RECV_QTY','RECEIVE_QTY','INSU','INSUWEIGHT','ACCEPT_QTY','ACCEPTWEIGHT']);
 
-    // 검색 하이라이트(뒤 4자리)
+    // 검색 하이라이트
     let carHTML = rawCar;
     if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)){
       carHTML = `<span class="cell-hit">${rawCar}</span>`;
@@ -523,6 +509,7 @@ function pickCI(obj, keys){
     </div>
   </article>`;
 }
+
 
 
   function renderWeighingPanel(payload){
