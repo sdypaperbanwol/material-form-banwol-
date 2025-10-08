@@ -151,7 +151,7 @@
 
   <script>
   // ========= 설정 =========
-  const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzq07zXH54YJ7vwu9FQ2achwXhpUbWfxD2vWnGTtdWGTCCM7G2NjWEO0LktbdZ9SpL4/exec';
+  const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwNxPMnQTlcVhb7od4opBaXEpLJNvTNd0WQEgHanZk0PJ_RYnd5nlLioSmiSk5qu8mT/exec';
   const USE_JSONP_FALLBACK = true;
 
   const elUpdated  = document.getElementById('updated');
@@ -397,13 +397,23 @@
     }
 
     const CANDS = {
-      car: ['carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'],
-      in:  ['intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime','weighintime','weigh_in_time','in_dtm','indt_tm'],
-      out: ['outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm','outtm','exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time','out_dtm','outdtm'],
-      gross: ['totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei','total'],
-      net: ['netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'],
-      receive: ['receiveweight','receivewei','receive','recv','recvqty','recv_qty','receiveqty','receive_qty','received','insu','insuweight','insul','acceptqty','accept_qty','acceptweight','accept_weight','acceptwei']
-    };
+  car: ['carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'],
+  in:  ['intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime','weighintime','weigh_in_time','in_dtm','indt_tm'],
+  out: [
+    'outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm',
+    'outtm','out_tm','out_dttm','outdate_time','out_datetime2','outtm2','leave_time','exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time'
+  ],
+  gross: ['totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei','total'],
+  net:   ['netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'],
+  receive: [
+    'receiveweight','receive_wei','receive','recv','recvqty','recv_qty','receiveqty','receive_qty','received',
+    'insu','insuweight','insu_wei','insu_qty','insul',
+    'acceptqty','accept_qty','acceptweight','accept_weight','acceptwei',
+    'recvweight','recv_weight','takeover','take_qty','takeweight','take_weight',
+    '인수량','인수중량'
+  ]
+};
+
     for (const k of (CANDS[kind] || [])) {
       const nk = norm(k);
       if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
@@ -459,16 +469,19 @@
 
       const fmtNum = (n)=>{ const v=Number(String(n??'').toString().replace(/[^\d.-]/g,'')); return isNaN(v)?(n??''):v.toLocaleString(); };
       const fmtHM  = (raw)=> {
-        if(raw==null) return '';
-        const s=String(raw).trim(); if(!s) return '';
-        const m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/); if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
-        const d=s.replace(/\D/g,'');
-        if(d.length>=12) return `${d.slice(-6,-4)}:${d.slice(-4,-2)}`;
-        if(d.length===6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
-        if(d.length===4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
-        if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d2=new Date(s); if(!isNaN(d2)) return `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;}
-        return s;
-      };
+  if(raw==null) return '';
+  let s=String(raw).trim(); if(!s) return '';
+  // "15시25분" 지원
+  s = s.replace(/시|분|초/g, m => ({'시':':','분':':','초':''}[m]));
+  const m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/); if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+  const d=s.replace(/\D/g,'');
+  if(d.length>=6) return `${d.slice(-6,-4)}:${d.slice(-4,-2)}`;
+  if(d.length===4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+  if(d.length===3) return `${d.slice(0,1).padStart(2,'0')}:${d.slice(1,3)}`;
+  if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d2=new Date(s); if(!isNaN(d2)) return `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;}
+  return s;
+};
+
 
       let carHTML = rawCar;
       if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)) {
