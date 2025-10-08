@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>공장 내 실시간 차량 현황</title>
   <meta name="description" content="공장 내 실시간 차량 현황 – GitHub Pages용 logistics.html">
+  <!-- favicon 404 방지 -->
   <link rel="icon" href="data:,">
+
   <style>
   :root{
     --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
@@ -17,6 +19,8 @@
   body{ margin:0; background:var(--bg); color:var(--ink);
         font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif; }
   .wrap{ max-width:980px; margin:24px auto; padding:0 16px }
+
+  /* header */
   .header{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
            box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
   .title{ margin:0; font-size:20px; letter-spacing:-.2px }
@@ -26,15 +30,21 @@
   @keyframes spin{ to{ transform:rotate(360deg) } }
   .badges{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px }
   .badge{ background:var(--badge); border:1px solid #d9e2ff; border-radius:999px; padding:3px 8px; font-size:12px }
+
+  /* toolbar */
   .toolbar{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap }
   .btn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer; }
   .btn[disabled]{ opacity:.55; cursor:not-allowed }
   .btn:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) }
   .input,.select{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; font-size:13px }
+
+  /* view toggle */
   .view-toggle{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden }
   .view-toggle .tbtn{ border:0; background:#fff; padding:8px 12px; font-size:13px; cursor:pointer }
   .view-toggle .tbtn + .tbtn{ border-left:1px solid var(--line) }
   .view-toggle .tbtn.active{ background:var(--brand); color:#fff }
+
+  /* grid */
   .grid{ display:grid; grid-template-columns:1fr; gap:14px }
   .col{ display:grid; gap:14px }
   @media (min-width:900px){ .grid{ grid-template-columns:1fr 1fr } }
@@ -42,6 +52,8 @@
     .grid > .col:last-child > .card:last-child{ margin-bottom:24px }
     .wrap{ padding-bottom:16px }
   }
+
+  /* card */
   .card{ background:var(--card); border:1px solid var(--line); border-radius:0; box-shadow:var(--shadow) }
   .stripe{ height:4px }
   .stripe.cyan{ background:var(--cyan) }
@@ -50,6 +62,8 @@
   .card .head h3{ margin:0; font-size:15px }
   .head-right{ display:flex; align-items:center; gap:8px }
   .summary{ padding:8px 14px; color:var(--muted); border-bottom:1px solid var(--line); font-size:12.5px }
+
+  /* table */
   table{ width:100%; border-collapse:separate; border-spacing:0 }
   thead th{ position:sticky; top:0; background:#fafbfd; border-bottom:1px solid var(--line); color:#333; font-weight:600 }
   th,td{ padding:8px 10px; text-align:center }
@@ -59,7 +73,23 @@
   tbody tr.plant-sep td{ border-top:2px solid #ff6b6b }
   td.cell-hit{ background:#fff2cc !important }
   .badge.search-pill{ background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px }
+
+  /* toast & overlay */
+  .toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111; color:#fff;
+          padding:8px 12px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .toast.show{ opacity:1 }
+  .overlay{ position:fixed; inset:0; background:rgba(17,24,39,.35); display:flex; align-items:center; justify-content:center; z-index:9999;
+            opacity:0; pointer-events:none; transition:opacity .2s; }
+  .overlay.show{ opacity:1; pointer-events:auto }
+  .overlay .panel{ background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow);
+                   padding:18px 20px; display:flex; align-items:center; gap:10px; min-width:220px; justify-content:center; }
+  .overlay .spinner{ width:28px; height:28px; border:3px solid #e5e7eb; border-top-color:var(--brand); border-radius:50%;
+                     animation:spin 1s linear infinite; }
+
+  /* weighing panel scroll */
   #weighingPanel{ max-height:70vh; overflow:auto }
+
+  /* print */
   @media print{
     body{ background:#fff }
     .btn,.toast,.overlay{ display:none }
@@ -68,6 +98,7 @@
     .grid{ grid-template-columns:1fr 1fr }
   }
   </style>
+
   <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
   <meta http-equiv="pragma" content="no-cache">
   <meta http-equiv="expires" content="0">
@@ -77,30 +108,39 @@
     <section class="header">
       <h1 class="title">공장 내 실시간 차량 현황</h1>
       <p class="subtitle" id="updated">업데이트 준비 중…</p>
+
       <div class="badges">
         <span class="badge">신대양제지 반월/시화</span>
         <span class="badge">계근 기준</span>
       </div>
+
       <div class="toolbar">
         <select id="plantFilter" class="select" title="공장 필터">
           <option value="all">전체</option>
           <option value="banwol">반월만</option>
           <option value="sihwa">시화만</option>
         </select>
+
         <button class="btn" id="btnRefresh">새로고침</button>
+
         <div class="view-toggle" role="tablist" aria-label="보기 전환">
           <button class="tbtn active" id="btnViewLive"  role="tab" aria-selected="true">실시간 현황</button>
           <button class="tbtn"         id="btnViewWeigh" role="tab" aria-selected="false">금일 출고</button>
         </div>
+
         <input id="searchInput" class="input" placeholder="차량번호 검색" />
         <span id="searchSummary" class="badge search-pill" style="display:none"></span>
       </div>
     </section>
 
+    <!-- 금일 출고 패널 -->
     <section class="grid" id="weighingPanel" style="display:none"></section>
+
+    <!-- 실시간 패널 -->
     <section class="grid" id="sections"></section>
   </div>
 
+  <!-- overlay & toast -->
   <div class="overlay" id="loadingOverlay" aria-hidden="true">
     <div class="panel" role="status" aria-live="polite">
       <div class="spinner" aria-label="로딩 중"></div>
@@ -110,6 +150,7 @@
   <div class="toast" id="toast">업데이트됨</div>
 
   <script>
+  // ========= 설정 =========
   const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwNxPMnQTlcVhb7od4opBaXEpLJNvTNd0WQEgHanZk0PJ_RYnd5nlLioSmiSk5qu8mT/exec';
   const USE_JSONP_FALLBACK = true;
 
@@ -132,12 +173,11 @@
 
   function fmtTimeDisplay(raw){
     if (raw == null) return '';
-    let s0 = String(raw).trim(); if(!s0) return '';
-    s0 = s0.replace(/시|분|초/g, m => ({'시':':','분':':','초':''}[m]));
+    const s0 = String(raw).trim(); if(!s0) return '';
     const mHM = s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
     if (mHM) return `${mHM[1].padStart(2,'0')}:${mHM[2]}`;
     const digits = s0.replace(/\D/g,'');
-    if (digits.length >= 6) return `${digits.slice(-6,-4)}:${digits.slice(-4,-2)}`;
+    if (digits.length >= 6) return `${digits.slice(0,2)}:${digits.slice(2,4)}`;
     if (digits.length === 4) return `${digits.slice(0,2)}:${digits.slice(2,4)}`;
     if (/GMT|^\d{4}-\d{2}-\d{2}T/.test(s0)) {
       const d = new Date(s0); if(!isNaN(d)) return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -254,7 +294,7 @@
           ${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }
         </div>
         <div class="col col-right">
-          ${ rightHTML || '<div class="card"><div class="empty">우측 석션 없음</div></div>' }
+          ${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }
         </div>`;
 
       const badge = document.getElementById('searchSummary');
@@ -338,6 +378,7 @@
   function startInterval(){ if(__timer) clearInterval(__timer); if(!AUTO_REFRESH_MS) return;
     __timer=setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS); }
 
+  // 필터/검색 상태
   const plantSel = document.getElementById('plantFilter');
   const searchInput = document.getElementById('searchInput');
   plantSel.value = localStorage.getItem(LS_KEYS.plant) || 'all';
@@ -349,19 +390,24 @@
     try{ render(JSON.parse(cache)); }catch(_){}
   }
 
+  // 🔧 검색/필터 이벤트: 금일 출고 화면에서도 즉시 반영되도록 수정
   plantSel.addEventListener('change', ()=>{
     localStorage.setItem(LS_KEYS.plant, plantSel.value);
+    // 실시간 화면만 공장 필터 적용
     if (btnViewLive.classList.contains('active')) rerenderFromCache();
   });
   searchInput.addEventListener('input', ()=>{
     localStorage.setItem(LS_KEYS.q, searchInput.value);
     if (btnViewWeigh.classList.contains('active') && window.__lastWeigh){
+      // 금일 출고 뷰일 때는 즉시 재렌더
       renderWeighingPanel(window.__lastWeigh);
     }else{
+      // 실시간 화면은 캐시 재렌더
       rerenderFromCache();
     }
   });
 
+  // ===== 금일 출고 기능 =====
   function todayKST(){
     const now=new Date();
     const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
@@ -369,11 +415,11 @@
     return `${y}-${m}-${d}`;
   }
 
-  // === 매핑 유틸(우선순위: OUTIME / TOTWEI / SILWEI를 최상위로) ===
   function pickField(obj, kind, primaryKeys = []) {
     if (!obj) return '';
     const norm = k => String(k||'').toLowerCase().replace(/[\s_]/g,'');
-    const dict = {}; Object.keys(obj).forEach(k => { dict[norm(k)] = obj[k]; });
+    const dict = {};
+    Object.keys(obj).forEach(k => { dict[norm(k)] = obj[k]; });
 
     for (const key of primaryKeys){
       const nk = norm(key);
@@ -383,19 +429,33 @@
     const CANDS = {
       car: ['carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'],
       in:  ['intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime','weighintime','weigh_in_time','in_dtm','indt_tm'],
-      out: ['outime','outtime','out_time','out_dt','outdt','out_dttm','outdttm','out_datetime','out_date_time','outtm','out_tm','leave_time','exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time'],
-      gross: ['totwei','totalweight','total_wt','totweight','ttlwei','gtwei','grossweight','gross_wt','gross'],
-      net:   ['silwei','netweight','realweight','net_wt','weightnet','realwt','net']
+      out: [
+        'outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm',
+        'outtm','out_tm','out_dttm','outdate_time','out_datetime2','outtm2','leave_time','exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time'
+      ]
     };
 
     for (const k of (CANDS[kind] || [])) {
       const nk = norm(k);
       if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
     }
+
+    const keys = Object.keys(dict);
+    const hasVal = k => dict[k] !== undefined && String(dict[k]).trim() !== '';
+    const PATTERNS = {
+      in:  [/(\b|_)in(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(check|weigh).*in.*(time|dt|tm)$/i],
+      out: [/(\b|_)out(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(exit|leave|depart|checkout|weigh).*out.*(time|dt|tm)$/i],
+      car: [/(car|veh|truck).*?(no|num|number)$/i]
+    };
+    const pats = PATTERNS[kind] || [];
+    for (const re of pats) {
+      const hit = keys.find(k => re.test(k));
+      if (hit && hasVal(hit)) return dict[hit];
+    }
     return '';
   }
 
-  // === 금일 출고: 6열(No/차량번호/입차시간/출차시간/총중량/실중량) ===
+  // ⬇️ 표를 4열로 간소화 (No / 차량번호 / 입차시간 / 출차시간)
   function buildWeighTable(title, list, query){
     const rows = Array.isArray(list)? list : [];
     const q  = String(query||'').trim();
@@ -405,36 +465,40 @@
 
     const filtered = rows.filter((r)=>{
       const carStd = (r && (r.car ?? r.CARNUM ?? r.CAR_NO)) ?? '';
-      const car = String(carStd || pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CARNO','VEHICLE_NO']));
+      const car = String(carStd || pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO']));
       if (!qq) return true;
       if (isFour) return car.replace(/\D/g,'').endsWith(dqq);
       return car.includes(qq);
     });
 
-    const fmtNum = (n)=>{ const v=Number(String(n??'').toString().replace(/[^\d.-]/g,'')); return isNaN(v)?(n??''):v.toLocaleString(); };
-    const fmtHM  = (raw)=> fmtTimeDisplay(raw);
-
     const body = filtered.length ? filtered.map((r, i)=>{
       const rawCar = firstNonEmpty(
         r?.car, r?.CARNUM, r?.CAR_NO,
-        pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CARNO','VEHICLE_NO'])
+        pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO'])
       );
+
       const tin  = firstNonEmpty(
         r?.in, r?.INTIME,
         pickField(r, 'in', ['INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME'])
       );
+
       const tout = firstNonEmpty(
-        r?.out, r?.OUTIME, // ★ OUTIME 최우선
-        pickField(r, 'out', ['OUTIME','OUTTIME','OUT_TM','OUTTM','OUT_DTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUT_DATETIME'])
+        r?.out, r?.OUTTIME, r?.OUT_TM, r?.OUTTM, r?.OUT_DTTM,
+        pickField(r, 'out', ['OUTTIME','OUT_TIME','OUT_DATETIME','OUT_DATE','OUTDTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUTTM','OUT_TM','OUT_DTTM'])
       );
-      const gross = firstNonEmpty(
-        r?.gross, r?.TOTWEI, // ★ TOTWEI 최우선
-        pickField(r, 'gross', ['TOTWEI','TOTALWEIGHT','TOTAL_WT','TOTWEIGHT','TTLWEI','GTWEI','GROSSWEIGHT','GROSS_WT','GROSS'])
-      );
-      const net = firstNonEmpty(
-        r?.net, r?.SILWEI, // ★ SILWEI 최우선
-        pickField(r, 'net', ['SILWEI','NETWEIGHT','REALWEIGHT','NET_WT','WEIGHTNET','REALWT','NET'])
-      );
+
+      const fmtHM  = (raw)=> {
+        if(raw==null) return '';
+        let s=String(raw).trim(); if(!s) return '';
+        s = s.replace(/시|분|초/g, m => ({'시':':','분':':','초':''}[m]));
+        const m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/); if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+        const d=s.replace(/\D/g,'');
+        if(d.length>=6) return `${d.slice(-6,-4)}:${d.slice(-4,-2)}`;
+        if(d.length===4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+        if(d.length===3) return `${d.slice(0,1).padStart(2,'0')}:${d.slice(1,3)}`;
+        if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d2=new Date(s); if(!isNaN(d2)) return `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;}
+        return s;
+      };
 
       let carHTML = rawCar;
       if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)) {
@@ -446,12 +510,10 @@
       return `<tr>
         <td>${i+1}</td>
         <td>${carHTML}</td>
-        <td>${fmtHM(tin) || ''}</td>
-        <td>${fmtHM(tout) || ''}</td>
-        <td>${fmtNum(gross)}</td>
-        <td>${fmtNum(net)}</td>
+        <td>${fmtHM(tin)}</td>
+        <td>${fmtHM(tout)}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="6" class="empty">(검색 결과 없음)</td></tr>`;
+    }).join('') : `<tr><td colspan="4" class="empty">(검색 결과 없음)</td></tr>`;
 
     return `
     <article class="card">
@@ -471,8 +533,6 @@
               <th style="width:120px">차량번호</th>
               <th style="width:74px">입차시간</th>
               <th style="width:74px">출차시간</th>
-              <th style="width:86px">총중량</th>
-              <th style="width:86px">실중량</th>
             </tr>
           </thead>
           <tbody>${body}</tbody>
@@ -481,6 +541,7 @@
     </article>`;
   }
 
+  // ⬇️ 제목에서 (업데이트: …) 제거한 상태로 렌더
   function renderWeighingPanel(payload){
     window.__lastWeigh = payload;
     const box=document.getElementById('weighingPanel'); if(!box) return;
@@ -537,6 +598,7 @@
     }finally{ setLoading(false); }
   }
 
+  // ===== 뷰 전환 =====
   const elWeighPanel=document.getElementById('weighingPanel');
   const elLivePanel =document.getElementById('sections');
   const btnViewLive =document.getElementById('btnViewLive');
@@ -554,6 +616,7 @@
   btnViewLive.addEventListener('click', ()=>{ setView('live'); });
   btnViewWeigh.addEventListener('click', ()=>{ loadWeighingToday(); });
 
+  // ===== init =====
   (function(){ loadSnapshot({source:'auto'}); startInterval(); })();
   </script>
 </body>
