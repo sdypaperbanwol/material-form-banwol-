@@ -150,7 +150,7 @@
 
   <script>
   // ========= 설정 =========
-  const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzWxOzA7Ozu2eLCxd42rohJ8YOCO4iAIerCO3NOcu1la3YucBDNC2qJf9RPWGnK3hVf/exec';
+  const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwTbhVAsVRfsH1moiUPRYzMpWkabdSvb-F2K1VUkTusT6ipbkCYar7Uvt0SAhFJVRvl/exec';
   const USE_JSONP_FALLBACK = true;
 
   const elUpdated  = document.getElementById('updated');
@@ -388,18 +388,67 @@
     if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d=new Date(s); if(!isNaN(d)) return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
     return s; }
 
-  // 후보 키에서 값 고르기 (프론트 측 안전망)
-  function pick(obj, keys){ for(const k of keys){ const v=obj?.[k]; if(v!==undefined && String(v).trim()!=='') return v; } return ''; }
+  // 대소문자/언더스코어 무시 + 유사 키 보정 pick
+  function pickCI(obj, keys){
+    if (!obj) return '';
+    const norm = k => String(k||'').toLowerCase().replace(/[\s_]/g,'');
+    const dict = {};
+    Object.keys(obj).forEach(k => { dict[norm(k)] = obj[k]; });
+
+    for (const key of keys){
+      const nk = norm(key);
+      if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
+
+      if (nk.includes('out') && (dict['outtime']!==undefined || dict['outdatetime']!==undefined || dict['outdttm']!==undefined)){
+        return dict['outtime'] ?? dict['outdatetime'] ?? dict['outdttm'];
+      }
+      if (nk.includes('int') && (dict['intime']!==undefined || dict['indatetime']!==undefined || dict['indttm']!==undefined)){
+        return dict['intime'] ?? dict['indatetime'] ?? dict['indttm'];
+      }
+      if (nk.includes('gross') || nk.includes('totalwei') || nk==='ttlwei' || nk==='totwei'){
+        const cands = ['totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei'];
+        for (const c of cands){ if (dict[c]!==undefined && String(dict[c]).trim()!=='') return dict[c]; }
+      }
+      if (nk.includes('net') || nk==='silwei' || nk==='realweight'){
+        const cands = ['netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'];
+        for (const c of cands){ if (dict[c]!==undefined && String(dict[c]).trim()!=='') return dict[c]; }
+      }
+      if (nk.includes('receiv') || nk.includes('insu') || nk.includes('accept')){
+        const cands = ['receiveweight','receive','recv','insu','insuweight','insul','receiptqty','receiveqty','received','receivewei','acceptqty'];
+        for (const c of cands){ if (dict[c]!==undefined && String(dict[c]).trim()!=='') return dict[c]; }
+      }
+    }
+    return '';
+  }
 
   function buildWeighTable(title, list){
     const rows = Array.isArray(list)? list : [];
     const body = rows.length ? rows.map((r,i)=>{
-      const car = pick(r, ['car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO']);
-      const tin = pick(r, ['in','INTIME','IN_TIME','IN_DATE','IN_DATETIME']);
-      const tout= pick(r, ['out','OUTTIME','OUT_TIME','OUT_DATE','OUT_DATETIME']);
-      const gross = pick(r, ['gross','TOTALWEIGHT','TOTWEIGHT','GROSS','GROSSWEIGHT','GTWEI','TTLWEI']);
-      const net   = pick(r, ['net','NETWEIGHT','NET','NW','REALWEIGHT','SILJUNG','SILWEI']);
-      const recv  = pick(r, ['receive','RECEIVEWEIGHT','RECEIVE','RECV','INSU','INSUWEIGHT','INSUL']);
+      // 차량
+      const car = pickCI(r, [
+        'car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO'
+      ]);
+      // 입차
+      const tin = pickCI(r, [
+        'in','INTIME','IN_TIME','IN_DATE','IN_DATETIME','IN','INDT','IN_DT','INDATE','IN_DATE_TIME','INDTTM'
+      ]);
+      // 출차
+      const tout= pickCI(r, [
+        'out','OUTTIME','OUT_TIME','OUT_DATE','OUT_DATETIME','OUT','OUTDT','OUT_DT','OUTDATE','OUT_DATE_TIME','OUTDTTM','OUTTM'
+      ]);
+      // 총중량
+      const gross = pickCI(r, [
+        'gross','TOTALWEIGHT','TOTWEIGHT','GROSS','GROSSWEIGHT','GTWEI','TTLWEI','WEIGHT_TOTAL','TOTAL_WT','GROSS_WT','GRTWEI','GR_WEIGHT','GRWEI','TOTWEI'
+      ]);
+      // 실중량
+      const net   = pickCI(r, [
+        'net','NETWEIGHT','NET','NW','REALWEIGHT','SILJUNG','SILWEI','NET_WT','WEIGHT_NET','REAL_WT','NETWEI'
+      ]);
+      // 인수량
+      const recv  = pickCI(r, [
+        'receive','RECEIVEWEIGHT','RECEIVE','RECV','INSU','INSUWEIGHT','INSUL','RECEIPT_QTY','RECEIVE_QTY','RECEIVED','RECEIVEWEI','ACCEPT_QTY'
+      ]);
+
       return `<tr>
         <td>${i+1}</td>
         <td>${car}</td>
@@ -441,6 +490,9 @@
   }
 
   function renderWeighingPanel(payload){
+    // 디버깅용(원하면 주석 처리): 최근 응답 저장
+    window.__lastWeigh = payload;
+
     const box=document.getElementById('weighingPanel'); if(!box) return;
     const ban = payload?.banwol ?? []; const sih = payload?.sihwa ?? [];
     const updatedAt = payload?.updatedAt ? ` (업데이트: ${payload.updatedAt})` : '';
