@@ -125,8 +125,8 @@
         <button class="btn" id="btnRefresh">새로고침</button>
 
         <div class="view-toggle" role="tablist" aria-label="보기 전환">
-          <button class="tbtn active" id="btnViewLive"  role="tab" aria-selected="true">계근 현황</button>
-          <button class="tbtn"         id="btnViewWeigh" role="tab" aria-selected="false">출고 현황(제품)</button>
+          <button class="tbtn active" id="btnViewLive"  role="tab" aria-selected="true">입차 조회</button>
+          <button class="tbtn"         id="btnViewWeigh" role="tab" aria-selected="false">계근 조회(제품)</button>
         </div>
 
         <input id="searchInput" class="input" placeholder="차량번호 검색" />
@@ -134,10 +134,10 @@
       </div>
     </section>
 
-    <!-- 출고 현황(제품) 패널 -->
+    <!-- 계근 조회(제품) 패널 -->
     <section class="grid" id="weighingPanel" style="display:none"></section>
 
-    <!-- 계근 현황 패널 -->
+    <!-- 입차 조회 패널 -->
     <section class="grid" id="sections"></section>
   </div>
 
@@ -393,7 +393,7 @@
     try{ render(JSON.parse(cache)); }catch(_){}
   }
 
-  // 🔧 검색/필터 이벤트: 출고 현황(제품) 화면에서도 즉시 반영
+  // 🔧 검색/필터 이벤트: 계근 조회(제품) 화면에서도 즉시 반영
   plantSel.addEventListener('change', ()=>{
     localStorage.setItem(LS_KEYS.plant, plantSel.value);
     if (btnViewLive.classList.contains('active')) rerenderFromCache();
@@ -407,7 +407,7 @@
     }
   });
 
-  // ===== 출고 현황(제품) 기능 =====
+  // ===== 계근 조회(제품) 기능 =====
   function todayKST(){
     const now=new Date();
     const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
@@ -415,7 +415,7 @@
     return `${y}-${m}-${d}`;
   }
 
-  // ⬇️ 출고 현황(제품) 표: 요구사항에 맞춰 CARNUM/INTIME/OUTIME/TOTWEI/SILWEI만 사용 (6열)
+  // ⬇️ 계근 조회(제품) 표: 요구사항에 맞춰 CARNUM/INTIME/OUTIME/TOTWEI/SILWEI만 사용 (6열)
   function buildWeighTable(title, list, query){
     const rows = Array.isArray(list)? list : [];
     const q  = String(query||'').trim();
@@ -508,8 +508,8 @@
     const q = (document.getElementById('searchInput').value || '').trim();
 
     box.innerHTML = `
-      <div class="col">${buildWeighTable('출고 현황(제품) – 반월', ban, q)}</div>
-      <div class="col">${buildWeighTable('출고 현황(제품) – 시화', sih, q)}</div>`;
+      <div class="col">${buildWeighTable('계근 조회(제품) – 반월', ban, q)}</div>
+      <div class="col">${buildWeighTable('계근 조회(제품) – 시화', sih, q)}</div>`;
     box.style.display='';
 
     box.querySelectorAll('[data-close-weigh]').forEach(btn=>{
@@ -540,16 +540,16 @@
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data=await res.json();
       renderWeighingPanel(data);
-      showToast('출고 현황(제품) 불러왔습니다');
+      showToast('계근 조회(제품) 불러왔습니다');
     }catch(err){
       console.warn('weigh fetch 실패, JSONP 시도:', err);
       try{
         const data=await loadWeighingJSONP(start,end);
         renderWeighingPanel(data);
-        showToast('출고 현황(제품)(대체경로) 불러왔습니다');
+        showToast('계근 조회(제품)(대체경로) 불러왔습니다');
       }catch(e){
         console.error(e);
-        alert('출고 현황(제품) 데이터를 불러올 수 없었습니다.');
+        alert('계근 조회(제품) 데이터를 불러올 수 없었습니다.');
         setView('live');
       }
     }finally{ setLoading(false); }
