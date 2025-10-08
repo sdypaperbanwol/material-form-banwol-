@@ -185,12 +185,12 @@
     return s0;
   }
 
-    function firstNonEmpty(...vals){
-  for (const v of vals){
-    if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+  function firstNonEmpty(...vals){
+    for (const v of vals){
+      if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+    }
+    return '';
   }
-  return '';
-}
 
   function showToast(msg){ toast.textContent = msg || '완료'; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1200); }
   function stripeClass(c){ c=String(c||'').toLowerCase(); return c.includes('00ff00')?'green':'cyan'; }
@@ -384,14 +384,36 @@
   plantSel.value = localStorage.getItem(LS_KEYS.plant) || 'all';
   searchInput.value = localStorage.getItem(LS_KEYS.q) || '';
 
-  function rerenderFromCache(){ const cache=localStorage.getItem('snapshot.cache'); if(!cache) return; try{ render(JSON.parse(cache)); }catch(_){} }
-  plantSel.addEventListener('change', ()=>{ localStorage.setItem(LS_KEYS.plant, plantSel.value); rerenderFromCache(); });
-  searchInput.addEventListener('input', ()=>{ localStorage.setItem(LS_KEYS.q, searchInput.value); rerenderFromCache(); });
-  btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
+  function rerenderFromCache(){
+    const cache=localStorage.getItem('snapshot.cache');
+    if(!cache) return;
+    try{ render(JSON.parse(cache)); }catch(_){}
+  }
+
+  // 🔧 검색/필터 이벤트: 금일 출고 화면에서도 즉시 반영되도록 수정
+  plantSel.addEventListener('change', ()=>{
+    localStorage.setItem(LS_KEYS.plant, plantSel.value);
+    // 실시간 화면만 공장 필터 적용
+    if (btnViewLive.classList.contains('active')) rerenderFromCache();
+  });
+  searchInput.addEventListener('input', ()=>{
+    localStorage.setItem(LS_KEYS.q, searchInput.value);
+    if (btnViewWeigh.classList.contains('active') && window.__lastWeigh){
+      // 금일 출고 뷰일 때는 즉시 재렌더
+      renderWeighingPanel(window.__lastWeigh);
+    }else{
+      // 실시간 화면은 캐시 재렌더
+      rerenderFromCache();
+    }
+  });
 
   // ===== 금일 출고 기능 =====
-  function todayKST(){ const now=new Date(); const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-    const y=kst.getFullYear(), m=String(kst.getMonth()+1).padStart(2,'0'), d=String(kst.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
+  function todayKST(){
+    const now=new Date();
+    const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const y=kst.getFullYear(), m=String(kst.getMonth()+1).padStart(2,'0'), d=String(kst.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
 
   function pickField(obj, kind, primaryKeys = []) {
     if (!obj) return '';
@@ -405,22 +427,13 @@
     }
 
     const CANDS = {
-  car: ['carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'],
-  in:  ['intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime','weighintime','weigh_in_time','in_dtm','indt_tm'],
-  out: [
-    'outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm',
-    'outtm','out_tm','out_dttm','outdate_time','out_datetime2','outtm2','leave_time','exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time'
-  ],
-  gross: ['totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei','total'],
-  net:   ['netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'],
-  receive: [
-    'receiveweight','receive_wei','receive','recv','recvqty','recv_qty','receiveqty','receive_qty','received',
-    'insu','insuweight','insu_wei','insu_qty','insul',
-    'acceptqty','accept_qty','acceptweight','accept_weight','acceptwei',
-    'recvweight','recv_weight','takeover','take_qty','takeweight','take_weight',
-    '인수량','인수중량'
-  ]
-};
+      car: ['carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'],
+      in:  ['intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime','weighintime','weigh_in_time','in_dtm','indt_tm'],
+      out: [
+        'outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm',
+        'outtm','out_tm','out_dttm','outdate_time','out_datetime2','outtm2','leave_time','exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time'
+      ]
+    };
 
     for (const k of (CANDS[kind] || [])) {
       const nk = norm(k);
@@ -432,9 +445,6 @@
     const PATTERNS = {
       in:  [/(\b|_)in(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(check|weigh).*in.*(time|dt|tm)$/i],
       out: [/(\b|_)out(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(exit|leave|depart|checkout|weigh).*out.*(time|dt|tm)$/i],
-      gross:[/(total|gross).*?(weight|wt|wei)$/i],
-      net: [/(net|real|sil).*?(weight|wt|wei)$/i],
-      receive:[/(receive|recv|accept|insu).*?(weight|qty|wei|amount)$/i],
       car: [/(car|veh|truck).*?(no|num|number)$/i]
     };
     const pats = PATTERNS[kind] || [];
@@ -445,6 +455,7 @@
     return '';
   }
 
+  // ⬇️ 표를 4열로 간소화 (No / 차량번호 / 입차시간 / 출차시간)
   function buildWeighTable(title, list, query){
     const rows = Array.isArray(list)? list : [];
     const q  = String(query||'').trim();
@@ -461,58 +472,33 @@
     });
 
     const body = filtered.length ? filtered.map((r, i)=>{
-    const rawCar = firstNonEmpty(
-  r?.car, r?.CARNUM, r?.CAR_NO,
-  pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO'])
-);
+      const rawCar = firstNonEmpty(
+        r?.car, r?.CARNUM, r?.CAR_NO,
+        pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO'])
+      );
 
-const tin  = firstNonEmpty(
-  r?.in, r?.INTIME,
-  pickField(r, 'in', ['INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME'])
-);
+      const tin  = firstNonEmpty(
+        r?.in, r?.INTIME,
+        pickField(r, 'in', ['INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME'])
+      );
 
-const tout = firstNonEmpty(
-  r?.out, r?.OUTTIME, r?.OUT_TM, r?.OUTTM, r?.OUT_DTTM,
-  pickField(r, 'out', ['OUTTIME','OUT_TIME','OUT_DATETIME','OUT_DATE','OUTDTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUTTM','OUT_TM','OUT_DTTM'])
-);
+      const tout = firstNonEmpty(
+        r?.out, r?.OUTTIME, r?.OUT_TM, r?.OUTTM, r?.OUT_DTTM,
+        pickField(r, 'out', ['OUTTIME','OUT_TIME','OUT_DATETIME','OUT_DATE','OUTDTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUTTM','OUT_TM','OUT_DTTM'])
+      );
 
-const gross = firstNonEmpty(
-  r?.gross, r?.TOTALWEIGHT, r?.GROSSWEIGHT, r?.GROSS,
-  pickField(r, 'gross', ['TOTALWEIGHT','TOTWEIGHT','GROSSWEIGHT','GROSS','TOTAL','TOTAL_WT','GROSS_WT','TTLWEI','GTWEI'])
-);
-
-const net = firstNonEmpty(
-  r?.net, r?.NETWEIGHT, r?.REALWEIGHT,
-  pickField(r, 'net', ['NETWEIGHT','NET_WT','NET','REALWEIGHT','SILWEI'])
-);
-
-const recv = firstNonEmpty(
-  r?.receive, r?.RECEIVEWEIGHT, r?.ACCEPTWEIGHT, r?.RECVWEIGHT, r?.RECV_WEIGHT,
-  // 국문/변종까지 보강
-  r?.['인수량'], r?.['인수중량'],
-  pickField(r, 'receive', [
-    'RECEIVEWEIGHT','RECEIVEWEI','RECEIVE','RECV','RECV_QTY','RECVQTY','RECEIVE_QTY','RECEIVEQTY','INSU','INSUWEIGHT',
-    'ACCEPT_QTY','ACCEPTWEIGHT','ACCEPT_WEIGHT','ACCEPTWEI','RECVWEIGHT','RECV_WEIGHT','TAKEOVER','TAKE_QTY','TAKEWEIGHT','TAKE_WEIGHT',
-    '인수량','인수중량'
-  ])
-);
-
-
-      const fmtNum = (n)=>{ const v=Number(String(n??'').toString().replace(/[^\d.-]/g,'')); return isNaN(v)?(n??''):v.toLocaleString(); };
       const fmtHM  = (raw)=> {
-  if(raw==null) return '';
-  let s=String(raw).trim(); if(!s) return '';
-  // "15시25분" 지원
-  s = s.replace(/시|분|초/g, m => ({'시':':','분':':','초':''}[m]));
-  const m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/); if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
-  const d=s.replace(/\D/g,'');
-  if(d.length>=6) return `${d.slice(-6,-4)}:${d.slice(-4,-2)}`;
-  if(d.length===4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
-  if(d.length===3) return `${d.slice(0,1).padStart(2,'0')}:${d.slice(1,3)}`;
-  if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d2=new Date(s); if(!isNaN(d2)) return `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;}
-  return s;
-};
-
+        if(raw==null) return '';
+        let s=String(raw).trim(); if(!s) return '';
+        s = s.replace(/시|분|초/g, m => ({'시':':','분':':','초':''}[m]));
+        const m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/); if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+        const d=s.replace(/\D/g,'');
+        if(d.length>=6) return `${d.slice(-6,-4)}:${d.slice(-4,-2)}`;
+        if(d.length===4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+        if(d.length===3) return `${d.slice(0,1).padStart(2,'0')}:${d.slice(1,3)}`;
+        if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d2=new Date(s); if(!isNaN(d2)) return `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;}
+        return s;
+      };
 
       let carHTML = rawCar;
       if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)) {
@@ -526,11 +512,8 @@ const recv = firstNonEmpty(
         <td>${carHTML}</td>
         <td>${fmtHM(tin)}</td>
         <td>${fmtHM(tout)}</td>
-        <td>${fmtNum(gross)}</td>
-        <td>${fmtNum(net)}</td>
-        <td>${fmtNum(recv)}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="7" class="empty">(검색 결과 없음)</td></tr>`;
+    }).join('') : `<tr><td colspan="4" class="empty">(검색 결과 없음)</td></tr>`;
 
     return `
     <article class="card">
@@ -550,9 +533,6 @@ const recv = firstNonEmpty(
               <th style="width:120px">차량번호</th>
               <th style="width:74px">입차시간</th>
               <th style="width:74px">출차시간</th>
-              <th style="width:86px">총중량</th>
-              <th style="width:86px">실중량</th>
-              <th style="width:86px">인수량</th>
             </tr>
           </thead>
           <tbody>${body}</tbody>
@@ -561,19 +541,18 @@ const recv = firstNonEmpty(
     </article>`;
   }
 
+  // ⬇️ 제목에서 (업데이트: …) 제거한 상태로 렌더
   function renderWeighingPanel(payload){
     window.__lastWeigh = payload;
     const box=document.getElementById('weighingPanel'); if(!box) return;
 
     const ban = payload?.banwol ?? [];
     const sih = payload?.sihwa  ?? [];
-    const updatedAt = payload?.updatedAt ? ` (업데이트: ${payload.updatedAt})` : '';
-
     const q = (document.getElementById('searchInput').value || '').trim();
 
     box.innerHTML = `
-      <div class="col">${buildWeighTable('금일 출고 – 반월'+updatedAt, ban, q)}</div>
-      <div class="col">${buildWeighTable('금일 출고 – 시화'+updatedAt, sih, q)}</div>`;
+      <div class="col">${buildWeighTable('금일 출고 – 반월', ban, q)}</div>
+      <div class="col">${buildWeighTable('금일 출고 – 시화', sih, q)}</div>`;
     box.style.display='';
 
     box.querySelectorAll('[data-close-weigh]').forEach(btn=>{
