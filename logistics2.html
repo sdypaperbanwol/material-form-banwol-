@@ -391,29 +391,31 @@
   // 대소문자/언더스코어 무시 + 유사 키 보정 pick
   // 대소문자/언더스코어/공백 무시 + 유사 키 광범위 보정
 // 🔁 이걸로 교체하세요: 필드(kind)에 맞는 보조 후보만 탐색
+// === 교체: 필드별 선택기 + 정규식 패턴 탐색 ===
 function pickField(obj, kind, primaryKeys = []) {
   if (!obj) return '';
   const norm = k => String(k||'').toLowerCase().replace(/[\s_]/g,'');
   const dict = {};
   Object.keys(obj).forEach(k => { dict[norm(k)] = obj[k]; });
 
-  // 1) 우선 순위 키들부터
+  // 1) 우선 키(엄격)
   for (const key of primaryKeys){
     const nk = norm(key);
     if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
   }
 
-  // 2) kind별 보조 후보만 제한적으로 탐색
+  // 2) kind별 확장 후보 (엄격-확장)
   const CANDS = {
     car: [
       'carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'
     ],
     in: [
-      'intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime'
+      'intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm',
+      'intm','checkintime','weighintime','weigh_in_time','in_dtm','indt_tm'
     ],
     out: [
       'outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm','outtm',
-      'exittime','leavetime','departtime','checkouttime'
+      'exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time','out_dtm','outdtm'
     ],
     gross: [
       'totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt',
@@ -423,15 +425,48 @@ function pickField(obj, kind, primaryKeys = []) {
       'netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'
     ],
     receive: [
-      'receiveweight','receive','recv','recvqty','recv_qty','receiveqty','receive_qty',
-      'insu','insuweight','insul','received','receivewei',
-      'accept_qty','acceptweight','accept_weight','acceptwei','acceptqty'
+      // 인수량(무게 또는 수량) 쪽에서 많이 보이는 키들
+      'receiveweight','receivewei','receive','recv','recvqty','recv_qty','receiveqty','receive_qty',
+      'received','insu','insuweight','insul',
+      'acceptqty','accept_qty','acceptweight','accept_weight','acceptwei'
+    ]
+  };
+  for (const k of (CANDS[kind] || [])) {
+    const nk = norm(k);
+    if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
+  }
+
+  // 3) 패턴 기반(느슨) — 실제 현장 변형까지 광범위 커버
+  const keys = Object.keys(dict);
+  const hasVal = k => dict[k] !== undefined && String(dict[k]).trim() !== '';
+
+  const PATTERNS = {
+    in: [
+      /(^|_)in(?:put)?(?:_)?(time|dt|tm|datetime)?$/i,
+      /(check|weigh).*in.*(time|dt|tm)$/i
+    ],
+    out: [
+      /(^|_)out(?:put)?(?:_)?(time|dt|tm|datetime)?$/i,
+      /(exit|leave|depart|checkout|weigh).*out.*(time|dt|tm)$/i
+    ],
+    gross: [
+      /(total|gross).*?(weight|wt|wei)$/i
+    ],
+    net: [
+      /(net|real|sil).*?(weight|wt|wei)$/i
+    ],
+    receive: [
+      /(receive|recv|accept|insu).*?(weight|qty|wei|amount)$/i
+    ],
+    car: [
+      /(car|veh|truck).*?(no|num|number)$/i
     ]
   };
 
-  const list = CANDS[kind] || [];
-  for (const k of list){
-    if (dict[k] !== undefined && String(dict[k]).trim() !== '') return dict[k];
+  const pats = PATTERNS[kind] || [];
+  for (const re of pats) {
+    const hit = keys.find(k => re.test(k));
+    if (hit && hasVal(hit)) return dict[hit];
   }
   return '';
 }
@@ -441,7 +476,6 @@ function pickField(obj, kind, primaryKeys = []) {
 function buildWeighTable(title, list, query){
   const rows = Array.isArray(list)? list : [];
 
-  // 검색어 준비
   const q = String(query||'').trim();
   const qq = q.replace(/\s+/g,'');
   const dqq = qq.replace(/\D+/g,'');
@@ -449,26 +483,42 @@ function buildWeighTable(title, list, query){
 
   const filtered = rows.filter((r)=>{
     if (!qq) return true;
-    const car = String(pickField(r, 'car', ['car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO']) || '');
+    const car = String(pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO']) || '');
     if (isFour) return car.replace(/\D/g,'').endsWith(dqq);
     return car.includes(qq);
   });
 
   const body = filtered.length ? filtered.map((r,i)=>{
-    const rawCar = pickField(r, 'car', ['car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO']) || '';
-    const tin    = pickField(r, 'in',    ['in','INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME']);
-    const tout   = pickField(r, 'out',   ['out','OUTTIME','OUT_TIME','OUT_DATETIME','OUT_DATE','OUTDTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUTTM']);
-    const gross  = pickField(r, 'gross', ['gross','TOTALWEIGHT','TOTWEIGHT','GROSSWEIGHT','TOTAL','TOTAL_WT','GROSS_WT','TTLWEI','GTWEI']);
-    const net    = pickField(r, 'net',   ['net','NETWEIGHT','NET_WT','REALWEIGHT','SILWEI']);
-    const recv   = pickField(r, 'receive',['receive','RECEIVEWEIGHT','RECV','RECV_QTY','RECEIVE_QTY','INSU','INSUWEIGHT','ACCEPT_QTY','ACCEPTWEIGHT']);
+    const rawCar = pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO']) || '';
+    const tin    = pickField(r, 'in',    ['INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME']);
+    const tout   = pickField(r, 'out',   ['OUTTIME','OUT_TIME','OUT_DATETIME','OUT_DATE','OUTDTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUTTM']);
+    const gross  = pickField(r, 'gross', ['TOTALWEIGHT','TOTWEIGHT','GROSSWEIGHT','GROSS','TOTAL','TOTAL_WT','GROSS_WT','TTLWEI','GTWEI']);
+    const net    = pickField(r, 'net',   ['NETWEIGHT','NET_WT','NET','REALWEIGHT','SILWEI']);
+    const recv   = pickField(r, 'receive',['RECEIVEWEIGHT','RECEIVEWEI','RECEIVE','RECV','RECV_QTY','RECVQTY','RECEIVE_QTY','RECEIVEQTY','INSU','INSUWEIGHT','ACCEPT_QTY','ACCEPTWEIGHT','ACCEPT_WEIGHT','ACCEPTWEI']);
 
-    // 검색 하이라이트
+    // 하이라이트
     let carHTML = rawCar;
     if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)){
       carHTML = `<span class="cell-hit">${rawCar}</span>`;
     } else if (qq && rawCar.includes(qq)){
       carHTML = rawCar.replace(qq, `<span class="cell-hit">${qq}</span>`);
     }
+
+    const fmtNum = (n)=> {
+      const v = Number(String(n??'').toString().replace(/[^\d.-]/g,'')); 
+      return isNaN(v) ? (n??'') : v.toLocaleString();
+    };
+    const fmtHM = (raw)=> {
+      if(raw==null) return '';
+      const s=String(raw).trim(); if(!s) return '';
+      const m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/); if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+      const d=s.replace(/\D/g,'');
+      if(d.length>=12) return `${d.slice(-6,-4)}:${d.slice(-4,-2)}`;
+      if(d.length===6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+      if(d.length===4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+      if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d2=new Date(s); if(!isNaN(d2)) return `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;}
+      return s;
+    };
 
     return `<tr>
       <td>${i+1}</td>
@@ -509,6 +559,7 @@ function buildWeighTable(title, list, query){
     </div>
   </article>`;
 }
+
 
 
 
