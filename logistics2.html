@@ -172,7 +172,7 @@
   </select>
 
   <button class="btn" id="btnRefresh">새로고침</button>
-  <button class="btn" id="btnWeigh">금일 출고현황</button>
+  <button class="btn" id="btnWeigh">출고현황</button>
   <button class="btn" id="btnLive" style="display:none">실시간 보기</button>
 
  
@@ -217,7 +217,7 @@
       q: 'ui.search'
     };
 
-// === 뷰 모드: 'live'(기존 실시간) | 'weigh'(금일 출고현황) ===
+// === 뷰 모드: 'live'(기존 실시간) | 'weigh'(출고현황) ===
 let __viewMode = 'live';
 
 // 백엔드 새 액션(URL)
@@ -737,7 +737,7 @@ function renderWeighingView(payload){
   const headHTML = `
     <div class="stripe cyan"></div>
     <div class="head">
-      <h3>금일 출고현황</h3>
+      <h3>출고현황</h3>
       <div class="head-right">
         <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${view.length}건</div>
       </div>
