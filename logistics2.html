@@ -389,123 +389,164 @@
     return s; }
 
   // 대소문자/언더스코어 무시 + 유사 키 보정 pick
-  function pickCI(obj, keys){
-    if (!obj) return '';
-    const norm = k => String(k||'').toLowerCase().replace(/[\s_]/g,'');
-    const dict = {};
-    Object.keys(obj).forEach(k => { dict[norm(k)] = obj[k]; });
+  // 대소문자/언더스코어/공백 무시 + 유사 키 광범위 보정
+function pickCI(obj, keys){
+  if (!obj) return '';
+  const norm = k => String(k||'').toLowerCase().replace(/[\s_]/g,'');
+  const dict = {};
+  Object.keys(obj).forEach(k => { dict[norm(k)] = obj[k]; });
 
-    for (const key of keys){
-      const nk = norm(key);
-      if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
+  // 1) 직접 후보 우선 매칭
+  for (const key of keys){
+    const nk = norm(key);
+    if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
+  }
 
-      if (nk.includes('out') && (dict['outtime']!==undefined || dict['outdatetime']!==undefined || dict['outdttm']!==undefined)){
-        return dict['outtime'] ?? dict['outdatetime'] ?? dict['outdttm'];
-      }
-      if (nk.includes('int') && (dict['intime']!==undefined || dict['indatetime']!==undefined || dict['indttm']!==undefined)){
-        return dict['intime'] ?? dict['indatetime'] ?? dict['indttm'];
-      }
-      if (nk.includes('gross') || nk.includes('totalwei') || nk==='ttlwei' || nk==='totwei'){
-        const cands = ['totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei'];
-        for (const c of cands){ if (dict[c]!==undefined && String(dict[c]).trim()!=='') return dict[c]; }
-      }
-      if (nk.includes('net') || nk==='silwei' || nk==='realweight'){
-        const cands = ['netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'];
-        for (const c of cands){ if (dict[c]!==undefined && String(dict[c]).trim()!=='') return dict[c]; }
-      }
-      if (nk.includes('receiv') || nk.includes('insu') || nk.includes('accept')){
-        const cands = ['receiveweight','receive','recv','insu','insuweight','insul','receiptqty','receiveqty','received','receivewei','acceptqty'];
-        for (const c of cands){ if (dict[c]!==undefined && String(dict[c]).trim()!=='') return dict[c]; }
-      }
+  // 2) 카테고리별 보조 매칭(현장 별칭 흡수)
+  // 출차
+  const OUT_CANDS = [
+    'outtime','outdatetime','outdttm','outdt','outdate','out','outtm',
+    'exittime','leavetime','departtime','checkouttime'
+  ];
+  for (const k of OUT_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
+
+  // 총중량
+  const GROSS_CANDS = [
+    'totalweight','totweight','gross','grossweight','gtwei','ttlwei',
+    'weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei','total'
+  ];
+  for (const k of GROSS_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
+
+  // 실중량
+  const NET_CANDS = [
+    'netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'
+  ];
+  for (const k of NET_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
+
+  // 인수량
+  const RECV_CANDS = [
+    'receiveweight','receive','recv','recvqty','recv_qty','receiveqty','receive_qty',
+    'insu','insuweight','insul',
+    'received','receivewei',
+    'acceptqty','accept_weight','acceptweight','acceptwei'
+  ];
+  for (const k of RECV_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
+
+  // 입차(보조; 혹시 keys에 못 찾은 경우)
+  const IN_CANDS = ['intime','indatetime','indttm','indt','indate','in','intm','checkintime'];
+  for (const k of IN_CANDS){ if (dict[k] !== undefined && String(dict[k]).trim()!=='') return dict[k]; }
+
+  return '';
+}
+
+
+ function buildWeighTable(title, list, query){
+  const rows = Array.isArray(list)? list : [];
+  // 검색어 준비(공백 제거/뒤 4자리 매칭 지원)
+  const q = String(query||'').trim();
+  const qq = q.replace(/\s+/g,'');
+  const dqq = qq.replace(/\D+/g,'');
+  const isFour = /^\d{4}$/.test(dqq);
+
+  const filtered = rows.filter((r)=>{
+    if (!qq) return true;
+    const car = String(pickCI(r, [
+      'car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO'
+    ]) || '');
+    if (isFour) return car.replace(/\D/g,'').endsWith(dqq);
+    return car.includes(qq);
+  });
+
+  const body = filtered.length ? filtered.map((r,i)=>{
+    const rawCar = pickCI(r, ['car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO']) || '';
+    const tin    = pickCI(r, ['in','INTIME','IN_TIME','IN_DATE','IN_DATETIME','IN','INDT','IN_DT','INDATE','IN_DATE_TIME','INDTTM']);
+    const tout   = pickCI(r, [
+      'out','OUTTIME','OUT_TIME','OUT_DATE','OUT_DATETIME','OUT','OUTDT','OUT_DT','OUTDATE','OUT_DATE_TIME','OUTDTTM','OUTTM',
+      // 보조 별칭
+      'EXITTIME','LEAVETIME','DEPARTTIME','CHECKOUTTIME'
+    ]);
+    const gross  = pickCI(r, [
+      'gross','TOTALWEIGHT','TOTWEIGHT','GROSS','GROSSWEIGHT','GTWEI','TTLWEI','WEIGHT_TOTAL','TOTAL_WT','GROSS_WT','GRTWEI','GR_WEIGHT','GRWEI','TOTWEI','TOTAL'
+    ]);
+    const net    = pickCI(r, [
+      'net','NETWEIGHT','NET','NW','REALWEIGHT','SILJUNG','SILWEI','NET_WT','WEIGHT_NET','REAL_WT','NETWEI'
+    ]);
+    const recv   = pickCI(r, [
+      'receive','RECEIVEWEIGHT','RECEIVE','RECV','RECVQTY','RECV_QTY','RECEIVEQTY','RECEIVE_QTY',
+      'INSU','INSUWEIGHT','INSUL','RECEIVED','RECEIVEWEI','ACCEPT_QTY','ACCEPTWEIGHT','ACCEPT_WEIGHT','ACCEPTWEI'
+    ]);
+
+    // 검색 하이라이트(뒤 4자리)
+    let carHTML = rawCar;
+    if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)){
+      carHTML = `<span class="cell-hit">${rawCar}</span>`;
+    } else if (qq && rawCar.includes(qq)){
+      carHTML = rawCar.replace(qq, `<span class="cell-hit">${qq}</span>`);
     }
-    return '';
-  }
 
-  function buildWeighTable(title, list){
-    const rows = Array.isArray(list)? list : [];
-    const body = rows.length ? rows.map((r,i)=>{
-      // 차량
-      const car = pickCI(r, [
-        'car','CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO'
-      ]);
-      // 입차
-      const tin = pickCI(r, [
-        'in','INTIME','IN_TIME','IN_DATE','IN_DATETIME','IN','INDT','IN_DT','INDATE','IN_DATE_TIME','INDTTM'
-      ]);
-      // 출차
-      const tout= pickCI(r, [
-        'out','OUTTIME','OUT_TIME','OUT_DATE','OUT_DATETIME','OUT','OUTDT','OUT_DT','OUTDATE','OUT_DATE_TIME','OUTDTTM','OUTTM'
-      ]);
-      // 총중량
-      const gross = pickCI(r, [
-        'gross','TOTALWEIGHT','TOTWEIGHT','GROSS','GROSSWEIGHT','GTWEI','TTLWEI','WEIGHT_TOTAL','TOTAL_WT','GROSS_WT','GRTWEI','GR_WEIGHT','GRWEI','TOTWEI'
-      ]);
-      // 실중량
-      const net   = pickCI(r, [
-        'net','NETWEIGHT','NET','NW','REALWEIGHT','SILJUNG','SILWEI','NET_WT','WEIGHT_NET','REAL_WT','NETWEI'
-      ]);
-      // 인수량
-      const recv  = pickCI(r, [
-        'receive','RECEIVEWEIGHT','RECEIVE','RECV','INSU','INSUWEIGHT','INSUL','RECEIPT_QTY','RECEIVE_QTY','RECEIVED','RECEIVEWEI','ACCEPT_QTY'
-      ]);
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${carHTML}</td>
+      <td>${fmtHM(tin)}</td>
+      <td>${fmtHM(tout)}</td>
+      <td>${fmtNum(gross)}</td>
+      <td>${fmtNum(net)}</td>
+      <td>${fmtNum(recv)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty">(검색 결과 없음)</td></tr>`;
 
-      return `<tr>
-        <td>${i+1}</td>
-        <td>${car}</td>
-        <td>${fmtHM(tin)}</td>
-        <td>${fmtHM(tout)}</td>
-        <td>${fmtNum(gross)}</td>
-        <td>${fmtNum(net)}</td>
-        <td>${fmtNum(recv)}</td>
-      </tr>`;
-    }).join('') : `<tr><td colspan="7" class="empty">(없음)</td></tr>`;
-
-    return `
-    <article class="card">
-      <div class="stripe cyan"></div>
-      <div class="head">
-        <h3>${title}</h3>
-        <div class="head-right">
-          <div class="summary" style="border:0;padding:0;">총 ${rows.length}건</div>
-          <button class="btn" data-close-weigh>닫기</button>
-        </div>
+  return `
+  <article class="card">
+    <div class="stripe cyan"></div>
+    <div class="head">
+      <h3>${title}</h3>
+      <div class="head-right">
+        <div class="summary" style="border:0;padding:0;">총 ${filtered.length}건</div>
+        <button class="btn" data-close-weigh>닫기</button>
       </div>
-      <div class="body">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:44px">No</th>
-              <th style="width:96px">차량번호</th>
-              <th style="width:74px">입차시간</th>
-              <th style="width:74px">출차시간</th>
-              <th style="width:86px">총중량</th>
-              <th style="width:86px">실중량</th>
-              <th style="width:86px">인수량</th>
-            </tr>
-          </thead>
-          <tbody>${body}</tbody>
-        </table>
-      </div>
-    </article>`;
-  }
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px">No</th>
+            <th style="width:120px">차량번호</th>
+            <th style="width:74px">입차시간</th>
+            <th style="width:74px">출차시간</th>
+            <th style="width:86px">총중량</th>
+            <th style="width:86px">실중량</th>
+            <th style="width:86px">인수량</th>
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+  </article>`;
+}
+
 
   function renderWeighingPanel(payload){
-    // 디버깅용(원하면 주석 처리): 최근 응답 저장
-    window.__lastWeigh = payload;
+  window.__lastWeigh = payload; // 디버깅용 보관
+  const box=document.getElementById('weighingPanel'); if(!box) return;
 
-    const box=document.getElementById('weighingPanel'); if(!box) return;
-    const ban = payload?.banwol ?? []; const sih = payload?.sihwa ?? [];
-    const updatedAt = payload?.updatedAt ? ` (업데이트: ${payload.updatedAt})` : '';
-    box.innerHTML = `
-      <div class="col">${buildWeighTable('금일 출고 – 반월'+updatedAt, ban)}</div>
-      <div class="col">${buildWeighTable('금일 출고 – 시화'+updatedAt, sih)}</div>`;
-    box.style.display='';
-    // 닫기
-    box.querySelectorAll('[data-close-weigh]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ box.innerHTML=''; box.style.display='none'; setView('live'); });
-    });
-    setView('weigh'); // 금일출고로 전환
-  }
+  const ban = payload?.banwol ?? [];
+  const sih = payload?.sihwa  ?? [];
+  const updatedAt = payload?.updatedAt ? ` (업데이트: ${payload.updatedAt})` : '';
+
+  const q = (document.getElementById('searchInput').value || '').trim();
+
+  box.innerHTML = `
+    <div class="col">${buildWeighTable('금일 출고 – 반월'+updatedAt, ban, q)}</div>
+    <div class="col">${buildWeighTable('금일 출고 – 시화'+updatedAt, sih, q)}</div>`;
+  box.style.display='';
+
+  // 닫기 버튼
+  box.querySelectorAll('[data-close-weigh]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ box.innerHTML=''; box.style.display='none'; setView('live'); });
+  });
+
+  setView('weigh');
+}
 
   function loadWeighingJSONP(start,end){
     return new Promise((resolve,reject)=>{
