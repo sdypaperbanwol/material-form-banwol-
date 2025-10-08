@@ -201,7 +201,7 @@
 
   <script>
     // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwPVgfsJFLPvruwvi11Iq-_rJ0QBgmjIX9i_wapH9vi12lKPd8mlJ-IY7gmSFKgn6_0/exec';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxnJp-ebLrPBx1JPHetjoJTl3SqOv8-JQV-U2523FNAUfv0tTKNdksTTke6oAF-SWOb/exec';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -683,11 +683,11 @@ async function triggerUpdateSnapshot() {
 }
 async function loadWeighingToday() {
   const url = weighingTodayURL();
-  // JSON 우선, 실패 시 JSONP 폴백
   try {
     const res = await fetch(url, {method:'GET', credentials:'omit'});
     if (!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
+    if (data && data.ok === false) throw new Error(data.where + ': ' + data.error);
     renderWeighingView(data);
     elUpdated.textContent = data.updatedAt ? `업데이트: ${data.updatedAt}` : '업데이트 시간 없음';
     showToast('출고현황 업데이트됨');
@@ -697,15 +697,25 @@ async function loadWeighingToday() {
       const cbName = 'CB_' + Math.random().toString(36).slice(2);
       await new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        window[cbName] = (payload)=>{ try{ delete window[cbName]; }catch(_){ } s.remove(); renderWeighingView(payload); resolve(); };
+        window[cbName] = (payload)=>{
+          try{ delete window[cbName]; }catch(_){}
+          s.remove();
+          if (payload && payload.ok === false) {
+            // 서버 에러를 그대로 노출
+            elSections.innerHTML = `<div class="col"><div class="card"><div class="empty">출고현황 에러: ${payload.where||''} ${payload.error||''}</div></div></div>`;
+          } else {
+            renderWeighingView(payload);
+            showToast('출고현황 업데이트됨');
+          }
+          resolve();
+        };
         s.onerror = ()=>{ try{ delete window[cbName]; }catch(_){ } s.remove(); reject(new Error('JSONP load error')); };
-        s.src = weighingTodayURL() + `&callback=${cbName}`;
+        s.src = weighingTodayURL() + `&callback=${cbName}&debug=1`;
         document.head.appendChild(s);
       });
-      showToast('출고현황 업데이트됨');
     } catch(e) {
       console.error(e);
-      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">출고현황을 불러올 수 없습니다.</div></div></div>';
+      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">출고현황을 불러올 수 없습니다. (JSONP 실패)</div></div></div>';
     }
   }
 }
