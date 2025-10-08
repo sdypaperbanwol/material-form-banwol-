@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>공장 내 실시간 차량 현황</title>
   <meta name="description" content="공장 내 실시간 차량 현황 – GitHub Pages용 logistics.html">
+  <!-- favicon 404 방지 -->
+  <link rel="icon" href="data:,">
+
   <style>
   :root{
     --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
@@ -86,6 +89,7 @@
   /* weighing panel scroll */
   #weighingPanel{ max-height:70vh; overflow:auto }
 
+  /* print */
   @media print{
     body{ background:#fff }
     .btn,.toast,.overlay{ display:none }
@@ -129,10 +133,14 @@
       </div>
     </section>
 
+    <!-- 금일 출고 패널 -->
     <section class="grid" id="weighingPanel" style="display:none"></section>
+
+    <!-- 실시간 패널 -->
     <section class="grid" id="sections"></section>
   </div>
 
+  <!-- overlay & toast -->
   <div class="overlay" id="loadingOverlay" aria-hidden="true">
     <div class="panel" role="status" aria-live="polite">
       <div class="spinner" aria-label="로딩 중"></div>
@@ -143,6 +151,7 @@
 
   <script>
   // ========= 설정 =========
+  // ⬇⬇⬇ 배포된 GAS 웹앱 URL을 여기에 넣으세요 (예: https://script.google.com/macros/s/XXXX/exec)
   const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyaB93It2fDSRg2w9BbWe5X5qTow31Lhsvf8VTBLu7emo5agFPCnCe9i6UqzWc2W-aC/exec';
   const USE_JSONP_FALLBACK = true;
 
@@ -274,8 +283,12 @@
       const rightHTML = right.map(sec=>renderSectionCardGrouped(sec,ctx)).join('');
 
       elSections.innerHTML = `
-        <div class="col col-left">${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-        <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 석션 없음</div></div>' }</div>`;
+        <div class="col col-left">
+          ${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }
+        </div>
+        <div class="col col-right">
+          ${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }
+        </div>`;
 
       const badge = document.getElementById('searchSummary');
       if (qq) { badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
@@ -373,7 +386,6 @@
   function todayKST(){ const now=new Date(); const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
     const y=kst.getFullYear(), m=String(kst.getMonth()+1).padStart(2,'0'), d=String(kst.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
 
-  // 필드 선택기 (car/in/out/gross/net/receive)
   function pickField(obj, kind, primaryKeys = []) {
     if (!obj) return '';
     const norm = k => String(k||'').toLowerCase().replace(/[\s_]/g,'');
@@ -384,33 +396,32 @@
       const nk = norm(key);
       if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
     }
+
     const CANDS = {
       car: ['carnum','car_no','car','car_num','vehicleno','veh_no','truckno','truck_no','carno','vehicle_no'],
       in:  ['intime','in_time','in_date','in_datetime','in','indt','in_dt','indate','in_date_time','indttm','intm','checkintime','weighintime','weigh_in_time','in_dtm','indt_tm'],
       out: ['outtime','out_time','out_date','out_datetime','out','outdt','out_dt','outdate','out_date_time','outdttm','outtm','exittime','leavetime','departtime','checkouttime','weighouttime','weigh_out_time','out_dtm','outdtm'],
-      gross:['totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei','total'],
-      net:  ['netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'],
-      receive:[
-        'receiveweight','receivewei','receive','recv','recvqty','recv_qty','receiveqty','receive_qty',
-        'received','insu','insuweight','insul',
-        'acceptqty','accept_qty','acceptweight','accept_weight','acceptwei'
-      ]
+      gross: ['totalweight','totweight','gross','grossweight','gtwei','ttlwei','weighttotal','totalwt','grosswt','grtwei','grweight','grwei','totwei','total'],
+      net: ['netweight','net','nw','realweight','siljung','silwei','netwt','weightnet','realwt','netwei'],
+      receive: ['receiveweight','receivewei','receive','recv','recvqty','recv_qty','receiveqty','receive_qty','received','insu','insuweight','insul','acceptqty','accept_qty','acceptweight','accept_weight','acceptwei']
     };
     for (const k of (CANDS[kind] || [])) {
       const nk = norm(k);
       if (dict[nk] !== undefined && String(dict[nk]).trim() !== '') return dict[nk];
     }
+
     const keys = Object.keys(dict);
     const hasVal = k => dict[k] !== undefined && String(dict[k]).trim() !== '';
     const PATTERNS = {
-      in:  [/(^|_)in(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(check|weigh).*in.*(time|dt|tm)$/i],
-      out: [/(^|_)out(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(exit|leave|depart|checkout|weigh).*out.*(time|dt|tm)$/i],
+      in:  [/(\b|_)in(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(check|weigh).*in.*(time|dt|tm)$/i],
+      out: [/(\b|_)out(?:put)?(?:_)?(time|dt|tm|datetime)?$/i, /(exit|leave|depart|checkout|weigh).*out.*(time|dt|tm)$/i],
       gross:[/(total|gross).*?(weight|wt|wei)$/i],
-      net:  [/(net|real|sil).*?(weight|wt|wei)$/i],
+      net: [/(net|real|sil).*?(weight|wt|wei)$/i],
       receive:[/(receive|recv|accept|insu).*?(weight|qty|wei|amount)$/i],
-      car:  [/(car|veh|truck).*?(no|num|number)$/i]
+      car: [/(car|veh|truck).*?(no|num|number)$/i]
     };
-    for (const re of (PATTERNS[kind]||[])) {
+    const pats = PATTERNS[kind] || [];
+    for (const re of pats) {
       const hit = keys.find(k => re.test(k));
       if (hit && hasVal(hit)) return dict[hit];
     }
@@ -419,7 +430,6 @@
 
   function buildWeighTable(title, list, query){
     const rows = Array.isArray(list)? list : [];
-
     const q  = String(query||'').trim();
     const qq = q.replace(/\s+/g,'');
     const dqq = qq.replace(/\D+/g,'');
@@ -439,25 +449,14 @@
 
       const tin  = (r && (r.in  ?? r.INTIME)) ??
                    pickField(r, 'in', ['INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME']);
-
       const tout = (r && (r.out ?? r.OUTTIME)) ??
                    pickField(r, 'out', ['OUTTIME','OUT_TIME','OUT_DATETIME','OUT_DATE','OUTDTTM','OUTDT','OUT_DT','OUT_DATE_TIME','OUTTM']);
-
       const gross = (r && (r.gross ?? r.TOTALWEIGHT ?? r.GROSSWEIGHT ?? r.GROSS)) ??
                     pickField(r, 'gross', ['TOTALWEIGHT','TOTWEIGHT','GROSSWEIGHT','GROSS','TOTAL','TOTAL_WT','GROSS_WT','TTLWEI','GTWEI']);
-
       const net   = (r && (r.net   ?? r.NETWEIGHT ?? r.REALWEIGHT)) ??
                     pickField(r, 'net', ['NETWEIGHT','NET_WT','NET','REALWEIGHT','SILWEI']);
-
       const recv  = (r && (r.receive ?? r.RECEIVEWEIGHT ?? r.ACCEPTWEIGHT)) ??
                     pickField(r, 'receive', ['RECEIVEWEIGHT','RECEIVEWEI','RECEIVE','RECV','RECV_QTY','RECVQTY','RECEIVE_QTY','RECEIVEQTY','INSU','INSUWEIGHT','ACCEPT_QTY','ACCEPTWEIGHT','ACCEPT_WEIGHT','ACCEPTWEI']);
-
-      let carHTML = rawCar;
-      if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)) {
-        carHTML = `<span class="cell-hit">${rawCar}</span>`;
-      } else if (qq && rawCar.includes(qq)) {
-        carHTML = rawCar.replace(qq, `<span class="cell-hit">${qq}</span>`);
-      }
 
       const fmtNum = (n)=>{ const v=Number(String(n??'').toString().replace(/[^\d.-]/g,'')); return isNaN(v)?(n??''):v.toLocaleString(); };
       const fmtHM  = (raw)=> {
@@ -471,6 +470,13 @@
         if(/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d2=new Date(s); if(!isNaN(d2)) return `${String(d2.getHours()).padStart(2,'0')}:${String(d2.getMinutes()).padStart(2,'0')}`;}
         return s;
       };
+
+      let carHTML = rawCar;
+      if (isFour && rawCar.replace(/\D/g,'').endsWith(dqq)) {
+        carHTML = `<span class="cell-hit">${rawCar}</span>`;
+      } else if (qq && rawCar.includes(qq)) {
+        carHTML = rawCar.replace(qq, `<span class="cell-hit">${qq}</span>`);
+      }
 
       return `<tr>
         <td>${i+1}</td>
@@ -554,20 +560,12 @@
       const res=await fetch(url,{method:'GET',credentials:'omit'});
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data=await res.json();
-      if (data && data.ok === false) {
-        alert('금일 출고 조회 실패: ' + (data.error || '원인 미상'));
-        return setView('live');
-      }
       renderWeighingPanel(data);
       showToast('금일 출고 불러왔습니다');
     }catch(err){
       console.warn('weigh fetch 실패, JSONP 시도:', err);
       try{
         const data=await loadWeighingJSONP(start,end);
-        if (data && data.ok === false) {
-          alert('금일 출고 조회 실패(대체경로): ' + (data.error || '원인 미상'));
-          return setView('live');
-        }
         renderWeighingPanel(data);
         showToast('금일 출고(대체경로) 불러왔습니다');
       }catch(e){
