@@ -78,9 +78,9 @@
   .stripe.cyan{ background:var(--cyan) }
   .stripe.green{ background:var(--green) }
 
-  /* 카드 헤더: 제목이 상단/좌측에 너무 붙지 않게 패딩 업 */
+  /* 카드 헤더: 제목 패딩 업 */
   .card .head{
-    padding:16px 18px;               /* 여유 증가 (기존 12px 14px) */
+    padding:16px 18px;
     border-bottom:1px solid var(--line);
     display:flex; align-items:center; justify-content:space-between; gap:8px;
   }
@@ -145,7 +145,7 @@
     .header{ box-shadow:none; border:none }
     .grid{ grid-template-columns:1fr 1fr }
   }
-</style>
+  </style>
 
   <!-- 캐시 무력화 메타(선택) -->
   <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
@@ -163,31 +163,30 @@
         <span class="badge">계근 기준</span>
       </div>
 
-      <!-- 툴바: 새로고침 / 텔레그램 + (NEW) 필터/검색 -->
-<div class="toolbar">
-  <select id="plantFilter" class="select" title="공장 필터">
-    <option value="all">전체</option>
-    <option value="banwol">반월만</option>
-    <option value="sihwa">시화만</option>
-  </select>
+      <!-- 툴바: 새로고침 / 금일출고 / 검색 -->
+      <div class="toolbar">
+        <select id="plantFilter" class="select" title="공장 필터">
+          <option value="all">전체</option>
+          <option value="banwol">반월만</option>
+          <option value="sihwa">시화만</option>
+        </select>
 
-  <button class="btn" id="btnRefresh">새로고침</button>
-  <button class="btn" id="btnWeigh">출고현황</button>
-  <button class="btn" id="btnLive" style="display:none">실시간 보기</button>
+        <button class="btn" id="btnRefresh">새로고침</button>
+        <!-- ★ 추가: 금일 출고 버튼 -->
+        <button class="btn" id="btnWeighToday">금일 출고</button>
 
- 
+        <input id="searchInput" class="input" placeholder="차량번호 검색" />
+        <span id="searchSummary" class="badge search-pill" style="display:none"></span>
+      </div> <!-- .toolbar 끝 -->
+    </section> <!-- header 끝 -->
 
-  <input id="searchInput" class="input" placeholder="차량번호 검색" />
-  <span id="searchSummary" class="badge search-pill" style="display:none"></span>
-</div> <!-- .toolbar 끝 -->
+    <!-- ★ 추가: 금일 출고 결과 패널(초기 숨김) -->
+    <section class="grid" id="weighingPanel" style="display:none"></section>
 
-</section> <!-- 🔧 header 섹션 닫기 -->
-
-<section class="grid" id="sections">
-  <!-- JS가 채움 -->
-</section>
-
-
+    <section class="grid" id="sections">
+      <!-- JS가 채움 -->
+    </section>
+  </div>
 
   <!-- 중앙 로딩 오버레이 -->
   <div class="overlay" id="loadingOverlay" aria-hidden="true">
@@ -201,7 +200,7 @@
 
   <script>
     // ============ 설정 ============
-    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyVJhIzA2yN5G6TVCslQ1sI81RXHlYeAlddn37t1M4ySBknD1o9rhFGzBOYcScnkn2H/exec';
+    const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyLOd6fBt0Hw3wUi6T2SgnJIeuTeZcSXJjKmEXR7G6Jx2adHkImcKOCLR2AnPNANqyk/exec';
     const USE_JSONP_FALLBACK = true;
 
     const elUpdated  = document.getElementById('updated');
@@ -217,29 +216,12 @@
       q: 'ui.search'
     };
 
-// === 뷰 모드: 'live'(기존 실시간) | 'weigh'(출고현황) ===
-let __viewMode = 'live';
+    let __searchCount = 0;
 
-// 백엔드 새 액션(URL)
-function weighingTodayURL() {
-  const base = SNAPSHOT_URL.split('?')[0];
-  return `${base}?action=weighing_today&_ts=${Date.now()}`;
-}
-
-// 숫자 천단위 포맷(kg)
-function fmtKG(v) {
-  const n = Number(String(v||'').replace(/,/g,''));
-  if (isNaN(n)) return String(v||'');
-  return n.toLocaleString('ko-KR');
-}
-
-    
- let __searchCount = 0;
-
-  function last4(s){
-    const d = String(s||'').replace(/\D+/g,'');
-    return d.length>=4 ? d.slice(-4) : '';
-  }
+    function last4(s){
+      const d = String(s||'').replace(/\D+/g,'');
+      return d.length>=4 ? d.slice(-4) : '';
+    }
     
     // 좌/우 배치
     const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
@@ -261,48 +243,42 @@ function fmtKG(v) {
     function timeLabelFromTitle(title){
       return /대기/.test(title) ? '등록시간' : '입차시간';
     }
-// 입차시간=HH:MM, "원료 대기" 등록시간=MM:SS 전용 포맷터
-function fmtTimeDisplay(raw, timeLabel, mmssOnly=false) {
-  if (raw == null) return '';
-  const s0 = String(raw).trim();
-  if (!s0) return '';
 
-  // (1) 이미 콜론 포함 → HH:MM만 남기기
-  const mHM = s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
-  if (mHM) {
-    const HH = mHM[1].padStart(2,'0');
-    const MM = mHM[2];
-    return `${HH}:${MM}`;
-  }
+    // 입차시간=HH:MM, "원료 대기" 등록시간=MM:SS 전용 포맷터
+    function fmtTimeDisplay(raw, timeLabel, mmssOnly=false) {
+      if (raw == null) return '';
+      const s0 = String(raw).trim();
+      if (!s0) return '';
 
-  // (2) 숫자만 들어온 케이스 처리
-  const digits = s0.replace(/\D/g,'');
-  if (digits.length >= 6) {               // HHMMSS → HH:MM
-    const HH = digits.slice(0,2);
-    const MM = digits.slice(2,4);
-    return `${HH}:${MM}`;
-  }
-  if (digits.length === 4) {              // HHMM → HH:MM
-    const HH = digits.slice(0,2);
-    const MM = digits.slice(2,4);
-    return `${HH}:${MM}`;
-  }
+      const mHM = s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+      if (mHM) {
+        const HH = mHM[1].padStart(2,'0');
+        const MM = mHM[2];
+        return `${HH}:${MM}`;
+      }
 
-  // (3) ISO/GMT 같은 날짜문자열 → HH:MM
-  if (/GMT|^\d{4}-\d{2}-\d{2}T/.test(s0)) {
-    const d = new Date(s0);
-    if (!isNaN(d)) {
-      const HH = String(d.getHours()).padStart(2,'0');
-      const MM = String(d.getMinutes()).padStart(2,'0');
-      return `${HH}:${MM}`;
+      const digits = s0.replace(/\D/g,'');
+      if (digits.length >= 6) {               // HHMMSS → HH:MM
+        const HH = digits.slice(0,2);
+        const MM = digits.slice(2,4);
+        return `${HH}:${MM}`;
+      }
+      if (digits.length === 4) {              // HHMM → HH:MM
+        const HH = digits.slice(0,2);
+        const MM = digits.slice(2,4);
+        return `${HH}:${MM}`;
+      }
+
+      if (/GMT|^\d{4}-\d{2}-\d{2}T/.test(s0)) {
+        const d = new Date(s0);
+        if (!isNaN(d)) {
+          const HH = String(d.getHours()).padStart(2,'0');
+          const MM = String(d.getMinutes()).padStart(2,'0');
+          return `${HH}:${MM}`;
+        }
+      }
+      return s0;
     }
-  }
-
-  // (4) 못 맞추면 원본 리턴(값이 비지 않게)
-  return s0;
-}
-
-
 
     function showToast(msg){
       toast.textContent = msg || '완료';
@@ -317,7 +293,7 @@ function fmtTimeDisplay(raw, timeLabel, mmssOnly=false) {
 
     function setLoading(on, source){
       __loading = !!on;
-       if (btnRefresh) btnRefresh.disabled = on;
+      if (btnRefresh) btnRefresh.disabled = on;
       if(on){
         if(source === 'manual'){
           overlay.classList.add('show');
@@ -339,187 +315,175 @@ function fmtTimeDisplay(raw, timeLabel, mmssOnly=false) {
     }
     const collapseMap = loadCollapseMap();
 
-    // 섹션 카드 (하이라이트 제거 버전 + NEW: 접기/필터/검색)
-  // 기존
-// function renderSectionCardGrouped(sec){
-function renderSectionCardGrouped(sec, ctx){
-  const title  = sec.title || '-';
-  const color  = sec.color || '#00FFFF';
-  const groups = Array.isArray(sec.groups) ? sec.groups : [];
-  const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
+    // 섹션 카드 (검색/필터 통합 렌더)
+    function renderSectionCardGrouped(sec, ctx){
+      const title  = sec.title || '-';
+      const color  = sec.color || '#00FFFF';
+      const groups = Array.isArray(sec.groups) ? sec.groups : [];
+      const timeLabel = sec.timeLabel || timeLabelFromTitle(title);
 
-  const ban = groups.find(g => g.plant === '반월')?.rows || [];
-  const sih = groups.find(g => g.plant === '시화')?.rows || [];
+      const ban = groups.find(g => g.plant === '반월')?.rows || [];
+      const sih = groups.find(g => g.plant === '시화')?.rows || [];
 
-  const banF = ban.filter(r => !isMonoDigitPlate(r.car));
-  const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
+      const banF = ban.filter(r => !isMonoDigitPlate(r.car));
+      const sihF = sih.filter(r => !isMonoDigitPlate(r.car));
 
-  // ▼▼ 여기부터 DOM 대신 ctx 사용 ▼▼
-  const plantSel = ctx.plantSel;          // 'all' | 'banwol' | 'sihwa'
-  const qq       = ctx.qq;                // 공백 제거된 검색어
-  const dqq      = ctx.dqq;               // 숫자만
-  const isFour   = ctx.isFour;            // 4자리 숫자 검색 여부
+      const plantSel = ctx.plantSel;
+      const qq       = ctx.qq;
+      const dqq      = ctx.dqq;
+      const isFour   = ctx.isFour;
 
-  let merged = [
-    ...banF.map(r => ({...r, plant:'반월'})),
-    ...sihF.map(r => ({...r, plant:'시화'}))
-  ];
-  if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
-  if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
-  if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
+      let merged = [
+        ...banF.map(r => ({...r, plant:'반월'})),
+        ...sihF.map(r => ({...r, plant:'시화'}))
+      ];
+      if (plantSel === 'banwol') merged = merged.filter(r => r.plant === '반월');
+      if (plantSel === 'sihwa')  merged = merged.filter(r => r.plant === '시화');
+      if (qq) merged = merged.filter(r => String(r.car||'').includes(qq));
 
-  const hitsMap = new Map();
-  if (isFour){
-    merged.forEach((r, idx) => {
-      const hit = last4(r.car) === dqq;
-      if (hit) { hitsMap.set(idx, true); __searchCount++; }
-    });
-  } else {
-    if (qq) __searchCount += merged.length;
-  }
+      const hitsMap = new Map();
+      if (isFour){
+        merged.forEach((r, idx) => {
+          const hit = last4(r.car) === dqq;
+          if (hit) { hitsMap.set(idx, true); __searchCount++; }
+        });
+      } else {
+        if (qq) __searchCount += merged.length;
+      }
 
-  const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
-  const scnt = (plantSel==='banwol') ? 0 : sihF.length;
-  const total = merged.length;
+      const bcnt = (plantSel==='sihwa') ? 0 : banF.length;
+      const scnt = (plantSel==='banwol') ? 0 : sihF.length;
+      const total = merged.length;
 
-  let seq = 1;
-   const rowHTML = (r, i, sep) => {
-    const cls = [];
-    if (sep) cls.push('plant-sep');
-    const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
-    // "원료 대기"만 MM:SS 강제
-    const mmssOnly = (title === '원료 대기');
-    const _t = fmtTimeDisplay(r.time, timeLabel, mmssOnly);
-const timeText = _t && _t.trim() ? _t : (r.time ?? '');
+      let seq = 1;
+      const rowHTML = (r, i, sep) => {
+        const cls = [];
+        if (sep) cls.push('plant-sep');
+        const carCellClass = (isFour && hitsMap.get(i)) ? 'cell-hit' : '';
+        const mmssOnly = (title === '원료 대기');
+        const _t = fmtTimeDisplay(r.time, timeLabel, mmssOnly);
+        const timeText = _t && _t.trim() ? _t : (r.time ?? '');
 
-   return `
-  <tr class="${cls.join(' ')}">
-    <td>${seq++}</td>
-    <td class="${carCellClass}">${r.car ?? ''}</td>
-    <td>${timeText}</td>
-    <td>${r.plant}</td>
-  </tr>`;
-  };
+        return `
+        <tr class="${cls.join(' ')}">
+          <td>${seq++}</td>
+          <td class="${carCellClass}">${r.car ?? ''}</td>
+          <td>${timeText}</td>
+          <td>${r.plant}</td>
+        </tr>`;
+      };
 
-  let rowsHTML = '';
-  if (plantSel === 'all') {
-    const leftPart  = merged.filter(r=>r.plant==='반월');
-    const rightPart = merged.filter(r=>r.plant==='시화');
-    rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
-    if (leftPart.length && rightPart.length) {
-      rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
-               +  rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
-    } else {
-      rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
-    }
-  } else {
-    rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
-  }
+      let rowsHTML = '';
+      if (plantSel === 'all') {
+        const leftPart  = merged.filter(r=>r.plant==='반월');
+        const rightPart = merged.filter(r=>r.plant==='시화');
+        rowsHTML += leftPart.map((r,idx) => rowHTML(r, idx, false)).join('');
+        if (leftPart.length && rightPart.length) {
+          rowsHTML += rowHTML(rightPart[0], leftPart.length, /*sep*/true)
+                   +  rightPart.slice(1).map((r,ii)=>rowHTML(r, leftPart.length+1+ii, false)).join('');
+        } else {
+          rowsHTML += rightPart.map((r,idx)=>rowHTML(r, leftPart.length+idx, false)).join('');
+        }
+      } else {
+        rowsHTML = merged.map((r,i)=>rowHTML(r, i, false)).join('');
+      }
 
-  const table = `
-    <table>
-      <thead>
-        <tr>
-          <th style="width:44px">No</th>
-          <th style="width:96px">차량</th>
-          <th style="width:74px">${timeLabel}</th>
-          <th style="width:56px">공장</th>
-        </tr>
-      </thead>
-      <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
-    </table>`;
+      const table = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44px">No</th>
+              <th style="width:96px">차량</th>
+              <th style="width:74px">${timeLabel}</th>
+              <th style="width:56px">공장</th>
+            </tr>
+          </thead>
+          <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
+        </table>`;
 
-  const collapsed   = !!collapseMap[title];
-  const bodyStyle   = collapsed ? 'style="display:none"' : '';
-  const toggleLabel = collapsed ? '펼치기' : '접기';
+      const collapsed   = !!collapseMap[title];
+      const bodyStyle   = collapsed ? 'style="display:none"' : '';
+      const toggleLabel = collapsed ? '펼치기' : '접기';
+      const infoLine    = ctx.filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
 
-  // ▼ 안내문도 ctx에서 온 filterActive 사용
-  const infoLine = ctx.filterActive ? `<div class="summary">※ 검색/필터가 적용된 결과입니다.</div>` : '';
-
-  return `
-    <article class="card">
-      <div class="stripe ${stripeClass(color)}"></div>
-      <div class="head">
-        <h3>${title}</h3>
-        <div class="head-right">
-          <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
-          <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
-        </div>
-      </div>
-      ${infoLine}
-      <div class="body" ${bodyStyle}>
-        ${table}
-      </div>
-    </article>`;
-}
-
-
-   function render(data){
-  try{
-    __searchCount = 0;
-
-    const ts = data && data.updatedAt ? data.updatedAt : '';
-    elUpdated.textContent = ts ? `업데이트: ${ts}` : '업데이트 시간 없음';
-
-    const raw = Array.isArray(data && data.sections) ? data.sections : [];
-    if(!raw.length){
-      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
-      return;
+      return `
+        <article class="card">
+          <div class="stripe ${stripeClass(color)}"></div>
+          <div class="head">
+            <h3>${title}</h3>
+            <div class="head-right">
+              <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${total}건 (반월 ${bcnt}, 시화 ${scnt})</div>
+              <button class="btn" data-collapse="${encodeURIComponent(title)}">${toggleLabel}</button>
+            </div>
+          </div>
+          ${infoLine}
+          <div class="body" ${bodyStyle}>
+            ${table}
+          </div>
+        </article>`;
     }
 
-    const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
-    const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
-    const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
-    const used = new Set([...left, ...right].map(s => s.title));
-    raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
+    function render(data){
+      try{
+        __searchCount = 0;
 
-    // ▼▼ 여기서 단 한번만 UI 상태 계산
-    const plantSel = document.getElementById('plantFilter').value; // 'all'|'banwol'|'sihwa'
-    const q  = (document.getElementById('searchInput').value || '').trim();
-    const qq = q.replace(/\s+/g,'');
-    const dqq = qq.replace(/\D+/g,'');
-    const isFour = /^\d{4}$/.test(dqq);
-    const filterActive = (plantSel !== 'all') || !!qq;
+        const ts = data && data.updatedAt ? data.updatedAt : '';
+        elUpdated.textContent = ts ? `업데이트: ${ts}` : '업데이트 시간 없음';
 
-    const ctx = { plantSel, q, qq, dqq, isFour, filterActive };
+        const raw = Array.isArray(data && data.sections) ? data.sections : [];
+        if(!raw.length){
+          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터 없음</div></div></div>';
+          return;
+        }
 
-    const leftHTML  = left .map(sec => renderSectionCardGrouped(sec,  ctx)).join('');
-    const rightHTML = right.map(sec => renderSectionCardGrouped(sec, ctx)).join('');
+        const byTitle = Object.fromEntries(raw.map(s => [s.title, s]));
+        const left  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
+        const right = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
+        const used = new Set([...left, ...right].map(s => s.title));
+        raw.forEach(s => { if(!used.has(s.title)) left.push(s); });
 
-    elSections.innerHTML = `
-      <div class="col col-left">${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
-      <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
-    `;
+        const plantSel = document.getElementById('plantFilter').value;
+        const q  = (document.getElementById('searchInput').value || '').trim();
+        const qq = q.replace(/\s+/g,'');
+        const dqq = qq.replace(/\D+/g,'');
+        const isFour = /^\d{4}$/.test(dqq);
+        const filterActive = (plantSel !== 'all') || !!qq;
+        const ctx = { plantSel, q, qq, dqq, isFour, filterActive };
 
-    // 검색 결과 뱃지
-    const badge = document.getElementById('searchSummary');
-    if (qq) {
-      badge.style.display = 'inline-block';
-      badge.textContent = `${__searchCount}건 검색`;
-    } else {
-      badge.style.display = 'none';
-      badge.textContent = '';
+        const leftHTML  = left .map(sec => renderSectionCardGrouped(sec,  ctx)).join('');
+        const rightHTML = right.map(sec => renderSectionCardGrouped(sec, ctx)).join('');
+
+        elSections.innerHTML = `
+          <div class="col col-left">${ leftHTML  || '<div class="card"><div class="empty">좌측 섹션 없음</div></div>' }</div>
+          <div class="col col-right">${ rightHTML || '<div class="card"><div class="empty">우측 섹션 없음</div></div>' }</div>
+        `;
+
+        const badge = document.getElementById('searchSummary');
+        if (qq) {
+          badge.style.display = 'inline-block';
+          badge.textContent = `${__searchCount}건 검색`;
+        } else {
+          badge.style.display = 'none';
+          badge.textContent = '';
+        }
+
+        elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
+            const body = btn.closest('.card').querySelector('.body');
+            const now = body.style.display !== 'none';
+            body.style.display = now ? 'none' : '';
+            collapseMap[key] = now;
+            saveCollapseMap(collapseMap);
+            btn.textContent = now ? '펼치기' : '접기';
+          });
+        });
+
+      } catch(err){
+        console.error(err);
+        elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
+      }
     }
-
-    // 접기 버튼 바인딩 (중복 블록 하나만 남기기)
-    elSections.querySelectorAll('button[data-collapse]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const key = decodeURIComponent(btn.getAttribute('data-collapse')||'');
-        const body = btn.closest('.card').querySelector('.body');
-        const now = body.style.display !== 'none';
-        body.style.display = now ? 'none' : '';
-        collapseMap[key] = now;
-        saveCollapseMap(collapseMap);
-        btn.textContent = now ? '펼치기' : '접기';
-      });
-    });
-
-  } catch(err){
-    console.error(err);
-    elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">렌더링 중 오류</div></div></div>';
-  }
-}
-
 
     async function loadSnapshotFetch(){
       const url = SNAPSHOT_URL + '?action=snapshot_live&_ts=' + Date.now();
@@ -528,11 +492,10 @@ const timeText = _t && _t.trim() ? _t : (r.time ?? '');
       return res.json();
     }
 
-async function triggerRefreshLive() {
-  const url = SNAPSHOT_URL + '?action=refresh_live&token=DY_SCALE&_ts=' + Date.now();
-  try { await fetch(url, { method:'GET', mode:'no-cors' }); } catch(_) {}
-}
-
+    async function triggerRefreshLive() {
+      const url = SNAPSHOT_URL + '?action=refresh_live&token=DY_SCALE&_ts=' + Date.now();
+      try { await fetch(url, { method:'GET', mode:'no-cors' }); } catch(_) {}
+    }
 
     function loadSnapshotJSONP(){
       return new Promise((resolve, reject)=>{
@@ -547,54 +510,50 @@ async function triggerRefreshLive() {
       });
     }
 
-  async function loadSnapshot(opts = {source:'auto'}){
-  const source = opts.source || 'auto';
-  if(__loading){
-    if(source === 'manual') showToast('이미 새로고침 중…');
-    return;
-  }
-  try{
-    setLoading(true, source);
-    // 👉 수동 새로고침일 때만 백엔드 라이브 강제 새로고침
-    if (source === 'manual') { await triggerRefreshLive(); }
-
-    let data = await loadSnapshotFetch();   // ← try 안으로
-    // 스냅샷 캐시
-    try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
-    render(data);
-    showToast('업데이트됨');
-  }catch(err){
-    console.warn('fetch 실패, JSONP 시도:', err);
-    if (!USE_JSONP_FALLBACK){
-      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (CORS/권한 확인)</div></div></div>';
-      return;
-    }
-    try{
-      // 수동일 때 보수적으로 JSONP 트리거
-      if (source === 'manual') {
-        const base = SNAPSHOT_URL.split('?')[0];
-        const cb   = 'CB_' + Math.random().toString(36).slice(2);
-        await new Promise((res)=> {
-          const s = document.createElement('script');
-          window[cb] = ()=>{ try{ delete window[cb]; }catch(_){ } s.remove(); res(); };
-          s.onerror  = ()=>{ try{ delete window[cb]; }catch(_){ } s.remove(); res(); };
-          s.src = `${base}?action=refresh_live&token=DY_SCALE&callback=${cb}&_ts=${Date.now()}`;
-          document.head.appendChild(s);
-        });
+    async function loadSnapshot(opts = {source:'auto'}){
+      const source = opts.source || 'auto';
+      if(__loading){
+        if(source === 'manual') showToast('이미 새로고침 중…');
+        return;
       }
-      const data = await loadSnapshotJSONP();
-      try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
-      render(data);
-      showToast('업데이트됨');
-    }catch(e){
-      console.error(e);
-      elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (JSONP 실패)</div></div></div>';
-    }
-  }finally{
-    setLoading(false);
-  }
-}
+      try{
+        setLoading(true, source);
+        if (source === 'manual') { await triggerRefreshLive(); }
 
+        let data = await loadSnapshotFetch();
+        try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
+        render(data);
+        showToast('업데이트됨');
+      }catch(err){
+        console.warn('fetch 실패, JSONP 시도:', err);
+        if (!USE_JSONP_FALLBACK){
+          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (CORS/권한 확인)</div></div></div>';
+          return;
+        }
+        try{
+          if (source === 'manual') {
+            const base = SNAPSHOT_URL.split('?')[0];
+            const cb   = 'CB_' + Math.random().toString(36).slice(2);
+            await new Promise((res)=> {
+              const s = document.createElement('script');
+              window[cb] = ()=>{ try{ delete window[cb]; }catch(_){ } s.remove(); res(); };
+              s.onerror  = ()=>{ try{ delete window[cb]; }catch(_){ } s.remove(); res(); };
+              s.src = `${base}?action=refresh_live&token=DY_SCALE&callback=${cb}&_ts=${Date.now()}`;
+              document.head.appendChild(s);
+            });
+          }
+          const data = await loadSnapshotJSONP();
+          try{ localStorage.setItem('snapshot.cache', JSON.stringify(data)); }catch(_){}
+          render(data);
+          showToast('업데이트됨');
+        }catch(e){
+          console.error(e);
+          elSections.innerHTML = '<div class="col"><div class="card"><div class="empty">데이터를 불러올 수 없습니다. (JSONP 실패)</div></div></div>';
+        }
+      }finally{
+        setLoading(false);
+      }
+    }
 
     function startInterval(){
       if(__timer) clearInterval(__timer);
@@ -603,214 +562,200 @@ async function triggerRefreshLive() {
     }
 
     // 이벤트
-   // ✅ 새로고침(모드 인식)
-btnRefresh.addEventListener('click', ()=>{
-  if (__viewMode === 'weigh') {
-    setLoading(true, 'manual');
-    loadWeighingToday().finally(()=> setLoading(false));
-  } else {
-    loadSnapshot({source:'manual'});
-  }
-});
+    btnRefresh.addEventListener('click', ()=> loadSnapshot({source:'manual'}));
 
-// ✅ 모드 전환 버튼
-const btnWeigh = document.getElementById('btnWeigh');
-const btnLive  = document.getElementById('btnLive');
+    // 필터/검색 로컬상태
+    const plantSel = document.getElementById('plantFilter');
+    const searchInput = document.getElementById('searchInput');
 
-function switchTo(mode){
-  __viewMode = mode;
-  if (mode === 'weigh') {
-    btnWeigh.style.display = 'none';
-    btnLive.style.display  = '';
-    btnRefresh.disabled    = false;
-    setLoading(true, 'manual');
-    loadWeighingToday().finally(()=> setLoading(false));
-  } else {
-    btnWeigh.style.display = '';
-    btnLive.style.display  = 'none';
-    setLoading(true, 'manual');
-    loadSnapshot({source:'manual'}).finally(()=> setLoading(false));
-  }
-}
+    // 초기 복구
+    plantSel.value = localStorage.getItem(LS_KEYS.plant) || 'all';
+    searchInput.value = localStorage.getItem(LS_KEYS.q) || '';
 
-btnWeigh.addEventListener('click', ()=> switchTo('weigh'));
-btnLive .addEventListener('click',  ()=> switchTo('live'));
-
-// ✅ 필터/검색 (모드에 맞춰 재렌더)
-const plantSel    = document.getElementById('plantFilter');
-const searchInput = document.getElementById('searchInput');
-
-// 초기 복구
-plantSel.value    = localStorage.getItem(LS_KEYS.plant) || 'all';
-searchInput.value = localStorage.getItem(LS_KEYS.q)     || '';
-
-// (교체본) weigh 모드면 재호출, live 모드면 캐시 재렌더
-function rerenderFromCache(){
-  if (__viewMode === 'weigh') {
-    loadWeighingToday();
-  } else {
-    const cache = localStorage.getItem('snapshot.cache');
-    if (!cache) return;
-    try { render(JSON.parse(cache)); } catch(_) {}
-  }
-}
-
-plantSel.addEventListener('change', ()=>{
-  localStorage.setItem(LS_KEYS.plant, plantSel.value);
-  rerenderFromCache();
-});
-searchInput.addEventListener('input', ()=>{
-  localStorage.setItem(LS_KEYS.q, searchInput.value);
-  rerenderFromCache();
-});
-
-// ✅ init (기본은 실시간 보기)
-(function(){
-  loadSnapshot({source:'auto'});
-  startInterval();
-})();
-
-
-// 백엔드 강제 갱신 호출 (응답은 안써도 됨)
-async function triggerUpdateSnapshot() {
-  // SNAPSHOT_URL에서 베이스 exec URL만 추출
-  const base = SNAPSHOT_URL.split('?')[0];
-  const url  = `${base}?action=update_snapshot&token=DY_SCALE&_ts=${Date.now()}`;
-
-  // CORS 환경에서도 트리거만 되면 되니 no-cors로 발사
-  try { await fetch(url, { method: 'GET', mode: 'no-cors' }); }
-  catch (_) { /* 무시: 트리거만 되면 OK */ }
-}
-async function loadWeighingToday() {
-  const url = weighingTodayURL();
-  try {
-    // 1) JSON 시도
-    const res = await fetch(url, { method:'GET', credentials:'omit' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-
-    const data = await res.json();
-    if (data && data.ok === false) {
-      // 서버가 에러 payload를 내려준 경우
-      elSections.innerHTML =
-        `<div class="col"><div class="card"><div class="empty">
-          출고현황 에러: ${data.where||''} ${data.error||''}
-         </div></div></div>`;
-    } else {
-      renderWeighingView(data);
-      elUpdated.textContent = data.updatedAt ? `업데이트: ${data.updatedAt}` : '업데이트 시간 없음';
-      showToast('출고현황 업데이트됨');
+    function rerenderFromCache(){
+      const cache = localStorage.getItem('snapshot.cache');
+      if (!cache) return;
+      try{ render(JSON.parse(cache)); }catch(_){}
     }
-  } catch (err) {
-    // 2) JSONP 폴백
-    try {
-      const cbName = 'CB_' + Math.random().toString(36).slice(2);
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        window[cbName] = (payload)=>{
-          try{ delete window[cbName]; }catch(_){}
-          s.remove();
-          if (payload && payload.ok === false) {
-            elSections.innerHTML =
-              `<div class="col"><div class="card"><div class="empty">
-                출고현황 에러: ${payload.where||''} ${payload.error||''}
-               </div></div></div>`;
-          } else {
-            renderWeighingView(payload);
-            showToast('출고현황 업데이트됨');
-          }
-          resolve();
-        };
-        s.onerror = ()=>{ try{ delete window[cbName]; }catch(_){ } s.remove(); reject(new Error('JSONP load error')); };
-        s.src = weighingTodayURL() + `&callback=${cbName}&debug=1`;
+
+    plantSel.addEventListener('change', ()=>{
+      localStorage.setItem(LS_KEYS.plant, plantSel.value);
+      rerenderFromCache();
+    });
+    searchInput.addEventListener('input', ()=>{
+      localStorage.setItem(LS_KEYS.q, searchInput.value);
+      rerenderFromCache();
+    });
+
+    // init
+    (function(){
+      loadSnapshot({source:'auto'});
+      startInterval();
+    })();
+
+    // 백엔드 강제 갱신 호출 (응답은 안써도 됨)
+    async function triggerUpdateSnapshot() {
+      const base = SNAPSHOT_URL.split('?')[0];
+      const url  = `${base}?action=update_snapshot&token=DY_SCALE&_ts=${Date.now()}`;
+      try { await fetch(url, { method: 'GET', mode: 'no-cors' }); }
+      catch (_) { /* 무시 */ }
+    }
+
+    /* ============================
+     * ★ 금일 출고 기능 (프론트)
+     * ============================ */
+
+    // KST 오늘 yyyy-mm-dd
+    function todayKST() {
+      const now = new Date();
+      const kst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+      const y = kst.getFullYear();
+      const m = String(kst.getMonth()+1).padStart(2,'0');
+      const d = String(kst.getDate()).padStart(2,'0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // 숫자 포맷
+    function fmtNum(n) {
+      const v = Number(String(n ?? '').toString().replace(/[^\d.-]/g,''));
+      if (isNaN(v)) return String(n ?? '');
+      return v.toLocaleString();
+    }
+
+    // 시간 HH:MM 포맷
+    function fmtHM(raw) {
+      if (raw == null) return '';
+      const s = String(raw).trim();
+      if (!s) return '';
+      const m1 = s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+      if (m1) return `${m1[1].padStart(2,'0')}:${m1[2]}`;
+      const dgs = s.replace(/\D/g,'');
+      if (dgs.length >= 12) return `${dgs.slice(-6,-4)}:${dgs.slice(-4,-2)}`;
+      if (dgs.length === 6)  return `${dgs.slice(0,2)}:${dgs.slice(2,4)}`;
+      if (dgs.length === 4)  return `${dgs.slice(0,2)}:${dgs.slice(2,4)}`;
+      if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+        const d = new Date(s);
+        if (!isNaN(d)) return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      }
+      return s;
+    }
+
+    // 금일 출고 테이블
+    function buildWeighTable(title, list) {
+      const rows = Array.isArray(list) ? list : [];
+      const body = rows.length
+        ? rows.map((r, i) => `
+          <tr>
+            <td>${i+1}</td>
+            <td>${r.car ?? ''}</td>
+            <td>${fmtHM(r.in)  ?? ''}</td>
+            <td>${fmtHM(r.out) ?? ''}</td>
+            <td>${fmtNum(r.gross)   ?? ''}</td>
+            <td>${fmtNum(r.net)     ?? ''}</td>
+            <td>${fmtNum(r.receive) ?? ''}</td>
+          </tr>`).join('')
+        : `<tr><td colspan="7" class="empty">(없음)</td></tr>`;
+
+      return `
+      <article class="card">
+        <div class="stripe cyan"></div>
+        <div class="head">
+          <h3>${title}</h3>
+          <div class="head-right">
+            <div class="summary" style="border:0;padding:0;">총 ${rows.length}건</div>
+            <button class="btn" data-close-weigh>닫기</button>
+          </div>
+        </div>
+        <div class="body">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:44px">No</th>
+                <th style="width:96px">차량번호</th>
+                <th style="width:74px">입차시간</th>
+                <th style="width:74px">출차시간</th>
+                <th style="width:86px">총중량</th>
+                <th style="width:86px">실중량</th>
+                <th style="width:86px">인수량</th>
+              </tr>
+            </thead>
+            <tbody>${body}</tbody>
+          </table>
+        </div>
+      </article>`;
+    }
+
+    // 금일 출고 렌더
+    function renderWeighingPanel(payload) {
+      const box = document.getElementById('weighingPanel');
+      if (!box) return;
+
+      const ban = payload?.banwol ?? [];
+      const sih = payload?.sihwa ?? [];
+      const updatedAt = payload?.updatedAt ? ` (업데이트: ${payload.updatedAt})` : '';
+
+      box.innerHTML = `
+        <div class="col">
+          ${buildWeighTable('금일 출고 – 반월' + updatedAt, ban)}
+        </div>
+        <div class="col">
+          ${buildWeighTable('금일 출고 – 시화' + updatedAt, sih)}
+        </div>
+      `;
+      box.style.display = '';
+
+      box.querySelectorAll('[data-close-weigh]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          box.innerHTML = '';
+          box.style.display = 'none';
+        });
+      });
+    }
+
+    // JSONP 폴백
+    function loadWeighingJSONP(start, end) {
+      return new Promise((resolve, reject)=>{
+        const cb = 'CBW_' + Math.random().toString(36).slice(2);
+        const s  = document.createElement('script');
+        const base = SNAPSHOT_URL.split('?')[0];
+        window[cb] = (data)=>{ try{ delete window[cb]; }catch(_){} s.remove(); resolve(data); };
+        s.onerror = ()=>{ try{ delete window[cb]; }catch(_){} s.remove(); reject(new Error('JSONP 실패')); };
+        s.src = `${base}?action=weighing_today&token=DY_SCALE&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&callback=${cb}&_ts=${Date.now()}`;
         document.head.appendChild(s);
       });
-    } catch(e) {
-      console.error(e);
-      elSections.innerHTML =
-        '<div class="col"><div class="card"><div class="empty">출고현황을 불러올 수 없습니다. (JSONP 실패)</div></div></div>';
     }
-  }
-}
 
+    // 금일 출고 로더
+    async function loadWeighingToday() {
+      const start = todayKST();
+      const end   = start;
+      const base  = SNAPSHOT_URL.split('?')[0];
+      const url   = `${base}?action=weighing_today&token=DY_SCALE&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&_ts=${Date.now()}`;
 
-function renderWeighingView(payload){
-  const rows = Array.isArray(payload?.rows) ? payload.rows : [];
-  const plantSel = document.getElementById('plantFilter').value; // 'all'|'banwol'|'sihwa'
-  const q  = (document.getElementById('searchInput').value || '').trim();
-  const qq = q.replace(/\s+/g,'');
-  const dqq = qq.replace(/\D+/g,'');
-  const isFour = /^\d{4}$/.test(dqq);
+      try{
+        setLoading(true, 'manual');
+        const res = await fetch(url, { method:'GET', credentials:'omit' });
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+        renderWeighingPanel(data);
+        showToast('금일 출고 불러왔습니다');
+      }catch(err){
+        console.warn('weigh fetch 실패, JSONP 시도:', err);
+        try{
+          const data = await loadWeighingJSONP(start, end);
+          renderWeighingPanel(data);
+          showToast('금일 출고(대체경로) 불러왔습니다');
+        }catch(e){
+          console.error(e);
+          alert('금일 출고 데이터를 불러올 수 없었습니다.');
+        }
+      }finally{
+        setLoading(false);
+      }
+    }
 
-  // 필터링
-  let view = rows.slice();
-  if (plantSel === 'banwol') view = view.filter(r=> r.plant === '반월');
-  if (plantSel === 'sihwa')  view = view.filter(r=> r.plant === '시화');
-  if (qq) view = view.filter(r => String(r.car||'').includes(qq));
-
-  // 카운트/뱃지
-  const badge = document.getElementById('searchSummary');
-  if (qq) {
-    badge.style.display = 'inline-block';
-    badge.textContent = `${view.length}건 검색`;
-  } else {
-    badge.style.display = 'none';
-    badge.textContent = '';
-  }
-
-  const headHTML = `
-    <div class="stripe cyan"></div>
-    <div class="head">
-      <h3>출고현황</h3>
-      <div class="head-right">
-        <div class="summary" style="border:0;padding:0;margin-right:8px;">총 ${view.length}건</div>
-      </div>
-    </div>`;
-
-  const bodyRows = view.map((r, i) => {
-    const carClass = (isFour && (r.car||'').replace(/\D/g,'').slice(-4) === dqq) ? 'cell-hit' : '';
-    return `
-      <tr>
-        <td>${i+1}</td>
-        <td>${r.date||''}</td>
-        <td>${r.plant||''}</td>
-        <td>${r.intime||''}</td>
-        <td>${r.outtime||''}</td>
-        <td class="${carClass}">${r.car||''}</td>
-        <td>${fmtKG(r.gross)}</td>
-        <td>${fmtKG(r.net)}</td>
-        <td>${fmtKG(r.reduction)}</td>
-        <td>${fmtKG(r.receipt)}</td>
-      </tr>`;
-  }).join('');
-
-  const table = `
-    <table>
-      <thead>
-        <tr>
-          <th style="width:44px">No</th>
-          <th style="width:92px">일자</th>
-          <th style="width:56px">공장</th>
-          <th style="width:74px">입차시간</th>
-          <th style="width:74px">출차시간</th>
-          <th style="width:96px">차량번호</th>
-          <th style="width:88px">총중량</th>
-          <th style="width:88px">실중량</th>
-          <th style="width:88px">감량</th>
-          <th style="width:88px">인수량</th>
-        </tr>
-      </thead>
-      <tbody>${bodyRows || '<tr><td colspan="10" class="empty">(없음)</td></tr>'}</tbody>
-    </table>`;
-
-  elSections.innerHTML = `
-    <div class="col">
-      <article class="card">
-        ${headHTML}
-        <div class="body">${table}</div>
-      </article>
-    </div>`;
-}
-
+    // 버튼 바인딩
+    document.getElementById('btnWeighToday')?.addEventListener('click', loadWeighingToday);
   </script>
 </body>
 </html>
