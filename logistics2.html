@@ -445,7 +445,7 @@
 
     const body = filtered.length ? filtered.map((r, i)=>{
       const rawCar = (r && (r.car ?? r.CARNUM ?? r.CAR_NO)) ??
-                     pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO']) '';
+                     pickField(r, 'car', ['CARNUM','CAR_NO','CAR','CAR_NUM','VEHICLENO','VEH_NO','TRUCKNO','TRUCK_NO','CAR','CARNO']);
 
       const tin  = (r && (r.in  ?? r.INTIME)) ??
                    pickField(r, 'in', ['INTIME','IN_TIME','IN_DATETIME','IN_DATE','INDTTM','INDT','IN_DT','IN_DATE_TIME']);
