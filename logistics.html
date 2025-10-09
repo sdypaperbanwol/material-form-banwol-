@@ -172,10 +172,23 @@
   let __loading=false, __timer=null;
   function timeLabelFromTitle(title){ return /대기/.test(title)?'등록시간':'입차시간'; }
 
-  // 뷰 상태/캐시 (추가)
+  // 뷰 상태/캐시
   let __currentView = 'live';
   let __weighFetchedAt = 0;
   const WEIGH_TTL_MS = 0; // 0 = 탭 전환 시 재요청 안함(캐시가 있으면 그대로 사용)
+
+  // ✅ 추가: KST 기준 yyyy-MM-dd HH:mm:ss 포맷터
+  function fmtKST(ts){
+    const d = (ts instanceof Date) ? ts : new Date(ts||Date.now());
+    const k = new Date(d.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const Y=k.getFullYear();
+    const M=String(k.getMonth()+1).padStart(2,'0');
+    const D=String(k.getDate()).padStart(2,'0');
+    const h=String(k.getHours()).padStart(2,'0');
+    const m=String(k.getMinutes()).padStart(2,'0');
+    const s=String(k.getSeconds()).padStart(2,'0');
+    return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  }
 
   function fmtTimeDisplay(raw){
     if (raw == null) return '';
@@ -503,10 +516,15 @@
       </article>`;
   }
 
-  // ⬇️ 제목에서 (업데이트: …) 제거한 상태로 렌더
+  // ⬇️ 제목에서 (업데이트: …) 제거한 상태로 렌더 + 헤더 시간 갱신
   function renderWeighingPanel(payload){
     window.__lastWeigh = payload;
     __weighFetchedAt = Date.now(); // ★ 페치 타임스탬프 기록
+
+    // ✅ 헤더 시간: payload.updatedAt 있으면 사용, 없으면 방금 시각(KST)
+    const headlineTs = payload?.updatedAt ? payload.updatedAt : fmtKST(__weighFetchedAt);
+    elUpdated.textContent = `업데이트: ${headlineTs}`;
+
     const box=document.getElementById('weighingPanel'); if(!box) return;
 
     const ban = payload?.banwol ?? [];
@@ -545,13 +563,13 @@
       const res=await fetch(url,{method:'GET',credentials:'omit'});
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data=await res.json();
-      renderWeighingPanel(data);
+      renderWeighingPanel(data);            // ★ 내부에서 헤더시간도 갱신
       showToast('계근 조회(제품) 불러왔습니다');
     }catch(err){
       console.warn('weigh fetch 실패, JSONP 시도:', err);
       try{
         const data=await loadWeighingJSONP(start,end);
-        renderWeighingPanel(data);
+        renderWeighingPanel(data);          // ★ 내부에서 헤더시간도 갱신
         showToast('계근 조회(제품)(대체경로) 불러왔습니다');
       }catch(e){
         console.error(e);
@@ -579,15 +597,22 @@
   }
   setView('live');
 
-  // 탭 전환: 캐시가 있으면 재요청 없이 전환
+  // 탭 전환: 캐시가 있으면 재요청 없이 전환 + ✅ 헤더 시간 갱신
   btnViewWeigh.addEventListener('click', ()=>{
     const hasCache = !!window.__lastWeigh;
     const fresh = WEIGH_TTL_MS > 0 ? (Date.now() - __weighFetchedAt < WEIGH_TTL_MS) : hasCache;
-    if (fresh) setView('weigh'); else loadWeighingToday();
+    if (fresh) {
+      setView('weigh');
+      elUpdated.textContent = __weighFetchedAt
+        ? `업데이트: ${fmtKST(__weighFetchedAt)}`
+        : '업데이트 시간 없음';
+    } else {
+      loadWeighingToday();
+    }
   });
   btnViewLive.addEventListener('click', ()=>{ setView('live'); });
 
-  // 🔧 새로고침 버튼: 현재 탭 기준으로 동작 (추가)
+  // 🔧 새로고침 버튼: 현재 탭 기준으로 동작
   btnRefresh.addEventListener('click', () => {
     if (btnViewLive.classList.contains('active')) {
       loadSnapshot({ source: 'manual' });   // 입차 조회(실시간)
