@@ -125,8 +125,8 @@
         <button class="btn" id="btnRefresh">새로고침</button>
 
         <div class="view-toggle" role="tablist" aria-label="보기 전환">
-          <button class="tbtn active" id="btnViewLive"  role="tab" aria-selected="true">실시간 현황</button>
-          <button class="tbtn"         id="btnViewWeigh" role="tab" aria-selected="false">금일 출고</button>
+          <button class="tbtn active" id="btnViewLive"  role="tab" aria-selected="true">입차 조회</button>
+          <button class="tbtn"         id="btnViewWeigh" role="tab" aria-selected="false">계근 조회(제품)</button>
         </div>
 
         <input id="searchInput" class="input" placeholder="차량번호 검색" />
@@ -134,10 +134,10 @@
       </div>
     </section>
 
-    <!-- 금일 출고 패널 -->
+    <!-- 계근 조회(제품) 패널 -->
     <section class="grid" id="weighingPanel" style="display:none"></section>
 
-    <!-- 실시간 패널 -->
+    <!-- 입차 조회 패널 -->
     <section class="grid" id="sections"></section>
   </div>
 
@@ -171,6 +171,23 @@
   const AUTO_REFRESH_MS = 0;
   let __loading=false, __timer=null;
   function timeLabelFromTitle(title){ return /대기/.test(title)?'등록시간':'입차시간'; }
+
+  // 뷰 상태/캐시
+  let __currentView = 'live';
+  let __weighFetchedAt = 0;
+  const WEIGH_TTL_MS = 0; // 0 = 탭 전환 시 재요청 안함(캐시가 있으면 그대로 사용)
+
+  // 🔸 KST 타임스탬프 포맷터
+  function nowKSTTimestamp(){
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone:'Asia/Seoul' }));
+    const y = now.getFullYear();
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const d = String(now.getDate()).padStart(2,'0');
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+  }
 
   function fmtTimeDisplay(raw){
     if (raw == null) return '';
@@ -244,7 +261,7 @@
 
     const table = `
       <table>
-        <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${timeLabel}</th><th style="width:56px">공장</th></tr></thead>
+        <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">입차시간</th><th style="width:56px">공장</th></tr></thead>
         <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
       </table>`;
 
@@ -393,7 +410,7 @@
     try{ render(JSON.parse(cache)); }catch(_){}
   }
 
-  // 🔧 검색/필터 이벤트: 금일 출고 화면에서도 즉시 반영
+  // 🔧 검색/필터 이벤트: 계근 조회(제품) 화면에서도 즉시 반영
   plantSel.addEventListener('change', ()=>{
     localStorage.setItem(LS_KEYS.plant, plantSel.value);
     if (btnViewLive.classList.contains('active')) rerenderFromCache();
@@ -407,7 +424,7 @@
     }
   });
 
-  // ===== 금일 출고 기능 =====
+  // ===== 계근 조회(제품) 기능 =====
   function todayKST(){
     const now=new Date();
     const kst=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
@@ -415,7 +432,7 @@
     return `${y}-${m}-${d}`;
   }
 
-  // ⬇️ 금일 출고 표: 요구사항에 맞춰 CARNUM/INTIME/OUTIME/TOTWEI/SILWEI만 사용 (6열)
+  // ⬇️ 계근 조회(제품) 표: CARNUM/INTIME/OUTIME/TOTWEI/SILWEI 사용 (6열)
   function buildWeighTable(title, list, query){
     const rows = Array.isArray(list)? list : [];
     const q  = String(query||'').trim();
@@ -498,9 +515,14 @@
       </article>`;
   }
 
-  // ⬇️ 제목에서 (업데이트: …) 제거한 상태로 렌더
+  // ⬇️ 제목에서 (업데이트: …) 제거한 상태로 렌더 + 헤더 타임스탬프 갱신
   function renderWeighingPanel(payload){
     window.__lastWeigh = payload;
+    __weighFetchedAt = Date.now(); // 페치 타임스탬프 기록
+
+    // 🔸 계근 조회 시에도 헤더 “업데이트:” 갱신
+    elUpdated.textContent = `업데이트: ${payload?.updatedAt || nowKSTTimestamp()}`;
+
     const box=document.getElementById('weighingPanel'); if(!box) return;
 
     const ban = payload?.banwol ?? [];
@@ -508,8 +530,8 @@
     const q = (document.getElementById('searchInput').value || '').trim();
 
     box.innerHTML = `
-      <div class="col">${buildWeighTable('금일 출고 – 반월', ban, q)}</div>
-      <div class="col">${buildWeighTable('금일 출고 – 시화', sih, q)}</div>`;
+      <div class="col">${buildWeighTable('계근 조회(제품) – 반월', ban, q)}</div>
+      <div class="col">${buildWeighTable('계근 조회(제품) – 시화', sih, q)}</div>`;
     box.style.display='';
 
     box.querySelectorAll('[data-close-weigh]').forEach(btn=>{
@@ -540,16 +562,16 @@
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data=await res.json();
       renderWeighingPanel(data);
-      showToast('금일 출고 불러왔습니다');
+      showToast('계근 조회(제품) 불러왔습니다');
     }catch(err){
       console.warn('weigh fetch 실패, JSONP 시도:', err);
       try{
         const data=await loadWeighingJSONP(start,end);
         renderWeighingPanel(data);
-        showToast('금일 출고(대체경로) 불러왔습니다');
+        showToast('계근 조회(제품)(대체경로) 불러왔습니다');
       }catch(e){
         console.error(e);
-        alert('금일 출고 데이터를 불러올 수 없었습니다.');
+        alert('계근 조회(제품) 데이터를 불러올 수 없었습니다.');
         setView('live');
       }
     }finally{ setLoading(false); }
@@ -560,7 +582,9 @@
   const elLivePanel =document.getElementById('sections');
   const btnViewLive =document.getElementById('btnViewLive');
   const btnViewWeigh=document.getElementById('btnViewWeigh');
+
   function setView(mode){
+    __currentView = mode; // 현재 뷰 저장
     const live=(mode==='live');
     elLivePanel.style.display = live? '' : 'none';
     elWeighPanel.style.display= live? 'none' : '';
@@ -570,8 +594,32 @@
     btnViewWeigh.setAttribute('aria-selected', String(!live));
   }
   setView('live');
+
+  // 탭 전환: 캐시가 있으면 재요청 없이 전환 + 헤더 갱신
+  btnViewWeigh.addEventListener('click', ()=>{
+    const hasCache = !!window.__lastWeigh;
+    const fresh = WEIGH_TTL_MS > 0 ? (Date.now() - __weighFetchedAt < WEIGH_TTL_MS) : hasCache;
+
+    if (fresh) {
+      setView('weigh');
+      // 🔸 캐시로 전환 시에도 헤더 “업데이트:” 갱신
+      if (window.__lastWeigh) {
+        elUpdated.textContent = `업데이트: ${window.__lastWeigh.updatedAt || nowKSTTimestamp()}`;
+      }
+    } else {
+      loadWeighingToday();
+    }
+  });
   btnViewLive.addEventListener('click', ()=>{ setView('live'); });
-  btnViewWeigh.addEventListener('click', ()=>{ loadWeighingToday(); });
+
+  // 🔧 새로고침 버튼: 현재 탭 기준으로 동작
+  btnRefresh.addEventListener('click', () => {
+    if (btnViewLive.classList.contains('active')) {
+      loadSnapshot({ source: 'manual' });   // 입차 조회(실시간)
+    } else if (btnViewWeigh.classList.contains('active')) {
+      loadWeighingToday();                   // 계근 조회(제품)
+    }
+  });
 
   // ===== init =====
   (function(){ loadSnapshot({source:'auto'}); startInterval(); })();
