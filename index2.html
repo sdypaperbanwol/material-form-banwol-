@@ -19,11 +19,18 @@
     #record-buttons:not(.hidden) { display:flex; justify-content:center; gap:0.8rem; margin:0.5rem 0 1rem 0; flex-wrap:wrap; }
 
     /* 오버레이 */
-    #submitOverlay, #loadingOverlay, #initialLoadingOverlay {
-      position:fixed; top:0; left:0; width:100vw; height:100vh;
-      background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center;
-      z-index:9999; color:white; font-size:1.4rem;
-    }
+   /* 그대로 둠: 공통 오버레이 스타일 */
+#submitOverlay, #loadingOverlay, #initialLoadingOverlay {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: none; justify-content: center; align-items: center;
+  z-index: 9999;  /* 기본값 */
+  color: white; font-size: 1.4rem;
+}
+
+/* 추가로 이 한 줄(규칙)만 더 넣어서 submitOverlay만 위로 */
+#submitOverlay { z-index: 10050; }  /* ✅ 모달(9999) 위로 */
     #initialLoadingOverlay { display:flex; }
     #submitOverlay span {
       background:white; padding:20px 40px; border-radius:12px; font-size:1.3rem;
