@@ -5,38 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>자재 신청</title>
   <style>
-  body { font-family: 'sans-serif'; background: #f7f7f7; text-align: center; padding: 1rem; margin: 0; }
-  .hidden { display: none !important; }
-  .step { margin-top: 1.5rem; }
-  .button-list { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-bottom: 2rem; }
-  button { padding: 0.6rem 1.2rem; font-size: 1rem; border-radius: 6px; border: none; background-color: #ddd; cursor: pointer; width: 70%; max-width: 300px; }
-  button:hover { background-color: #4CAF50 !important; color: white; }
-  .selected { background-color: #4CAF50 !important; color: white; font-weight: bold; }
-  button:disabled { background-color: #ccc; color: #777; cursor: not-allowed; }
-  .has-stock { background-color: #c8e6c9 !important; color: #1b5e20 !important; font-weight: bold; }
-  .no-stock { background-color: #eeeeee !important; color: #777 !important; cursor: not-allowed; }
-  #quantity-display { font-size: 2rem; margin-bottom: 1rem; font-weight: bold; }
-  #viewPhotos, #goToTypeBtn { display: none; }
-  #record-buttons:not(.hidden) { display: flex; justify-content: center; gap: 0.8rem; margin: 0.5rem 0 1rem 0; flex-wrap: wrap; }
-  #submitOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.4); display: none; justify-content: center; align-items: center; z-index: 10001; }
-  #submitOverlay span { background: white; padding: 20px 40px; border-radius: 12px; font-size: 1.3rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
-  input { padding: 0.5rem; font-size: 1rem; margin: 0.5rem auto; width: 80%; max-width: 300px; display: block; }
-  .list-preview-container { max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 1rem; border-radius: 10px; font-size: 0.95rem; }
-  .list-item-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid #e0e0e0; }
-  .list-item-text { flex: 1; text-align: left; word-break: break-word; padding-right: 0.5rem; }
-  .delete-btn { font-size: 0.8rem; background: transparent; border: none; color: #888; cursor: pointer; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s; padding: 0; box-sizing: border-box; }
-  #login-section input { padding: 1.00rem; font-size: 1.05rem; margin: 0.8rem auto; width: 80%; max-width: 300px; display: block; border-radius: 6px; border: 1px solid #ccc; }
-  #login-section button { padding: 1.0rem 1.2rem; font-size: 1.05rem; margin-top: 1rem; border-radius: 8px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
-  .delete-btn:hover { background: #ffe5e5; color: #d00; }
-  .button-row { display: flex; justify-content: center; gap: 1rem; margin: 1rem auto; flex-wrap: wrap; }
-  .half-btn { flex: 1 1 30%; max-width: 180px; min-width: 140px; padding: 0.6rem 0.8rem; font-size: 1rem; border: none; border-radius: 8px; background: #ddd; cursor: pointer; }
-  .half-btn:hover { background: #4CAF50; color: white; }
-  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-  .pulse { animation: pulse 0.6s ease-in-out 2; }
-  @keyframes glow { 0%, 100% { box-shadow: 0 0 0px rgba(255, 0, 0, 0.3); } 50% { box-shadow: 0 0 12px rgba(255, 0, 0, 0.7); } }
-  .glow { animation: glow 1.2s ease-in-out 2; border: 2px solid #ff4444 !important; }
-  #initialLoadingOverlay, #loadingOverlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999; color:white; font-size:1.4rem; }
-  #loadingOverlay { display:none; }
+    body { font-family: 'sans-serif'; background:#f7f7f7; text-align:center; padding:1rem; margin:0; }
+    .hidden { display:none!important; }
+    .step { margin-top:1.5rem; }
+    .button-list { display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:2rem; }
+    button { padding:0.6rem 1.2rem; font-size:1rem; border-radius:6px; border:none; background:#ddd; cursor:pointer; width:70%; max-width:300px; }
+    button:hover { background:#4CAF50!important; color:white; }
+    .selected { background:#4CAF50!important; color:white; font-weight:bold; }
+    button:disabled { background:#ccc; color:#777; cursor:not-allowed; }
+    .has-stock { background:#c8e6c9!important; color:#1b5e20!important; font-weight:bold; }
+    .no-stock { background:#eeeeee!important; color:#777!important; }
+    #quantity-display { font-size:2rem; margin-bottom:1rem; font-weight:bold; }
+    #record-buttons:not(.hidden) { display:flex; justify-content:center; gap:0.8rem; margin:0.5rem 0 1rem 0; flex-wrap:wrap; }
+    #submitOverlay, #loadingOverlay, #initialLoadingOverlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index:9999; color:white; font-size:1.4rem; }
+    #initialLoadingOverlay { display:flex; }
+    #submitOverlay span { background:white; padding:20px 40px; border-radius:12px; font-size:1.3rem; box-shadow:0 4px 12px rgba(0,0,0,0.3); color:#000; }
+    .list-preview-container { max-height:300px; overflow-y:auto; background:#f9f9f9; padding:1rem; border-radius:10px; font-size:0.95rem; }
+    .list-item-row { display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0; border-bottom:1px solid #e0e0e0; }
+    .list-item-text { flex:1; text-align:left; word-break:break-word; padding-right:0.5rem; }
+    .delete-btn { font-size:0.8rem; background:transparent; border:none; color:#888; cursor:pointer; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s; padding:0; box-sizing:border-box; }
+    .delete-btn:hover { background:#ffe5e5; color:#d00; }
+    .button-row { display:flex; justify-content:center; gap:1rem; margin:1rem auto; flex-wrap:wrap; }
+    .half-btn { flex:1 1 30%; max-width:180px; min-width:140px; padding:0.6rem 0.8rem; font-size:1rem; border:none; border-radius:8px; background:#ddd; cursor:pointer; }
+    .half-btn:hover { background:#4CAF50; color:#fff; }
+    .numpad-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.6rem; margin:1rem auto; width:fit-content; }
+    .numpad-grid button { padding:1rem; font-size:1.5rem; border-radius:10px; background:#e0e0e0; border:none; cursor:pointer; transition:background .2s; }
+    .numpad-grid button:hover { background:#ccc; }
   </style>
 </head>
 <body>
@@ -45,8 +39,8 @@
 <h2 id="title">🔎 신청·조사 시스템</h2>
 
 <div id="record-buttons" class="hidden">
-  <button onclick="openMyRecords()" style="font-size:0.9rem;font-weight:bold;background-color:#fff;color:#007bff;border:1px solid #007bff;border-radius:6px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">📄 내 신청 내역</button>
-  <button onclick="openTeamRecords()" style="font-size:0.9rem;font-weight:bold;background-color:#fff;color:#28a745;border:1px solid #28a745;border-radius:6px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">👥 팀 신청 내역</button>
+  <button onclick="openMyRecords()" style="font-size:0.9rem;font-weight:bold;background:#fff;color:#007bff;border:1px solid #007bff;border-radius:6px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">📄 내 신청 내역</button>
+  <button onclick="openTeamRecords()" style="font-size:0.9rem;font-weight:bold;background:#fff;color:#28a745;border:1px solid #28a745;border-radius:6px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">👥 팀 신청 내역</button>
 </div>
 
 <!-- 로그인 -->
@@ -81,9 +75,7 @@
     <h3>2단계: 중분류 선택</h3>
     <div id="type-buttons" class="button-list"></div>
     <button type="button" id="viewPhotosType" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;margin-top:6px;">항목 사진 보기</button>
-    <div class="button-row">
-      <button class="half-btn" onclick="goBackTo('category')">⬅ 뒤로가기</button>
-    </div>
+    <div class="button-row"><button class="half-btn" onclick="goBackTo('category')">⬅ 뒤로가기</button></div>
   </div>
 
   <!-- 3단계 -->
@@ -91,9 +83,7 @@
     <h3>3단계: 소분류 선택</h3>
     <p style="font-size:0.85rem;color:#666;margin:0.5rem 0;">⚠️ 재고가 없더라도 선택 후 신청하시면 구매 요청으로 자동 처리됩니다.</p>
     <div id="size-buttons" class="button-list"></div>
-    <div class="button-row">
-      <button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button>
-    </div>
+    <div class="button-row"><button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button></div>
   </div>
 
   <!-- 4단계 -->
@@ -137,17 +127,16 @@
 </div>
 
 <script>
-  // ========= 설정 =========
-  const endpoint = 'https://script.google.com/macros/s/AKfycbyLCqxqnZCgVJAkLror-Cl5uG7CbJXgcB2gGc31WaxuS6s3Ur_nxKJpkdygKipn7clH/exec';
+  const endpoint = 'https://script.google.com/macros/s/AKfycbyDRBbSSqY2YLQHw_-eW8rSnrFGKwkQclRWbRjLRQkTsxwLU3_-wrbwnrJuUu62s-sG/exec';
 
-  // ========= 전역 상태 =========
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
-  let zMeta = {}; // Z1 메타 통일본
+  let zMeta = {};
   let itemList = [];
   let selected = { category: '', type: '', size: '', zcode: '' };
+  let quantityValue = "";
 
-  // ========= 로그인 =========
+  // 로그인
   function handleLogin() {
     const empId = document.getElementById('empId').value.trim();
     const empName = document.getElementById('empName').value.trim();
@@ -164,7 +153,6 @@
     .then(res => res.json())
     .then(async data => {
       document.getElementById('loginLoadingText').classList.add('hidden');
-
       if (data.result === 'success') {
         loginInfo = { empId, empName };
         document.getElementById('login-section').classList.add('hidden');
@@ -172,10 +160,7 @@
         document.getElementById('title').innerText = "🔎 신청·조사 시스템";
         document.getElementById('record-buttons').classList.remove('hidden');
         document.getElementById('loadingOverlay').style.display = 'flex';
-
-        // Z1 메타(통일) 받아두기
         try { zMeta = await fetch(`${endpoint}?mode=zinfo`).then(r=>r.json()) || {}; } catch(e) { console.warn('zinfo 로드 실패', e); }
-
         loadItems();
       } else {
         document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
@@ -189,7 +174,7 @@
     });
   }
 
-  // ========= 목록 로드 =========
+  // 목록 로드
   function loadItems() {
     fetch(endpoint)
       .then(res => res.json())
@@ -197,17 +182,15 @@
         itemData = data;
         const container = document.getElementById('category-buttons');
         container.innerHTML = '';
-
         Object.keys(data).forEach(cat => {
           const btn = document.createElement('button');
-          const activationCode = data[cat].activation; // Y / Z1 / Z2 / Z3
+          const activationCode = data[cat].activation; // Y/Z1/Z2/Z3
 
-          // 버튼 라벨: Z계열이면 Z1 제목 강제
+          // Z계열: Z1 제목 라벨 사용
           btn.innerText = (activationCode && activationCode.startsWith('Z'))
             ? (zMeta?.Z1?.title || cat)
             : cat;
 
-          // 강조 스타일
           if (activationCode?.startsWith("Z")) {
             btn.style.backgroundColor = "#fff9c4";
             btn.style.color = "#f57f17";
@@ -216,22 +199,16 @@
           }
 
           btn.onclick = () => {
-            selected.category = cat;              // 화면 키
-            selected.zcode = activationCode || ''; // 백엔드 전송용 코드
+            selected.category = cat;               // 라벨
+            selected.zcode = activationCode || ''; // Z1/Z2/Z3 또는 ''
 
-            if (activationCode === "Z2") {
-              openZ2UniformModal();               // Z2: 유니폼 모달
-            } else if (activationCode === "Z1" || activationCode === "Z3") {
-              openZ1Modal();                      // Z1/Z3: Z1 모달
-            } else {
-              updateSelection(container, btn);    // 일반 흐름
-              selectCategory(cat);
-            }
+            if (activationCode === "Z2") openZ2UniformModal();
+            else if (activationCode === "Z1" || activationCode === "Z3") openZ1Modal();
+            else { updateSelection(container, btn); selectCategory(cat); }
           };
 
           container.appendChild(btn);
         });
-
         document.getElementById('loadingOverlay').style.display = 'none';
       })
       .catch(error => {
@@ -240,7 +217,7 @@
       });
   }
 
-  // ========= 단계 이동 =========
+  // 단계 이동
   function selectCategory(cat) {
     const types = itemData[cat].types;
     const container = document.getElementById('type-buttons');
@@ -248,60 +225,39 @@
     types.forEach(type => {
       const btn = document.createElement('button');
       btn.innerText = type;
-      btn.onclick = () => {
-        selected.type = type;
-        updateSelection(container, btn);
-        selectType(type);
-      };
+      btn.onclick = () => { selected.type = type; updateSelection(container, btn); selectType(type); };
       container.appendChild(btn);
     });
     showStep('type');
   }
-
   function selectType(type) {
     const container = document.getElementById('size-buttons');
     container.innerHTML = '';
     const stockMap = itemData[selected.category].stockMap;
     const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
-
     sizeKeys.forEach(k => {
       const size = k.split('__')[1];
       const stock = stockMap[k];
       const btn = document.createElement('button');
       btn.innerText = `${size} (재고: ${stock})`;
       if (stock > 0) btn.classList.add('has-stock'); else btn.classList.add('no-stock');
-      btn.onclick = () => {
-        selected.size = size;
-        updateSelection(container, btn);
-        selectSize(size);
-      };
+      btn.onclick = () => { selected.size = size; updateSelection(container, btn); selectSize(size); };
       container.appendChild(btn);
     });
-
     showStep('size');
   }
-
-  function selectSize(size) {
+  function selectSize() {
     showStep('quantity');
-    const quantityBox = document.querySelector('.numpad-container');
-    if (quantityBox) {
-      quantityBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      quantityBox.classList.add('glow');
-      setTimeout(() => quantityBox.classList.remove('glow'), 1200);
-    }
-    const vp = document.getElementById("viewPhotos");
-    if (vp) vp.style.display = "inline-block";
   }
-
   function showStep(step) {
     ['category','type','size','quantity'].forEach(s => document.getElementById('step-'+s).classList.add('hidden'));
     document.getElementById('step-'+step).classList.remove('hidden');
-    const recordButtons = document.getElementById('record-buttons');
-    if (step === 'category') recordButtons.classList.remove('hidden'); else recordButtons.classList.add('hidden');
+    const rb = document.getElementById('record-buttons');
+    if (step === 'category') rb.classList.remove('hidden'); else rb.classList.add('hidden');
   }
   function goBackTo(step) { showStep(step); }
 
-  // ========= 장바구니 / 일괄 신청 =========
+  // 장바구니 / 일괄 신청 (일반품목)
   function addItemToList() {
     const quantity = quantityValue;
     const remarks = document.getElementById('remarks').value;
@@ -320,7 +276,7 @@
 
     const item = {
       name: `${loginInfo.empId} ${loginInfo.empName}`,
-      category: selected.category,   // 일반품목은 카테고리 텍스트
+      category: selected.category,   // 라벨(일반품목)
       subcategory: selected.type,
       size: selected.size,
       quantity: requestedQty,
@@ -329,9 +285,7 @@
 
     itemList.push(item);
     renderItemList();
-
-    quantityValue = "";
-    updateQuantityDisplay();
+    quantityValue = ""; updateQuantityDisplay();
     document.getElementById('remarks').value = '';
   }
 
@@ -341,7 +295,7 @@
     if (itemList.length === 0) {
       const empty = document.createElement('div');
       empty.innerText = "➕ 항목을 추가하면 여기에 표시됩니다.";
-      empty.style.textAlign = "center"; empty.style.color = "#aaa"; empty.style.padding = "1rem";
+      empty.style.textAlign="center"; empty.style.color="#aaa"; empty.style.padding="1rem";
       previewContainer.appendChild(empty);
       return;
     }
@@ -349,7 +303,7 @@
       const row = document.createElement('div'); row.className = 'list-item-row';
       const text = document.createElement('div'); text.className = 'list-item-text';
       text.innerText = `${item.category} > ${item.subcategory} > ${item.size} - ${item.quantity}개` + (item.remarks ? ` (${item.remarks})` : '');
-      const delBtn = document.createElement('button'); delBtn.className = 'delete-btn'; delBtn.innerText = '✕';
+      const delBtn = document.createElement('button'); delBtn.className='delete-btn'; delBtn.innerText='✕';
       delBtn.onclick = () => { itemList.splice(index, 1); renderItemList(); };
       row.appendChild(text); row.appendChild(delBtn); previewContainer.appendChild(row);
     });
@@ -358,7 +312,6 @@
   async function submitAllRequests() {
     if (itemList.length === 0) return alert("신청 항목이 없습니다.");
     document.getElementById('submitOverlay').style.display = 'flex';
-
     try {
       for (const item of itemList) {
         const stockKey = `${item.subcategory}__${item.size}`;
@@ -370,7 +323,7 @@
 
         const payload = {
           name: item.name,
-          category: item.category, // 일반품목(비Z)은 카테고리 텍스트로 전송
+          category: item.category, // 라벨
           subcategory: item.subcategory,
           size: item.size,
           quantity,
@@ -379,11 +332,7 @@
           구매요청수량
         };
 
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams(payload)
-        });
+        await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(payload) });
       }
       alert("✅ 모든 항목이 신청되었습니다.");
       location.reload();
@@ -394,33 +343,25 @@
     }
   }
 
-  // ========= 숫자 키패드 =========
-  let quantityValue = "";
-  function appendQuantity(num) {
-    if (quantityValue.length < 4) {
-      quantityValue += num; updateQuantityDisplay();
-    }
-  }
+  // 숫자 키패드
+  function appendQuantity(num) { if (quantityValue.length < 4) { quantityValue += num; updateQuantityDisplay(); } }
   function clearQuantity() { quantityValue = ""; updateQuantityDisplay(); }
-  function backspaceQuantity() { quantityValue = quantityValue.slice(0, -1); updateQuantityDisplay(); }
+  function backspaceQuantity() { quantityValue = quantityValue.slice(0,-1); updateQuantityDisplay(); }
   function updateQuantityDisplay() { document.getElementById("quantity-display").innerText = quantityValue || "0"; }
 
-  // ========= 사진 모달 =========
+  // 사진 모달
   document.getElementById("viewPhotosType").addEventListener("click", () => {
-    const category = selected.category;
-    if (!category) return alert("먼저 대분류를 선택해주세요.");
+    const category = selected.category; if (!category) return alert("먼저 대분류를 선택해주세요.");
     document.getElementById("loadingOverlay").style.display = "flex";
     fetch(`${endpoint}?mode=photo`)
       .then(res => res.json())
       .then(photoMap => {
         const urls = photoMap[category];
-        const container = document.getElementById("photoContent");
-        container.innerHTML = "";
+        const container = document.getElementById("photoContent"); container.innerHTML = "";
         if (!urls || urls.length === 0) container.innerHTML = "<p>해당 항목의 사진이 없습니다.</p>";
         else urls.forEach(url => {
           const fileName = url.split("/").pop().split(".")[0];
-          const wrapper = document.createElement("div");
-          wrapper.style.marginBottom = "20px";
+          const wrapper = document.createElement("div"); wrapper.style.marginBottom="20px";
           wrapper.innerHTML = `<div style="font-weight:bold;margin-bottom:5px;">${fileName}</div><img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />`;
           container.appendChild(wrapper);
         });
@@ -431,7 +372,7 @@
   });
   document.getElementById("closeModal").addEventListener("click", () => { document.getElementById("photoModal").style.display = "none"; });
 
-  // ========= 공지 로딩 =========
+  // 공지 로딩
   document.addEventListener("DOMContentLoaded", () => {
     const box = document.getElementById("inlineNoticeBox");
     const loading = document.getElementById("initialLoadingOverlay");
@@ -442,69 +383,57 @@
       .finally(() => { loading.style.display = 'none'; });
   });
 
-  // ========= 내역 보기 =========
+  // 내역 보기
   function openMyRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
     fetch(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
       .then(res => res.json())
       .then(data => {
-        if (data.result !== "success") { document.getElementById('loadingOverlay').style.display = 'none'; alert("❌ 신청 내역을 불러올 수 없습니다."); return; }
+        if (data.result !== "success") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("❌ 신청 내역을 불러올 수 없습니다."); }
         renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10, 8]);
       })
       .catch(err => { document.getElementById('loadingOverlay').style.display = 'none'; alert("❌ 네트워크 오류: " + err.message); })
       .finally(() => { document.getElementById('loadingOverlay').style.display = 'none'; });
   }
-
   function openTeamRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
     fetch(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
       .then(res => res.json())
       .then(data => {
-        if (data.result === "forbidden") { document.getElementById('loadingOverlay').style.display = 'none'; alert("⚠️ 팀 내역 조회 권한이 없습니다."); return; }
-        if (data.result !== "success") { document.getElementById('loadingOverlay').style.display = 'none'; alert("❌ 팀 신청 내역을 불러올 수 없습니다."); return; }
+        if (data.result === "forbidden") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("⚠️ 팀 내역 조회 권한이 없습니다."); }
+        if (data.result !== "success") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("❌ 팀 신청 내역을 불러올 수 없습니다."); }
         renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10]);
       })
       .catch(err => { document.getElementById('loadingOverlay').style.display = 'none'; alert("❌ 네트워크 오류: " + err.message); })
       .finally(() => { document.getElementById('loadingOverlay').style.display = 'none'; });
   }
-
   function renderRecordsTable(data, colIndexes) {
     const thead = document.querySelector("#myRecordsTable thead");
     const tbody = document.querySelector("#myRecordsTable tbody");
-    thead.innerHTML = "<tr>" + colIndexes.map(i =>
-      `<th style="border:1px solid #ccc; background:#f0f0f0; padding:4px; text-align:center;">${data.header[i]}</th>`
-    ).join("") + "</tr>";
-
-    tbody.innerHTML = data.records.map(row => {
-      return "<tr>" + colIndexes.map(i =>
-        `<td style="border:1px solid #ccc; padding:6px; text-align:center;">${i === 0 ? formatDate(row[i]) : row[i]}</td>`
-      ).join("") + "</tr>";
-    }).join("");
-
+    thead.innerHTML = "<tr>" + colIndexes.map(i => `<th style="border:1px solid #ccc;background:#f0f0f0;padding:4px;text-align:center;">${data.header[i]}</th>`).join("") + "</tr>";
+    tbody.innerHTML = data.records.map(row => "<tr>" + colIndexes.map(i => `<td style="border:1px solid #ccc;padding:6px;text-align:center;">${i===0?formatDate(row[i]):row[i]}</td>`).join("") + "</tr>").join("");
     document.getElementById("myRecordsModal").style.display = "flex";
   }
   function closeMyRecords() { document.getElementById("myRecordsModal").style.display = "none"; }
-  function formatDate(raw) { const d = new Date(raw); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function formatDate(raw) { const d=new Date(raw); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   function updateSelection(container, selectedBtn) { Array.from(container.children).forEach(btn => btn.classList.remove('selected')); selectedBtn.classList.add('selected'); }
 
-  // ========= Z1 모달 =========
+  // Z1 모달 (달력/다이어리)
   function openZ1Modal() {
-    const listContainer = document.getElementById("z1-item-list");
-    listContainer.innerHTML = "";
+    const listContainer = document.getElementById("z1-item-list"); listContainer.innerHTML = "";
     const stockMap = itemData[selected.category]?.stockMap || {};
     const names = Object.keys(stockMap).map(k => k.split("__")[0]).filter((v,i,self)=>self.indexOf(v)===i);
     if (names.length === 0) { listContainer.innerHTML = "<p>등록된 항목이 없습니다.</p>"; return; }
 
     names.forEach(name => {
       const row = document.createElement("div");
-      row.style.display = "flex"; row.style.alignItems = "center"; row.style.justifyContent = "space-between"; row.style.marginBottom = "10px";
+      row.style.display="flex"; row.style.alignItems="center"; row.style.justifyContent="space-between"; row.style.marginBottom="10px";
       const inputId = `z1_qty_${name}`;
       row.innerHTML = `
         <div style="flex:1;">${name}</div>
-        <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
-               style="width:80px; text-align:center; border:1px solid #ccc; border-radius:6px; padding:4px;">
+        <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1" style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
       `;
       listContainer.appendChild(row);
     });
@@ -513,7 +442,7 @@
   }
   function closeZ1Modal() { document.getElementById("modalZ1").style.display = "none"; }
 
-  // ★ Z1 즉시 전송: category는 반드시 Z코드로!
+  // ★ Z1/Z3 즉시 전송: category=라벨 + zcode=Z1/Z3
   async function submitZ1() {
     const remarks = document.getElementById("z1-remarks").value;
     const stockMap = itemData[selected.category]?.stockMap || {};
@@ -526,7 +455,8 @@
       if (qty > 0) {
         itemsToSubmit.push({
           name: `${loginInfo.empId} ${loginInfo.empName}`,
-          category: selected.zcode || 'Z1',
+          category: selected.category,           // 라벨
+          zcode: (selected.zcode || 'Z1'),       // 코드
           subcategory: name,
           size: "개",
           quantity: qty,
@@ -545,7 +475,8 @@
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             name: item.name,
-            category: item.category, // Z1/Z3 코드
+            category: item.category, // 라벨
+            zcode: item.zcode,       // Z1/Z3
             subcategory: item.subcategory,
             size: item.size,
             quantity: item.quantity,
@@ -564,25 +495,16 @@
     }
   }
 
-  // ========= Z2 유니폼 모달 =========
+  // Z2 유니폼 모달 + 한도
   const Z2_TYPES_ORDER = ["상의", "하의", "긴팔티", "반팔티"];
-
-  const Z2_LIMITS = {
-    "상의": 2,
-    "하의": 2,
-    "티셔츠합산": 2,
-    T_TYPES: ["반팔티", "긴팔티"],
-  };
+  const Z2_LIMITS = { "상의":2, "하의":2, "티셔츠합산":2, T_TYPES:["반팔티","긴팔티"] };
 
   function z2SumByType(type) {
     const inputs = document.querySelectorAll('#z2UniformContent input[data-z2-type]');
-    let sum = 0;
-    inputs.forEach(inp => { if (inp.dataset.z2Type === type) sum += parseInt(inp.value || "0", 10); });
+    let sum = 0; inputs.forEach(inp => { if (inp.dataset.z2Type === type) sum += parseInt(inp.value || "0", 10); });
     return sum;
   }
-  function z2SumTshirts() {
-    return Z2_LIMITS.T_TYPES.reduce((acc, t) => acc + z2SumByType(t), 0);
-  }
+  function z2SumTshirts() { return Z2_LIMITS.T_TYPES.reduce((acc, t) => acc + z2SumByType(t), 0); }
   function z2EnforceLimits(e) {
     const inp = e.target;
     const type = inp.dataset.z2Type;
@@ -593,17 +515,11 @@
     if (type === "상의" || type === "하의") {
       const limit = Z2_LIMITS[type];
       const sum = z2SumByType(type);
-      if (sum > limit) {
-        const over = sum - limit;
-        inp.value = Math.max(0, val - over);
-      }
+      if (sum > limit) inp.value = Math.max(0, val - (sum - limit));
     }
     if (Z2_LIMITS.T_TYPES.includes(type)) {
       const tSum = z2SumTshirts();
-      if (tSum > Z2_LIMITS["티셔츠합산"]) {
-        const over = tSum - Z2_LIMITS["티셔츠합산"];
-        inp.value = Math.max(0, val - over);
-      }
+      if (tSum > Z2_LIMITS["티셔츠합산"]) inp.value = Math.max(0, val - (tSum - Z2_LIMITS["티셔츠합산"]));
     }
   }
   function z2ValidateBeforeSubmit() {
@@ -616,9 +532,7 @@
   }
 
   function openZ2UniformModal() {
-    const wrap = document.getElementById("z2UniformContent");
-    wrap.innerHTML = "";
-
+    const wrap = document.getElementById("z2UniformContent"); wrap.innerHTML = "";
     const stockMap = itemData[selected.category]?.stockMap || {};
     const byType = {};
     Object.keys(stockMap).forEach(k => {
@@ -634,36 +548,27 @@
       section.style.marginBottom = "16px";
       section.innerHTML = `<h4 style="text-align:left;margin:8px 0;">${type}</h4>`;
 
-      const table = document.createElement("table");
-      table.style.width = "100%";
-      table.style.borderCollapse = "collapse";
-      const thead = document.createElement("thead");
-      const tbody = document.createElement("tbody");
-
+      const table = document.createElement("table"); table.style.width="100%"; table.style.borderCollapse="collapse";
+      const thead = document.createElement("thead"); const tbody = document.createElement("tbody");
       thead.innerHTML = `
         <tr>
           <th style="border:1px solid #ddd;padding:6px;background:#f7f7f7;">사이즈</th>
           <th style="border:1px solid #ddd;padding:6px;background:#f7f7f7;">재고</th>
           <th style="border:1px solid #ddd;padding:6px;background:#f7f7f7;">신청 수량</th>
-        </tr>
-      `;
-
+        </tr>`;
       sizes.forEach(({size, stock}) => {
         const row = document.createElement("tr");
         row.innerHTML = `
           <td style="border:1px solid #ddd;padding:6px;text-align:center;">${size}</td>
           <td style="border:1px solid #ddd;padding:6px;text-align:center;">${stock}</td>
           <td style="border:1px solid #ddd;padding:6px;text-align:center;">
-            <input type="number" min="0" value="0"
-                   data-z2-type="${type}" data-z2-size="${size}"
+            <input type="number" min="0" value="0" data-z2-type="${type}" data-z2-size="${size}"
                    style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
-          </td>
-        `;
+          </td>`;
         const inputEl = row.querySelector('input[type="number"]');
         inputEl.addEventListener('input', z2EnforceLimits);
         tbody.appendChild(row);
       });
-
       table.appendChild(thead); table.appendChild(tbody);
       section.appendChild(table); wrap.appendChild(section);
     });
@@ -674,7 +579,6 @@
 
   async function submitZ2Uniform() {
     if (!z2ValidateBeforeSubmit()) return;
-
     const inputs = document.querySelectorAll('#z2UniformContent input[type="number"][data-z2-type][data-z2-size]');
     const remarks = document.getElementById("z2UniformRemarks").value || "";
     const itemsToSubmit = [];
@@ -684,9 +588,10 @@
       if (qty > 0) {
         itemsToSubmit.push({
           name: `${loginInfo.empId} ${loginInfo.empName}`,
-          category: selected.zcode || 'Z2',    // Z2 코드
-          subcategory: inp.dataset.z2Type,     // 상의/하의/긴팔티/반팔티
-          size: inp.dataset.z2Size,            // XL(100), 30, ...
+          category: selected.category,       // 라벨 (예: ■ 하계 유니폼 신청)
+          zcode: (selected.zcode || 'Z2'),   // 코드
+          subcategory: inp.dataset.z2Type,   // 상의/하의/긴팔티/반팔티
+          size: inp.dataset.z2Size,          // XL(100), 30, ...
           quantity: qty,
           remarks
         });
@@ -703,12 +608,13 @@
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             name: item.name,
-            category: item.category,        // Z2
-            subcategory: item.subcategory,  // 타입
-            size: item.size,                // 사이즈
+            category: item.category, // 라벨
+            zcode: item.zcode,       // Z2
+            subcategory: item.subcategory,
+            size: item.size,
             quantity: item.quantity,
             remarks: item.remarks,
-            지급수량: item.quantity,        // 필요 시 재고반영 로직으로 교체 가능
+            지급수량: item.quantity, // 필요 시 재고반영 로직으로 교체 가능
             구매요청수량: 0
           })
         });
@@ -723,7 +629,7 @@
   }
 </script>
 
-<!-- 신청 중 로딩 -->
+<!-- 오버레이들 -->
 <div id="submitOverlay"><span>📤 신청 중입니다...</span></div>
 <div id="loadingOverlay">⏳ 로딩 중입니다...</div>
 
@@ -733,8 +639,7 @@
     <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
     <h3>📅 정기 신청 (Z1/Z3)</h3>
     <p style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;">
-      <b>📌 신청 안내</b><br/>
-      벽걸이 + 탁상 = 최대 2개<br/>다이어리 = 0개 또는 1개 신청 가능
+      <b>📌 신청 안내</b><br/>벽걸이 + 탁상 = 최대 2개<br/>다이어리 = 0개 또는 1개 신청 가능
     </p>
     <div id="z1-item-list"></div>
     <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
@@ -748,10 +653,7 @@
     <button onclick="closeZ2UniformModal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
     <h3>👕 유니폼 일괄 신청 (Z2)</h3>
     <p id="z2RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;">
-      <b>📌 신청 안내</b><br/>
-      상의 = 최대 2벌<br/>
-      하의 = 최대 2벌<br/>
-      남자 티(반팔/긴팔 합산) = 최대 2벌
+      <b>📌 신청 안내</b><br/>상의 = 최대 2벌<br/>하의 = 최대 2벌<br/>남자 티(반팔/긴팔 합산) = 최대 2벌
     </p>
     <div id="z2UniformContent"></div>
     <textarea id="z2UniformRemarks" placeholder="공통 비고 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
