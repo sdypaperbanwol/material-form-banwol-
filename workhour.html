@@ -67,13 +67,13 @@
 </div>
 
 <script>
-/** 🔧 GAS exec URL — 반드시 “리디렉트된 최종 googleusercontent 주소”로 교체! 
- * PC 크롬에서 기존 exec 한번 열고, 개발자도구 Network에서 최종 요청 URL 전체를 복사해 넣으세요.
- * 예) https://script.googleusercontent.com/macros/echo?user_content_key=...&lib=...
+/** 🔧 이건 "데이터 API" 주소입니다. 브라우저로 직접 열면 JSON만 보이는 게 정상!
+ * 반드시 '리디렉트된 최종 googleusercontent exec URL'을 넣으세요.
+ * (PC 크롬에서 기존 exec 한번 열고, 주소창/네트워크 탭에서 바뀐 전체 URL 복사)
  */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU2piK9MfCCSN4QPG6cKLRSeULZORDNqrfFWRmvC65iMUwbc_ll51n9bqIHlpUZzsb-g/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyMhj-IwILUvAlrAiM7k-JA2UyO8QyEQnkT76pd_K2EGlDlPsfnEvqcvjZxON-5yaN9YQ/exec'; // ← 최종 exec로 교체
 
-/** 쿼리 파라미터 */
+/** 쿼리 파라미터 (GitHub 페이지를 이 주소로 접속해야 UI가 보임) */
 const q   = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
@@ -103,14 +103,13 @@ const COL = {
   wrap.insertBefore(div, wrap.firstChild);
 })();
 
-/** ===== 로더: 🔧 인앱=iframe 우선, 일반=기존(JSONP→iframe) ===== */
+/** ===== 로더: 인앱=iframe 우선, 일반=JSONP→iframe ===== */
 (async function load(){
   if(!emp){ return showError('잘못된 접근(emp 누락)'); }
 
   function loadJsonp(){
     return new Promise((resolve, reject)=>{
       const u = new URL(GAS_URL);
-      // 🔧 캐시/중간차단 회피용 랜덤 파라미터
       u.searchParams.set('jsonp','1');
       u.searchParams.set('callback','__RENDER__');
       u.searchParams.set('emp', emp);
@@ -119,11 +118,11 @@ const COL = {
 
       const s = document.createElement('script');
       s.src = u.toString();
-      s.referrerPolicy = 'no-referrer'; // 일부 인앱 보안 정책 우회 보조
+      s.referrerPolicy = 'no-referrer';
       s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
       document.body.appendChild(s);
 
-      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
+      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 20000);
       window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
     });
   }
@@ -138,22 +137,21 @@ const COL = {
 
       const ifr = document.createElement('iframe');
       ifr.src = u.toString();
-      ifr.style.display = 'none';
-      ifr.setAttribute('allow','cross-origin-isolated'); // 힌트용(없어도 무방)
+      // ⛔ display:none 금지 — 일부 인앱은 로드 자체를 안 함
+      ifr.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;border:0;opacity:0;';
+      ifr.setAttribute('allow','cross-origin-isolated');
       document.body.appendChild(ifr);
 
-      // 🔧 google 최종 도메인 + 일부 인앱에서 origin이 'null' 로 오는 케이스 허용
       const ORIG_OK = new Set([
         'https://script.googleusercontent.com',
         'https://script.google.com',
-        'null'
+        'null' // 몇몇 인앱/웹뷰는 origin을 null로 보냄
       ]);
 
       const onMsg = (ev)=>{
         try{
           const origin = ev.origin || 'null';
-          if(!ORIG_OK.has(origin)) return; // 불명확 origin 차단
-          // 보통 응답은 iframe에서 옴
+          if(!ORIG_OK.has(origin)) return;
           if (ev.source !== ifr.contentWindow) return;
 
           const res = ev.data;
@@ -162,7 +160,7 @@ const COL = {
         }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
       };
       window.addEventListener('message', onMsg, false);
-      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
+      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 25000);
 
       function cleanup(){ window.removeEventListener('message', onMsg); clearTimeout(t); ifr.remove(); }
     });
@@ -171,11 +169,9 @@ const COL = {
   try{
     let data;
     if (IS_INAPP) {
-      // 🔧 인앱은 리디렉트/서드파티 스크립트 차단이 많아서 iframe 먼저
       try { data = await loadIframe(); }
-      catch(_) { data = await loadJsonp(); } // 아주 예외적으로 iframe이 막힐 때
+      catch(_) { data = await loadJsonp(); }
     } else {
-      // 일반 브라우저는 기존 경로 유지(빠른 렌더)
       try { data = await loadJsonp(); }
       catch(_) { data = await loadIframe(); }
     }
@@ -191,7 +187,7 @@ const COL = {
       'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
       'NOT_FOUND':'대상자 없음(NOT_FOUND)'
     };
-    showError(map[e.message] || ('네트워크 오류: '+e.message));
+    showError((map[e.message] || ('네트워크 오류: '+e.message)) + ' [' + e.message + ']');
   }
 })();
 
@@ -199,12 +195,10 @@ const COL = {
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
-  // Z1:Z4 공용 헤더(토큰/키로 보이는 문자열 숨김)
   const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
   document.getElementById('zbox').innerHTML =
     z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
 
-  // 프로필
   const p = res.person||{};
   document.getElementById('pname').innerHTML =
     `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
@@ -220,7 +214,7 @@ function render(res){
 function parseSheetDate(s){
   const t = String(s||'').trim();
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
-  if(m){ return new Date(2025, 9, Number(m[2])); } // 10월
+  if(m){ return new Date(2025, 9, Number(m[2])); }
   m = t.match(/10[^0-9]*(\d{1,2})/);
   if(m){ return new Date(2025, 9, Number(m[1])); }
   return new Date(2100,0,1);
