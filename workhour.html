@@ -19,7 +19,7 @@
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
   .right{color:var(--muted);font-size:12px}
 
-  /* 메인영역: 표 + 사이드(ERP/수기) */
+  /* 메인: 표 + 사이드(ERP/수기) */
   .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
   @media (max-width:768px){ .grid{grid-template-columns:1fr} }
 
@@ -79,16 +79,29 @@ const q = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
 
-/** 숨길 열: A(0), C(2), D(3), Q:W(16~22), X,Y(23,24) → 메인표에서 제외 */
-const EXCLUDE_COLS = new Set([0,2,3,16,17,18,19,20,21,22,23,24]);
+/** 소스 인덱스(A=0) */
+const COL = {
+  DATE:1,            // B
+  TYPE:4,            // E
+  W_IN:5, W_OUT:6,   // F,G (대양웍스)
+  M_IN:7, M_OUT:8,   // H,I (수정)
+  J:9, K:10, L:11, M:12, N:13, O:14, P:15, // 정규..주휴
+  ERP:23, MAN:24     // X,Y
+};
 
-/** E열부터 고정 헤더 라벨 (필요한 만큼만 덮어쓰기) */
-const FIX_HEADER_START_COL = 4; // E=4
-const FIX_HEADER_LABELS = [
-  '근무 형태',
-  '출근/퇴근(대양웍스)',
-  '출근/퇴근(수정)',
-  '정규','연장','야근','휴일','휴연','유급','주휴'
+/** 표시할 “메인 표” 컬럼 정의 (헤더 고정 + 렌더 함수) */
+const DISPLAY_COLS = [
+  { label:'날짜',                  render:r => safe(r[COL.DATE]) },
+  { label:'근무 형태',            render:r => safe(r[COL.TYPE]) },
+  { label:'출근/퇴근(대양웍스)',  render:r => join2(r[COL.W_IN], r[COL.W_OUT]) },
+  { label:'출근/퇴근(수정)',      render:r => join2(r[COL.M_IN], r[COL.M_OUT]) },
+  { label:'정규',                 render:r => safe(r[COL.J]) },
+  { label:'연장',                 render:r => safe(r[COL.K]) },
+  { label:'야근',                 render:r => safe(r[COL.L]) },
+  { label:'휴일',                 render:r => safe(r[COL.M]) },
+  { label:'휴연',                 render:r => safe(r[COL.N]) },
+  { label:'유급',                 render:r => safe(r[COL.O]) },
+  { label:'주휴',                 render:r => safe(r[COL.P]) },
 ];
 
 /** JSONP 콜백 */
@@ -110,7 +123,7 @@ function render(res){
   document.getElementById('pbox').style.display = '';
 
   // 표 + 사이드
-  buildTableAndSide(res.header||[], res.rows||[]);
+  buildTableAndSide(res.rows||[]);
 }
 
 /** JSONP 로드 */
@@ -127,28 +140,24 @@ function render(res){
   document.body.appendChild(s);
 })();
 
-/** 병합 헤더 보정 + 시크릿 마스킹 + 사용자 고정 라벨 덮어쓰기 */
-function normalizeHeader(header){
-  const out = [...header];
-  let last = '';
-  for(let i=0;i<out.length;i++){
-    const cur = String(out[i]||'').trim();
-    if(cur){
-      out[i] = looksLikeSecret(cur) ? '' : cur;  // 예: U1 토큰 제거
-      last = out[i];
-    }else{
-      out[i] = last; // 병합 전파
-    }
+/** 날짜 파싱(예: "10/1", "10-01", "10-01신운철" 등) → 2025-10-DD */
+function parseSheetDate(s){
+  const t = String(s||'').trim();
+  // MM/DD or MM-DD
+  let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if(m){
+    const month = Number(m[1]), day = Number(m[2]);
+    return new Date(2025, 9 /*Oct=9*/, day);
   }
-  // E열부터 사용자가 지정한 라벨로 덮어쓰기
-  for(let k=0;k<FIX_HEADER_LABELS.length;k++){
-    const idx = FIX_HEADER_START_COL + k;
-    if(idx < out.length) out[idx] = FIX_HEADER_LABELS[k];
-  }
-  return out;
+  // "10월 1일" 같은 형태도 대응(옵션)
+  m = t.match(/10[^0-9]*(\d{1,2})/);
+  if(m){ return new Date(2025, 9, Number(m[1])); }
+  // 실패 시 아주 뒤로
+  return new Date(2100,0,1);
 }
 
-function buildTableAndSide(headerRaw, rows){
+/** 테이블 + ERP/수기 사이드 빌드 */
+function buildTableAndSide(rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){
     box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>';
@@ -159,38 +168,41 @@ function buildTableAndSide(headerRaw, rows){
     return;
   }
 
-  const header = normalizeHeader(headerRaw);
+  // 날짜 오름차순 정렬
+  const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
 
-  // 메인표 표시할 열 계산
-  const cols = header.map((_,i)=>i).filter(i=>!EXCLUDE_COLS.has(i));
-  const th = cols.map(i=>`<th>${esc(header[i]||'')}</th>`).join('');
-  const tb = rows.map(r=>`<tr>${cols.map(i=>`<td>${esc(r[i]||'')}</td>`).join('')}</tr>`).join('');
+  // 메인 표
+  const th = DISPLAY_COLS.map(c=>`<th>${esc(c.label)}</th>`).join('');
+  const tb = sorted.map(r=>`<tr>${DISPLAY_COLS.map(c=>`<td>${esc(c.render(r))}</td>`).join('')}</tr>`).join('');
   box.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
 
-  // 사이드: X=23(ERP), Y=24(수기) 리스트
-  const ERP_COL = 23, MAN_COL = 24;
-  const erpVals = rows.map(r => String(r[ERP_COL]||'').trim()).filter(Boolean);
-  const manVals = rows.map(r => String(r[MAN_COL]||'').trim()).filter(Boolean);
+  // 사이드: X=ERP, Y=수기
+  const erpVals = sorted.map(r => String(r[COL.ERP]||'').trim()).filter(Boolean);
+  const manVals = sorted.map(r => String(r[COL.MAN]||'').trim()).filter(Boolean);
 
   document.getElementById('erpCount').textContent = erpVals.length ? `(${erpVals.length})` : '';
   document.getElementById('manualCount').textContent = manVals.length ? `(${manVals.length})` : '';
-
   document.getElementById('erpList').innerHTML =
     erpVals.length ? erpVals.map(v=>`<div>${esc(v)}</div>`).join('') : `<div class="muted">데이터 없음</div>`;
   document.getElementById('manualList').innerHTML =
     manVals.length ? manVals.map(v=>`<div>${esc(v)}</div>`).join('') : `<div class="muted">데이터 없음</div>`;
 }
 
-/** 문자열이 토큰/키/해시처럼 보이면 true */
+/** 유틸 */
+function join2(a,b){
+  const aa = String(a||'').trim(), bb = String(b||'').trim();
+  if(aa && bb) return aa + '\n' + bb;
+  return aa || bb || '';
+}
+function safe(v){ return (v==null)?'':String(v); }
 function looksLikeSecret(v){
   if(!v) return false;
   const t = String(v).trim();
-  if(t.includes('::')) return true;                           // something::signature
-  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;               // 긴 HEX
-  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;             // 토큰/ID 형태
+  if(t.includes('::')) return true;
+  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
+  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
   return false;
 }
-
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function showError(m){const e=document.getElementById('error'); e.textContent=m; e.style.display='block';}
 </script>
