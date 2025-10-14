@@ -31,9 +31,12 @@
     padding:10px 8px;
   }
   thead th:last-child{ border-right:1px solid var(--line) }
-  /* 2단 헤더 sticky: 첫줄/둘째줄 각각 고정 */
+  /* 2단 헤더 sticky */
   thead tr.thead1 th{ position:sticky; top:0; z-index:2 }
   thead tr.thead2 th{ position:sticky; top:38px; z-index:2 }
+
+  /* 헤더 합계 스타일 */
+  .subsum{display:block; font-weight:600; color:#3b82f6; margin-top:2px}
 
   tbody td{
     padding:8px 8px;white-space:pre-line;
@@ -42,13 +45,6 @@
   }
   tbody td:last-child{ border-right:1px solid var(--line) }
   tbody tr:nth-child(odd) td{background:#fcfcff}
-
-  tfoot td{
-    padding:10px 8px; font-weight:700; background:#f3f6ff;
-    border-top:2px solid #c9d4ff; border-bottom:1px solid var(--line);
-    border-left:1px solid var(--line);
-  }
-  tfoot td:last-child{ border-right:1px solid var(--line) }
 
   th.center, td.center{ text-align:center }
 </style>
@@ -74,8 +70,8 @@
 </div>
 
 <script>
-/** ⬇⬇ 현재 배포된 exec 주소로 교체 가능 */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwtX-pBx4fUM1XCH4qEEuMrX0gouZOZs9BmQJm6bZp7imOlR4kra4T_rXSricERWM0evg/exec';
+/** ⬇⬇ 현재 배포된 exec 주소 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwde_UKZNyR2gJLVZ3Fu1octKxLPmEXWgBqsE1i9hBQ_PxmLDH77OEVzFK6nBpfkaao7A/exec';
 
 /** 쿼리 파라미터 */
 const q = new URLSearchParams(location.search);
@@ -102,7 +98,10 @@ const COL = {
   if(sig) url.searchParams.set('sig', sig);
 
   try {
-    const r = await fetch(url.toString(), { method:'GET', credentials:'omit' });
+    const r = await Promise.race([
+      fetch(url.toString(), { method:'GET', credentials:'omit' }),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), 3000))
+    ]);
     if(!r.ok) throw new Error('bad status');
     const data = await r.json();
     if(!data || !data.ok) throw new Error(data && data.error || 'bad payload');
@@ -155,7 +154,7 @@ function parseSheetDate(s){
   return new Date(2100,0,1);
 }
 
-/** 테이블(2단 헤더 + 합계행) */
+/** 테이블(2단 헤더 + 헤더 내 합계) */
 function buildTable(rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
@@ -169,20 +168,20 @@ function buildTable(rows){
     sum.M += toNum(r[COL.M]); sum.N += toNum(r[COL.N]); sum.O += toNum(r[COL.O]); sum.P += toNum(r[COL.P]);
   });
 
-  // THEAD (2단: 헤더만 병합)
+  // THEAD (2단: 헤더만 병합, 합계는 헤더 아래 줄에 표시)
   const headRow1 = `
     <tr class="thead1">
       <th rowspan="2">날짜</th>
       <th rowspan="2">근무 형태</th>
       <th class="center" colspan="2">출근/퇴근(대양웍스)</th>
       <th class="center" colspan="2">출근/퇴근(수정)</th>
-      <th class="center" rowspan="2">정규</th>
-      <th class="center" rowspan="2">연장</th>
-      <th class="center" rowspan="2">야근</th>
-      <th class="center" rowspan="2">휴일</th>
-      <th class="center" rowspan="2">휴연</th>
-      <th class="center" rowspan="2">유급</th>
-      <th class="center" rowspan="2">주휴</th>
+      <th class="center" rowspan="2">정규<span class="subsum">(${fmt(sum.J)})</span></th>
+      <th class="center" rowspan="2">연장<span class="subsum">(${fmt(sum.K)})</span></th>
+      <th class="center" rowspan="2">야근<span class="subsum">(${fmt(sum.L)})</span></th>
+      <th class="center" rowspan="2">휴일<span class="subsum">(${fmt(sum.M)})</span></th>
+      <th class="center" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>
+      <th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>
+      <th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>
     </tr>`;
   const headRow2 = `
     <tr class="thead2">
@@ -213,25 +212,7 @@ function buildTable(rows){
     return `<tr>${tds}</tr>`;
   }).join('');
 
-  // 합계 행 (tfoot)
-  const foot = `
-    <tfoot>
-      <tr>
-        <td></td>
-        <td class="center">합계</td>
-        <td class="center" colspan="2"></td>
-        <td class="center" colspan="2"></td>
-        <td class="center">${fmt(sum.J)}</td>
-        <td class="center">${fmt(sum.K)}</td>
-        <td class="center">${fmt(sum.L)}</td>
-        <td class="center">${fmt(sum.M)}</td>
-        <td class="center">${fmt(sum.N)}</td>
-        <td class="center">${fmt(sum.O)}</td>
-        <td class="center">${fmt(sum.P)}</td>
-      </tr>
-    </tfoot>`;
-
-  box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody>${foot}</table>`;
+  box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
 }
 
 /** ===== 유틸 ===== */
