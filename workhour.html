@@ -142,8 +142,8 @@ const headRow1 =
   '<tr class="thead1">' +
     '<th class="center" rowspan="2">날짜</th>' +
     '<th rowspan="2">근무 형태</th>' +
-    '<th class="center" colspan="2">비콘</th>' +   // ← 변경
-    '<th class="center" colspan="2">수정</th>' +   // ← 변경
+
+    // ▼ 메트릭 7칸을 먼저 배치
     `<th class="center metric" rowspan="2">
        <span class="full">정규</span>
        <span class="two"><span class="t">정</span><span class="b">규</span></span>
@@ -179,6 +179,11 @@ const headRow1 =
        <span class="two"><span class="t">주</span><span class="b">휴</span></span>
        <span class="subsum">(${fmt(sum.P)})</span>
      </th>` +
+
+    // ▼ 출퇴근 그룹을 뒤로
+    '<th class="center" colspan="2">비콘</th>' +
+    '<th class="center" colspan="2">수정</th>' +
+
     '<th class="note" rowspan="2">특이사항</th>' +
   '</tr>';
 
@@ -190,7 +195,7 @@ const headRow2 =
 
 
   
-  const body = sorted.map(r=>{
+ const body = sorted.map(r=>{
   const cells = [
     safe(r[COL.DATE]), safe(r[COL.TYPE]),
     safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
@@ -201,13 +206,11 @@ const headRow2 =
   ];
   return (
     '<tr>' +
+      // 기본
       `<td class="center">${esc(cells[0])}</td>` +
       `<td>${esc(cells[1])}</td>` +
-      `<td class="center">${esc(cells[2])}</td>` +
-      `<td class="center">${esc(cells[3])}</td>` +
-      `<td class="center">${esc(cells[4])}</td>` +
-      `<td class="center">${esc(cells[5])}</td>` +
-      /* ▼ 지표 7칸에 metric 클래스 추가 */
+
+      // ▼ 메트릭 7칸(J~P)을 먼저
       `<td class="center metric">${esc(cells[6])}</td>` +
       `<td class="center metric">${esc(cells[7])}</td>` +
       `<td class="center metric">${esc(cells[8])}</td>` +
@@ -215,11 +218,19 @@ const headRow2 =
       `<td class="center metric">${esc(cells[10])}</td>` +
       `<td class="center metric">${esc(cells[11])}</td>` +
       `<td class="center metric">${esc(cells[12])}</td>` +
-      /* ▲ */
+
+      // ▼ 출퇴근(비콘 F,G → 수정 H,I)
+      `<td class="center">${esc(cells[2])}</td>` +  // 비콘 출근
+      `<td class="center">${esc(cells[3])}</td>` +  // 비콘 퇴근
+      `<td class="center">${esc(cells[4])}</td>` +  // 수정 출근
+      `<td class="center">${esc(cells[5])}</td>` +  // 수정 퇴근
+
+      // 특이사항
       `<td class="note">${linkify(cells[13])}</td>` +
     '</tr>'
   );
 }).join('');
+
 
 
 
