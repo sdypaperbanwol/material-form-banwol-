@@ -67,171 +67,48 @@
 </div>
 
 <script>
-/** GAS exec */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbznps4ZpGFePymYmoyxRjcXt3V67K2aRTeo23AFJ-7OB1ghw-VnijTnDwbvV_ufuOUxbQ/exec';
+/* ===== 서버에서 주입되는 데이터 ===== */
+const PERSON  = <?= JSON.stringify(person) ?>;
+const ZHEADER = <?= JSON.stringify(zHeader) ?>;
+const ROWS    = <?= JSON.stringify(rows) ?>;
+const UPDATED = <?= JSON.stringify(updated) ?>;
 
-/** 쿼리 파라미터 */
-const q = new URLSearchParams(location.search);
-const emp = q.get('emp') || '';
-const sig = q.get('sig') || '';
-
-/** 인앱/UA 감지 */
-const UA = navigator.userAgent || '';
-const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
-
-/** 외부 브라우저 열기(안드로이드 Chrome 인텐트) */
-(function showInAppHint(){
-  if (!IS_INAPP) return;
-  const wrap = document.querySelector('.wrap');
-  const div = document.createElement('div');
-  div.className = 'card err';
-  div.style.marginBottom = '12px';
-  const here = encodeURIComponent(location.href);
-  const chromeIntent = `intent://open#Intent;scheme=${location.protocol.replace(':','')};S.browser_fallback_url=${here};package=com.android.chrome;end`;
-  div.innerHTML = `
-    카카오/인앱 브라우저에서 네트워크 차단이 발생할 수 있어요.
-    <a href="${chromeIntent}" style="font-weight:700; text-decoration:underline">외부 브라우저(크롬)로 열기</a>`;
-  wrap.insertBefore(div, wrap.firstChild);
-})();
-
-/** 컬럼 인덱스(A=0) */
-const COL = {
-  DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
-  J:9, K:10, L:11, M:12, N:13, O:14, P:15,   // J~P
-  NOTE_U:20,  // U 특이사항
-  FORM_V:21   // V 신청서
-};
-
-/** ============ 3-단계 로더 ============ */
-(async function load(){
-  if(!emp){ showError('잘못된 접근(emp 누락)'); return; }
-
-  // CORS (일반 브라우저 우선)
-  async function loadCors(){
-    const url = new URL(GAS_URL);
-    url.searchParams.set('mode','cors');
-    url.searchParams.set('emp', emp);
-    if(sig) url.searchParams.set('sig', sig);
-    const r = await Promise.race([
-      fetch(url.toString(), { method:'GET', credentials:'omit' }),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('CORS_TIMEOUT')), 10000))
-    ]);
-    if(!r.ok) throw new Error('CORS_BAD_STATUS');
-    const data = await r.json();
-    if(!data || !data.ok) throw new Error(data && data.error || 'CORS_BAD_PAYLOAD');
-    return data;
-  }
-
-  // JSONP
-  function loadJsonp(){
-    return new Promise((resolve, reject)=>{
-      const jp = new URL(GAS_URL);
-      jp.searchParams.set('jsonp','1');
-      jp.searchParams.set('callback','__RENDER__');
-      jp.searchParams.set('emp', emp);
-      if(sig) jp.searchParams.set('sig', sig);
-
-      const s = document.createElement('script');
-      s.src = jp.toString();
-      s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
-      document.body.appendChild(s);
-
-      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
-      window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
-    });
-  }
-
-  // iframe 브릿지 (embed=1)
-  function loadIframe(){
-    return new Promise((resolve, reject)=>{
-      const u = new URL(GAS_URL);
-      u.searchParams.set('embed','1');
-      u.searchParams.set('emp', emp);
-      if(sig) u.searchParams.set('sig', sig);
-
-      const ifr = document.createElement('iframe');
-      ifr.src = u.toString();
-      ifr.style.display = 'none';
-      document.body.appendChild(ifr);
-
-      const ORIG_OK = new Set([
-        'https://script.google.com',
-        'https://script.googleusercontent.com'
-      ]);
-
-      const onMsg = (ev)=>{
-        try{
-          if(!ORIG_OK.has(ev.origin)) return;
-          const res = ev.data;
-          if(res && res.ok){ cleanup(); resolve(res); }
-          else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
-        }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
-      };
-      window.addEventListener('message', onMsg);
-
-      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
-
-      function cleanup(){
-        window.removeEventListener('message', onMsg);
-        clearTimeout(t);
-        ifr.remove();
-      }
-    });
-  }
-
-  try {
-    let data;
-    if (IS_INAPP) {
-      // 인앱: JSONP → 실패 시 iframe
-      try { data = await loadJsonp(); }
-      catch(_) { data = await loadIframe(); }
-    } else {
-      // 일반: CORS → 실패 시 JSONP → 실패 시 iframe
-      try { data = await loadCors(); }
-      catch(_) {
-        try { data = await loadJsonp(); }
-        catch(__){ data = await loadIframe(); }
-      }
-    }
-    if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
-    render(data);
-  } catch (e) {
-    const msgMap = {
-      'CORS_TIMEOUT':'네트워크 지연(CORS)',
-      'CORS_BAD_STATUS':'CORS 상태 오류',
-      'CORS_BAD_PAYLOAD':'CORS 응답 오류',
-      'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
-      'JSONP_TIMEOUT':'네트워크 지연(JSONP)',
-      'IFR_TIMEOUT':'네트워크 지연(iframe)',
-      'IFR_BAD_PAYLOAD':'iframe 응답 오류',
-      'IFR_MSG_ERROR':'iframe 메시지 처리 오류',
-      'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
-      'NOT_FOUND':'대상자 없음(NOT_FOUND)'
-    };
-    showError(msgMap[e.message] || ('네트워크 오류: ' + e.message));
-  }
-})();
-
-/** ===== 렌더러 ===== */
-function render(res){
-  if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
-
-  const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
+/* ===== 렌더 ===== */
+(function init(){
+  // 공용 헤더(Z1:Z4) — 토큰/키로 보이는 문자열 숨김
+  const z = (ZHEADER||[]).filter(v => !looksLikeSecret(v));
   document.getElementById('zbox').innerHTML =
     z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
 
-  const p = res.person||{};
+  // 프로필
+  const p = PERSON||{};
   document.getElementById('pname').innerHTML =
     `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
   document.getElementById('pmeta').textContent =
     `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
-  document.getElementById('pupdated').textContent = res.updated || '';
+  document.getElementById('pupdated').textContent = UPDATED || '';
   document.getElementById('pbox').style.display = '';
 
-  buildTable(res.rows||[]);
-}
+  // 표
+  buildTable(ROWS||[]);
+})();
 
-/** 날짜 파싱(예: "10/1", "10-01", "10-01신운철" 등) → 2025-10-DD */
+/* ===== 유틸 ===== */
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function looksLikeSecret(v){
+  if(!v) return false;
+  const t = String(v).trim();
+  if(t.includes('::')) return true;
+  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
+  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
+  return false;
+}
+function toNum(v){ const t=String(v??'').replace(/[, ]/g,'').trim(); if(t===''||isNaN(Number(t))) return 0; return Number(t); }
+function fmt(n){ return (Math.round(n*100)/100).toString(); }
+function hideZero(v){ const t=String(v??'').trim(); if(t===''||/^0+(\.0+)?$/.test(t)) return ''; return t; }
+function safe(v){ return (v==null)?'':String(v); }
+
+/* ===== 날짜 파싱 (10월 전용 로직 유지) ===== */
 function parseSheetDate(s){
   const t = String(s||'').trim();
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
@@ -241,13 +118,24 @@ function parseSheetDate(s){
   return new Date(2100,0,1);
 }
 
-/** 테이블(2단 헤더 + 합계 + U/V 열) */
+/* ===== 테이블 구조 ===== */
+const COL = {
+  DATE:1,            // B
+  TYPE:4,            // E
+  W_IN:5, W_OUT:6,   // F,G (대양웍스)
+  M_IN:7, M_OUT:8,   // H,I (수정)
+  J:9, K:10, L:11, M:12, N:13, O:14, P:15, // J~P
+  NOTE_U:20,         // U
+  FORM_V:21          // V
+};
+
 function buildTable(rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
 
   const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
 
+  // 합계 (정규~주휴)
   const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
   sorted.forEach(r=>{
     sum.J += toNum(r[COL.J]); sum.K += toNum(r[COL.K]); sum.L += toNum(r[COL.L]);
@@ -306,24 +194,9 @@ function buildTable(rows){
     </tr>`;
   }).join('');
 
-  document.getElementById('tblwrap').innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
+  box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
 }
 
-/** 유틸 */
-function toNum(v){ const t=String(v??'').replace(/[, ]/g,'').trim(); if(t===''||isNaN(Number(t))) return 0; return Number(t); }
-function fmt(n){ return (Math.round(n*100)/100).toString(); }
-function hideZero(v){ const t=String(v??'').trim(); if(t===''||/^0+(\.0+)?$/.test(t)) return ''; return t; }
-function safe(v){ return (v==null)?'':String(v); }
-function looksLikeSecret(v){
-  if(!v) return false;
-  const t = String(v).trim();
-  if(t.includes('::')) return true;
-  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
-  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
-  return false;
-}
-function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function showError(m){const e=document.getElementById('error'); e.textContent=m; e.style.display='block';}
 function linkify(v){
   const t = (v||'').trim();
   if(!t) return '';
