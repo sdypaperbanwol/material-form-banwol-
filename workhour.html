@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>개인 근태 조회</title>
 <style>
-  :root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--radius:16px;--shadow:0 6px 18px rgba(0,0,0,.06)}
+  :root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--shadow:0 6px 18px rgba(0,0,0,.06)}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
   .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
   .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
 
   .top{display:grid;gap:12px;margin-bottom:16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
   .zcard{padding:12px 14px}
 
   .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
@@ -31,6 +31,7 @@
     padding:10px 8px;
   }
   thead th:last-child{ border-right:1px solid var(--line) }
+  /* 2단 헤더 sticky: 첫줄/둘째줄 각각 고정 */
   thead tr.thead1 th{ position:sticky; top:0; z-index:2 }
   thead tr.thead2 th{ position:sticky; top:38px; z-index:2 }
 
@@ -73,8 +74,8 @@
 </div>
 
 <script>
-/** ⬇⬇ 현재 배포된 exec 주소 */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwde_UKZNyR2gJLVZ3Fu1octKxLPmEXWgBqsE1i9hBQ_PxmLDH77OEVzFK6nBpfkaao7A/exec';
+/** ⬇⬇ 현재 배포된 exec 주소로 교체 가능 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwtX-pBx4fUM1XCH4qEEuMrX0gouZOZs9BmQJm6bZp7imOlR4kra4T_rXSricERWM0evg/exec';
 
 /** 쿼리 파라미터 */
 const q = new URLSearchParams(location.search);
@@ -87,11 +88,42 @@ const COL = {
   TYPE:4,            // E
   W_IN:5, W_OUT:6,   // F,G (대양웍스)
   M_IN:7, M_OUT:8,   // H,I (수정)
-  J:9, K:10, L:11, M:12, N:13, O:14, P:15, // 정규..주휴
-  // X,Y는 더이상 사용 안함
+  J:9, K:10, L:11, M:12, N:13, O:14, P:15 // 정규..주휴
 };
 
-/** JSONP 콜백 */
+/** ===== 로더: CORS(JSON) 우선, 실패 시 JSONP 폴백 ===== */
+(async function load(){
+  if(!emp){ showError('잘못된 접근(emp 누락)'); return; }
+
+  // ① CORS(JSON)
+  const url = new URL(GAS_URL);
+  url.searchParams.set('mode','cors');
+  url.searchParams.set('emp', emp);
+  if(sig) url.searchParams.set('sig', sig);
+
+  try {
+    const r = await fetch(url.toString(), { method:'GET', credentials:'omit' });
+    if(!r.ok) throw new Error('bad status');
+    const data = await r.json();
+    if(!data || !data.ok) throw new Error(data && data.error || 'bad payload');
+    render(data); // 성공
+    return;
+  } catch(e) {
+    // ② JSONP 폴백
+    const jp = new URL(GAS_URL);
+    jp.searchParams.set('jsonp','1');
+    jp.searchParams.set('callback','render');
+    jp.searchParams.set('emp', emp);
+    if(sig) jp.searchParams.set('sig', sig);
+
+    const s = document.createElement('script');
+    s.src = jp.toString();
+    s.onerror = () => showError('네트워크 오류');
+    document.body.appendChild(s);
+  }
+})();
+
+/** ===== 렌더러(글로벌: JSONP 콜백용) ===== */
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
@@ -113,28 +145,11 @@ function render(res){
   buildTable(res.rows||[]);
 }
 
-/** JSONP 로드 */
-(function(){
-  if(!emp){ showError('잘못된 접근(emp 누락)'); return; }
-  const url = new URL(GAS_URL);
-  url.searchParams.set('jsonp','1');
-  url.searchParams.set('callback','render');
-  url.searchParams.set('emp', emp);
-  if(sig) url.searchParams.set('sig', sig);
-  const s = document.createElement('script');
-  s.src = url.toString();
-  s.onerror = () => showError('네트워크 오류');
-  document.body.appendChild(s);
-})();
-
 /** 날짜 파싱(예: "10/1", "10-01", "10-01신운철" 등) → 2025-10-DD */
 function parseSheetDate(s){
   const t = String(s||'').trim();
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
-  if(m){
-    const day = Number(m[2]);
-    return new Date(2025, 9, day); // Oct = 9
-  }
+  if(m){ return new Date(2025, 9, Number(m[2])); } // Oct=9
   m = t.match(/10[^0-9]*(\d{1,2})/);
   if(m){ return new Date(2025, 9, Number(m[1])); }
   return new Date(2100,0,1);
@@ -147,19 +162,14 @@ function buildTable(rows){
 
   const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
 
-  // 합계 집계
+  // 합계 집계 (정규~주휴)
   const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
   sorted.forEach(r=>{
-    sum.J += toNum(r[COL.J]);
-    sum.K += toNum(r[COL.K]);
-    sum.L += toNum(r[COL.L]);
-    sum.M += toNum(r[COL.M]);
-    sum.N += toNum(r[COL.N]);
-    sum.O += toNum(r[COL.O]);
-    sum.P += toNum(r[COL.P]);
+    sum.J += toNum(r[COL.J]); sum.K += toNum(r[COL.K]); sum.L += toNum(r[COL.L]);
+    sum.M += toNum(r[COL.M]); sum.N += toNum(r[COL.N]); sum.O += toNum(r[COL.O]); sum.P += toNum(r[COL.P]);
   });
 
-  // THEAD (2단)
+  // THEAD (2단: 헤더만 병합)
   const headRow1 = `
     <tr class="thead1">
       <th rowspan="2">날짜</th>
@@ -203,7 +213,7 @@ function buildTable(rows){
     return `<tr>${tds}</tr>`;
   }).join('');
 
-  // TFOOT(합계 행) — 정규~주휴만 값 표시
+  // 합계 행 (tfoot)
   const foot = `
     <tfoot>
       <tr>
@@ -224,7 +234,7 @@ function buildTable(rows){
   box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody>${foot}</table>`;
 }
 
-/** 유틸 */
+/** ===== 유틸 ===== */
 function toNum(v){
   const t = String(v??'').replace(/[, ]/g,'').trim();
   if(t===''||isNaN(Number(t))) return 0;
