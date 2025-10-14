@@ -16,7 +16,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 .zcard{padding:12px 14px}
 .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
 .h1{margin:0 0 4px;font-size:18px}
-.meta{color:var(--muted);font-size:13px}  /* ← 줄바꿈 오타 수정 */
+.meta{color:var(--muted);font-size:13px}
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
 .right{color:#666;font-size:12px}
 
@@ -84,7 +84,7 @@ th.type-col .t-two{display:none}
   th.type-col .t-two{display:inline-block;line-height:1.05;text-align:center}
 }
 
-/* 본문(E열 값) — 데스크톱 가운데 정렬, 모바일도 기본 가운데 */
+/* 본문(E열 값) — 데스크톱/모바일 모두 중앙 정렬 */
 td.type-cell{font-size:13px;line-height:1.2;text-align:center}
 td.type-cell .type-full{display:inline}
 td.type-cell .type-two{display:none}
@@ -97,17 +97,16 @@ td.type-cell .type-two{display:none}
   }
 }
 
-/* 근무형태 칸 폭: 값이 길어도 세로 찢어짐 방지 */
+/* 근무형태 칸 폭 */
 th.type-col,td.type-cell{min-width:110px}
 @media (max-width:640px){
   th.type-col, td.type-cell { min-width:60px; width:auto; }
 }
 
-
 /* ====== 비콘/수정 시간칸: 값이 없어도 폭 고정 ====== */
 th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
 @media (max-width:640px){
-  th.time-col,td.time-col{min-width:76px;width:76px}
+  th.time-col,td.time-col{min-width:64px;width:64px;padding:4px 2px;font-size:11px;white-space:nowrap}
 }
 
 /* 특이사항은 모바일에서 가로로 길게 */
@@ -115,63 +114,29 @@ th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
   th.note,td.note{writing-mode:horizontal-tb;min-width:240px}
 }
 
-      /* === 본문 셀 폰트크기 통일: 근무형태 값과 동일 === */
-/* 데스크톱: type-cell이 13px 이므로 전부 13px */
-tbody td { font-size: 13px; }
-
-/* 모바일: type-cell이 11px 이므로 전부 11px */
-@media (max-width: 640px){
-  tbody td { font-size: 11px; }
-
-  /* 기존에 따로 12px로 줄여놨던 메트릭 셀을 통일 */
-  td.metric { font-size: 11px !important; }
-}
-
-      /* === 모바일 전용 오버라이드 (아래를 스타일 맨 끝에 추가) === */
+/* === 본문 셀 폰트크기 통일: 근무형태 값과 동일 === */
+tbody td{font-size:13px}
 @media (max-width:640px){
-
-  /* 비콘/수정 시간칸: 더 좁게 + 줄바꿈 방지 */
-  th.time-col,
-  td.time-col{
-    min-width: 64px;
-    width: 64px;
-    padding: 4px 2px;
-    font-size: 11px;
-    white-space: nowrap;
-    text-align: center;
-  }
-
-  /* 헤더 전체 더 컴팩트하게 */
-  thead th{
-    padding: 4px 4px;    /* 높이 ↓ */
-    font-size: 11px;     /* 글자 ↓ */
-    line-height: 1.05;
-  }
-
-  /* 메트릭(정/규…): 라벨/합계도 더 작게 */
-  th.metric{
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
-  th.metric .subsum{
-    font-size: 9px;      /* (12 → 9) */
-    margin-top: 1px;
-  }
-
-  /* 본문 숫자(정/규/연/장…): 근무형태 값 크기와 비슷하게 */
-  td.metric{
-    font-size: 11px;
-    padding: 5px 3px;
-    text-align: center;
-  }
-
-  /* (참고) 근무형태 칸 폭은 이전 값 유지 중: 130px
-     더 줄이고 싶으면 아래 주석 해제해서 숫자만 바꿔.
-  */
-  /* th.type-col, td.type-cell{ min-width: 120px; width: 120px; } */
+  tbody td{font-size:11px}
+  td.metric{font-size:11px!important}
 }
 
-
+/* ==== 로딩 오버레이 ==== */
+.loading{
+  position:fixed; inset:0;
+  background:rgba(255,255,255,.85);
+  display:none; align-items:center; justify-content:center;
+  z-index:9999; backdrop-filter:saturate(180%) blur(2px);
+}
+.loading.show{display:flex}
+.loading-box{display:flex;flex-direction:column;align-items:center}
+.spinner{
+  width:44px;height:44px;border-radius:50%;
+  border:3px solid #dbeafe;border-top-color:#2563eb;
+  animation:spin 1s linear infinite
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading .msg{margin-top:12px;color:#374151;font-weight:600}
 </style>
 </head>
 <body>
@@ -188,6 +153,14 @@ tbody td { font-size: 13px; }
     <div class="card tblwrap" id="tblwrap"></div>
   </div>
 
+  <!-- ✅ 로딩 오버레이: 스크립트 위에 둬서 DOM 존재 보장 -->
+  <div id="loading" class="loading">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div class="msg">로딩 중입니다...</div>
+    </div>
+  </div>
+
 <script>
   const GAS_URL='https://script.google.com/macros/s/AKfycbwgBGe31WtHQV8iLkr2q8zYU_zwY6eycnkFi75K2XjuttE6durflslQeDkzpXB0c_Gwbw/exec';
 
@@ -200,6 +173,7 @@ tbody td { font-size: 13px; }
 
   (async function load(){
     if(!emp){ return showError('잘못된 접근(emp 누락)'); }
+    showLoading(true); // 시작하자마자 오버레이
     try{
       const res=await fetch(GAS_URL,{
         method:'POST',
@@ -212,6 +186,8 @@ tbody td { font-size: 13px; }
     }catch(e){
       const map={'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)','NOT_FOUND':'대상자 없음(NOT_FOUND)','BAD_PAYLOAD':'데이터 로드 실패'};
       showError(map[e.message]||('네트워크 오류: '+e.message));
+    }finally{
+      showLoading(false); // 성공/실패 상관없이 닫기
     }
   })();
 
@@ -297,7 +273,7 @@ tbody td { font-size: 13px; }
 
           `<td class="note">${linkify(cells[13])}</td>` +
         '</tr>'
-      );  /* ← 여기 백틱 제거됨 */
+      );
     }).join('');
 
     box.innerHTML = '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
@@ -316,7 +292,7 @@ tbody td { font-size: 13px; }
     );
   }
 
-  // 근무형태: 데스크톱 full, 모바일 two (괄호 분리 표시)
+  // 근무형태: 데스크톱 full, 모바일 two (괄호는 아래 줄로)
   function makeTypeHTML(v){
     const t=(v||'').trim();
     const clean=t.replace(/\s+/g,'');
@@ -329,7 +305,6 @@ tbody td { font-size: 13px; }
         `<span class="type-two"><span>${esc(top)}</span><span>${esc(bottom)}</span></span>`
       );
     }
-    // 4글자 → 2/2, 2글자 → 한 줄, 그 외는 위주/아래 보조
     let twoTop='',twoBottom='';
     if(clean.length===4){ twoTop=clean.slice(0,2); twoBottom=clean.slice(2,4); }
     else if(clean.length===2){ twoTop=clean; twoBottom=''; }
@@ -349,6 +324,13 @@ tbody td { font-size: 13px; }
     wrap.style.setProperty('--head1h',h+'px');
   }
   window.addEventListener('resize',setStickyOffsets);
+
+  function showLoading(on){
+    const el=document.getElementById('loading');
+    if(!el) return;
+    el.classList[on?'add':'remove']('show');
+    document.body.style.overflow=on?'hidden':'';
+  }
 
   function toNum(v){ const t=String(v??'').replace(/[,. ]/g,'').trim(); return (t===''||isNaN(Number(t)))?0:Number(t); }
   function fmt(n){ return (Math.round(n*100)/100).toString(); }
