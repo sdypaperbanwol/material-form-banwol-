@@ -9,6 +9,7 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
   .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+  .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
   .top{display:grid;gap:12px;margin-bottom:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
   .zcard{padding:12px 14px}
@@ -17,21 +18,36 @@
   .meta{color:var(--muted);font-size:13px}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
   .right{color:var(--muted);font-size:12px}
+
+  /* 메인영역: 표 + 사이드(ERP/수기) */
+  .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
+  @media (max-width:768px){ .grid{grid-template-columns:1fr} }
+
   .tblwrap{overflow:auto}
   table{width:100%;border-collapse:separate;border-spacing:0}
   thead th{
     position:sticky;top:0;background:#fbfbfd;font-weight:700;border-bottom:1px solid var(--line);
-    padding:10px 8px;white-space:pre-line; /* ← 줄바꿈 표시 */
+    padding:10px 8px;white-space:pre-line;
   }
-  tbody td{border-bottom:1px solid var(--line);padding:8px 8px;white-space:pre-line} /* ← 줄바꿈 표시 */
+  tbody td{border-bottom:1px solid var(--line);padding:8px 8px;white-space:pre-line}
   tbody tr:nth-child(odd) td{background:#fcfcff}
-  .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
+
+  .side{padding:12px}
+  .side h3{margin:0 0 8px;font-size:14px}
+  .list{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+  .list div{padding:8px 10px;border-top:1px solid var(--line)}
+  .list div:first-child{border-top:none}
+  .muted{color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="error" class="card err" style="display:none"></div>
+
+  <!-- 공용 헤더(Z1:Z4) -->
   <div class="top" id="zbox"></div>
+
+  <!-- 프로필 -->
   <div class="card profile" id="pbox" style="display:none">
     <div>
       <div class="h1" id="pname"></div>
@@ -39,26 +55,47 @@
     </div>
     <div class="right" id="pupdated"></div>
   </div>
-  <div class="card tblwrap" id="tblwrap"></div>
+
+  <!-- 메인 표 + ERP/수기 사이드 -->
+  <div class="grid">
+    <div class="card tblwrap" id="tblwrap"></div>
+
+    <aside class="card side">
+      <h3>ERP <span class="muted" id="erpCount"></span></h3>
+      <div class="list" id="erpList"></div>
+      <div style="height:12px"></div>
+      <h3>수기 <span class="muted" id="manualCount"></span></h3>
+      <div class="list" id="manualList"></div>
+    </aside>
+  </div>
 </div>
 
 <script>
-/** ⬇⬇ “현재 배포된 exec 주소(…/exec)”로 교체 */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzGA5X-YLU5FJXbvqYgFeTX0w1hLTfUpDSbfgONZTcMGIuf9bG4oV1iakVl2TcoHudSHA/exec';
+/** ⬇⬇ 현재 배포된 exec 주소 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwde_UKZNyR2gJLVZ3Fu1octKxLPmEXWgBqsE1i9hBQ_PxmLDH77OEVzFK6nBpfkaao7A/exec';
 
 /** 쿼리 파라미터 */
 const q = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
 
-/** 표시 열: A(0),C(2),D(3) 제외 → 헤더 시작이 ERP부터 보이도록 */
-const EXCLUDE_COLS = new Set([0,2,3]);
+/** 숨길 열: A(0), C(2), D(3), Q:W(16~22), X,Y(23,24) → 메인표에서 제외 */
+const EXCLUDE_COLS = new Set([0,2,3,16,17,18,19,20,21,22,23,24]);
+
+/** E열부터 고정 헤더 라벨 (필요한 만큼만 덮어쓰기) */
+const FIX_HEADER_START_COL = 4; // E=4
+const FIX_HEADER_LABELS = [
+  '근무 형태',
+  '출근/퇴근(대양웍스)',
+  '출근/퇴근(수정)',
+  '정규','연장','야근','휴일','휴연','유급','주휴'
+];
 
 /** JSONP 콜백 */
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
-  // 공용 헤더(Z1:Z4) - 키/해시처럼 보이는 문자열은 숨김
+  // 공용 헤더(Z1:Z4) — 토큰/키로 보이는 문자열 숨김
   const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
   document.getElementById('zbox').innerHTML =
     z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
@@ -72,8 +109,8 @@ function render(res){
   document.getElementById('pupdated').textContent = res.updated || '';
   document.getElementById('pbox').style.display = '';
 
-  // 표
-  buildTable(res.header||[], res.rows||[]);
+  // 표 + 사이드
+  buildTableAndSide(res.header||[], res.rows||[]);
 }
 
 /** JSONP 로드 */
@@ -84,32 +121,73 @@ function render(res){
   url.searchParams.set('callback','render');
   url.searchParams.set('emp', emp);
   if(sig) url.searchParams.set('sig', sig);
-
   const s = document.createElement('script');
   s.src = url.toString();
   s.onerror = () => showError('네트워크 오류');
   document.body.appendChild(s);
 })();
 
-function buildTable(header, rows){
+/** 병합 헤더 보정 + 시크릿 마스킹 + 사용자 고정 라벨 덮어쓰기 */
+function normalizeHeader(header){
+  const out = [...header];
+  let last = '';
+  for(let i=0;i<out.length;i++){
+    const cur = String(out[i]||'').trim();
+    if(cur){
+      out[i] = looksLikeSecret(cur) ? '' : cur;  // 예: U1 토큰 제거
+      last = out[i];
+    }else{
+      out[i] = last; // 병합 전파
+    }
+  }
+  // E열부터 사용자가 지정한 라벨로 덮어쓰기
+  for(let k=0;k<FIX_HEADER_LABELS.length;k++){
+    const idx = FIX_HEADER_START_COL + k;
+    if(idx < out.length) out[idx] = FIX_HEADER_LABELS[k];
+  }
+  return out;
+}
+
+function buildTableAndSide(headerRaw, rows){
   const box = document.getElementById('tblwrap');
-  if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
+  if(!rows.length){
+    box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>';
+    document.getElementById('erpList').innerHTML = '';
+    document.getElementById('manualList').innerHTML = '';
+    document.getElementById('erpCount').textContent = '';
+    document.getElementById('manualCount').textContent = '';
+    return;
+  }
 
-  // 표시할 열 자동 계산: A,C,D 제외
+  const header = normalizeHeader(headerRaw);
+
+  // 메인표 표시할 열 계산
   const cols = header.map((_,i)=>i).filter(i=>!EXCLUDE_COLS.has(i));
-
   const th = cols.map(i=>`<th>${esc(header[i]||'')}</th>`).join('');
   const tb = rows.map(r=>`<tr>${cols.map(i=>`<td>${esc(r[i]||'')}</td>`).join('')}</tr>`).join('');
   box.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
+
+  // 사이드: X=23(ERP), Y=24(수기) 리스트
+  const ERP_COL = 23, MAN_COL = 24;
+  const erpVals = rows.map(r => String(r[ERP_COL]||'').trim()).filter(Boolean);
+  const manVals = rows.map(r => String(r[MAN_COL]||'').trim()).filter(Boolean);
+
+  document.getElementById('erpCount').textContent = erpVals.length ? `(${erpVals.length})` : '';
+  document.getElementById('manualCount').textContent = manVals.length ? `(${manVals.length})` : '';
+
+  document.getElementById('erpList').innerHTML =
+    erpVals.length ? erpVals.map(v=>`<div>${esc(v)}</div>`).join('') : `<div class="muted">데이터 없음</div>`;
+  document.getElementById('manualList').innerHTML =
+    manVals.length ? manVals.map(v=>`<div>${esc(v)}</div>`).join('') : `<div class="muted">데이터 없음</div>`;
 }
 
-/** Z1:Z4에서 보안/토큰처럼 보이는 값 걸러내기 */
+/** 문자열이 토큰/키/해시처럼 보이면 true */
 function looksLikeSecret(v){
   if(!v) return false;
   const t = String(v).trim();
-  if(t.includes('::')) return true;                          // 예: HMAC 시그니처 포맷
-  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;              // 긴 HEX
-  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;            // ID/토큰 형태
+  if(t.includes('::')) return true;                           // something::signature
+  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;               // 긴 HEX
+  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;             // 토큰/ID 형태
   return false;
 }
 
