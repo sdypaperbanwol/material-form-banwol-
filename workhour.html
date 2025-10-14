@@ -19,8 +19,11 @@
   .right{color:var(--muted);font-size:12px}
   .tblwrap{overflow:auto}
   table{width:100%;border-collapse:separate;border-spacing:0}
-  thead th{position:sticky;top:0;background:#fbfbfd;font-weight:700;border-bottom:1px solid var(--line);padding:10px 8px;white-space:nowrap}
-  tbody td{border-bottom:1px solid var(--line);padding:8px 8px;white-space:nowrap}
+  thead th{
+    position:sticky;top:0;background:#fbfbfd;font-weight:700;border-bottom:1px solid var(--line);
+    padding:10px 8px;white-space:pre-line; /* ← 줄바꿈 표시 */
+  }
+  tbody td{border-bottom:1px solid var(--line);padding:8px 8px;white-space:pre-line} /* ← 줄바꿈 표시 */
   tbody tr:nth-child(odd) td{background:#fcfcff}
   .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
 </style>
@@ -40,24 +43,25 @@
 </div>
 
 <script>
-/** ⬇⬇ 여기를 “현재 배포된 exec 주소(…/exec)”로 바꾸세요 */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwde_UKZNyR2gJLVZ3Fu1octKxLPmEXWgBqsE1i9hBQ_PxmLDH77OEVzFK6nBpfkaao7A/exec';
+/** ⬇⬇ “현재 배포된 exec 주소(…/exec)”로 교체 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzGA5X-YLU5FJXbvqYgFeTX0w1hLTfUpDSbfgONZTcMGIuf9bG4oV1iakVl2TcoHudSHA/exec';
 
 /** 쿼리 파라미터 */
 const q = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
 
-/** 표시 열 선택 (A=0,B=1,...Z=25). 비우면 전체 표시 */
-const VISIBLE_COLS = [];
+/** 표시 열: A(0),C(2),D(3) 제외 → 헤더 시작이 ERP부터 보이도록 */
+const EXCLUDE_COLS = new Set([0,2,3]);
 
 /** JSONP 콜백 */
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
-  // 공용 헤더(Z1:Z4)
+  // 공용 헤더(Z1:Z4) - 키/해시처럼 보이는 문자열은 숨김
+  const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
   document.getElementById('zbox').innerHTML =
-    (res.zHeader||[]).map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
+    z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
 
   // 프로필
   const p = res.person||{};
@@ -79,7 +83,7 @@ function render(res){
   url.searchParams.set('jsonp','1');
   url.searchParams.set('callback','render');
   url.searchParams.set('emp', emp);
-  if(sig) url.searchParams.set('sig', sig); // USE_SIGNATURE=false면 없어도 됨
+  if(sig) url.searchParams.set('sig', sig);
 
   const s = document.createElement('script');
   s.src = url.toString();
@@ -90,11 +94,25 @@ function render(res){
 function buildTable(header, rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
-  const cols = (VISIBLE_COLS.length ? VISIBLE_COLS : header.map((_,i)=>i));
+
+  // 표시할 열 자동 계산: A,C,D 제외
+  const cols = header.map((_,i)=>i).filter(i=>!EXCLUDE_COLS.has(i));
+
   const th = cols.map(i=>`<th>${esc(header[i]||'')}</th>`).join('');
   const tb = rows.map(r=>`<tr>${cols.map(i=>`<td>${esc(r[i]||'')}</td>`).join('')}</tr>`).join('');
   box.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
 }
+
+/** Z1:Z4에서 보안/토큰처럼 보이는 값 걸러내기 */
+function looksLikeSecret(v){
+  if(!v) return false;
+  const t = String(v).trim();
+  if(t.includes('::')) return true;                          // 예: HMAC 시그니처 포맷
+  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;              // 긴 HEX
+  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;            // ID/토큰 형태
+  return false;
+}
+
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function showError(m){const e=document.getElementById('error'); e.textContent=m; e.style.display='block';}
 </script>
