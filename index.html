@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Cache-Control" content="no-store" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>자재 신청</title>
   <style>
@@ -19,16 +18,17 @@
     #quantity-display { font-size:2rem; margin-bottom:1rem; font-weight:bold; }
     #record-buttons:not(.hidden) { display:flex; justify-content:center; gap:0.8rem; margin:0.5rem 0 1rem 0; flex-wrap:wrap; }
 
-    /* 오버레이 (공통) */
+    /* 오버레이 */
     #submitOverlay, #loadingOverlay, #initialLoadingOverlay {
       position: fixed; top: 0; left: 0;
       width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.5);
       display: none; justify-content: center; align-items: center;
-      z-index: 9999;
+      z-index: 9999;  /* 기본값 */
       color: white; font-size: 1.4rem;
     }
-    #submitOverlay { z-index: 10050; }  /* 모달 위로 */
+    /* submitOverlay만 위로 */
+    #submitOverlay { z-index: 10050; }
     #initialLoadingOverlay { display:flex; }
     #submitOverlay span {
       background:white; padding:20px 40px; border-radius:12px; font-size:1.3rem;
@@ -47,7 +47,7 @@
     .numpad-grid button { padding:1rem; font-size:1.5rem; border-radius:10px; background:#e0e0e0; border:none; cursor:pointer; transition:background .2s; }
     .numpad-grid button:hover { background:#ccc; }
 
-    /* 로그인 박스 */
+    /* 로그인창 복구 */
     #login-section { display:block; }
     #login-section input {
       padding:1.00rem; font-size:1.05rem; margin:0.8rem auto;
@@ -60,11 +60,27 @@
     }
   </style>
 
+  <!-- ✅ 페이지 자체 캐시 강제 우회 (인앱/강캐시 대비) -->
   <script>
-    // (필요시) 서비스워커가 index.html을 강캐싱하면, 한두 번만 주석 해제해서 캐시 끊기
-    // if ('serviceWorker' in navigator) {
-    //   navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
-    // }
+    (function(){
+      try {
+        var u = new URL(location.href);
+        if (!u.searchParams.get('pv')) { // page version
+          u.searchParams.set('pv', Date.now().toString());
+          history.replaceState(null, '', u.toString());
+        }
+      } catch(e) { /* noop */ }
+    })();
+  </script>
+
+  <!-- ✅ 서비스워커/캐시 완전 해제 (임시, 문제 해결 후 제거 가능) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs){
+        regs.forEach(function(r){ r.unregister(); });
+        if (window.caches) caches.keys().then(function(keys){ keys.forEach(function(k){ caches.delete(k); }); });
+      });
+    }
   </script>
 </head>
 <body>
@@ -161,22 +177,12 @@
 </div>
 
 <script>
-  // ✅ 최종 배포 /exec URL로 바꿔 넣으세요
-  const endpoint = 'https://script.google.com/macros/s/AKfycby1W5ansyu5_sQ0iCuD-BywByCZPYomCQV_UvQWBFGyF5BME5MRnkh7Am85GtSLopx7/exec';
-
-  // ===== 공용 유틸 (캐시버스터 + 프리플라이트 회피) =====
-  function g(u){ return u + (u.includes('?') ? '&' : '?') + 't=' + Date.now(); }
-  async function postForm(u, params) {
-    const res = await fetch(g(u), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams(params).toString(),
-      cache: 'no-store',
-      redirect: 'follow'
-    });
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    return res.json();
-  }
+  /* =====================
+   *  캐시/서비스워커 우회용 endpoint 래퍼
+   * ===================== */
+  const BUILD_V = '20251015-0705'; // ← 배포시 갱신
+  const ENDPOINT_BASE = 'https://script.google.com/macros/s/AKfycby1W5ansyu5_sQ0iCuD-BywByCZPYomCQV_UvQWBFGyF5BME5MRnkh7Am85GtSLopx7/exec';
+  const ep = (q='') => ENDPOINT_BASE + (q.includes('?') ? '&' : '?') + 'v=' + BUILD_V + (q ? '&' + q.replace(/^\?/, '') : '');
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -194,33 +200,38 @@
     document.getElementById('loginLoadingText').classList.remove('hidden');
     document.querySelector('#login-section button').style.display = 'none';
 
-    postForm(endpoint, { empId, empName })
-      .then(async data => {
-        document.getElementById('loginLoadingText').classList.add('hidden');
-        if (data.result === 'success') {
-          loginInfo = { empId, empName };
-          document.getElementById('login-section').classList.add('hidden');
-          document.getElementById('form-section').classList.remove('hidden');
-          document.getElementById('title').innerText = "🔎 신청·조사 시스템";
-          document.getElementById('record-buttons').classList.remove('hidden');
-          document.getElementById('loadingOverlay').style.display = 'flex';
-          try { zMeta = await fetch(g(`${endpoint}?mode=zinfo`), { cache:'no-store' }).then(r=>r.json()) || {}; } catch(e) { console.warn('zinfo 로드 실패', e); }
-          loadItems();
-        } else {
-          document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
-          document.querySelector('#login-section button').style.display = 'inline-block';
-        }
-      })
-      .catch(error => {
-        document.getElementById('loginLoadingText').classList.add('hidden');
-        document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
-        document.querySelector('#login-section button').style.display = 'block';
-      });
+    fetch(ep(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ empId, empName })
+    })
+    .then(res => res.json())
+    .then(async data => {
+      document.getElementById('loginLoadingText').classList.add('hidden');
+      if (data.result === 'success') {
+        loginInfo = { empId, empName };
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('form-section').classList.remove('hidden');
+        document.getElementById('title').innerText = "🔎 신청·조사 시스템";
+        document.getElementById('record-buttons').classList.remove('hidden');
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        try { zMeta = await fetch(ep('?mode=zinfo')).then(r=>r.json()) || {}; } catch(e) { console.warn('zinfo 로드 실패', e); }
+        loadItems();
+      } else {
+        document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
+        document.querySelector('#login-section button').style.display = 'inline-block';
+      }
+    })
+    .catch(error => {
+      document.getElementById('loginLoadingText').classList.add('hidden');
+      document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
+      document.querySelector('#login-section button').style.display = 'block';
+    });
   }
 
   // 목록 로드
   function loadItems() {
-    fetch(g(endpoint), { cache:'no-store' })
+    fetch(ep())
       .then(res => res.json())
       .then(data => {
         itemData = data;
@@ -374,7 +385,7 @@
           구매요청수량
         };
 
-        await postForm(endpoint, payload);
+        await fetch(ep(), { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(payload) });
       }
       alert("✅ 모든 항목이 신청되었습니다.");
       location.reload();
@@ -395,7 +406,7 @@
   document.getElementById("viewPhotosType").addEventListener("click", () => {
     const category = selected.category; if (!category) return alert("먼저 대분류를 선택해주세요.");
     document.getElementById("loadingOverlay").style.display = "flex";
-    fetch(g(`${endpoint}?mode=photo`), { cache:'no-store' })
+    fetch(ep('?mode=photo'))
       .then(res => res.json())
       .then(photoMap => {
         const urls = photoMap[category];
@@ -418,7 +429,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     const box = document.getElementById("inlineNoticeBox");
     const loading = document.getElementById("initialLoadingOverlay");
-    fetch(g(`${endpoint}?mode=notice`), { cache:'no-store' })
+    fetch(ep('?mode=notice'))
       .then(res => res.json())
       .then(data => { const notice = data.notice?.trim(); if (notice) { box.textContent = notice; box.style.display = "block"; } })
       .catch(err => console.warn("공지사항 로딩 실패:", err))
@@ -429,7 +440,7 @@
   function openMyRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(g(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`), { cache:'no-store' })
+    fetch(ep('?mode=myrecords&empId=' + encodeURIComponent(empId)))
       .then(res => res.json())
       .then(data => {
         if (data.result !== "success") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("❌ 신청 내역을 불러올 수 없습니다."); }
@@ -441,7 +452,7 @@
   function openTeamRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(g(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`), { cache:'no-store' })
+    fetch(ep('?mode=teamrecords&empId=' + encodeURIComponent(empId)))
       .then(res => res.json())
       .then(data => {
         if (data.result === "forbidden") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("⚠️ 팀 내역 조회 권한이 없습니다."); }
@@ -455,7 +466,7 @@
     const thead = document.querySelector("#myRecordsTable thead");
     const tbody = document.querySelector("#myRecordsTable tbody");
     thead.innerHTML = "<tr>" + colIndexes.map(i => `<th style="border:1px solid #ccc;background:#f0f0f0;padding:4px;text-align:center;">${data.header[i]}</th>`).join("") + "</tr>";
-    tbody.innerHTML = data.records.map(row => "<tr>" + colIndexes.map(i => `<td style="border:1px solid #ccc;padding:6px;text-align:center;">${i===0?formatDate(row[i]):row[i]}</td>`).join("") + "</tr>").join("");
+    tbody.innerHTML = data.records.map(row => "<tr>" + colIndexes.map(i => `<td style=\"border:1px solid #ccc;padding:6px;text-align:center;\">${i===0?formatDate(row[i]):row[i]}</td>`).join("") + "</tr>").join("");
     document.getElementById("myRecordsModal").style.display = "flex";
   }
   function closeMyRecords() { document.getElementById("myRecordsModal").style.display = "none"; }
@@ -484,7 +495,7 @@
   }
   function closeZ1Modal() { document.getElementById("modalZ1").style.display = "none"; }
 
-  // ★ Z1/Z3 즉시 전송
+  // Z1/Z3 즉시 전송
   async function submitZ1() {
     const remarks = document.getElementById("z1-remarks").value;
     const stockMap = itemData[selected.category]?.stockMap || {};
@@ -512,16 +523,20 @@
 
     try {
       for (const item of itemsToSubmit) {
-        await postForm(endpoint, {
-          name: item.name,
-          category: item.category, // 라벨
-          zcode: item.zcode,       // Z1/Z3
-          subcategory: item.subcategory,
-          size: item.size,
-          quantity: item.quantity,
-          remarks: item.remarks,
-          지급수량: item.quantity,
-          구매요청수량: 0
+        await fetch(ep(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            name: item.name,
+            category: item.category, // 라벨
+            zcode: item.zcode,       // Z1/Z3
+            subcategory: item.subcategory,
+            size: item.size,
+            quantity: item.quantity,
+            remarks: item.remarks,
+            지급수량: item.quantity,
+            구매요청수량: 0
+          })
         });
       }
       alert("✅ 신청이 완료되었습니다.");
@@ -643,6 +658,7 @@
 
     if (itemsToSubmit.length === 0) return alert("수량을 1개 이상 입력해주세요.");
 
+    // 중앙 오버레이 띄우고 버튼 비활성화
     const overlay = document.getElementById('submitOverlay');
     const overlaySpan = overlay.querySelector('span');
     const prevText = overlaySpan.textContent;
@@ -655,16 +671,20 @@
 
     try {
       for (const item of itemsToSubmit) {
-        await postForm(endpoint, {
-          name: item.name,
-          category: item.category, // 라벨
-          zcode: item.zcode,       // Z2
-          subcategory: item.subcategory,
-          size: item.size,
-          quantity: item.quantity,
-          remarks: item.remarks,
-          지급수량: item.quantity, // 필요 시 재고반영 로직으로 교체 가능
-          구매요청수량: 0
+        await fetch(ep(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            name: item.name,
+            category: item.category, // 라벨
+            zcode: item.zcode,       // Z2
+            subcategory: item.subcategory,
+            size: item.size,
+            quantity: item.quantity,
+            remarks: item.remarks,
+            지급수량: item.quantity, // 필요 시 재고반영 로직으로 교체 가능
+            구매요청수량: 0
+          })
         });
       }
       alert("✅ 유니폼 신청이 완료되었습니다.");
