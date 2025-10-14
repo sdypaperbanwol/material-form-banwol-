@@ -29,6 +29,24 @@ tbody td{padding:8px 8px;white-space:pre-line;border-bottom:1px solid var(--line
 tbody td:last-child{border-right:1px solid var(--line)}
 tbody tr:nth-child(odd) td{background:#fcfcff}
 th.center,td.center{text-align:center}
+/* === 모바일에서만 세로 헤더 & 특이사항 넓게 === */
+@media (max-width: 640px) {
+  th.vcol, td.vcol {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    white-space: normal;       /* 줄바꿈 허용 */
+    line-height: 1.2;
+    min-width: 28px;           /* 너무 붙지 않게 최소폭 */
+    padding-top: 12px;         /* 세로 정렬 시 여백 보정 */
+    padding-bottom: 12px;
+  }
+  th.note, td.note {
+    writing-mode: horizontal-tb;  /* 특이사항은 가로 유지 */
+    min-width: 240px;             /* 모바일에서 넓게 */
+  }
+}
+
+  
 </style>
 </head>
 <body>
@@ -109,56 +127,58 @@ th.center,td.center{text-align:center}
       sum.M+=toNum(r[COL.M]); sum.N+=toNum(r[COL.N]); sum.O+=toNum(r[COL.O]); sum.P+=toNum(r[COL.P]);
     });
 
-    const headRow1 =
-      '<tr class="thead1">' +
-        '<th class="center" rowspan="2">날짜</th>' +
-        '<th rowspan="2">근무 형태</th>' +
-        '<th class="center" colspan="2">출근/퇴근(대양웍스)</th>' +
-        '<th class="center" colspan="2">출근/퇴근(수정)</th>' +
-        `<th class="center" rowspan="2">정규<span class="subsum">(${fmt(sum.J)})</span></th>` +
-        `<th class="center" rowspan="2">연장<span class="subsum">(${fmt(sum.K)})</span></th>` +
-        `<th class="center" rowspan="2">야근<span class="subsum">(${fmt(sum.L)})</span></th>` +
-        `<th class="center" rowspan="2">휴일<span class="subsum">(${fmt(sum.M)})</span></th>` +
-        `<th class="center" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>` +
-        `<th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>` +
-        `<th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>` +
-        '<th rowspan="2">특이사항</th>' +
-      '</tr>';
+const headRow1 =
+  '<tr class="thead1">' +
+    '<th class="center" rowspan="2">날짜</th>' +
+    '<th rowspan="2">근무 형태</th>' +
+    '<th class="center" colspan="2">비콘</th>' +    // ← 변경
+    '<th class="center" colspan="2">수정</th>' +    // ← 변경
+    `<th class="center vcol" rowspan="2">정규<span class="subsum">(${fmt(sum.J)})</span></th>` +
+    `<th class="center vcol" rowspan="2">연장<span class="subsum">(${fmt(sum.K)})</span></th>` +
+    `<th class="center vcol" rowspan="2">야근<span class="subsum">(${fmt(sum.L)})</span></th>` +
+    `<th class="center vcol" rowspan="2">휴일<span class="subsum">(${fmt(sum.M)})</span></th>` +
+    `<th class="center vcol" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>` +
+    `<th class="center vcol" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>` +
+    `<th class="center vcol" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>` +
+    '<th class="note" rowspan="2">특이사항</th>' +  // ← note 클래스로 가로폭 넓힘
+  '</tr>';
 
-    const headRow2 =
-      '<tr class="thead2">' +
-        '<th class="center">출근</th><th class="center">퇴근</th>' +
-        '<th class="center">출근</th><th class="center">퇴근</th>' +
-      '</tr>';
+const headRow2 =
+  '<tr class="thead2">' +
+    '<th class="center">출근</th><th class="center">퇴근</th>' +
+    '<th class="center">출근</th><th class="center">퇴근</th>' +
+  '</tr>';
+
 
     const body = sorted.map(r=>{
-      const cells = [
-        safe(r[COL.DATE]), safe(r[COL.TYPE]),
-        safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
-        safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
-        hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
-        hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
-        safe(r[COL.NOTE_U])
-      ];
-      return (
-        '<tr>' +
-          `<td class="center">${esc(cells[0])}</td>` +
-          `<td>${esc(cells[1])}</td>` +
-          `<td class="center">${esc(cells[2])}</td>` +
-          `<td class="center">${esc(cells[3])}</td>` +
-          `<td class="center">${esc(cells[4])}</td>` +
-          `<td class="center">${esc(cells[5])}</td>` +
-          `<td class="center">${esc(cells[6])}</td>` +
-          `<td class="center">${esc(cells[7])}</td>` +
-          `<td class="center">${esc(cells[8])}</td>` +
-          `<td class="center">${esc(cells[9])}</td>` +
-          `<td class="center">${esc(cells[10])}</td>` +
-          `<td class="center">${esc(cells[11])}</td>` +
-          `<td class="center">${esc(cells[12])}</td>` +
-          `<td>${linkify(cells[13])}</td>` +
-        '</tr>'
-      );
-    }).join('');
+  const cells = [
+    safe(r[COL.DATE]), safe(r[COL.TYPE]),
+    safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
+    safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
+    hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
+    hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
+    safe(r[COL.NOTE_U])
+  ];
+  return (
+    '<tr>' +
+      `<td class="center">${esc(cells[0])}</td>` +
+      `<td>${esc(cells[1])}</td>` +
+      `<td class="center">${esc(cells[2])}</td>` +
+      `<td class="center">${esc(cells[3])}</td>` +
+      `<td class="center">${esc(cells[4])}</td>` +
+      `<td class="center">${esc(cells[5])}</td>` +
+      `<td class="center">${esc(cells[6])}</td>` +
+      `<td class="center">${esc(cells[7])}</td>` +
+      `<td class="center">${esc(cells[8])}</td>` +
+      `<td class="center">${esc(cells[9])}</td>` +
+      `<td class="center">${esc(cells[10])}</td>` +
+      `<td class="center">${esc(cells[11])}</td>` +
+      `<td class="center">${esc(cells[12])}</td>` +
+      `<td class="note">${linkify(cells[13])}</td>` +   // ← note 클래스
+    '</tr>'
+  );
+}).join('');
+
 
     document.getElementById('tblwrap').innerHTML =
       '<table><thead>'+ headRow1 + headRow2 +'</thead><tbody>'+ body +'</tbody></table>';
