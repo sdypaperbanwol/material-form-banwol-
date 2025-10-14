@@ -181,7 +181,7 @@
    *  캐시/서비스워커 우회용 endpoint 래퍼
    * ===================== */
   const BUILD_V = '20251015-0705'; // ← 배포시 갱신
-  const ENDPOINT_BASE = 'https://script.google.com/macros/s/AKfycby1W5ansyu5_sQ0iCuD-BywByCZPYomCQV_UvQWBFGyF5BME5MRnkh7Am85GtSLopx7/exec';
+  const ENDPOINT_BASE = 'https://script.google.com/macros/s/AKfycbyy1OIp7o7OYuZGrIUd8JtUR4KJuefEgzymEilwZ0kH_-f7luoVa_ssrzS2-W8L_6ym/exec';
   const ep = (q='') => ENDPOINT_BASE + (q.includes('?') ? '&' : '?') + 'v=' + BUILD_V + (q ? '&' + q.replace(/^\?/, '') : '');
 
   let loginInfo = { empId: '', empName: '' };
@@ -734,3 +734,4 @@
 
 </body>
 </html>
+
