@@ -6,15 +6,9 @@
       content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
 <title>개인 근태 조회</title>
 <style>
-:root{
-  --ink:#222; --muted:#666; --line:#e5e7eb; --bg:#f7f8fa; --card:#fff;
-  --shadow:0 6px 18px rgba(0,0,0,.06);
-}
-
-/* 기본 레이아웃 */
+:root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--shadow:0 6px 18px rgba(0,0,0,.06)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-     font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
 .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
 .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
@@ -26,16 +20,17 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
 .right{color:#666;font-size:12px}
 
-/* 표 컨테이너: 내부 스크롤 + sticky 헤더용 높이 */
+/* 표 컨테이너: 내부 스크롤 + sticky 헤더 보정 변수 */
 .tblwrap{
   overflow:auto;
   -webkit-overflow-scrolling: touch;
-  max-height:75vh;                /* 필요 시 조절 */
-  --head1h: 28px;                 /* JS로 실제 값 주입 전 임시값 */
+  max-height:75vh;
+  --head1h:28px; /* JS가 실제 높이로 덮어씀 */
 }
 
 table{width:100%;border-collapse:separate;border-spacing:0}
 
+/* 헤더 기본 */
 thead th{
   background:#fbfbfd;
   background-clip:padding-box;
@@ -44,68 +39,68 @@ thead th{
   border-top:1px solid var(--line);
   border-bottom:1px solid var(--line);
   border-left:1px solid var(--line);
-  padding:6px 6px;
+  padding:6px 6px;              /* 컴팩트 */
   line-height:1.1;
   font-size:13px;
   z-index:5;
 }
 thead th:last-child{border-right:1px solid var(--line)}
 
-/* ✅ sticky: th에 직접 sticky (iOS 사파리 호환) */
+/* ✅ sticky: th에 직접 적용 (iOS 사파리 호환) */
 thead tr.thead1 th{ position:-webkit-sticky; position:sticky; top:0; z-index:5; }
 thead tr.thead2 th{ position:-webkit-sticky; position:sticky; top:var(--head1h); z-index:5; }
 
 .subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
 
+/* 바디 */
 tbody td{
   padding:8px 8px;white-space:pre-line;
   border-bottom:1px solid var(--line);border-left:1px solid var(--line)
 }
 tbody td:last-child{border-right:1px solid var(--line)}
 tbody tr:nth-child(odd) td{background:#fcfcff}
+
 th.center,td.center{text-align:center}
 
-/* === 근무형태(E열) 가변 줄바꿈/축소 === */
-td.type-cell{
-  text-align:center;
-  font-size:13px;
-  line-height:1.1;
-  padding:6px 6px;
-  white-space:normal;
-}
-td.type-cell .type-split{
-  display:inline-grid;
-  grid-auto-rows:auto;
-  gap:2px;
-}
-
-/* === 모바일: 메트릭 두 줄 + 숫자 작게 + 특이사항 넓게 === */
+/* ====== 메트릭 헤더(정/규 등) ====== */
 @media (max-width:640px){
-  /* 메트릭 라벨 두 줄(정/규, 연/장 …) */
   th.metric .full{display:none!important}
-  th.metric .two{
-    display:inline-grid!important; grid-auto-rows:auto; gap:2px; line-height:1; text-align:center;
-  }
+  th.metric .two{display:inline-grid!important; grid-auto-rows:auto; gap:2px; line-height:1; text-align:center;}
   th.metric .two .t, th.metric .two .b{display:block}
-
-  /* 칸 폭/여백, 합계/숫자 축소 */
   th.metric{min-width:34px;max-width:38px;padding-top:8px;padding-bottom:8px}
   th.metric .subsum{font-size:10px;margin-top:2px}
   td.metric{font-size:12px;padding:6px 4px}
-
-  /* 근무형태 글자 조금 더 작게 */
-  td.type-cell{font-size:12px}
-
-  /* 특이사항은 가로로 길게 */
-  th.note, td.note{writing-mode:horizontal-tb;min-width:240px}
-
-  /* 모바일에서 헤더 조금 더 낮게 */
-  thead th{padding:5px 4px;font-size:12px}
 }
-
-/* 데스크톱 기본: 메트릭 한 줄 라벨 */
+/* 데스크톱 기본 */
 th.metric .full{display:inline}
 th.metric .two{display:none}
+
+/* ====== 근무 형태(모바일에서만 2줄) ====== */
+td.type-cell .type-full{display:inline}
+td.type-cell .type-two{display:none}
+@media (max-width:640px){
+  td.type-cell{font-size:11px; line-height:1.0; padding:5px 4px}
+  td.type-cell .type-full{display:none}
+  td.type-cell .type-two{
+    display:inline-grid; grid-auto-rows:auto; gap:1px; line-height:1.0;
+    text-align:left; white-space:normal;
+  }
+}
+
+/* ====== 비콘/수정 시간칸: 값이 없어도 폭 고정 ====== */
+th.time-col, td.time-col{
+  min-width:80px;
+  width:80px;
+  text-align:center;
+}
+@media (max-width:640px){
+  th.time-col, td.time-col{ min-width:76px; width:76px; }
+}
+
+/* 특이사항은 모바일에서 가로로 길게 */
+@media (max-width:640px){
+  th.note, td.note{ writing-mode:horizontal-tb; min-width:240px; }
+}
 </style>
 </head>
 <body>
@@ -123,7 +118,6 @@ th.metric .two{display:none}
   </div>
 
 <script>
-  // 최신 exec URL
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwgBGe31WtHQV8iLkr2q8zYU_zwY6eycnkFi75K2XjuttE6durflslQeDkzpXB0c_Gwbw/exec';
 
   const q   = new URLSearchParams(location.search);
@@ -190,55 +184,24 @@ th.metric .two{display:none}
       '<tr class="thead1">' +
         '<th class="center" rowspan="2">날짜</th>' +
         '<th rowspan="2">근무 형태</th>' +
-
-        // ▼ 메트릭 7칸(J~P)
-        `<th class="center metric" rowspan="2">
-           <span class="full">정규</span>
-           <span class="two"><span class="t">정</span><span class="b">규</span></span>
-           <span class="subsum">(${fmt(sum.J)})</span>
-         </th>` +
-        `<th class="center metric" rowspan="2">
-           <span class="full">연장</span>
-           <span class="two"><span class="t">연</span><span class="b">장</span></span>
-           <span class="subsum">(${fmt(sum.K)})</span>
-         </th>` +
-        `<th class="center metric" rowspan="2">
-           <span class="full">야근</span>
-           <span class="two"><span class="t">야</span><span class="b">근</span></span>
-           <span class="subsum">(${fmt(sum.L)})</span>
-         </th>` +
-        `<th class="center metric" rowspan="2">
-           <span class="full">휴일</span>
-           <span class="two"><span class="t">휴</span><span class="b">일</span></span>
-           <span class="subsum">(${fmt(sum.M)})</span>
-         </th>` +
-        `<th class="center metric" rowspan="2">
-           <span class="full">휴연</span>
-           <span class="two"><span class="t">휴</span><span class="b">연</span></span>
-           <span class="subsum">(${fmt(sum.N)})</span>
-         </th>` +
-        `<th class="center metric" rowspan="2">
-           <span class="full">유급</span>
-           <span class="two"><span class="t">유</span><span class="b">급</span></span>
-           <span class="subsum">(${fmt(sum.O)})</span>
-         </th>` +
-        `<th class="center metric" rowspan="2">
-           <span class="full">주휴</span>
-           <span class="two"><span class="t">주</span><span class="b">휴</span></span>
-           <span class="subsum">(${fmt(sum.P)})</span>
-         </th>` +
-
-        // ▼ 출퇴근 그룹(비콘/수정)
+        // 메트릭 7칸 먼저
+        metricTh('정규', sum.J) +
+        metricTh('연장', sum.K) +
+        metricTh('야근', sum.L) +
+        metricTh('휴일', sum.M) +
+        metricTh('휴연', sum.N) +
+        metricTh('유급', sum.O) +
+        metricTh('주휴', sum.P) +
+        // 비콘/수정
         '<th class="center" colspan="2">비콘</th>' +
         '<th class="center" colspan="2">수정</th>' +
-
         '<th class="note" rowspan="2">특이사항</th>' +
       '</tr>';
 
     const headRow2 =
       '<tr class="thead2">' +
-        '<th class="center">출근</th><th class="center">퇴근</th>' +
-        '<th class="center">출근</th><th class="center">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
       '</tr>';
 
     const body = sorted.map(r=>{
@@ -253,7 +216,7 @@ th.metric .two{display:none}
       return (
         '<tr>' +
           `<td class="center">${esc(cells[0])}</td>` +
-          `<td class="type-cell">${formatTypeHTML(cells[1])}</td>` +
+          `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
 
           // 메트릭 7칸(J~P)
           `<td class="center metric">${esc(cells[6])}</td>` +
@@ -264,61 +227,65 @@ th.metric .two{display:none}
           `<td class="center metric">${esc(cells[11])}</td>` +
           `<td class="center metric">${esc(cells[12])}</td>` +
 
-          // 출퇴근(비콘 → 수정)
-          `<td class="center">${esc(cells[2])}</td>` +
-          `<td class="center">${esc(cells[3])}</td>` +
-          `<td class="center">${esc(cells[4])}</td>` +
-          `<td class="center">${esc(cells[5])}</td>` +
+          // 비콘/수정 (값 없어도 폭 유지)
+          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>` +
 
           `<td class="note">${linkify(cells[13])}</td>` +
-        '</tr>'
+        '</tr>`
       );
     }).join('');
 
     document.getElementById('tblwrap').innerHTML =
       '<table><thead>'+ headRow1 + headRow2 +'</thead><tbody>'+ body +'</tbody></table>';
 
-    // 표가 DOM에 그려진 후 sticky 오프셋 보정
+    // sticky 오프셋 보정
     setStickyOffsets();
   }
 
-  /* === sticky 2줄 간격 계산 === */
+  /* === 유틸 & 헬퍼 === */
+  function metricTh(label, total){
+    return (
+      `<th class="center metric" rowspan="2">
+         <span class="full">${esc(label)}</span>
+         <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
+         <span class="subsum">(${fmt(total)})</span>
+       </th>`
+    );
+  }
+
+  // 근무형태: 데스크톱은 full, 모바일은 2줄(two)만 보이게 CSS로 제어
+  function makeTypeHTML(v){
+    const t = (v||'').trim();
+    const clean = t.replace(/\s+/g,'');   // 공백 제거
+    let twoTop = '', twoBottom = '';
+    if (clean.length === 4){
+      twoTop = clean.slice(0,2);
+      twoBottom = clean.slice(2,4);
+    } else if (clean.length === 2){
+      twoTop = clean; twoBottom = '';
+    } else {
+      // 그 외 길이는 그냥 원문을 두 줄로 잘 보이게 처리(너무 길면 자동 줄바꿈)
+      twoTop = clean.slice(0,2) || clean;
+      twoBottom = clean.slice(2,4);
+    }
+    return (
+      `<span class="type-full">${esc(t)}</span>` +
+      `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`
+    );
+  }
+
   function setStickyOffsets(){
-    const container = document.querySelector('.tblwrap');
-    const tbl = container && container.querySelector('table');
-    if(!tbl) return;
-    const row1 = tbl.querySelector('thead tr.thead1');
-    if(!row1) return;
+    const wrap = document.querySelector('.tblwrap');
+    const row1 = wrap?.querySelector('thead tr.thead1');
+    if(!wrap || !row1) return;
     const h = row1.getBoundingClientRect().height;
-    container.style.setProperty('--head1h', h + 'px');
+    wrap.style.setProperty('--head1h', h + 'px');
   }
+  window.addEventListener('resize', setStickyOffsets);
 
-  /* === 근무형태(E열) 표시 최적화 ===
-     - 2글자: 가로 한 줄
-     - 4글자: 2글자/2글자 두 줄
-     - 괄호 포함: 괄호 앞에서 줄바꿈 (휴일(주휴) → 휴일 / (주휴))
-     - 그 외: 자동 줄바꿈 허용 */
-  function formatTypeHTML(raw){
-    const s = (raw || '').trim();
-    if(!s) return '';
-
-    if (s.includes('(')) {
-      const out = s.replace('(', '\n(');
-      return esc(out).replace(/\n/g, '<br>');
-    }
-    const arr = Array.from(s.replace(/\s+/g, ''));
-    if (arr.length === 2) {
-      return esc(s);
-    }
-    if (arr.length === 4) {
-      const top = arr.slice(0,2).join('');
-      const bottom = arr.slice(2,4).join('');
-      return `<span class="type-split"><span class="t">${esc(top)}</span><span class="b">${esc(bottom)}</span></span>`;
-    }
-    return esc(s);
-  }
-
-  // 유틸
   function toNum(v){ const t=String(v??'').replace(/[,. ]/g,'').trim(); return (t===''||isNaN(Number(t)))?0:Number(t); }
   function fmt(n){ return (Math.round(n*100)/100).toString(); }
   function hideZero(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
@@ -333,6 +300,10 @@ th.metric .two{display:none}
     return false;
   }
   function showError(m){ const e=document.getElementById('error'); e.textContent=m; e.style.display='block'; }
+  function cellOrNbsp(v){
+    const t = (v==null?'':String(v).trim());
+    return t === '' ? '&nbsp;' : esc(t);
+  }
   function linkify(v){
     const t=(v||'').trim();
     if(!t) return '';
@@ -341,10 +312,6 @@ th.metric .two{display:none}
       return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`;
     }catch(_){ return esc(t); }
   }
-
-  // 화면 회전/리사이즈에도 sticky 높이 재계산
-  window.addEventListener('resize', setStickyOffsets);
-  window.addEventListener('orientationchange', setStickyOffsets);
 </script>
 </body>
 </html>
