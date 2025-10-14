@@ -127,6 +127,51 @@ tbody td { font-size: 13px; }
   td.metric { font-size: 11px !important; }
 }
 
+      /* === 모바일 전용 오버라이드 (아래를 스타일 맨 끝에 추가) === */
+@media (max-width:640px){
+
+  /* 비콘/수정 시간칸: 더 좁게 + 줄바꿈 방지 */
+  th.time-col,
+  td.time-col{
+    min-width: 64px;
+    width: 64px;
+    padding: 4px 2px;
+    font-size: 11px;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  /* 헤더 전체 더 컴팩트하게 */
+  thead th{
+    padding: 4px 4px;    /* 높이 ↓ */
+    font-size: 11px;     /* 글자 ↓ */
+    line-height: 1.05;
+  }
+
+  /* 메트릭(정/규…): 라벨/합계도 더 작게 */
+  th.metric{
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  th.metric .subsum{
+    font-size: 9px;      /* (12 → 9) */
+    margin-top: 1px;
+  }
+
+  /* 본문 숫자(정/규/연/장…): 근무형태 값 크기와 비슷하게 */
+  td.metric{
+    font-size: 11px;
+    padding: 5px 3px;
+    text-align: center;
+  }
+
+  /* (참고) 근무형태 칸 폭은 이전 값 유지 중: 130px
+     더 줄이고 싶으면 아래 주석 해제해서 숫자만 바꿔.
+  */
+  /* th.type-col, td.type-cell{ min-width: 120px; width: 120px; } */
+}
+
+
 </style>
 </head>
 <body>
