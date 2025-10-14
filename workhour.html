@@ -89,13 +89,28 @@
 
     // ===== 로더들 =====
     async function loadSnapshot(){
-      const url = `${SNAPSHOT_BASE}${encodeURIComponent(emp)}.json`;
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('SNAP_HTTP_'+res.status);
-      const data = await res.json();
-      if (!data || !data.ok) throw new Error('SNAP_BAD_PAYLOAD');
-      return data;
+  // 1) 개별 파일 우선 시도: /snap/{emp}.json
+  try {
+    const res1 = await fetch(`${SNAPSHOT_BASE}${encodeURIComponent(emp)}.json`, { cache: 'no-store' });
+    if (res1.ok) {
+      const d1 = await res1.json();
+      if (d1 && d1.ok) return d1;
     }
+  } catch (_) {}
+
+  // 2) all.json에서 꺼내기
+  const res = await fetch(`${SNAPSHOT_BASE}all.json`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('SNAP_HTTP_'+res.status);
+  const all = await res.json();
+
+  // (A) 권장 구조: { byEmpId: { "919009": { ok:true, person, rows,... }, ... } }
+  if (all && all.byEmpId && all.byEmpId[emp] && all.byEmpId[emp].ok) return all.byEmpId[emp];
+
+  // (B) 혹시 all.json을 "단일 payload"로 넣으셨다면(ok:true) 그대로 사용
+  if (all && all.ok) return all;
+
+  throw new Error('SNAP_BAD_PAYLOAD');
+}
 
     async function loadCors(){
       const u = new URL(GAS_URL);
