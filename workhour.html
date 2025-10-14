@@ -10,9 +10,11 @@
   body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
   .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
   .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
+
   .top{display:grid;gap:12px;margin-bottom:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
   .zcard{padding:12px 14px}
+
   .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
   .h1{margin:0 0 4px;font-size:18px}
   .meta{color:var(--muted);font-size:13px}
@@ -31,6 +33,9 @@
   }
   tbody td{border-bottom:1px solid var(--line);padding:8px 8px;white-space:pre-line}
   tbody tr:nth-child(odd) td{background:#fcfcff}
+
+  /* 숫자/시간 열 가운데 정렬 */
+  th.center, td.center{ text-align:center }
 
   .side{padding:12px}
   .side h3{margin:0 0 8px;font-size:14px}
@@ -79,7 +84,7 @@ const q = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
 
-/** 소스 인덱스(A=0) */
+/** 원본 컬럼 인덱스(A=0) */
 const COL = {
   DATE:1,            // B
   TYPE:4,            // E
@@ -89,19 +94,21 @@ const COL = {
   ERP:23, MAN:24     // X,Y
 };
 
-/** 표시할 “메인 표” 컬럼 정의 (헤더 고정 + 렌더 함수) */
+/** 메인표 컬럼(라벨/렌더/정렬 클래스) */
 const DISPLAY_COLS = [
-  { label:'날짜',                  render:r => safe(r[COL.DATE]) },
-  { label:'근무 형태',            render:r => safe(r[COL.TYPE]) },
-  { label:'출근/퇴근(대양웍스)',  render:r => join2(r[COL.W_IN], r[COL.W_OUT]) },
-  { label:'출근/퇴근(수정)',      render:r => join2(r[COL.M_IN], r[COL.M_OUT]) },
-  { label:'정규',                 render:r => safe(r[COL.J]) },
-  { label:'연장',                 render:r => safe(r[COL.K]) },
-  { label:'야근',                 render:r => safe(r[COL.L]) },
-  { label:'휴일',                 render:r => safe(r[COL.M]) },
-  { label:'휴연',                 render:r => safe(r[COL.N]) },
-  { label:'유급',                 render:r => safe(r[COL.O]) },
-  { label:'주휴',                 render:r => safe(r[COL.P]) },
+  { label:'날짜',              class:'',       render:r => safe(r[COL.DATE]) },
+  { label:'근무 형태',        class:'',       render:r => safe(r[COL.TYPE]) },
+  { label:'출근(대양웍스)',    class:'center', render:r => safe(r[COL.W_IN]) },
+  { label:'퇴근(대양웍스)',    class:'center', render:r => safe(r[COL.W_OUT]) },
+  { label:'출근(수정)',        class:'center', render:r => safe(r[COL.M_IN]) },
+  { label:'퇴근(수정)',        class:'center', render:r => safe(r[COL.M_OUT]) },
+  { label:'정규',              class:'center', render:r => hideZero(r[COL.J]) },
+  { label:'연장',              class:'center', render:r => hideZero(r[COL.K]) },
+  { label:'야근',              class:'center', render:r => hideZero(r[COL.L]) },
+  { label:'휴일',              class:'center', render:r => hideZero(r[COL.M]) },
+  { label:'휴연',              class:'center', render:r => hideZero(r[COL.N]) },
+  { label:'유급',              class:'center', render:r => hideZero(r[COL.O]) },
+  { label:'주휴',              class:'center', render:r => hideZero(r[COL.P]) },
 ];
 
 /** JSONP 콜백 */
@@ -143,16 +150,13 @@ function render(res){
 /** 날짜 파싱(예: "10/1", "10-01", "10-01신운철" 등) → 2025-10-DD */
 function parseSheetDate(s){
   const t = String(s||'').trim();
-  // MM/DD or MM-DD
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
   if(m){
-    const month = Number(m[1]), day = Number(m[2]);
-    return new Date(2025, 9 /*Oct=9*/, day);
+    const day = Number(m[2]);
+    return new Date(2025, 9, day); // Oct = 9
   }
-  // "10월 1일" 같은 형태도 대응(옵션)
   m = t.match(/10[^0-9]*(\d{1,2})/);
   if(m){ return new Date(2025, 9, Number(m[1])); }
-  // 실패 시 아주 뒤로
   return new Date(2100,0,1);
 }
 
@@ -172,8 +176,13 @@ function buildTableAndSide(rows){
   const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
 
   // 메인 표
-  const th = DISPLAY_COLS.map(c=>`<th>${esc(c.label)}</th>`).join('');
-  const tb = sorted.map(r=>`<tr>${DISPLAY_COLS.map(c=>`<td>${esc(c.render(r))}</td>`).join('')}</tr>`).join('');
+  const th = DISPLAY_COLS
+    .map(c=>`<th class="${c.class||''}">${esc(c.label)}</th>`).join('');
+  const tb = sorted.map(r=>{
+    const tds = DISPLAY_COLS
+      .map(c=>`<td class="${c.class||''}">${esc(c.render(r))}</td>`).join('');
+    return `<tr>${tds}</tr>`;
+  }).join('');
   box.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
 
   // 사이드: X=ERP, Y=수기
@@ -189,10 +198,10 @@ function buildTableAndSide(rows){
 }
 
 /** 유틸 */
-function join2(a,b){
-  const aa = String(a||'').trim(), bb = String(b||'').trim();
-  if(aa && bb) return aa + '\n' + bb;
-  return aa || bb || '';
+function hideZero(v){
+  const t = String(v??'').trim();
+  if(t === '' || /^0+(\.0+)?$/.test(t)) return '';
+  return t;
 }
 function safe(v){ return (v==null)?'':String(v); }
 function looksLikeSecret(v){
