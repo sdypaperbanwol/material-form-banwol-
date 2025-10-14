@@ -164,7 +164,7 @@
         u.searchParams.set('print','1');
         if (emp) u.searchParams.set('emp', emp);
         if (sig) u.searchParams.set('sig', sig);
-        window.open(u.toString(), '_blank', 'noopener');
+       location.href = u.toString();
       });
 
       buildTable(res.rows||[]);
