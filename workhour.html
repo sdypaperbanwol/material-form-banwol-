@@ -31,26 +31,30 @@ tbody tr:nth-child(odd) td{background:#fcfcff}
 th.center,td.center{text-align:center}
 /* === 모바일에서만 세로 헤더 & 특이사항 넓게 === */
 /* 모바일에서만: 메트릭 헤더 두 줄 표기 + 특이사항은 가로로 넓게 */
+/* 모바일: 메트릭 헤더 무조건 두 줄 + 칸 폭 고정 + 합계/숫자 크기 축소 */
 @media (max-width: 640px) {
-  th.metric .full { display: none; }
-  th.metric .two {
-    display: inline-grid;
-    grid-auto-rows: auto;
-    gap: 2px;
-    line-height: 1;
-    text-align: center;
-  }
+  /* 헤더 두 줄 강제 */
+  th.metric .full { display: none !important; }
+  th.metric .two  { display: inline-grid !important; grid-auto-rows: auto; gap: 2px; line-height: 1; text-align: center; }
   th.metric .two .t, th.metric .two .b { display: block; }
 
-  th.note, td.note {
-    writing-mode: horizontal-tb;
-    min-width: 240px;   /* 특이사항: 모바일에서 넓게 */
-  }
+  /* 칸 폭/여백 살짝 타이트하게 */
+  th.metric { min-width: 34px; max-width: 38px; padding-top: 8px; padding-bottom: 8px; }
+
+  /* 합계 숫자(파란 괄호) 조금 작게 */
+  th.metric .subsum { display:block; margin-top:4px; font-weight:600; font-size: 11px; }
+
+  /* 본문 숫자도 작게 */
+  td.metric { font-size: 12px; padding: 6px 4px; }
+
+  /* 특이사항은 가로로 넓게 유지 */
+  th.note, td.note { writing-mode: horizontal-tb; min-width: 240px; }
 }
 
-/* 데스크톱 기본 */
+/* 데스크톱 기본: 전체 표시는 원래대로 */
 th.metric .full { display: inline; }
 th.metric .two  { display: none; }
+
 
 
   
@@ -186,6 +190,7 @@ const headRow2 =
 
 
     const body = sorted.map(r=>{
+  cconst body = sorted.map(r=>{
   const cells = [
     safe(r[COL.DATE]), safe(r[COL.TYPE]),
     safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
@@ -202,17 +207,20 @@ const headRow2 =
       `<td class="center">${esc(cells[3])}</td>` +
       `<td class="center">${esc(cells[4])}</td>` +
       `<td class="center">${esc(cells[5])}</td>` +
-      `<td class="center">${esc(cells[6])}</td>` +
-      `<td class="center">${esc(cells[7])}</td>` +
-      `<td class="center">${esc(cells[8])}</td>` +
-      `<td class="center">${esc(cells[9])}</td>` +
-      `<td class="center">${esc(cells[10])}</td>` +
-      `<td class="center">${esc(cells[11])}</td>` +
-      `<td class="center">${esc(cells[12])}</td>` +
-      `<td class="note">${linkify(cells[13])}</td>` +   // ← note 클래스
+      /* ▼ 지표 7칸에 metric 클래스 추가 */
+      `<td class="center metric">${esc(cells[6])}</td>` +
+      `<td class="center metric">${esc(cells[7])}</td>` +
+      `<td class="center metric">${esc(cells[8])}</td>` +
+      `<td class="center metric">${esc(cells[9])}</td>` +
+      `<td class="center metric">${esc(cells[10])}</td>` +
+      `<td class="center metric">${esc(cells[11])}</td>` +
+      `<td class="center metric">${esc(cells[12])}</td>` +
+      /* ▲ */
+      `<td class="note">${linkify(cells[13])}</td>` +
     '</tr>'
   );
 }).join('');
+
 
 
     document.getElementById('tblwrap').innerHTML =
