@@ -11,7 +11,6 @@
   .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
   .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
   .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
-
   .top{display:grid;gap:12px;margin-bottom:16px}
   .zcard{padding:12px 14px}
 
@@ -79,6 +78,15 @@ const sig = q.get('sig') || '';
 const UA = navigator.userAgent || '';
 const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
 
+/** ── 디버그 박스 + 함수 ─────────────────────────────────────── */
+const logBox = document.createElement('pre');
+logBox.style.cssText = 'white-space:pre-wrap;padding:10px;margin:10px 0;background:#fff;border:1px solid #eee';
+document.querySelector('.wrap').prepend(logBox);
+function dbg(...a){ logBox.textContent += a.join(' ') + '\n'; }
+window.addEventListener('error', e => dbg('window.onerror:', e.message));
+window.addEventListener('unhandledrejection', e => dbg('unhandledrejection:', String(e.reason)));
+dbg('start inapp=', IS_INAPP, ' ua=', navigator.userAgent);
+
 /** 컬럼 인덱스(A=0) — V(신청서) 제거 */
 const COL = {
   DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
@@ -112,13 +120,16 @@ const COL = {
       u.searchParams.set('emp', emp);
       if(sig) u.searchParams.set('sig', sig);
 
+      const jsonpUrl = u.toString();
+      dbg('try JSONP:', jsonpUrl);
+
       const s = document.createElement('script');
-      s.src = u.toString();
-      s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
+      s.src = jsonpUrl;
+      s.onerror = () => { dbg('JSONP onerror'); reject(new Error('JSONP_LOAD_FAIL')); };
       document.body.appendChild(s);
 
-      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
-      window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
+      const t = setTimeout(()=>{ dbg('JSONP timeout'); reject(new Error('JSONP_TIMEOUT')); }, 12000);
+      window.__RENDER__ = (res)=>{ clearTimeout(t); dbg('jsonp ok, ok=', !!(res && res.ok)); resolve(res); };
     });
   }
 
@@ -129,8 +140,11 @@ const COL = {
       u.searchParams.set('emp', emp);
       if(sig) u.searchParams.set('sig', sig);
 
+      const iframeUrl = u.toString();
+      dbg('try iframe:', iframeUrl);
+
       const ifr = document.createElement('iframe');
-      ifr.src = u.toString();
+      ifr.src = iframeUrl;
       ifr.style.display = 'none';
       document.body.appendChild(ifr);
 
@@ -139,23 +153,28 @@ const COL = {
         try{
           if(!ORIG_OK.has(ev.origin)) return;
           const res = ev.data;
-          if(res && res.ok){ cleanup(); resolve(res); }
-          else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
-        }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
+          dbg('iframe postMessage received, ok=', !!(res && res.ok), 'origin=', ev.origin);
+          if(res && res.ok){ cleanup(); dbg('iframe ok'); resolve(res); }
+          else { cleanup(); dbg('iframe payload bad'); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
+        }catch(e){
+          cleanup(); dbg('iframe onMsg error:', e.message); reject(new Error('IFR_MSG_ERROR'));
+        }
       };
       window.addEventListener('message', onMsg);
-      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
+      const t = setTimeout(()=>{ cleanup(); dbg('iframe timeout'); reject(new Error('IFR_TIMEOUT')); }, 15000);
       function cleanup(){ window.removeEventListener('message', onMsg); clearTimeout(t); ifr.remove(); }
     });
   }
 
   try{
+    dbg('flow: JSONP → iframe fallback');
     let data;
     try { data = await loadJsonp(); }
-    catch(_) { data = await loadIframe(); }
+    catch(_) { dbg('jsonp failed, fallback to iframe'); data = await loadIframe(); }
     if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
-    render(data);
+    dbg('render start'); render(data); dbg('render done');
   }catch(e){
+    dbg('final catch:', e.message);
     const map = {
       'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
       'JSONP_TIMEOUT':'네트워크 지연(JSONP)',
@@ -243,7 +262,7 @@ function buildTable(rows){
     ];
     return `
       <tr>
-        <td class="center">${esc(cells[0])}</td>  <!-- 날짜 값 가운데 정렬 -->
+        <td class="center">${esc(cells[0])}</td> <!-- 날짜 가운데정렬 -->
         <td>${esc(cells[1])}</td>
         <td class="center">${esc(cells[2])}</td>
         <td class="center">${esc(cells[3])}</td>
