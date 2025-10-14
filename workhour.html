@@ -16,7 +16,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 .zcard{padding:12px 14px}
 .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
 .h1{margin:0 0 4px;font-size:18px}
-.meta{color:var(--muted);font-size:13px}
+.meta{color:var(--muted);font-size:13px}  /* ← 줄바꿈 오타 수정 */
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
 .right{color:#666;font-size:12px}
 
@@ -237,8 +237,8 @@ th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
           `<td class="center time-col">${cellOrNbsp(cells[5])}</td>` +
 
           `<td class="note">${linkify(cells[13])}</td>` +
-        '</tr>`
-      );
+        '</tr>'
+      );  /* ← 여기 백틱 제거됨 */
     }).join('');
 
     box.innerHTML = '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
@@ -270,7 +270,7 @@ th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
         `<span class="type-two"><span>${esc(top)}</span><span>${esc(bottom)}</span></span>`
       );
     }
-    // 4글자 → 2/2, 2글자 → 한 줄, 그 외는 가급적 위쪽 위주
+    // 4글자 → 2/2, 2글자 → 한 줄, 그 외는 위주/아래 보조
     let twoTop='',twoBottom='';
     if(clean.length===4){ twoTop=clean.slice(0,2); twoBottom=clean.slice(2,4); }
     else if(clean.length===2){ twoTop=clean; twoBottom=''; }
