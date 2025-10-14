@@ -4,10 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>개인 근태 조회</title>
+  <meta name="description" content="신대양제지 반월 · 개인 근태 조회(모바일/인앱 대응 스냅샷 폴백 포함)">
+  <link rel="icon" href="data:,">
   <style>
     :root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--shadow:0 6px 18px rgba(0,0,0,.06)}
     *{box-sizing:border-box}
+    html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
+    a{color:#0f62fe;text-decoration:none}
+    a:hover{text-decoration:underline}
     .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
     .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
     .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
@@ -29,7 +34,6 @@
     tbody td:last-child{border-right:1px solid var(--line)}
     tbody tr:nth-child(odd) td{background:#fcfcff}
     th.center,td.center{text-align:center}
-    a.btn{display:inline-block;margin-left:6px;font-size:12px;text-decoration:underline}
   </style>
 </head>
 <body>
@@ -47,84 +51,118 @@
   </div>
 
   <script>
-    /** ⬇⬇ 현재 배포된 GAS 웹앱 exec URL */
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwyMcUuX8kv1a845hZAP4otsD6mvJ5X5hWlK1a-Cc8XNqWZ1QzaES9ERD4RKAQpM_cCFw/exec';
+    /**
+     * ===== 환경 설정 =====
+     * - GAS_URL: 배포한 GAS 웹앱 exec URL (익명 액세스, 최신으로 재배포 필수)
+     * - SNAPSHOT_BASE: GitHub Pages 내 스냅샷 폴더 경로 (예: /snap/)
+     * - URL 파라미터: emp=사번 & sig=서명 & snap=1(강제 스냅샷)
+     */
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw5IHhIEZfXbM_7V2waAPFR4s6pN9hYEZ02nQXCb_CN6AC-q2Nd-3sp-1AJNoeBfGYJCw/exec';
+    const SNAPSHOT_BASE = './snap/'; // Pages 내 상대경로(리포 루트에 snap/ 폴더 존재)
 
-    /** 쿼리 파라미터 */
-    const q   = new URLSearchParams(location.search);
+    const q = new URLSearchParams(location.search);
     const emp = q.get('emp') || '';
     const sig = q.get('sig') || '';
+    const FORCE_SNAP = (q.get('snap') === '1');
 
-    /** 인앱 감지 */
-    const UA       = navigator.userAgent || '';
+    // 인앱 감지 (카카오/네이버/페북/라인/인스타)
+    const UA = navigator.userAgent || '';
     const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
 
-    // 인앱이면: GAS의 print(스냅샷) 모드로 즉시 이동 (크로스도메인 차단 회피)
-    if (IS_INAPP) {
-      const u = new URL(GAS_URL);
-      u.searchParams.set('print', '1');
-      if (emp) u.searchParams.set('emp', emp);
-      if (sig) u.searchParams.set('sig', sig);
-      location.replace(u.toString());
-    }
-
-    /** 컬럼 인덱스(A=0) — V(신청서) 제거 */
+    // 컬럼 인덱스(A=0) — V(신청서) 제거
     const COL = {
       DATE: 1, TYPE: 4, W_IN: 5, W_OUT: 6, M_IN: 7, M_OUT: 8,
       J: 9, K: 10, L: 11, M: 12, N: 13, O: 14, P: 15, NOTE_U: 20
     };
 
-    /** ===== 로더: JSONP → 실패 시 iframe 브릿지 ===== */
+    // 인앱 안내 배너(외부 브라우저 이동 Intent)
+    (function(){
+      if (!IS_INAPP) return;
+      const wrap = document.querySelector('.wrap');
+      const div  = document.createElement('div');
+      div.className = 'card err';
+      div.style.marginBottom = '12px';
+      const here = encodeURIComponent(location.href);
+      const chromeIntent = `intent://open#Intent;scheme=${location.protocol.replace(':','')};S.browser_fallback_url=${here};package=com.android.chrome;end;`;
+      div.innerHTML = `인앱 브라우저에서 네트워크가 차단될 수 있어요. <a href="${chromeIntent}" style="font-weight:700;text-decoration:underline">외부 브라우저(크롬)로 열기</a>`;
+      wrap.insertBefore(div, wrap.firstChild);
+    })();
+
+    // ===== 데이터 로더: JSONP → iframe → 스냅샷 =====
+    async function loadJsonp(){
+      return new Promise((resolve, reject)=>{
+        const u = new URL(GAS_URL);
+        u.searchParams.set('jsonp','1');
+        u.searchParams.set('callback','__RENDER__');
+        u.searchParams.set('emp', emp);
+        if(sig) u.searchParams.set('sig', sig);
+        const s = document.createElement('script');
+        s.src = u.toString();
+        s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
+        document.body.appendChild(s);
+        const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
+        window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
+      });
+    }
+
+    async function loadIframe(){
+      return new Promise((resolve, reject)=>{
+        const u = new URL(GAS_URL);
+        u.searchParams.set('embed','1');
+        u.searchParams.set('emp', emp);
+        if(sig) u.searchParams.set('sig', sig);
+        const ifr = document.createElement('iframe');
+        ifr.src = u.toString();
+        ifr.style.display = 'none';
+        document.body.appendChild(ifr);
+        const ORIG_OK = new Set(['https://script.google.com','https://script.googleusercontent.com']);
+        const onMsg = (ev)=>{
+          try{
+            if(!ORIG_OK.has(ev.origin)) return;
+            const res = ev.data;
+            if(res && res.ok){ cleanup(); resolve(res); }
+            else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
+          }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
+        };
+        window.addEventListener('message', onMsg);
+        const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
+        function cleanup(){ window.removeEventListener('message', onMsg); clearTimeout(t); ifr.remove(); }
+      });
+    }
+
+    async function loadSnapshot(){
+      const url = `${SNAPSHOT_BASE}${encodeURIComponent(emp)}.json`;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('SNAP_NOT_FOUND');
+      const data = await res.json();
+      if (!data || !data.ok) throw new Error('SNAP_BAD_PAYLOAD');
+      return data;
+    }
+
     (async function load(){
       if(!emp){ return showError('잘못된 접근(emp 누락)'); }
 
-      function loadJsonp(){
-        return new Promise((resolve, reject)=>{
-          const u = new URL(GAS_URL);
-          u.searchParams.set('jsonp','1');
-          u.searchParams.set('callback','__RENDER__');
-          u.searchParams.set('emp', emp);
-          if(sig) u.searchParams.set('sig', sig);
-          const s = document.createElement('script');
-          s.src = u.toString();
-          s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
-          document.body.appendChild(s);
-          const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
-          window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
-        });
-      }
-
-      function loadIframe(){
-        return new Promise((resolve, reject)=>{
-          const u = new URL(GAS_URL);
-          u.searchParams.set('embed','1');
-          u.searchParams.set('emp', emp);
-          if(sig) u.searchParams.set('sig', sig);
-          const ifr = document.createElement('iframe');
-          ifr.src = u.toString();
-          ifr.style.display = 'none';
-          document.body.appendChild(ifr);
-          const ORIG_OK = new Set(['https://script.google.com','https://script.googleusercontent.com']);
-          const onMsg = (ev)=>{
-            try{
-              if(!ORIG_OK.has(ev.origin)) return;
-              const res = ev.data;
-              if(res && res.ok){ cleanup(); resolve(res); }
-              else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
-            }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
-          };
-          window.addEventListener('message', onMsg);
-          const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
-          function cleanup(){ window.removeEventListener('message', onMsg); clearTimeout(t); ifr.remove(); }
-        });
-      }
-
       try{
         let data;
-        try { data = await loadJsonp(); }
-        catch(_) { data = await loadIframe(); }
+
+        // 0) 강제 스냅샷 모드 또는 인앱 → 스냅샷 우선
+        if (FORCE_SNAP || IS_INAPP) {
+          try { data = await loadSnapshot(); }
+          catch(e){ /* 다음 단계 진행 */ }
+        }
+
+        // 1) 일반 브라우저: JSONP → iframe
+        if (!data) {
+          try { data = await (async ()=>{ try { return await loadJsonp(); } catch(_) { return await loadIframe(); } })(); }
+          catch(_) { /* 다음 단계 진행 */ }
+        }
+
+        // 2) 최종 폴백: 스냅샷
+        if (!data) data = await loadSnapshot();
+
         if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
         render(data);
+
       }catch(e){
         const map = {
           'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
@@ -133,44 +171,33 @@
           'IFR_BAD_PAYLOAD':'iframe 응답 오류',
           'IFR_MSG_ERROR':'iframe 메시지 처리 오류',
           'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
-          'NOT_FOUND':'대상자 없음(NOT_FOUND)'
+          'NOT_FOUND':'대상자 없음(NOT_FOUND)',
+          'SNAP_NOT_FOUND':'스냅샷 파일 없음',
+          'SNAP_BAD_PAYLOAD':'스냅샷 손상'
         };
         showError(map[e.message] || ('네트워크 오류: '+e.message));
       }
     })();
 
-    /** ====== 렌더 ====== */
+    // ===== 렌더 =====
     function render(res){
       if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
-      // Z1:Z4 공용 헤더(토큰/키 같은 문자열 가려냄)
+      // Z1:Z4 공용 헤더(비밀값 추정되는 문자열은 숨김)
       const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
       document.getElementById('zbox').innerHTML = z.map(v => '<div class="zcard">'+esc(v||'')+'</div>').join('');
 
       // 프로필
       const p = res.person||{};
-      document.getElementById('pname').innerHTML =
-        `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>` +
-        `<a class="btn" id="btnPrint" href="#">스냅샷 보기</a>`;
-      document.getElementById('pmeta').textContent =
-        `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
+      document.getElementById('pname').innerHTML = `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
+      document.getElementById('pmeta').textContent = `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
       document.getElementById('pupdated').textContent = res.updated || '';
       document.getElementById('pbox').style.display = '';
-
-      // 스냅샷 버튼 → print=1로 열기
-      document.getElementById('btnPrint').addEventListener('click', (e)=>{
-        e.preventDefault();
-        const u = new URL(GAS_URL);
-        u.searchParams.set('print','1');
-        if (emp) u.searchParams.set('emp', emp);
-        if (sig) u.searchParams.set('sig', sig);
-       location.href = u.toString();
-      });
 
       buildTable(res.rows||[]);
     }
 
-    /** ====== 테이블 ====== */
+    // ===== 표 생성(헤더 바로 아래 합계 숫자 표기) =====
     function buildTable(rows){
       const box = document.getElementById('tblwrap');
       if(!rows.length){
@@ -179,9 +206,7 @@
       }
 
       // 백엔드가 B열을 ISO(YYYY-MM-DD)로 내려주므로 문자열 정렬이면 충분
-      const sorted = [...rows].sort((a,b) =>
-        String(a[COL.DATE]||'2100-12-31').localeCompare(String(b[COL.DATE]||'2100-12-31'))
-      );
+      const sorted = [...rows].sort((a,b) => String(a[COL.DATE]||'2100-12-31').localeCompare(String(b[COL.DATE]||'2100-12-31')));
 
       const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
       sorted.forEach(r=>{
@@ -240,47 +265,29 @@
         );
       }).join('');
 
-      document.getElementById('tblwrap').innerHTML =
-        '<table><thead>'+ headRow1 + headRow2 +'</thead><tbody>'+ body +'</tbody></table>';
+      document.getElementById('tblwrap').innerHTML = '<table><thead>'+ headRow1 + headRow2 +'</thead><tbody>'+ body +'</tbody></table>';
     }
 
-    /** ====== 유틸 ====== */
+    // ===== 유틸 =====
     function toNum(v){ const t=String(v??'').replace(/[,. ]/g,'').trim(); return (t===''||isNaN(Number(t)))?0:Number(t); }
     function fmt(n){ return (Math.round(n*100)/100).toString(); }
     function hideZero(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
     function safe(v){ return (v==null)?'':String(v); }
-    function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+    function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]))}
     function looksLikeSecret(v){
       if(!v) return false;
       const t=String(v).trim();
-      if(t.includes('::')) return true;
-      if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
-      if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
+      if(t.includes('::')) return true;             // 시크릿 포맷 추정
+      if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true; // 긴 hex
+      if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true; // 토큰류
       return false;
     }
-    function showError(m){
-      const e=document.getElementById('error');
-      e.innerHTML = esc(m) + ' · <a class="btn" id="btnOpenPrint" href="#">스냅샷 열기</a>';
-      e.style.display='block';
-      const btn=document.getElementById('btnOpenPrint');
-      if(btn){
-        btn.addEventListener('click', (ev)=>{
-          ev.preventDefault();
-          const u=new URL(GAS_URL);
-          u.searchParams.set('print','1');
-          if (emp) u.searchParams.set('emp', emp);
-          if (sig) u.searchParams.set('sig', sig);
-          location.href = u.toString();
-        });
-      }
-    }
+    function showError(m){ const e=document.getElementById('error'); e.textContent=m; e.style.display='block'; }
     function linkify(v){
       const t=(v||'').trim();
       if(!t) return '';
-      try{
-        const u=new URL(t);
-        return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`;
-      }catch(_){ return esc(t); }
+      try{ const u=new URL(t); return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`; }
+      catch(_){ return esc(t); }
     }
   </script>
 </body>
