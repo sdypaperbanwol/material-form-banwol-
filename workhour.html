@@ -21,12 +21,7 @@
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
   .right{color:var(--muted);font-size:12px}
 
-  /* 메인: 표 + 사이드(ERP/수기) */
-  .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
-  @media (max-width:768px){ .grid{grid-template-columns:1fr} }
-
-  .tblwrap{overflow:auto}
-
+  .tblwrap{overflow:auto; margin-top:16px}
   table{width:100%;border-collapse:separate;border-spacing:0}
   thead th{
     background:#fbfbfd;font-weight:700;white-space:pre-line;
@@ -36,8 +31,6 @@
     padding:10px 8px;
   }
   thead th:last-child{ border-right:1px solid var(--line) }
-
-  /* 2단 헤더 sticky: 첫줄/둘째줄 각각 고정 */
   thead tr.thead1 th{ position:sticky; top:0; z-index:2 }
   thead tr.thead2 th{ position:sticky; top:38px; z-index:2 }
 
@@ -49,15 +42,14 @@
   tbody td:last-child{ border-right:1px solid var(--line) }
   tbody tr:nth-child(odd) td{background:#fcfcff}
 
-  /* 정렬 */
-  th.center, td.center{ text-align:center }
+  tfoot td{
+    padding:10px 8px; font-weight:700; background:#f3f6ff;
+    border-top:2px solid #c9d4ff; border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
+  }
+  tfoot td:last-child{ border-right:1px solid var(--line) }
 
-  .side{padding:12px}
-  .side h3{margin:0 0 8px;font-size:14px}
-  .list{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
-  .list div{padding:8px 10px;border-top:1px solid var(--line)}
-  .list div:first-child{border-top:none}
-  .muted{color:var(--muted)}
+  th.center, td.center{ text-align:center }
 </style>
 </head>
 <body>
@@ -76,18 +68,8 @@
     <div class="right" id="pupdated"></div>
   </div>
 
-  <!-- 메인 표 + ERP/수기 사이드 -->
-  <div class="grid">
-    <div class="card tblwrap" id="tblwrap"></div>
-
-    <aside class="card side">
-      <h3>ERP <span class="muted" id="erpCount"></span></h3>
-      <div class="list" id="erpList"></div>
-      <div style="height:12px"></div>
-      <h3>수기 <span class="muted" id="manualCount"></span></h3>
-      <div class="list" id="manualList"></div>
-    </aside>
-  </div>
+  <!-- 메인 표 -->
+  <div class="card tblwrap" id="tblwrap"></div>
 </div>
 
 <script>
@@ -106,7 +88,7 @@ const COL = {
   W_IN:5, W_OUT:6,   // F,G (대양웍스)
   M_IN:7, M_OUT:8,   // H,I (수정)
   J:9, K:10, L:11, M:12, N:13, O:14, P:15, // 정규..주휴
-  ERP:23, MAN:24     // X,Y
+  // X,Y는 더이상 사용 안함
 };
 
 /** JSONP 콜백 */
@@ -127,8 +109,8 @@ function render(res){
   document.getElementById('pupdated').textContent = res.updated || '';
   document.getElementById('pbox').style.display = '';
 
-  // 표 + 사이드
-  buildTableAndSide(res.rows||[]);
+  // 표
+  buildTable(res.rows||[]);
 }
 
 /** JSONP 로드 */
@@ -158,20 +140,24 @@ function parseSheetDate(s){
   return new Date(2100,0,1);
 }
 
-/** 테이블 + ERP/수기 사이드 빌드 (2단 헤더) */
-function buildTableAndSide(rows){
+/** 테이블(2단 헤더 + 합계행) */
+function buildTable(rows){
   const box = document.getElementById('tblwrap');
-  if(!rows.length){
-    box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>';
-    document.getElementById('erpList').innerHTML = '';
-    document.getElementById('manualList').innerHTML = '';
-    document.getElementById('erpCount').textContent = '';
-    document.getElementById('manualCount').textContent = '';
-    return;
-  }
+  if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
 
-  // 날짜 오름차순 정렬
   const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
+
+  // 합계 집계
+  const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
+  sorted.forEach(r=>{
+    sum.J += toNum(r[COL.J]);
+    sum.K += toNum(r[COL.K]);
+    sum.L += toNum(r[COL.L]);
+    sum.M += toNum(r[COL.M]);
+    sum.N += toNum(r[COL.N]);
+    sum.O += toNum(r[COL.O]);
+    sum.P += toNum(r[COL.P]);
+  });
 
   // THEAD (2단)
   const headRow1 = `
@@ -213,26 +199,38 @@ function buildTableAndSide(rows){
       hideZero(r[COL.O]),
       hideZero(r[COL.P]),
     ];
-    // 가운데 정렬할 인덱스: 2~12
     const tds = cells.map((v,i)=> (i>=2 ? `<td class="center">${esc(v)}</td>` : `<td>${esc(v)}</td>`)).join('');
     return `<tr>${tds}</tr>`;
   }).join('');
 
-  box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
+  // TFOOT(합계 행) — 정규~주휴만 값 표시
+  const foot = `
+    <tfoot>
+      <tr>
+        <td></td>
+        <td class="center">합계</td>
+        <td class="center" colspan="2"></td>
+        <td class="center" colspan="2"></td>
+        <td class="center">${fmt(sum.J)}</td>
+        <td class="center">${fmt(sum.K)}</td>
+        <td class="center">${fmt(sum.L)}</td>
+        <td class="center">${fmt(sum.M)}</td>
+        <td class="center">${fmt(sum.N)}</td>
+        <td class="center">${fmt(sum.O)}</td>
+        <td class="center">${fmt(sum.P)}</td>
+      </tr>
+    </tfoot>`;
 
-  // 사이드: X=ERP, Y=수기
-  const erpVals = sorted.map(r => String(r[COL.ERP]||'').trim()).filter(Boolean);
-  const manVals = sorted.map(r => String(r[COL.MAN]||'').trim()).filter(Boolean);
-
-  document.getElementById('erpCount').textContent = erpVals.length ? `(${erpVals.length})` : '';
-  document.getElementById('manualCount').textContent = manVals.length ? `(${manVals.length})` : '';
-  document.getElementById('erpList').innerHTML =
-    erpVals.length ? erpVals.map(v=>`<div>${esc(v)}</div>`).join('') : `<div class="muted">데이터 없음</div>`;
-  document.getElementById('manualList').innerHTML =
-    manVals.length ? manVals.map(v=>`<div>${esc(v)}</div>`).join('') : `<div class="muted">데이터 없음</div>`;
+  box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody>${foot}</table>`;
 }
 
 /** 유틸 */
+function toNum(v){
+  const t = String(v??'').replace(/[, ]/g,'').trim();
+  if(t===''||isNaN(Number(t))) return 0;
+  return Number(t);
+}
+function fmt(n){ return (Math.round(n*100)/100).toString(); }
 function hideZero(v){
   const t = String(v??'').trim();
   if(t === '' || /^0+(\.0+)?$/.test(t)) return '';
