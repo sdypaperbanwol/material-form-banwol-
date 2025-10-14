@@ -46,26 +46,18 @@
     </div>
 
     <script>
-      /** ⬇⬇ 배포한 GAS 웹앱 exec URL로 교체 */
-      const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJKCYLYtZ_6pemhzk5lb8WgoxKKPKOPFExOQM8kE4MotXLT3rWk3im4w6ZSS_fIgHlEQ/exec';
+      /** ⬇⬇ 배포한 GAS 웹앱 exec URL로 교체(최신 배포) */
+      const GAS_URL = 'https://script.google.com/macros/s/AKfycbyBxJhl4DRphHKFx0uQi1FzRpSjxiOL6NBpp_OvICXHj9m7ooOMcxhuTIH-fSEJgHXi7A/exec';
 
       /** 쿼리 파라미터 */
       const q   = new URLSearchParams(location.search);
       const emp = q.get('emp') || '';
       const sig = q.get('sig') || '';
 
-      /** 인앱 감지 */
-      const UA       = navigator.userAgent || '';
-      const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
-
-      /** 컬럼 인덱스(A=0) — V(신청서) 제거 */
-      const COL = {
-        DATE: 1, TYPE: 4, W_IN: 5, W_OUT: 6, M_IN: 7, M_OUT: 8,
-        J: 9, K: 10, L: 11, M: 12, N: 13, O: 14, P: 15, NOTE_U: 20
-      };
-
       /** 인앱 안내(선택) */
       (function(){
+        const UA = navigator.userAgent || '';
+        const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
         if (!IS_INAPP) return;
         const wrap = document.querySelector('.wrap');
         const div  = document.createElement('div');
@@ -77,66 +69,30 @@
         wrap.insertBefore(div, wrap.firstChild);
       })();
 
-      /** ===== 로더: JSONP → 실패 시 iframe 브릿지 ===== */
+      /** 컬럼 인덱스(A=0) — V(신청서) 제거 */
+      const COL = {
+        DATE: 1, TYPE: 4, W_IN: 5, W_OUT: 6, M_IN: 7, M_OUT: 8,
+        J: 9, K: 10, L: 11, M: 12, N: 13, O: 14, P: 15, NOTE_U: 20
+      };
+
+      /** ===== 로더: CORS(JSON) 단일 경로 ===== */
       (async function load(){
         if(!emp){ return showError('잘못된 접근(emp 누락)'); }
-
-        function loadJsonp(){
-          return new Promise((resolve, reject)=>{
-            const u = new URL(GAS_URL);
-            u.searchParams.set('jsonp','1');
-            u.searchParams.set('callback','__RENDER__');
-            u.searchParams.set('emp', emp);
-            if(sig) u.searchParams.set('sig', sig);
-            const s = document.createElement('script');
-            s.src = u.toString();
-            s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
-            document.body.appendChild(s);
-            const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
-            window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
-          });
-        }
-
-        function loadIframe(){
-          return new Promise((resolve, reject)=>{
-            const u = new URL(GAS_URL);
-            u.searchParams.set('embed','1');
-            u.searchParams.set('emp', emp);
-            if(sig) u.searchParams.set('sig', sig);
-            const ifr = document.createElement('iframe');
-            ifr.src = u.toString();
-            ifr.style.display = 'none';
-            document.body.appendChild(ifr);
-            const ORIG_OK = new Set(['https://script.google.com','https://script.googleusercontent.com']);
-            const onMsg = (ev)=>{
-              try{
-                if(!ORIG_OK.has(ev.origin)) return;
-                const res = ev.data;
-                if(res && res.ok){ cleanup(); resolve(res); }
-                else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
-              }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
-            };
-            window.addEventListener('message', onMsg);
-            const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
-            function cleanup(){ window.removeEventListener('message', onMsg); clearTimeout(t); ifr.remove(); }
-          });
-        }
-
         try{
-          let data;
-          try { data = await loadJsonp(); }
-          catch(_) { data = await loadIframe(); }
+          const u = new URL(GAS_URL);
+          u.searchParams.set('mode','cors');    // ✅ CORS JSON
+          u.searchParams.set('emp', emp);
+          if (sig) u.searchParams.set('sig', sig);
+          u.searchParams.set('_', Date.now());  // 캐시 회피
+
+          const res = await fetch(u.toString(), { method:'GET' });
+          const data = await res.json();
           if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
           render(data);
         }catch(e){
           const map = {
-            'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
-            'JSONP_TIMEOUT':'네트워크 지연(JSONP)',
-            'IFR_TIMEOUT':'네트워크 지연(iframe)',
-            'IFR_BAD_PAYLOAD':'iframe 응답 오류',
-            'IFR_MSG_ERROR':'iframe 메시지 처리 오류',
             'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
-            'NOT_FOUND':'대상자 없음(NOT_FOUND)'
+            'NOT_FOUND':'대상자 없음(NOT_FOUND)',
           };
           showError(map[e.message] || ('네트워크 오류: '+e.message));
         }
@@ -146,7 +102,7 @@
       function render(res){
         if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
-        // Z1:Z4 공용 헤더(토큰/키 같은 문자열 가려냄)
+        // Z1:Z4 공용 헤더(토큰/키 가리기)
         const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
         document.getElementById('zbox').innerHTML = z.map(v => '<div class="zcard">'+esc(v||'')+'</div>').join('');
 
@@ -170,7 +126,7 @@
           return;
         }
 
-        // 백엔드가 B열을 ISO(YYYY-MM-DD)로 내려주므로 문자열 정렬이면 충분
+        // B열 ISO(YYYY-MM-DD) 기준 정렬
         const sorted = [...rows].sort((a,b) =>
           String(a[COL.DATE]||'2100-12-31').localeCompare(String(b[COL.DATE]||'2100-12-31'))
         );
