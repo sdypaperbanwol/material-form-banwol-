@@ -16,34 +16,53 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 .zcard{padding:12px 14px}
 .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
 .h1{margin:0 0 4px;font-size:18px}
-.meta{color:var(--muted);font-size:13px} /* ← 줄깨짐 수정 */
+.meta{color:var(--muted);font-size:13px}
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
 .right{color:#666;font-size:12px}
 
 /* 표 컨테이너: 내부 스크롤 + sticky 헤더 보정 변수 */
-.tblwrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:75vh;--head1h:28px}
+.tblwrap{
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  max-height:75vh;
+  --head1h:28px; /* JS가 실제 높이로 덮어씀 */
+}
 
 table{width:100%;border-collapse:separate;border-spacing:0}
 
 /* 헤더 기본 */
 thead th{
-  background:#fbfbfd;background-clip:padding-box;font-weight:700;white-space:pre-line;
-  border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:1px solid var(--line);
-  padding:6px 6px;line-height:1.1;font-size:13px;z-index:5;
+  background:#fbfbfd;
+  background-clip:padding-box;
+  font-weight:700;
+  white-space:pre-line;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  padding:6px 6px;
+  line-height:1.1;
+  font-size:13px;
+  z-index:5;
 }
 thead th:last-child{border-right:1px solid var(--line)}
+
+/* ✅ sticky: th에 직접 적용 (iOS 사파리 호환) */
 thead tr.thead1 th{position:-webkit-sticky;position:sticky;top:0;z-index:5}
 thead tr.thead2 th{position:-webkit-sticky;position:sticky;top:var(--head1h);z-index:5}
 
 .subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
 
 /* 바디 */
-tbody td{padding:8px 8px;white-space:pre-line;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+tbody td{
+  padding:8px 8px;white-space:pre-line;
+  border-bottom:1px solid var(--line);border-left:1px solid var(--line)
+}
 tbody td:last-child{border-right:1px solid var(--line)}
 tbody tr:nth-child(odd) td{background:#fcfcff}
+
 th.center,td.center{text-align:center}
 
-/* 메트릭(정/규 등) */
+/* ====== 메트릭 헤더(정/규 등) ====== */
 @media (max-width:640px){
   th.metric .full{display:none!important}
   th.metric .two{display:inline-grid!important;grid-auto-rows:auto;gap:2px;line-height:1;text-align:center}
@@ -52,24 +71,48 @@ th.center,td.center{text-align:center}
   th.metric .subsum{font-size:10px;margin-top:2px}
   td.metric{font-size:12px;padding:6px 4px}
 }
+/* 데스크톱 기본 */
 th.metric .full{display:inline}
 th.metric .two{display:none}
 
-/* 근무형태(E열) 모바일 두 줄 */
+/* ====== 근무형태(E열) ====== */
+/* 헤더(근무 형태) — 데스크톱 한 줄, 모바일 두 줄 */
+th.type-col .t-full{display:inline}
+th.type-col .t-two{display:none}
+@media (max-width:640px){
+  th.type-col .t-full{display:none}
+  th.type-col .t-two{display:inline-block;line-height:1.05;text-align:center}
+}
+
+/* 본문(E열 값) — 데스크톱 가운데 정렬, 모바일도 기본 가운데 */
+td.type-cell{font-size:13px;line-height:1.2;text-align:center}
 td.type-cell .type-full{display:inline}
 td.type-cell .type-two{display:none}
 @media (max-width:640px){
-  td.type-cell{font-size:11px;line-height:1;padding:5px 4px}
+  td.type-cell{font-size:11px;line-height:1.1;padding:5px 4px;text-align:center}
   td.type-cell .type-full{display:none}
-  td.type-cell .type-two{display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1;text-align:left;white-space:normal}
+  td.type-cell .type-two{
+    display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;
+    white-space:normal;text-align:center
+  }
 }
 
-/* 비콘/수정 시간칸: 값 없어도 폭 고정 */
-th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
-@media (max-width:640px){th.time-col,td.time-col{min-width:76px;width:76px}}
+/* 근무형태 칸 폭: 값이 길어도 세로 찢어짐 방지 */
+th.type-col,td.type-cell{min-width:110px}
+@media (max-width:640px){
+  th.type-col,td.type-cell{min-width:130px;width:130px}
+}
 
-/* 특이사항 모바일 넓게 */
-@media (max-width:640px){th.note,td.note{writing-mode:horizontal-tb;min-width:240px}}
+/* ====== 비콘/수정 시간칸: 값이 없어도 폭 고정 ====== */
+th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
+@media (max-width:640px){
+  th.time-col,td.time-col{min-width:76px;width:76px}
+}
+
+/* 특이사항은 모바일에서 가로로 길게 */
+@media (max-width:640px){
+  th.note,td.note{writing-mode:horizontal-tb;min-width:240px}
+}
 </style>
 </head>
 <body>
@@ -87,141 +130,188 @@ th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
   </div>
 
 <script>
-const GAS_URL='https://script.google.com/macros/s/AKfycbwgBGe31WtHQV8iLkr2q8zYU_zwY6eycnkFi75K2XjuttE6durflslQeDkzpXB0c_Gwbw/exec';
-const q=new URLSearchParams(location.search);
-const emp=q.get('emp')||''; const sig=q.get('sig')||'';
+  const GAS_URL='https://script.google.com/macros/s/AKfycbwgBGe31WtHQV8iLkr2q8zYU_zwY6eycnkFi75K2XjuttE6durflslQeDkzpXB0c_Gwbw/exec';
 
-const COL={DATE:1,TYPE:4,W_IN:5,W_OUT:6,M_IN:7,M_OUT:8,J:9,K:10,L:11,M:12,N:13,O:14,P:15,NOTE_U:20};
+  const q=new URLSearchParams(location.search);
+  const emp=q.get('emp')||'';
+  const sig=q.get('sig')||'';
 
-(async function load(){
-  if(!emp){return showError('잘못된 접근(emp 누락)');}
-  try{
-    const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams({action:'workhour_read',emp,sig})});
-    const data=await res.json();
-    if(!data||!data.ok) throw new Error((data&&data.error)||'BAD_PAYLOAD');
-    render(data);
-  }catch(e){
-    const map={'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)','NOT_FOUND':'대상자 없음(NOT_FOUND)','BAD_PAYLOAD':'데이터 로드 실패'};
-    showError(map[e.message]||('네트워크 오류: '+e.message));
+  const COL={ DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
+              J:9, K:10, L:11, M:12, N:13, O:14, P:15, NOTE_U:20 };
+
+  (async function load(){
+    if(!emp){ return showError('잘못된 접근(emp 누락)'); }
+    try{
+      const res=await fetch(GAS_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({action:'workhour_read',emp,sig})
+      });
+      const data=await res.json();
+      if(!data||!data.ok) throw new Error(data&&data.error||'BAD_PAYLOAD');
+      render(data);
+    }catch(e){
+      const map={'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)','NOT_FOUND':'대상자 없음(NOT_FOUND)','BAD_PAYLOAD':'데이터 로드 실패'};
+      showError(map[e.message]||('네트워크 오류: '+e.message));
+    }
+  })();
+
+  function render(res){
+    const z=(res.zHeader||[]).filter(v=>!looksLikeSecret(v));
+    document.getElementById('zbox').innerHTML=z.map(v=>'<div class="zcard">'+esc(v||'')+'</div>').join('');
+
+    const p=res.person||{};
+    document.getElementById('pname').innerHTML=
+      `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
+    document.getElementById('pmeta').textContent=
+      `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
+    document.getElementById('pupdated').textContent=res.updated||'';
+    document.getElementById('pbox').style.display='';
+
+    buildTable(res.rows||[]);
   }
-})();
 
-function render(res){
-  const z=(res.zHeader||[]).filter(v=>!looksLikeSecret(v));
-  document.getElementById('zbox').innerHTML=z.map(v=>'<div class="zcard">'+esc(v||'')+'</div>').join('');
-  const p=res.person||{};
-  document.getElementById('pname').innerHTML=`${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
-  document.getElementById('pmeta').textContent=`연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
-  document.getElementById('pupdated').textContent=res.updated||'';
-  document.getElementById('pbox').style.display='';
+  function buildTable(rows){
+    const box=document.getElementById('tblwrap');
+    if(!rows.length){
+      box.innerHTML='<div style="padding:28px;color:#666">표시할 데이터 없음</div>';
+      return;
+    }
+    const sorted=[...rows].sort((a,b)=>String(a[COL.DATE]||'2100-12-31').localeCompare(String(b[COL.DATE]||'2100-12-31')));
+    const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
+    sorted.forEach(r=>{
+      sum.J+=toNum(r[COL.J]); sum.K+=toNum(r[COL.K]); sum.L+=toNum(r[COL.L]);
+      sum.M+=toNum(r[COL.M]); sum.N+=toNum(r[COL.N]); sum.O+=toNum(r[COL.O]); sum.P+=toNum(r[COL.P]);
+    });
 
-  buildTable(res.rows||[]);
-}
+    const headRow1 =
+      '<tr class="thead1">' +
+        '<th class="center" rowspan="2">날짜</th>' +
+        '<th class="type-col" rowspan="2">' +
+          '<span class="t-full">근무 형태</span>' +
+          '<span class="t-two">근무<br>형태</span>' +
+        '</th>' +
+        metricTh('정규',sum.J) +
+        metricTh('연장',sum.K) +
+        metricTh('야근',sum.L) +
+        metricTh('휴일',sum.M) +
+        metricTh('휴연',sum.N) +
+        metricTh('유급',sum.O) +
+        metricTh('주휴',sum.P) +
+        '<th class="center" colspan="2">비콘</th>' +
+        '<th class="center" colspan="2">수정</th>' +
+        '<th class="note" rowspan="2">특이사항</th>' +
+      '</tr>';
 
-function buildTable(rows){
-  const box=document.getElementById('tblwrap');
-  if(!rows.length){ box.innerHTML='<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
+    const headRow2 =
+      '<tr class="thead2">' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+      '</tr>';
 
-  const sorted=[...rows].sort((a,b)=>String(a[COL.DATE]||'2100-12-31').localeCompare(String(b[COL.DATE]||'2100-12-31')));
-  const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
-  sorted.forEach(r=>{sum.J+=toNum(r[COL.J]);sum.K+=toNum(r[COL.K]);sum.L+=toNum(r[COL.L]);sum.M+=toNum(r[COL.M]);sum.N+=toNum(r[COL.N]);sum.O+=toNum(r[COL.O]);sum.P+=toNum(r[COL.P]);});
+    const body = sorted.map(r=>{
+      const cells=[
+        safe(r[COL.DATE]), safe(r[COL.TYPE]),
+        safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
+        safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
+        hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
+        hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
+        safe(r[COL.NOTE_U])
+      ];
+      return (
+        '<tr>' +
+          `<td class="center">${esc(cells[0])}</td>` +
+          `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
 
-  const headRow1 =
-    '<tr class="thead1">'+
-      '<th class="center" rowspan="2">날짜</th>'+
-      '<th rowspan="2">근무 형태</th>'+
-      metricTh('정규',sum.J)+metricTh('연장',sum.K)+metricTh('야근',sum.L)+
-      metricTh('휴일',sum.M)+metricTh('휴연',sum.N)+metricTh('유급',sum.O)+metricTh('주휴',sum.P)+
-      '<th class="center" colspan="2">비콘</th>'+
-      '<th class="center" colspan="2">수정</th>'+
-      '<th class="note" rowspan="2">특이사항</th>'+
-    '</tr>';
+          `<td class="center metric">${esc(cells[6])}</td>` +
+          `<td class="center metric">${esc(cells[7])}</td>` +
+          `<td class="center metric">${esc(cells[8])}</td>` +
+          `<td class="center metric">${esc(cells[9])}</td>` +
+          `<td class="center metric">${esc(cells[10])}</td>` +
+          `<td class="center metric">${esc(cells[11])}</td>` +
+          `<td class="center metric">${esc(cells[12])}</td>` +
 
-  const headRow2 =
-    '<tr class="thead2">'+
-      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>'+
-      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>'+
-    '</tr>';
+          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>` +
 
-  const body=sorted.map(r=>{
-    const cells=[
-      safe(r[COL.DATE]), safe(r[COL.TYPE]),
-      safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
-      safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
-      hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
-      hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
-      safe(r[COL.NOTE_U])
-    ];
+          `<td class="note">${linkify(cells[13])}</td>` +
+        '</tr>`
+      );
+    }).join('');
+
+    box.innerHTML = '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
+
+    setStickyOffsets(); // sticky 오프셋 보정
+  }
+
+  /* === 유틸 & 헬퍼 === */
+  function metricTh(label,total){
     return (
-      '<tr>'+
-        `<td class="center">${esc(cells[0])}</td>`+
-        `<td class="type-cell">${makeTypeHTML(cells[1])}</td>`+
-        `<td class="center metric">${esc(cells[6])}</td>`+
-        `<td class="center metric">${esc(cells[7])}</td>`+
-        `<td class="center metric">${esc(cells[8])}</td>`+
-        `<td class="center metric">${esc(cells[9])}</td>`+
-        `<td class="center metric">${esc(cells[10])}</td>`+
-        `<td class="center metric">${esc(cells[11])}</td>`+
-        `<td class="center metric">${esc(cells[12])}</td>`+
-        `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`+
-        `<td class="center time-col">${cellOrNbsp(cells[3])}</td>`+
-        `<td class="center time-col">${cellOrNbsp(cells[4])}</td>`+
-        `<td class="center time-col">${cellOrNbsp(cells[5])}</td>`+
-        `<td class="note">${linkify(cells[13])}</td>`+
-      '</tr>'
+      `<th class="center metric" rowspan="2">
+         <span class="full">${esc(label)}</span>
+         <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
+         <span class="subsum">(${fmt(total)})</span>
+       </th>`
     );
-  }).join('');
+  }
 
-  box.innerHTML='<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
+  // 근무형태: 데스크톱 full, 모바일 two (괄호 분리 표시)
+  function makeTypeHTML(v){
+    const t=(v||'').trim();
+    const clean=t.replace(/\s+/g,'');
+    if(/\(.*\)/.test(clean)){
+      const idx=clean.indexOf('(');
+      const top=clean.slice(0,idx);
+      const bottom=clean.slice(idx); // 괄호 포함
+      return (
+        `<span class="type-full">${esc(t)}</span>`+
+        `<span class="type-two"><span>${esc(top)}</span><span>${esc(bottom)}</span></span>`
+      );
+    }
+    // 4글자 → 2/2, 2글자 → 한 줄, 그 외는 가급적 위쪽 위주
+    let twoTop='',twoBottom='';
+    if(clean.length===4){ twoTop=clean.slice(0,2); twoBottom=clean.slice(2,4); }
+    else if(clean.length===2){ twoTop=clean; twoBottom=''; }
+    else { twoTop=clean.length<=3?clean:clean.slice(0,3); twoBottom=clean.length>3?clean.slice(3):''; }
 
-  // sticky 오프셋 보정 (옵셔널 체이닝 제거)
-  setStickyOffsets();
-  requestAnimationFrame(setStickyOffsets);
-}
+    return (
+      `<span class="type-full">${esc(t)}</span>`+
+      `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`
+    );
+  }
 
-function metricTh(label,total){
-  return (
-    `<th class="center metric" rowspan="2">
-       <span class="full">${esc(label)}</span>
-       <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
-       <span class="subsum">(${fmt(total)})</span>
-     </th>`
-  );
-}
+  function setStickyOffsets(){
+    const wrap=document.querySelector('.tblwrap');
+    const row1=wrap?.querySelector('thead tr.thead1');
+    if(!wrap||!row1) return;
+    const h=row1.getBoundingClientRect().height;
+    wrap.style.setProperty('--head1h',h+'px');
+  }
+  window.addEventListener('resize',setStickyOffsets);
 
-// 근무형태: 데스크톱 full, 모바일 2줄(two)
-function makeTypeHTML(v){
-  const t=(v||'').trim();
-  const clean=t.replace(/\s+/g,'');
-  let twoTop='',twoBottom='';
-  if(clean.length===4){twoTop=clean.slice(0,2);twoBottom=clean.slice(2,4);}
-  else if(clean.length===2){twoTop=clean;twoBottom='';}
-  else {twoTop=clean.slice(0,2)||clean;twoBottom=clean.slice(2,4);}
-  return `<span class="type-full">${esc(t)}</span>`+
-         `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`;
-}
-
-function setStickyOffsets(){
-  var wrap=document.querySelector('.tblwrap');
-  if(!wrap) return;
-  var row1=wrap.querySelector('thead tr.thead1');
-  if(!row1) return;
-  var h=row1.getBoundingClientRect().height;
-  wrap.style.setProperty('--head1h', h+'px');
-}
-window.addEventListener('resize', setStickyOffsets);
-
-/* 유틸 */
-function toNum(v){const t=String(v==null?'':v).replace(/[,. ]/g,'').trim();return (t===''||isNaN(Number(t)))?0:Number(t)}
-function fmt(n){return (Math.round(n*100)/100).toString()}
-function hideZero(v){const t=String(v==null?'':v).trim();return (t===''||/^0+(\.0+)?$/.test(t))?'':t}
-function safe(v){return (v==null)?'':String(v)}
-function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function looksLikeSecret(v){if(!v)return false;const t=String(v).trim();if(t.includes('::'))return true;if(/^[A-Fa-f0-9]{32,}$/.test(t))return true;if(/^[A-Za-z0-9_-]{28,}$/.test(t))return true;return false}
-function showError(m){const e=document.getElementById('error');e.textContent=m;e.style.display='block'}
-function cellOrNbsp(v){const t=(v==null?'':String(v).trim());return t===''?'&nbsp;':esc(t)}
-function linkify(v){const t=(v||'').trim();if(!t)return'';try{const u=new URL(t);return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`}catch(_){return esc(t)}}
+  function toNum(v){ const t=String(v??'').replace(/[,. ]/g,'').trim(); return (t===''||isNaN(Number(t)))?0:Number(t); }
+  function fmt(n){ return (Math.round(n*100)/100).toString(); }
+  function hideZero(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
+  function safe(v){ return (v==null)?'':String(v); }
+  function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function looksLikeSecret(v){
+    if(!v) return false;
+    const t=String(v).trim();
+    if(t.includes('::')) return true;
+    if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
+    if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
+    return false;
+  }
+  function showError(m){ const e=document.getElementById('error'); e.textContent=m; e.style.display='block'; }
+  function cellOrNbsp(v){ const t=(v==null?'':String(v).trim()); return t===''?'&nbsp;':esc(t); }
+  function linkify(v){
+    const t=(v||'').trim();
+    if(!t) return '';
+    try{ const u=new URL(t); return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`; }
+    catch(_){ return esc(t); }
+  }
 </script>
 </body>
 </html>
