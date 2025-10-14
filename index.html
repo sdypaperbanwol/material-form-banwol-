@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -19,16 +19,18 @@
     #record-buttons:not(.hidden) { display:flex; justify-content:center; gap:0.8rem; margin:0.5rem 0 1rem 0; flex-wrap:wrap; }
 
     /* 오버레이 */
-    #submitOverlay, #loadingOverlay, #initialLoadingOverlay {
-      position: fixed; top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.5);
-      display: none; justify-content: center; align-items: center;
-      z-index: 9999;  /* 기본값 */
-      color: white; font-size: 1.4rem;
-    }
-    /* submitOverlay만 위로 */
-    #submitOverlay { z-index: 10050; }
+   /* 그대로 둠: 공통 오버레이 스타일 */
+#submitOverlay, #loadingOverlay, #initialLoadingOverlay {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: none; justify-content: center; align-items: center;
+  z-index: 9999;  /* 기본값 */
+  color: white; font-size: 1.4rem;
+}
+
+/* 추가로 이 한 줄(규칙)만 더 넣어서 submitOverlay만 위로 */
+#submitOverlay { z-index: 10050; }  /* ✅ 모달(9999) 위로 */
     #initialLoadingOverlay { display:flex; }
     #submitOverlay span {
       background:white; padding:20px 40px; border-radius:12px; font-size:1.3rem;
@@ -47,7 +49,7 @@
     .numpad-grid button { padding:1rem; font-size:1.5rem; border-radius:10px; background:#e0e0e0; border:none; cursor:pointer; transition:background .2s; }
     .numpad-grid button:hover { background:#ccc; }
 
-    /* 로그인창 복구 */
+    /* ✅ 로그인창: 원래대로 복구 (세로 스택, 폭/여백 동일) */
     #login-section { display:block; }
     #login-section input {
       padding:1.00rem; font-size:1.05rem; margin:0.8rem auto;
@@ -59,29 +61,6 @@
       width:80%; max-width:300px;
     }
   </style>
-
-  <!-- ✅ 페이지 자체 캐시 강제 우회 (인앱/강캐시 대비) -->
-  <script>
-    (function(){
-      try {
-        var u = new URL(location.href);
-        if (!u.searchParams.get('pv')) { // page version
-          u.searchParams.set('pv', Date.now().toString());
-          history.replaceState(null, '', u.toString());
-        }
-      } catch(e) { /* noop */ }
-    })();
-  </script>
-
-  <!-- ✅ 서비스워커/캐시 완전 해제 (임시, 문제 해결 후 제거 가능) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs){
-        regs.forEach(function(r){ r.unregister(); });
-        if (window.caches) caches.keys().then(function(keys){ keys.forEach(function(k){ caches.delete(k); }); });
-      });
-    }
-  </script>
 </head>
 <body>
 <div id="initialLoadingOverlay">⏳ 로딩 중입니다...</div>
@@ -177,17 +156,7 @@
 </div>
 
 <script>
-  /* =====================
-   *  캐시/서비스워커 우회용 endpoint 래퍼
-   * ===================== */
-  const BUILD_V = '20251015-0705'; // ← 배포시 갱신
-  const ENDPOINT_BASE = 'https://script.google.com/macros/s/AKfycby1W5ansyu5_sQ0iCuD-BywByCZPYomCQV_UvQWBFGyF5BME5MRnkh7Am85GtSLopx7/exec';
-  const ep = (q = '') => {
-    const hasQuery = ENDPOINT_BASE.includes('?');
-    const firstSep = hasQuery ? '&' : '?';
-    const tail = q ? (q.startsWith('?') ? q.slice(1) : q) : '';
-    return ENDPOINT_BASE + firstSep + 'v=' + BUILD_V + (tail ? '&' + tail : '');
-  };
+  const endpoint = 'https://script.google.com/macros/s/AKfycby1W5ansyu5_sQ0iCuD-BywByCZPYomCQV_UvQWBFGyF5BME5MRnkh7Am85GtSLopx7/exec';
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -205,7 +174,7 @@
     document.getElementById('loginLoadingText').classList.remove('hidden');
     document.querySelector('#login-section button').style.display = 'none';
 
-    fetch(ep(), {
+    fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ empId, empName })
@@ -220,7 +189,7 @@
         document.getElementById('title').innerText = "🔎 신청·조사 시스템";
         document.getElementById('record-buttons').classList.remove('hidden');
         document.getElementById('loadingOverlay').style.display = 'flex';
-        try { zMeta = await fetch(ep('?mode=zinfo')).then(r=>r.json()) || {}; } catch(e) { console.warn('zinfo 로드 실패', e); }
+        try { zMeta = await fetch(`${endpoint}?mode=zinfo`).then(r=>r.json()) || {}; } catch(e) { console.warn('zinfo 로드 실패', e); }
         loadItems();
       } else {
         document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
@@ -236,7 +205,7 @@
 
   // 목록 로드
   function loadItems() {
-    fetch(ep())
+    fetch(endpoint)
       .then(res => res.json())
       .then(data => {
         itemData = data;
@@ -390,7 +359,7 @@
           구매요청수량
         };
 
-        await fetch(ep(), { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(payload) });
+        await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(payload) });
       }
       alert("✅ 모든 항목이 신청되었습니다.");
       location.reload();
@@ -411,7 +380,7 @@
   document.getElementById("viewPhotosType").addEventListener("click", () => {
     const category = selected.category; if (!category) return alert("먼저 대분류를 선택해주세요.");
     document.getElementById("loadingOverlay").style.display = "flex";
-    fetch(ep('?mode=photo'))
+    fetch(`${endpoint}?mode=photo`)
       .then(res => res.json())
       .then(photoMap => {
         const urls = photoMap[category];
@@ -434,7 +403,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     const box = document.getElementById("inlineNoticeBox");
     const loading = document.getElementById("initialLoadingOverlay");
-    fetch(ep('?mode=notice'))
+    fetch(`${endpoint}?mode=notice`)
       .then(res => res.json())
       .then(data => { const notice = data.notice?.trim(); if (notice) { box.textContent = notice; box.style.display = "block"; } })
       .catch(err => console.warn("공지사항 로딩 실패:", err))
@@ -445,7 +414,7 @@
   function openMyRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(ep('?mode=myrecords&empId=' + encodeURIComponent(empId)))
+    fetch(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
       .then(res => res.json())
       .then(data => {
         if (data.result !== "success") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("❌ 신청 내역을 불러올 수 없습니다."); }
@@ -457,7 +426,7 @@
   function openTeamRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(ep('?mode=teamrecords&empId=' + encodeURIComponent(empId)))
+    fetch(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
       .then(res => res.json())
       .then(data => {
         if (data.result === "forbidden") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("⚠️ 팀 내역 조회 권한이 없습니다."); }
@@ -471,7 +440,7 @@
     const thead = document.querySelector("#myRecordsTable thead");
     const tbody = document.querySelector("#myRecordsTable tbody");
     thead.innerHTML = "<tr>" + colIndexes.map(i => `<th style="border:1px solid #ccc;background:#f0f0f0;padding:4px;text-align:center;">${data.header[i]}</th>`).join("") + "</tr>";
-    tbody.innerHTML = data.records.map(row => "<tr>" + colIndexes.map(i => `<td style=\"border:1px solid #ccc;padding:6px;text-align:center;\">${i===0?formatDate(row[i]):row[i]}</td>`).join("") + "</tr>").join("");
+    tbody.innerHTML = data.records.map(row => "<tr>" + colIndexes.map(i => `<td style="border:1px solid #ccc;padding:6px;text-align:center;">${i===0?formatDate(row[i]):row[i]}</td>`).join("") + "</tr>").join("");
     document.getElementById("myRecordsModal").style.display = "flex";
   }
   function closeMyRecords() { document.getElementById("myRecordsModal").style.display = "none"; }
@@ -500,7 +469,7 @@
   }
   function closeZ1Modal() { document.getElementById("modalZ1").style.display = "none"; }
 
-  // Z1/Z3 즉시 전송
+  // ★ Z1/Z3 즉시 전송
   async function submitZ1() {
     const remarks = document.getElementById("z1-remarks").value;
     const stockMap = itemData[selected.category]?.stockMap || {};
@@ -528,7 +497,7 @@
 
     try {
       for (const item of itemsToSubmit) {
-        await fetch(ep(), {
+        await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
@@ -635,7 +604,7 @@
   }
   function closeZ2UniformModal() { document.getElementById("modalZ2Uniform").style.display = "none"; }
 
-  /* Z2 유니폼 — 중복 클릭 방지 + 중앙 “신청 중입니다..” 오버레이 */
+  /* ✅ Z2 유니폼 — 중복 클릭 방지 + 중앙 “신청 중입니다..” 오버레이 */
   let isSubmittingZ2Uniform = false;
 
   async function submitZ2Uniform() {
@@ -676,7 +645,7 @@
 
     try {
       for (const item of itemsToSubmit) {
-        await fetch(ep(), {
+        await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
@@ -733,6 +702,7 @@
     </p>
     <div id="z2UniformContent"></div>
     <textarea id="z2UniformRemarks" placeholder="공통 비고 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
+    <!-- ✅ 중복 방지용 id 부여 -->
     <button id="z2UniformSubmitBtn" onclick="submitZ2Uniform()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
