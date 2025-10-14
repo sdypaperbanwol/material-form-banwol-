@@ -332,7 +332,24 @@ tbody td{font-size:13px}
     document.body.style.overflow=on?'hidden':'';
   }
 
-  function toNum(v){ const t=String(v??'').replace(/[,. ]/g,'').trim(); return (t===''||isNaN(Number(t)))?0:Number(t); }
+  function toNum(v){
+  let s = String(v ?? '').trim();
+  if (!s) return 0;
+
+  // 공백 제거
+  s = s.replace(/\s+/g, '');
+
+  // 유럽식 "0,5" 같은 소수 처리: 점이 없고 콤마만 있으면 소수점으로 변환
+  if (s.includes(',') && !s.includes('.')) {
+    s = s.replace(',', '.');
+  }
+
+  // 천단위 구분 콤마 제거
+  s = s.replace(/,/g, '');
+
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
   function fmt(n){ return (Math.round(n*100)/100).toString(); }
   function hideZero(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
   function safe(v){ return (v==null)?'':String(v); }
