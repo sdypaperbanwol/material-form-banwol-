@@ -56,6 +56,27 @@ th.center,td.center{text-align:center}
 th.metric .full { display: inline; }
 th.metric .two  { display: none; }
 
+      /* 표 컨테이너: 내부 스크롤 해제 → 페이지가 스크롤됨 */
+.tblwrap { overflow: visible; }
+
+/* 헤더 더 컴팩트하게 */
+thead th{
+  padding: 6px 6px;        /* ↓ */
+  line-height: 1.1;        /* ↓ */
+  font-size: 13px;         /* ↓ */
+}
+
+/* sticky 헤더 (두 줄 구조 유지) */
+thead tr.thead1 th{ position: sticky; top: 0;  z-index: 5; }
+thead tr.thead2 th{ position: sticky; top: 28px; z-index: 5; } /* 첫줄 높이에 맞춰 조정 */
+
+/* 모바일에서 더 낮게 */
+@media (max-width:640px){
+  thead th{ padding: 5px 4px; font-size: 12px; }
+  thead tr.thead2 th{ top: 24px; } /* 필요 시 22~26px로 미세조정 */
+  th.metric .subsum{ font-size:10px; margin-top:2px; }
+}
+
 
 
   
