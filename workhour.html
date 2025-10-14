@@ -19,7 +19,7 @@
   .h1{margin:0 0 4px;font-size:18px}
   .meta{color:var(--muted);font-size:13px}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
-  .right{color:var(--muted);font-size:12px}
+  .right{color:#666;font-size:12px}
 
   .tblwrap{overflow:auto;margin-top:16px}
   table{width:100%;border-collapse:separate;border-spacing:0}
@@ -67,45 +67,118 @@
 </div>
 
 <script>
+/** ⬇⬇ 배포한 GAS 웹앱 exec URL로 교체 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrCREhVES64GbsJ4Cu7X5ZMkh2z8UKyXJxN2BZiKbhEllt6PxlISqNCkoHhmvJgGKARQ/exec';
+
 /** 쿼리 파라미터 */
 const q   = new URLSearchParams(location.search);
-const emp = (q.get('emp') || '').trim();
-const sig = (q.get('sig') || '').trim(); // 옵션. JSON에 sig 있으면 비교.
+const emp = q.get('emp') || '';
+const sig = q.get('sig') || '';
 
-/** 로컬 JSON 경로 규칙: data/emp-<사번>.json */
-const LOCAL_JSON = emp ? `data/emp-${encodeURIComponent(emp)}.json` : '';
+/** 인앱 감지 */
+const UA = navigator.userAgent || '';
+const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
 
-/** ===== 로드 ===== */
-(async function main(){
-  if (!emp){ return showError('잘못된 접근(emp 누락)'); }
+/** 컬럼 인덱스(A=0) — V(신청서) 제거 */
+const COL = {
+  DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
+  J:9, K:10, L:11, M:12, N:13, O:14, P:15,
+  NOTE_U:20
+};
+
+/** 인앱 안내(선택) */
+(function(){
+  if (!IS_INAPP) return;
+  const wrap = document.querySelector('.wrap');
+  const div = document.createElement('div');
+  div.className = 'card err';
+  div.style.marginBottom = '12px';
+  const here = encodeURIComponent(location.href);
+  const chromeIntent = `intent://open#Intent;scheme=${location.protocol.replace(':','')};S.browser_fallback_url=${here};package=com.android.chrome;end`;
+  div.innerHTML = `카카오/인앱 브라우저에서 네트워크 차단이 발생할 수 있어요.
+    <a href="${chromeIntent}" style="font-weight:700;text-decoration:underline">외부 브라우저(크롬)로 열기</a>`;
+  wrap.insertBefore(div, wrap.firstChild);
+})();
+
+/** ===== 로더: JSONP → 실패 시 iframe 브릿지 ===== */
+(async function load(){
+  if(!emp){ return showError('잘못된 접근(emp 누락)'); }
+
+  function loadJsonp(){
+    return new Promise((resolve, reject)=>{
+      const u = new URL(GAS_URL);
+      u.searchParams.set('jsonp','1');
+      u.searchParams.set('callback','__RENDER__');
+      u.searchParams.set('emp', emp);
+      if(sig) u.searchParams.set('sig', sig);
+
+      const s = document.createElement('script');
+      s.src = u.toString();
+      s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
+      document.body.appendChild(s);
+
+      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
+      window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
+    });
+  }
+
+  function loadIframe(){
+    return new Promise((resolve, reject)=>{
+      const u = new URL(GAS_URL);
+      u.searchParams.set('embed','1');
+      u.searchParams.set('emp', emp);
+      if(sig) u.searchParams.set('sig', sig);
+
+      const ifr = document.createElement('iframe');
+      ifr.src = u.toString();
+      ifr.style.display = 'none';
+      document.body.appendChild(ifr);
+
+      const ORIG_OK = new Set(['https://script.google.com','https://script.googleusercontent.com']);
+      const onMsg = (ev)=>{
+        try{
+          if(!ORIG_OK.has(ev.origin)) return;
+          const res = ev.data;
+          if(res && res.ok){ cleanup(); resolve(res); }
+          else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
+        }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
+      };
+      window.addEventListener('message', onMsg);
+      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
+      function cleanup(){ window.removeEventListener('message', onMsg); clearTimeout(t); ifr.remove(); }
+    });
+  }
+
   try{
-    const url = `${LOCAL_JSON}?v=${Date.now().toString(36)}`; // 캐시 무력화
-    const res = await fetch(url, { cache:'no-store' });
-    if (!res.ok) throw new Error('NOT_FOUND_JSON');
-
-    const payload = await res.json();
-
-    // (선택) 서명 검증: JSON 안에 sig가 담겨있을 경우 일치 확인
-    if (sig && payload.sig && payload.sig !== sig) throw new Error('BAD_SIGNATURE');
-
-    if (!payload.ok) throw new Error(payload.error || 'BAD_PAYLOAD');
-    render(payload);
+    let data;
+    try { data = await loadJsonp(); }
+    catch(_) { data = await loadIframe(); }
+    if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
+    render(data);
   }catch(e){
     const map = {
-      'NOT_FOUND_JSON':'데이터 파일이 없습니다(배포 누락).',
-      'BAD_SIGNATURE':'서명 불일치(BAD_SIGNATURE).',
-      'BAD_PAYLOAD':'데이터 형식 오류(BAD_PAYLOAD).'
+      'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
+      'JSONP_TIMEOUT':'네트워크 지연(JSONP)',
+      'IFR_TIMEOUT':'네트워크 지연(iframe)',
+      'IFR_BAD_PAYLOAD':'iframe 응답 오류',
+      'IFR_MSG_ERROR':'iframe 메시지 처리 오류',
+      'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
+      'NOT_FOUND':'대상자 없음(NOT_FOUND)'
     };
-    showError(map[e.message] || ('로드 실패: '+ e.message));
+    showError(map[e.message] || ('네트워크 오류: '+e.message));
   }
 })();
 
-/** ===== 렌더 ===== */
+/** ====== 렌더 ====== */
 function render(res){
+  if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
+
+  // Z1:Z4 공용 헤더(토큰/키로 보이는 문자열 숨김)
   const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
   document.getElementById('zbox').innerHTML =
     z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
 
+  // 프로필
   const p = res.person||{};
   document.getElementById('pname').innerHTML =
     `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
@@ -118,8 +191,6 @@ function render(res){
 }
 
 /** ====== 테이블 ====== */
-const COL = { DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8, J:9, K:10, L:11, M:12, N:13, O:14, P:15, NOTE_U:20 };
-
 function parseSheetDate(s){
   const t = String(s||'').trim();
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
@@ -172,7 +243,7 @@ function buildTable(rows){
     ];
     return `
       <tr>
-        <td class="center">${esc(cells[0])}</td>
+        <td class="center">${esc(cells[0])}</td>  <!-- 날짜 값 가운데 정렬 -->
         <td>${esc(cells[1])}</td>
         <td class="center">${esc(cells[2])}</td>
         <td class="center">${esc(cells[3])}</td>
