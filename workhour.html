@@ -100,7 +100,7 @@ td.type-cell .type-two{display:none}
 /* 근무형태 칸 폭: 값이 길어도 세로 찢어짐 방지 */
 th.type-col,td.type-cell{min-width:110px}
 @media (max-width:640px){
-  th.type-col, td.type-cell { min-width:80px; width:auto; }
+  th.type-col, td.type-cell { min-width:60px; width:auto; }
 }
 
 
@@ -114,6 +114,19 @@ th.time-col,td.time-col{min-width:80px;width:80px;text-align:center}
 @media (max-width:640px){
   th.note,td.note{writing-mode:horizontal-tb;min-width:240px}
 }
+
+      /* === 본문 셀 폰트크기 통일: 근무형태 값과 동일 === */
+/* 데스크톱: type-cell이 13px 이므로 전부 13px */
+tbody td { font-size: 13px; }
+
+/* 모바일: type-cell이 11px 이므로 전부 11px */
+@media (max-width: 640px){
+  tbody td { font-size: 11px; }
+
+  /* 기존에 따로 12px로 줄여놨던 메트릭 셀을 통일 */
+  td.metric { font-size: 11px !important; }
+}
+
 </style>
 </head>
 <body>
