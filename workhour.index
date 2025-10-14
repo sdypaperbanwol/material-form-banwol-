@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>개인 근태 조회</title>
+<style>
+  :root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--radius:16px;--shadow:0 6px 18px rgba(0,0,0,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
+  .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+  .top{display:grid;gap:12px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .zcard{padding:12px 14px}
+  .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
+  .h1{margin:0 0 4px;font-size:18px}
+  .meta{color:var(--muted);font-size:13px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
+  .right{color:var(--muted);font-size:12px}
+  .tblwrap{overflow:auto}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  thead th{position:sticky;top:0;background:#fbfbfd;font-weight:700;border-bottom:1px solid var(--line);padding:10px 8px;white-space:nowrap}
+  tbody td{border-bottom:1px solid var(--line);padding:8px 8px;white-space:nowrap}
+  tbody tr:nth-child(odd) td{background:#fcfcff}
+  .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="error" class="card err" style="display:none"></div>
+  <div class="top" id="zbox"></div>
+  <div class="card profile" id="pbox" style="display:none">
+    <div>
+      <div class="h1" id="pname"></div>
+      <div class="meta" id="pmeta"></div>
+    </div>
+    <div class="right" id="pupdated"></div>
+  </div>
+  <div class="card tblwrap" id="tblwrap"></div>
+</div>
+
+<script>
+/** ⬇⬇ 여기를 본인 GAS 웹앱 URL로 교체 (…/exec) */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDrCm0aaU12tUpb4CrL6Qya1qeFDQcb_XlSwpFhgop6rVs6wKTv4UhQWx_M02Ce41Hfg/exec';
+
+/** 쿼리 파라미터 */
+const q = new URLSearchParams(location.search);
+const emp = q.get('emp') || '';
+const sig = q.get('sig') || '';
+
+/** 표시 열 커스터마이즈 (A=0,B=1,...Z=25). 비우면 전체 표시 */
+const VISIBLE_COLS = [];
+
+/** JSONP 콜백 */
+function render(res){
+  if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
+
+  // 공용 헤더(Z1:Z4)
+  const z = document.getElementById('zbox');
+  z.innerHTML = (res.zHeader||[]).map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
+
+  // 프로필
+  const p = res.person||{};
+  document.getElementById('pname').innerHTML = `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
+  document.getElementById('pmeta').textContent = `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
+  document.getElementById('pupdated').textContent = res.updated || '';
+  document.getElementById('pbox').style.display = '';
+
+  // 테이블
+  buildTable(res.header||[], res.rows||[]);
+}
+
+/** JSONP 로드 */
+(function(){
+  if(!emp){ showError('잘못된 접근(emp 누락)'); return; }
+  const url = new URL(GAS_URL);
+  url.searchParams.set('jsonp','1');
+  url.searchParams.set('callback','render');
+  url.searchParams.set('emp', emp);
+  if(sig) url.searchParams.set('sig', sig); // USE_SIGNATURE=false면 없어도 됨
+
+  const s = document.createElement('script');
+  s.src = url.toString();
+  s.onerror = () => showError('네트워크 오류');
+  document.body.appendChild(s);
+})();
+
+function buildTable(header, rows){
+  const box = document.getElementById('tblwrap');
+  if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
+  const cols = (VISIBLE_COLS.length ? VISIBLE_COLS : header.map((_,i)=>i));
+  const th = cols.map(i=>`<th>${esc(header[i]||'')}</th>`).join('');
+  const tb = rows.map(r=>`<tr>${cols.map(i=>`<td>${esc(r[i]||'')}</td>`).join('')}</tr>`).join('');
+  box.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function showError(m){const e=document.getElementById('error'); e.textContent=m; e.style.display='block';}
+</script>
+</body>
+</html>
