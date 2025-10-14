@@ -30,21 +30,28 @@ tbody td:last-child{border-right:1px solid var(--line)}
 tbody tr:nth-child(odd) td{background:#fcfcff}
 th.center,td.center{text-align:center}
 /* === 모바일에서만 세로 헤더 & 특이사항 넓게 === */
+/* 모바일에서만: 메트릭 헤더 두 줄 표기 + 특이사항은 가로로 넓게 */
 @media (max-width: 640px) {
-  th.vcol, td.vcol {
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-    white-space: normal;       /* 줄바꿈 허용 */
-    line-height: 1.2;
-    min-width: 28px;           /* 너무 붙지 않게 최소폭 */
-    padding-top: 12px;         /* 세로 정렬 시 여백 보정 */
-    padding-bottom: 12px;
+  th.metric .full { display: none; }
+  th.metric .two {
+    display: inline-grid;
+    grid-auto-rows: auto;
+    gap: 2px;
+    line-height: 1;
+    text-align: center;
   }
+  th.metric .two .t, th.metric .two .b { display: block; }
+
   th.note, td.note {
-    writing-mode: horizontal-tb;  /* 특이사항은 가로 유지 */
-    min-width: 240px;             /* 모바일에서 넓게 */
+    writing-mode: horizontal-tb;
+    min-width: 240px;   /* 특이사항: 모바일에서 넓게 */
   }
 }
+
+/* 데스크톱 기본 */
+th.metric .full { display: inline; }
+th.metric .two  { display: none; }
+
 
   
 </style>
@@ -131,16 +138,44 @@ const headRow1 =
   '<tr class="thead1">' +
     '<th class="center" rowspan="2">날짜</th>' +
     '<th rowspan="2">근무 형태</th>' +
-    '<th class="center" colspan="2">비콘</th>' +    // ← 변경
-    '<th class="center" colspan="2">수정</th>' +    // ← 변경
-    `<th class="center vcol" rowspan="2">정규<span class="subsum">(${fmt(sum.J)})</span></th>` +
-    `<th class="center vcol" rowspan="2">연장<span class="subsum">(${fmt(sum.K)})</span></th>` +
-    `<th class="center vcol" rowspan="2">야근<span class="subsum">(${fmt(sum.L)})</span></th>` +
-    `<th class="center vcol" rowspan="2">휴일<span class="subsum">(${fmt(sum.M)})</span></th>` +
-    `<th class="center vcol" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>` +
-    `<th class="center vcol" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>` +
-    `<th class="center vcol" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>` +
-    '<th class="note" rowspan="2">특이사항</th>' +  // ← note 클래스로 가로폭 넓힘
+    '<th class="center" colspan="2">비콘</th>' +   // ← 변경
+    '<th class="center" colspan="2">수정</th>' +   // ← 변경
+    `<th class="center metric" rowspan="2">
+       <span class="full">정규</span>
+       <span class="two"><span class="t">정</span><span class="b">규</span></span>
+       <span class="subsum">(${fmt(sum.J)})</span>
+     </th>` +
+    `<th class="center metric" rowspan="2">
+       <span class="full">연장</span>
+       <span class="two"><span class="t">연</span><span class="b">장</span></span>
+       <span class="subsum">(${fmt(sum.K)})</span>
+     </th>` +
+    `<th class="center metric" rowspan="2">
+       <span class="full">야근</span>
+       <span class="two"><span class="t">야</span><span class="b">근</span></span>
+       <span class="subsum">(${fmt(sum.L)})</span>
+     </th>` +
+    `<th class="center metric" rowspan="2">
+       <span class="full">휴일</span>
+       <span class="two"><span class="t">휴</span><span class="b">일</span></span>
+       <span class="subsum">(${fmt(sum.M)})</span>
+     </th>` +
+    `<th class="center metric" rowspan="2">
+       <span class="full">휴연</span>
+       <span class="two"><span class="t">휴</span><span class="b">연</span></span>
+       <span class="subsum">(${fmt(sum.N)})</span>
+     </th>` +
+    `<th class="center metric" rowspan="2">
+       <span class="full">유급</span>
+       <span class="two"><span class="t">유</span><span class="b">급</span></span>
+       <span class="subsum">(${fmt(sum.O)})</span>
+     </th>` +
+    `<th class="center metric" rowspan="2">
+       <span class="full">주휴</span>
+       <span class="two"><span class="t">주</span><span class="b">휴</span></span>
+       <span class="subsum">(${fmt(sum.P)})</span>
+     </th>` +
+    '<th class="note" rowspan="2">특이사항</th>' +
   '</tr>';
 
 const headRow2 =
