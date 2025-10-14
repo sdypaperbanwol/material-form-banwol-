@@ -78,51 +78,113 @@ const q = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
 
+/** 인앱/카톡 감지 */
+const UA = navigator.userAgent || '';
+const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
+
+/** 외부 브라우저로 열기 안내배너 */
+(function showInAppHint(){
+  if (!IS_INAPP) return;
+  const wrap = document.querySelector('.wrap');
+  const div = document.createElement('div');
+  div.className = 'card err';
+  div.style.marginBottom = '12px';
+  div.innerHTML = `
+    카카오/인앱 브라우저에서 네트워크 차단이 발생할 수 있어요.
+    <a href="#" id="openExt" style="font-weight:700; text-decoration:underline">외부 브라우저(크롬)로 열기</a>`;
+  wrap.insertBefore(div, wrap.firstChild);
+  document.getElementById('openExt').onclick = (e)=>{
+    e.preventDefault();
+    // 일부 인앱에서 외부 브라우저 유도
+    window.open(location.href, '_blank');
+  };
+})();
+
 /** 원본 컬럼 인덱스(A=0) */
 const COL = {
   DATE:1,            // B
   TYPE:4,            // E
   W_IN:5, W_OUT:6,   // F,G (대양웍스)
   M_IN:7, M_OUT:8,   // H,I (수정)
-  J:9, K:10, L:11, M:12, N:13, O:14, P:15 // 정규..주휴
+  J:9, K:10, L:11, M:12, N:13, O:14, P:15, // 정규..주휴 (J~P)
+  NOTE_U:20,         // U (특이사항)
+  FORM_V:21          // V (신청서)
 };
 
-/** ===== 로더: CORS(JSON) 우선, 실패 시 JSONP 폴백 ===== */
+/** ===== 로더 =====
+ * 인앱(카톡 등) → JSONP 1순위
+ * 일반 브라우저 → CORS 10초 + 실패 시 JSONP
+ */
 (async function load(){
   if(!emp){ showError('잘못된 접근(emp 누락)'); return; }
 
-  // ① CORS(JSON)
-  const url = new URL(GAS_URL);
-  url.searchParams.set('mode','cors');
-  url.searchParams.set('emp', emp);
-  if(sig) url.searchParams.set('sig', sig);
+  // JSONP 헬퍼
+  function loadJsonp(){
+    return new Promise((resolve, reject)=>{
+      const jp = new URL(GAS_URL);
+      jp.searchParams.set('jsonp','1');
+      jp.searchParams.set('callback','__RENDER__');
+      jp.searchParams.set('emp', emp);
+      if(sig) jp.searchParams.set('sig', sig);
 
-  try {
+      const s = document.createElement('script');
+      s.src = jp.toString();
+      s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
+      document.body.appendChild(s);
+
+      // 12초 타임아웃(모바일 안정성)
+      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
+      window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
+    });
+  }
+
+  // CORS 헬퍼(10초)
+  async function loadCors(){
+    const url = new URL(GAS_URL);
+    url.searchParams.set('mode','cors');
+    url.searchParams.set('emp', emp);
+    if(sig) url.searchParams.set('sig', sig);
+
     const r = await Promise.race([
       fetch(url.toString(), { method:'GET', credentials:'omit' }),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), 3000))
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('CORS_TIMEOUT')), 10000))
     ]);
-    if(!r.ok) throw new Error('bad status');
+    if(!r.ok) throw new Error('CORS_BAD_STATUS');
     const data = await r.json();
-    if(!data || !data.ok) throw new Error(data && data.error || 'bad payload');
-    render(data); // 성공
-    return;
-  } catch(e) {
-    // ② JSONP 폴백
-    const jp = new URL(GAS_URL);
-    jp.searchParams.set('jsonp','1');
-    jp.searchParams.set('callback','render');
-    jp.searchParams.set('emp', emp);
-    if(sig) jp.searchParams.set('sig', sig);
+    if(!data || !data.ok) throw new Error(data && data.error || 'CORS_BAD_PAYLOAD');
+    return data;
+  }
 
-    const s = document.createElement('script');
-    s.src = jp.toString();
-    s.onerror = () => showError('네트워크 오류');
-    document.body.appendChild(s);
+  try {
+    let data;
+    if (IS_INAPP) {
+      // 인앱에선 JSONP 우선
+      data = await loadJsonp();
+    } else {
+      try {
+        data = await loadCors();
+      } catch (e) {
+        // CORS 실패 시 JSONP 폴백
+        data = await loadJsonp();
+      }
+    }
+    if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
+    render(data);
+  } catch (e) {
+    const msgMap = {
+      'CORS_TIMEOUT': '네트워크 지연(CORS 타임아웃)',
+      'CORS_BAD_STATUS': 'CORS 상태 오류',
+      'CORS_BAD_PAYLOAD': 'CORS 응답 오류',
+      'JSONP_LOAD_FAIL': 'JSONP 스크립트 로드 실패',
+      'JSONP_TIMEOUT': '네트워크 지연(JSONP 타임아웃)',
+      'BAD_SIGNATURE': '서명 오류(BAD_SIGNATURE)',
+      'NOT_FOUND': '대상자 없음(NOT_FOUND)'
+    };
+    showError(msgMap[e.message] || ('네트워크 오류: ' + e.message));
   }
 })();
 
-/** ===== 렌더러(글로벌: JSONP 콜백용) ===== */
+/** ===== 렌더러 ===== */
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
@@ -154,7 +216,7 @@ function parseSheetDate(s){
   return new Date(2100,0,1);
 }
 
-/** 테이블(2단 헤더 + 헤더 내 합계) */
+/** 테이블(2단 헤더 + 헤더 내 합계 + U/V 열 추가) */
 function buildTable(rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
@@ -182,6 +244,8 @@ function buildTable(rows){
       <th class="center" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>
       <th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>
       <th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>
+      <th rowspan="2">특이사항</th>
+      <th rowspan="2">신청서</th>
     </tr>`;
   const headRow2 = `
     <tr class="thead2">
@@ -207,9 +271,26 @@ function buildTable(rows){
       hideZero(r[COL.N]),
       hideZero(r[COL.O]),
       hideZero(r[COL.P]),
+      safe(r[COL.NOTE_U]), // 특이사항(U)
+      safe(r[COL.FORM_V])  // 신청서(V)
     ];
-    const tds = cells.map((v,i)=> (i>=2 ? `<td class="center">${esc(v)}</td>` : `<td>${esc(v)}</td>`)).join('');
-    return `<tr>${tds}</tr>`;
+    return `<tr>
+      <td>${esc(cells[0])}</td>
+      <td>${esc(cells[1])}</td>
+      <td class="center">${esc(cells[2])}</td>
+      <td class="center">${esc(cells[3])}</td>
+      <td class="center">${esc(cells[4])}</td>
+      <td class="center">${esc(cells[5])}</td>
+      <td class="center">${esc(cells[6])}</td>
+      <td class="center">${esc(cells[7])}</td>
+      <td class="center">${esc(cells[8])}</td>
+      <td class="center">${esc(cells[9])}</td>
+      <td class="center">${esc(cells[10])}</td>
+      <td class="center">${esc(cells[11])}</td>
+      <td class="center">${esc(cells[12])}</td>
+      <td>${esc(cells[13])}</td>
+      <td>${esc(cells[14])}</td>
+    </tr>`;
   }).join('');
 
   box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
