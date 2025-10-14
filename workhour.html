@@ -126,8 +126,7 @@ const COL = {
   M_IN:7, M_OUT:8,   // H,I (수정)
   J:9, K:10, L:11, M:12, N:13, O:14, P:15, // J~P
   NOTE_U:20,         // U
-  FORM_V:21          // V
-};
+ };
 
 function buildTable(rows){
   const box = document.getElementById('tblwrap');
@@ -156,7 +155,7 @@ function buildTable(rows){
       <th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>
       <th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>
       <th rowspan="2">특이사항</th>
-      <th rowspan="2">신청서</th>
+      
     </tr>`;
   const headRow2 = `
     <tr class="thead2">
@@ -173,7 +172,7 @@ function buildTable(rows){
       safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
       hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
       hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
-      safe(r[COL.NOTE_U]), safe(r[COL.FORM_V])
+      safe(r[COL.NOTE_U])
     ];
     return `<tr>
       <td>${esc(cells[0])}</td>
@@ -190,7 +189,7 @@ function buildTable(rows){
       <td class="center">${esc(cells[11])}</td>
       <td class="center">${esc(cells[12])}</td>
       <td>${linkify(cells[13])}</td>
-      <td>${linkify(cells[14])}</td>
+      
     </tr>`;
   }).join('');
 
