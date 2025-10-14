@@ -44,6 +44,7 @@
   tbody tr:nth-child(odd) td{background:#fcfcff}
 
   th.center, td.center{ text-align:center }
+  a.btn{display:inline-block;margin-top:4px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:10px;text-decoration:none;color:#1f2937;background:#ffffff}
 </style>
 </head>
 <body>
@@ -67,7 +68,8 @@
 </div>
 
 <script>
-/** ⬇⬇ 배포한 GAS 웹앱 exec URL로 교체 */
+/** ==================== 환경설정 ==================== */
+/** ⬇⬇ 여기를 배포한 GAS 웹앱의 “리다이렉트 없는 googleusercontent.com/exec” URL로 교체 권장 */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrCREhVES64GbsJ4Cu7X5ZMkh2z8UKyXJxN2BZiKbhEllt6PxlISqNCkoHhmvJgGKARQ/exec';
 
 /** 쿼리 파라미터 */
@@ -86,7 +88,7 @@ const COL = {
   NOTE_U:20
 };
 
-/** 인앱 안내(선택) */
+/** 인앱 안내(상단 경고 + 크롬으로 열기) */
 (function(){
   if (!IS_INAPP) return;
   const wrap = document.querySelector('.wrap');
@@ -95,28 +97,52 @@ const COL = {
   div.style.marginBottom = '12px';
   const here = encodeURIComponent(location.href);
   const chromeIntent = `intent://open#Intent;scheme=${location.protocol.replace(':','')};S.browser_fallback_url=${here};package=com.android.chrome;end`;
-  div.innerHTML = `카카오/인앱 브라우저에서 네트워크 차단이 발생할 수 있어요.
-    <a href="${chromeIntent}" style="font-weight:700;text-decoration:underline">외부 브라우저(크롬)로 열기</a>`;
+  div.innerHTML = `
+    카카오/네이버 등 인앱 브라우저에서 네트워크가 차단될 수 있어요.
+    <a class="btn" href="${chromeIntent}">크롬으로 열기</a>`;
   wrap.insertBefore(div, wrap.firstChild);
 })();
 
-/** ===== 로더: JSONP → 실패 시 iframe 브릿지 ===== */
+/** ==================== 데이터 로더 ==================== */
+/** ▶ 요청하신 CORS → JSONP → iframe → (인앱이면) GAS 자체 페이지 이동 순서 */
 (async function load(){
   if(!emp){ return showError('잘못된 접근(emp 누락)'); }
 
-  function loadJsonp(){
-    return new Promise((resolve, reject)=>{
-      const u = new URL(GAS_URL);
-      u.searchParams.set('jsonp','1');
-      u.searchParams.set('callback','__RENDER__');
-      u.searchParams.set('emp', emp);
-      if(sig) u.searchParams.set('sig', sig);
+  const toURL = (mode) => {
+    const u = new URL(GAS_URL);
+    if (mode === 'cors') u.searchParams.set('mode','cors');
+    if (mode === 'jsonp') { u.searchParams.set('jsonp','1'); u.searchParams.set('callback','__RENDER__'); }
+    if (mode === 'embed') u.searchParams.set('embed','1');
+    u.searchParams.set('emp', emp);
+    if (sig) u.searchParams.set('sig', sig);
+    return u;
+  };
 
+  async function loadCORS(){
+    const u = toURL('cors');
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 9000);
+    try{
+      const res = await fetch(u.toString(), { method:'GET', mode:'cors', signal:ctrl.signal, credentials:'omit' });
+      clearTimeout(timer);
+      if(!res.ok) throw new Error('CORS_HTTP_'+res.status);
+      const json = await res.json();
+      if (!json || json.ok !== true) throw new Error(json && json.error || 'CORS_BAD_PAYLOAD');
+      return json;
+    }catch(e){
+      clearTimeout(timer);
+      throw e;
+    }
+  }
+
+  function loadJSONP(){
+    return new Promise((resolve, reject)=>{
+      const u = toURL('jsonp');
       const s = document.createElement('script');
       s.src = u.toString();
+      s.async = true;
       s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
       document.body.appendChild(s);
-
       const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
       window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
     });
@@ -124,23 +150,24 @@ const COL = {
 
   function loadIframe(){
     return new Promise((resolve, reject)=>{
-      const u = new URL(GAS_URL);
-      u.searchParams.set('embed','1');
-      u.searchParams.set('emp', emp);
-      if(sig) u.searchParams.set('sig', sig);
-
+      const u = toURL('embed');
       const ifr = document.createElement('iframe');
       ifr.src = u.toString();
       ifr.style.display = 'none';
       document.body.appendChild(ifr);
 
-      const ORIG_OK = new Set(['https://script.google.com','https://script.googleusercontent.com']);
+      const ORIG_OK = new Set([
+        'https://script.googleusercontent.com',
+        'https://script.google.com'
+      ]);
+
       const onMsg = (ev)=>{
         try{
           if(!ORIG_OK.has(ev.origin)) return;
           const res = ev.data;
-          if(res && res.ok){ cleanup(); resolve(res); }
-          else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
+          cleanup();
+          if(res && res.ok){ resolve(res); }
+          else { reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
         }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
       };
       window.addEventListener('message', onMsg);
@@ -151,12 +178,17 @@ const COL = {
 
   try{
     let data;
-    try { data = await loadJsonp(); }
-    catch(_) { data = await loadIframe(); }
+    try { data = await loadCORS(); }
+    catch(_) {
+      try { data = await loadJSONP(); }
+      catch(_) { data = await loadIframe(); }
+    }
     if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
     render(data);
   }catch(e){
     const map = {
+      'TypeError: Failed to fetch':'네트워크 차단(CORS)',
+      'AbortError':'네트워크 지연(CORS)',
       'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
       'JSONP_TIMEOUT':'네트워크 지연(JSONP)',
       'IFR_TIMEOUT':'네트워크 지연(iframe)',
@@ -166,10 +198,19 @@ const COL = {
       'NOT_FOUND':'대상자 없음(NOT_FOUND)'
     };
     showError(map[e.message] || ('네트워크 오류: '+e.message));
+
+    // ▶▶ 최후 수단: 인앱이면 GAS 자체 페이지로 강제 이동(동일출처 렌더)
+    if (IS_INAPP) {
+      const u = new URL(GAS_URL);
+      u.searchParams.set('emp', emp);
+      if (sig) u.searchParams.set('sig', sig);
+      // doGet()에 템플릿 'page'가 있으면 HTML로 보임 (없으면 JSON)
+      location.replace(u.toString());
+    }
   }
 })();
 
-/** ====== 렌더 ====== */
+/** ==================== 렌더 ==================== */
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
@@ -190,7 +231,7 @@ function render(res){
   buildTable(res.rows||[]);
 }
 
-/** ====== 테이블 ====== */
+/** ==================== 테이블 ==================== */
 function parseSheetDate(s){
   const t = String(s||'').trim();
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
@@ -204,7 +245,7 @@ function buildTable(rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
 
-  const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
+  const sorted = [...rows].sort((a,b)=> parseSheetDate(a[1]) - parseSheetDate(b[1]));
   const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
   sorted.forEach(r=>{
     sum.J+=toNum(r[COL.J]); sum.K+=toNum(r[COL.K]); sum.L+=toNum(r[COL.L]);
@@ -243,7 +284,7 @@ function buildTable(rows){
     ];
     return `
       <tr>
-        <td class="center">${esc(cells[0])}</td>  <!-- 날짜 값 가운데 정렬 -->
+        <td class="center">${esc(cells[0])}</td>
         <td>${esc(cells[1])}</td>
         <td class="center">${esc(cells[2])}</td>
         <td class="center">${esc(cells[3])}</td>
@@ -264,7 +305,7 @@ function buildTable(rows){
     `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
 }
 
-/** ====== 유틸 ====== */
+/** ==================== 유틸 ==================== */
 function toNum(v){ const t=String(v??'').replace(/[, ]/g,'').trim(); return (t===''||isNaN(Number(t)))?0:Number(t); }
 function fmt(n){ return (Math.round(n*100)/100).toString(); }
 function hideZero(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
