@@ -26,18 +26,32 @@
   @media (max-width:768px){ .grid{grid-template-columns:1fr} }
 
   .tblwrap{overflow:auto}
+
   table{width:100%;border-collapse:separate;border-spacing:0}
   thead th{
-    position:sticky;top:0;background:#fbfbfd;font-weight:700;border-bottom:1px solid var(--line);
-    padding:10px 8px;white-space:pre-line;
+    background:#fbfbfd;font-weight:700;white-space:pre-line;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
+    padding:10px 8px;
   }
-  /* 세로줄(컬럼 경계) */
-  thead th, tbody td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px 8px;white-space:pre-line}
-  thead th:first-child, tbody td:first-child{border-left:1px solid var(--line)}
+  thead th:last-child{ border-right:1px solid var(--line) }
+
+  /* 2단 헤더 sticky: 첫줄/둘째줄 각각 고정 */
+  thead tr.thead1 th{ position:sticky; top:0; z-index:2 }
+  thead tr.thead2 th{ position:sticky; top:38px; z-index:2 }
+
+  tbody td{
+    padding:8px 8px;white-space:pre-line;
+    border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
+  }
+  tbody td:last-child{ border-right:1px solid var(--line) }
   tbody tr:nth-child(odd) td{background:#fcfcff}
 
-  /* 가운데 정렬용 */
+  /* 정렬 */
   th.center, td.center{ text-align:center }
+
   .side{padding:12px}
   .side h3{margin:0 0 8px;font-size:14px}
   .list{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
@@ -95,21 +109,6 @@ const COL = {
   ERP:23, MAN:24     // X,Y
 };
 
-/** 메인표 컬럼: 병합(대양웍스/수정), 숫자열 가운데 + 0 숨김 */
-const DISPLAY_COLS = [
-  { label:'날짜',                 class:'',       render:r => safe(r[COL.DATE]) },
-  { label:'근무 형태',           class:'',       render:r => safe(r[COL.TYPE]) },
-  { label:'출근/퇴근(대양웍스)', class:'center', render:r => joinInline(r[COL.W_IN], r[COL.W_OUT]) },
-  { label:'출근/퇴근(수정)',     class:'center', render:r => joinInline(r[COL.M_IN], r[COL.M_OUT]) },
-  { label:'정규',                 class:'center', render:r => hideZero(r[COL.J]) },
-  { label:'연장',                 class:'center', render:r => hideZero(r[COL.K]) },
-  { label:'야근',                 class:'center', render:r => hideZero(r[COL.L]) },
-  { label:'휴일',                 class:'center', render:r => hideZero(r[COL.M]) },
-  { label:'휴연',                 class:'center', render:r => hideZero(r[COL.N]) },
-  { label:'유급',                 class:'center', render:r => hideZero(r[COL.O]) },
-  { label:'주휴',                 class:'center', render:r => hideZero(r[COL.P]) },
-];
-
 /** JSONP 콜백 */
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
@@ -150,13 +149,16 @@ function render(res){
 function parseSheetDate(s){
   const t = String(s||'').trim();
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
-  if(m){ return new Date(2025, 9, Number(m[2])); } // Oct=9
+  if(m){
+    const day = Number(m[2]);
+    return new Date(2025, 9, day); // Oct = 9
+  }
   m = t.match(/10[^0-9]*(\d{1,2})/);
   if(m){ return new Date(2025, 9, Number(m[1])); }
   return new Date(2100,0,1);
 }
 
-/** 테이블 + ERP/수기 사이드 빌드 */
+/** 테이블 + ERP/수기 사이드 빌드 (2단 헤더) */
 function buildTableAndSide(rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){
@@ -171,15 +173,52 @@ function buildTableAndSide(rows){
   // 날짜 오름차순 정렬
   const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
 
-  // 메인 표
-  const th = DISPLAY_COLS
-    .map(c=>`<th class="${c.class||''}">${esc(c.label)}</th>`).join('');
-  const tb = sorted.map(r=>{
-    const tds = DISPLAY_COLS
-      .map(c=>`<td class="${c.class||''}">${esc(c.render(r))}</td>`).join('');
+  // THEAD (2단)
+  const headRow1 = `
+    <tr class="thead1">
+      <th rowspan="2">날짜</th>
+      <th rowspan="2">근무 형태</th>
+      <th class="center" colspan="2">출근/퇴근(대양웍스)</th>
+      <th class="center" colspan="2">출근/퇴근(수정)</th>
+      <th class="center" rowspan="2">정규</th>
+      <th class="center" rowspan="2">연장</th>
+      <th class="center" rowspan="2">야근</th>
+      <th class="center" rowspan="2">휴일</th>
+      <th class="center" rowspan="2">휴연</th>
+      <th class="center" rowspan="2">유급</th>
+      <th class="center" rowspan="2">주휴</th>
+    </tr>`;
+  const headRow2 = `
+    <tr class="thead2">
+      <th class="center">출근</th>
+      <th class="center">퇴근</th>
+      <th class="center">출근</th>
+      <th class="center">퇴근</th>
+    </tr>`;
+
+  // TBODY
+  const body = sorted.map(r=>{
+    const cells = [
+      safe(r[COL.DATE]),
+      safe(r[COL.TYPE]),
+      safe(r[COL.W_IN]),  // 대양웍스 출근
+      safe(r[COL.W_OUT]), // 대양웍스 퇴근
+      safe(r[COL.M_IN]),  // 수정 출근
+      safe(r[COL.M_OUT]), // 수정 퇴근
+      hideZero(r[COL.J]),
+      hideZero(r[COL.K]),
+      hideZero(r[COL.L]),
+      hideZero(r[COL.M]),
+      hideZero(r[COL.N]),
+      hideZero(r[COL.O]),
+      hideZero(r[COL.P]),
+    ];
+    // 가운데 정렬할 인덱스: 2~12
+    const tds = cells.map((v,i)=> (i>=2 ? `<td class="center">${esc(v)}</td>` : `<td>${esc(v)}</td>`)).join('');
     return `<tr>${tds}</tr>`;
   }).join('');
-  box.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
+
+  box.innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
 
   // 사이드: X=ERP, Y=수기
   const erpVals = sorted.map(r => String(r[COL.ERP]||'').trim()).filter(Boolean);
@@ -194,11 +233,6 @@ function buildTableAndSide(rows){
 }
 
 /** 유틸 */
-function joinInline(a,b){
-  const aa = String(a||'').trim();
-  const bb = String(b||'').trim();
-  return (aa && bb) ? `${aa} ${bb}` : (aa || bb || '');
-}
 function hideZero(v){
   const t = String(v??'').trim();
   if(t === '' || /^0+(\.0+)?$/.test(t)) return '';
