@@ -40,15 +40,15 @@
 </div>
 
 <script>
-/** ⬇⬇ 여기를 본인 GAS 웹앱 URL로 교체 (…/exec) */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbytCpY5DvFq9m8vnIxPfeA7D098N_EQJzA69mZltn6ww5SG_yur-3dxWT0uwz6xXOJHsQ/exec';
+/** ⬇⬇ 여기를 “현재 배포된 exec 주소(…/exec)”로 바꾸세요 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwde_UKZNyR2gJLVZ3Fu1octKxLPmEXWgBqsE1i9hBQ_PxmLDH77OEVzFK6nBpfkaao7A/exec';
 
 /** 쿼리 파라미터 */
 const q = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
 
-/** 표시 열 커스터마이즈 (A=0,B=1,...Z=25). 비우면 전체 표시 */
+/** 표시 열 선택 (A=0,B=1,...Z=25). 비우면 전체 표시 */
 const VISIBLE_COLS = [];
 
 /** JSONP 콜백 */
@@ -56,17 +56,19 @@ function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
   // 공용 헤더(Z1:Z4)
-  const z = document.getElementById('zbox');
-  z.innerHTML = (res.zHeader||[]).map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
+  document.getElementById('zbox').innerHTML =
+    (res.zHeader||[]).map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
 
   // 프로필
   const p = res.person||{};
-  document.getElementById('pname').innerHTML = `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
-  document.getElementById('pmeta').textContent = `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
+  document.getElementById('pname').innerHTML =
+    `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
+  document.getElementById('pmeta').textContent =
+    `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
   document.getElementById('pupdated').textContent = res.updated || '';
   document.getElementById('pbox').style.display = '';
 
-  // 테이블
+  // 표
   buildTable(res.header||[], res.rows||[]);
 }
 
