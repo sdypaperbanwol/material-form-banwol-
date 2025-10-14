@@ -1,390 +1,357 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>개인 근태 조회</title>
-  <style>
-    :root { --ink:#222; --muted:#666; --line:#e5e7eb; --bg:#f7f8fa; --card:#fff; --shadow:0 6px 18px rgba(0,0,0,.06) }
-    * { box-sizing:border-box }
-    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Noto Sans KR, Arial, sans-serif }
-    .wrap { max-width:1200px; margin:28px auto; padding:0 16px }
-    .card { background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow) }
-    .err { padding:14px 16px; border-left:4px solid #ef4444; background:#fff0f0; color:#991b1b; margin-bottom:12px }
-    .top { display:grid; gap:12px; margin-bottom:16px }
-    .zcard { padding:12px 14px }
-    .profile { padding:16px; display:flex; justify-content:space-between; gap:16px }
-    .h1 { margin:0 0 4px; font-size:18px }
-    .meta { color:var(--muted); font-size:13px }
-    .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef3ff; color:#2651ff; font-weight:600; font-size:12px; margin-left:8px }
-    .right { color:var(--muted); font-size:12px }
-    .tblwrap { overflow:auto; margin-top:16px }
-    table { width:100%; border-collapse:separate; border-spacing:0 }
-    thead th {
-      background:#fbfbfd; font-weight:700; white-space:pre-line;
-      border-top:1px solid var(--line);
-      border-bottom:1px solid var(--line);
-      border-left:1px solid var(--line);
-      padding:10px 8px;
-    }
-    thead th:last-child { border-right:1px solid var(--line) }
-    thead tr.thead1 th { position:sticky; top:0; z-index:2 }
-    thead tr.thead2 th { position:sticky; top:38px; z-index:2 }
-    .subsum { display:block; font-weight:600; color:#3b82f6; margin-top:2px }
-    tbody td {
-      padding:8px 8px; white-space:pre-line;
-      border-bottom:1px solid var(--line);
-      border-left:1px solid var(--line);
-    }
-    tbody td:last-child { border-right:1px solid var(--line) }
-    tbody tr:nth-child(odd) td { background:#fcfcff }
-    th.center, td.center { text-align:center }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>개인 근태 조회</title>
+<style>
+  :root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--shadow:0 6px 18px rgba(0,0,0,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
+  .wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
+
+  .top{display:grid;gap:12px;margin-bottom:16px}
+  .zcard{padding:12px 14px}
+
+  .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
+  .h1{margin:0 0 4px;font-size:18px}
+  .meta{color:var(--muted);font-size:13px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
+  .right{color:var(--muted);font-size:12px}
+
+  .tblwrap{overflow:auto; margin-top:16px}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  thead th{
+    background:#fbfbfd;font-weight:700;white-space:pre-line;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
+    padding:10px 8px;
+  }
+  thead th:last-child{ border-right:1px solid var(--line) }
+  thead tr.thead1 th{ position:sticky; top:0; z-index:2 }
+  thead tr.thead2 th{ position:sticky; top:38px; z-index:2 }
+  .subsum{display:block; font-weight:600; color:#3b82f6; margin-top:2px}
+
+  tbody td{
+    padding:8px 8px;white-space:pre-line;
+    border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
+  }
+  tbody td:last-child{ border-right:1px solid var(--line) }
+  tbody tr:nth-child(odd) td{background:#fcfcff}
+
+  th.center, td.center{ text-align:center }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div id="error" class="card err" style="display:none"></div>
+<div class="wrap">
+  <div id="error" class="card err" style="display:none"></div>
 
-    <!-- 공용 헤더(Z1:Z4) -->
-    <div class="top" id="zbox"></div>
+  <!-- 공용 헤더(Z1:Z4) -->
+  <div class="top" id="zbox"></div>
 
-    <!-- 프로필 -->
-    <div class="card profile" id="pbox" style="display:none">
-      <div>
-        <div class="h1" id="pname"></div>
-        <div class="meta" id="pmeta"></div>
-      </div>
-      <div class="right" id="pupdated"></div>
+  <!-- 프로필 -->
+  <div class="card profile" id="pbox" style="display:none">
+    <div>
+      <div class="h1" id="pname"></div>
+      <div class="meta" id="pmeta"></div>
     </div>
-
-    <!-- 메인 표 -->
-    <div class="card tblwrap" id="tblwrap"></div>
+    <div class="right" id="pupdated"></div>
   </div>
 
-  <script>
-    /** GAS exec */
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU2piK9MfCCSN4QPG6cKLRSeULZORDNqrfFWRmvC65iMUwbc_ll51n9bqIHlpUZzsb-g/exec';
+  <!-- 메인 표 -->
+  <div class="card tblwrap" id="tblwrap"></div>
+</div>
 
-    /** 쿼리 파라미터 */
-    const q = new URLSearchParams(location.search);
-    const emp = q.get('emp') || '';
-    const sig = q.get('sig') || '';
+<script>
+/** GAS exec */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU2piK9MfCCSN4QPG6cKLRSeULZORDNqrfFWRmvC65iMUwbc_ll51n9bqIHlpUZzsb-g/exec';
 
-    /** 인앱/UA 감지 */
-    const UA = navigator.userAgent || '';
-    const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
+/** 쿼리 파라미터 */
+const q = new URLSearchParams(location.search);
+const emp = q.get('emp') || '';
+const sig = q.get('sig') || '';
 
-    /** 외부 브라우저 열기(안드로이드 Chrome 인텐트) */
-    (function showInAppHint(){
-      if (!IS_INAPP) return;
-      const wrap = document.querySelector('.wrap');
-      const div = document.createElement('div');
-      div.className = 'card err';
-      div.style.marginBottom = '12px';
-      const here = encodeURIComponent(location.href);
-      const chromeIntent = intent://open#Intent;scheme=${location.protocol.replace(':','')};S.browser_fallback_url=${here};package=com.android.chrome;end;
-      div.innerHTML = 카카오/인앱 브라우저에서 네트워크 차단이 발생할 수 있어요. <a href="${chromeIntent}" style="font-weight:700; text-decoration:underline">외부 브라우저(크롬)로 열기</a>;
-      wrap.insertBefore(div, wrap.firstChild);
-    })();
+/** 인앱/UA 감지 */
+const UA = navigator.userAgent || '';
+const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
 
-    /** 컬럼 인덱스(A=0) */
-    const COL = {
-      DATE:1,
-      TYPE:4,
-      W_IN:5,
-      W_OUT:6,
-      M_IN:7,
-      M_OUT:8,
-      J:9,
-      K:10,
-      L:11,
-      M:12,
-      N:13,
-      O:14,
-      P:15,      // J~P
-      NOTE_U:20, // U 특이사항
-      FORM_V:21  // V 신청서
+/** 외부 브라우저 열기(안드로이드 Chrome 인텐트) */
+(function showInAppHint(){
+  if (!IS_INAPP) return;
+  const wrap = document.querySelector('.wrap');
+  const div = document.createElement('div');
+  div.className = 'card err';
+  div.style.marginBottom = '12px';
+  const here = encodeURIComponent(location.href);
+  const chromeIntent = `intent://open#Intent;scheme=${location.protocol.replace(':','')};S.browser_fallback_url=${here};package=com.android.chrome;end`;
+  div.innerHTML = `
+    카카오/인앱 브라우저에서 네트워크 차단이 발생할 수 있어요.
+    <a href="${chromeIntent}" style="font-weight:700; text-decoration:underline">외부 브라우저(크롬)로 열기</a>`;
+  wrap.insertBefore(div, wrap.firstChild);
+})();
+
+/** 컬럼 인덱스(A=0) */
+const COL = {
+  DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
+  J:9, K:10, L:11, M:12, N:13, O:14, P:15,   // J~P
+  NOTE_U:20,  // U 특이사항
+  FORM_V:21   // V 신청서
+};
+
+/** ============ 3-단계 로더 ============ */
+(async function load(){
+  if(!emp){ showError('잘못된 접근(emp 누락)'); return; }
+
+  // CORS (일반 브라우저 우선)
+  async function loadCors(){
+    const url = new URL(GAS_URL);
+    url.searchParams.set('mode','cors');
+    url.searchParams.set('emp', emp);
+    if(sig) url.searchParams.set('sig', sig);
+    const r = await Promise.race([
+      fetch(url.toString(), { method:'GET', credentials:'omit' }),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('CORS_TIMEOUT')), 10000))
+    ]);
+    if(!r.ok) throw new Error('CORS_BAD_STATUS');
+    const data = await r.json();
+    if(!data || !data.ok) throw new Error(data && data.error || 'CORS_BAD_PAYLOAD');
+    return data;
+  }
+
+  // JSONP
+  function loadJsonp(){
+    return new Promise((resolve, reject)=>{
+      const jp = new URL(GAS_URL);
+      jp.searchParams.set('jsonp','1');
+      jp.searchParams.set('callback','__RENDER__');
+      jp.searchParams.set('emp', emp);
+      if(sig) jp.searchParams.set('sig', sig);
+
+      const s = document.createElement('script');
+      s.src = jp.toString();
+      s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
+      document.body.appendChild(s);
+
+      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
+      window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
+    });
+  }
+
+  // iframe 브릿지 (embed=1)
+  function loadIframe(){
+    return new Promise((resolve, reject)=>{
+      const u = new URL(GAS_URL);
+      u.searchParams.set('embed','1');
+      u.searchParams.set('emp', emp);
+      if(sig) u.searchParams.set('sig', sig);
+
+      const ifr = document.createElement('iframe');
+      ifr.src = u.toString();
+      ifr.style.display = 'none';
+      document.body.appendChild(ifr);
+
+      const ORIG_OK = new Set([
+        'https://script.google.com',
+        'https://script.googleusercontent.com'
+      ]);
+
+      const onMsg = (ev)=>{
+        try{
+          if(!ORIG_OK.has(ev.origin)) return;
+          const res = ev.data;
+          if(res && res.ok){ cleanup(); resolve(res); }
+          else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
+        }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
+      };
+      window.addEventListener('message', onMsg);
+
+      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
+
+      function cleanup(){
+        window.removeEventListener('message', onMsg);
+        clearTimeout(t);
+        ifr.remove();
+      }
+    });
+  }
+
+  try {
+    let data;
+    if (IS_INAPP) {
+      // 인앱: JSONP → 실패 시 iframe
+      try { data = await loadJsonp(); }
+      catch(_) { data = await loadIframe(); }
+    } else {
+      // 일반: CORS → 실패 시 JSONP → 실패 시 iframe
+      try { data = await loadCors(); }
+      catch(_) {
+        try { data = await loadJsonp(); }
+        catch(__){ data = await loadIframe(); }
+      }
+    }
+    if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
+    render(data);
+  } catch (e) {
+    const msgMap = {
+      'CORS_TIMEOUT':'네트워크 지연(CORS)',
+      'CORS_BAD_STATUS':'CORS 상태 오류',
+      'CORS_BAD_PAYLOAD':'CORS 응답 오류',
+      'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
+      'JSONP_TIMEOUT':'네트워크 지연(JSONP)',
+      'IFR_TIMEOUT':'네트워크 지연(iframe)',
+      'IFR_BAD_PAYLOAD':'iframe 응답 오류',
+      'IFR_MSG_ERROR':'iframe 메시지 처리 오류',
+      'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
+      'NOT_FOUND':'대상자 없음(NOT_FOUND)'
     };
+    showError(msgMap[e.message] || ('네트워크 오류: ' + e.message));
+  }
+})();
 
-    /** ============ 3-단계 로더 ============ */
-    (async function load(){
-      if(!emp){
-        showError('잘못된 접근(emp 누락)');
-        return;
-      }
+/** ===== 렌더러 ===== */
+function render(res){
+  if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
-      // CORS (일반 브라우저 우선)
-      async function loadCors(){
-        const url = new URL(GAS_URL);
-        url.searchParams.set('mode','cors');
-        url.searchParams.set('emp', emp);
-        if(sig) url.searchParams.set('sig', sig);
-        const r = await Promise.race([
-          fetch(url.toString(), { method:'GET', credentials:'omit' }),
-          new Promise((_,rej)=>setTimeout(()=>rej(new Error('CORS_TIMEOUT')), 10000))
-        ]);
-        if(!r.ok) throw new Error('CORS_BAD_STATUS');
-        const data = await r.json();
-        if(!data || !data.ok) throw new Error(data && data.error || 'CORS_BAD_PAYLOAD');
-        return data;
-      }
+  const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
+  document.getElementById('zbox').innerHTML =
+    z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
 
-      // JSONP
-      function loadJsonp(){
-        return new Promise((resolve, reject)=>{
-          const jp = new URL(GAS_URL);
-          jp.searchParams.set('jsonp','1');
-          jp.searchParams.set('callback','__RENDER__');
-          jp.searchParams.set('emp', emp);
-          if(sig) jp.searchParams.set('sig', sig);
+  const p = res.person||{};
+  document.getElementById('pname').innerHTML =
+    `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
+  document.getElementById('pmeta').textContent =
+    `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}`;
+  document.getElementById('pupdated').textContent = res.updated || '';
+  document.getElementById('pbox').style.display = '';
 
-          const s = document.createElement('script');
-          s.src = jp.toString();
-          s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
-          document.body.appendChild(s);
+  buildTable(res.rows||[]);
+}
 
-          const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
-          window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
-        });
-      }
+/** 날짜 파싱(예: "10/1", "10-01", "10-01신운철" 등) → 2025-10-DD */
+function parseSheetDate(s){
+  const t = String(s||'').trim();
+  let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if(m){ return new Date(2025, 9, Number(m[2])); } // Oct=9
+  m = t.match(/10[^0-9]*(\d{1,2})/);
+  if(m){ return new Date(2025, 9, Number(m[1])); }
+  return new Date(2100,0,1);
+}
 
-      // iframe 브릿지 (embed=1)
-      function loadIframe(){
-        return new Promise((resolve, reject)=>{
-          const u = new URL(GAS_URL);
-          u.searchParams.set('embed','1');
-          u.searchParams.set('emp', emp);
-          if(sig) u.searchParams.set('sig', sig);
+/** 테이블(2단 헤더 + 합계 + U/V 열) */
+function buildTable(rows){
+  const box = document.getElementById('tblwrap');
+  if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
 
-          const ifr = document.createElement('iframe');
-          ifr.src = u.toString();
-          ifr.style.display = 'none';
-          document.body.appendChild(ifr);
+  const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
 
-          const ORIG_OK = new Set([
-            'https://script.google.com',
-            'https://script.googleusercontent.com'
-          ]);
+  const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
+  sorted.forEach(r=>{
+    sum.J += toNum(r[COL.J]); sum.K += toNum(r[COL.K]); sum.L += toNum(r[COL.L]);
+    sum.M += toNum(r[COL.M]); sum.N += toNum(r[COL.N]); sum.O += toNum(r[COL.O]); sum.P += toNum(r[COL.P]);
+  });
 
-          const onMsg = (ev)=>{
-            try{
-              if(!ORIG_OK.has(ev.origin)) return;
-              const res = ev.data;
-              if(res && res.ok){
-                cleanup(); resolve(res);
-              } else {
-                cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD'));
-              }
-            }catch(e){
-              cleanup(); reject(new Error('IFR_MSG_ERROR'));
-            }
-          };
+  const headRow1 = `
+    <tr class="thead1">
+      <th rowspan="2">날짜</th>
+      <th rowspan="2">근무 형태</th>
+      <th class="center" colspan="2">출근/퇴근(대양웍스)</th>
+      <th class="center" colspan="2">출근/퇴근(수정)</th>
+      <th class="center" rowspan="2">정규<span class="subsum">(${fmt(sum.J)})</span></th>
+      <th class="center" rowspan="2">연장<span class="subsum">(${fmt(sum.K)})</span></th>
+      <th class="center" rowspan="2">야근<span class="subsum">(${fmt(sum.L)})</span></th>
+      <th class="center" rowspan="2">휴일<span class="subsum">(${fmt(sum.M)})</span></th>
+      <th class="center" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>
+      <th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>
+      <th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>
+      <th rowspan="2">특이사항</th>
+      <th rowspan="2">신청서</th>
+    </tr>`;
+  const headRow2 = `
+    <tr class="thead2">
+      <th class="center">출근</th>
+      <th class="center">퇴근</th>
+      <th class="center">출근</th>
+      <th class="center">퇴근</th>
+    </tr>`;
 
-          window.addEventListener('message', onMsg);
-          const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
+  const body = sorted.map(r=>{
+    const cells = [
+      safe(r[COL.DATE]), safe(r[COL.TYPE]),
+      safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
+      safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
+      hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
+      hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
+      safe(r[COL.NOTE_U]), safe(r[COL.FORM_V])
+    ];
+    return `
+      <tr>
+        <td>${esc(cells[0])}</td>
+        <td>${esc(cells[1])}</td>
+        <td class="center">${esc(cells[2])}</td>
+        <td class="center">${esc(cells[3])}</td>
+        <td class="center">${esc(cells[4])}</td>
+        <td class="center">${esc(cells[5])}</td>
+        <td class="center">${esc(cells[6])}</td>
+        <td class="center">${esc(cells[7])}</td>
+        <td class="center">${esc(cells[8])}</td>
+        <td class="center">${esc(cells[9])}</td>
+        <td class="center">${esc(cells[10])}</td>
+        <td class="center">${esc(cells[11])}</td>
+        <td class="center">${esc(cells[12])}</td>
+        <td>${linkify(cells[13])}</td>
+        <td>${linkify(cells[14])}</td>
+      </tr>`;
+  }).join('');
 
-          function cleanup(){
-            window.removeEventListener('message', onMsg);
-            clearTimeout(t);
-            ifr.remove();
-          }
-        });
-      }
+  document.getElementById('tblwrap').innerHTML =
+    `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
+}
 
-      try {
-        let data;
-        if (IS_INAPP) {
-          // 인앱: JSONP → 실패 시 iframe
-          try { data = await loadJsonp(); }
-          catch(_) { data = await loadIframe(); }
-        } else {
-          // 일반: CORS → 실패 시 JSONP → 실패 시 iframe
-          try { data = await loadCors(); }
-          catch(_) {
-            try { data = await loadJsonp(); }
-            catch(__){ data = await loadIframe(); }
-          }
-        }
-        if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
-        render(data);
-      } catch (e) {
-        const msgMap = {
-          'CORS_TIMEOUT':'네트워크 지연(CORS)',
-          'CORS_BAD_STATUS':'CORS 상태 오류',
-          'CORS_BAD_PAYLOAD':'CORS 응답 오류',
-          'JSONP_LOAD_FAIL':'JSONP 스크립트 로드 실패',
-          'JSONP_TIMEOUT':'네트워크 지연(JSONP)',
-          'IFR_TIMEOUT':'네트워크 지연(iframe)',
-          'IFR_BAD_PAYLOAD':'iframe 응답 오류',
-          'IFR_MSG_ERROR':'iframe 메시지 처리 오류',
-          'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
-          'NOT_FOUND':'대상자 없음(NOT_FOUND)'
-        };
-        showError(msgMap[e.message] || ('네트워크 오류: ' + e.message));
-      }
-    })();
-
-    /** ===== 렌더러 ===== */
-    function render(res){
-      if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
-
-      const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
-      document.getElementById('zbox').innerHTML =
-        z.map(v=><div class="zcard">${esc(v||'')}</div>).join('');
-
-      const p = res.person||{};
-      document.getElementById('pname').innerHTML =
-        ${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>;
-      document.getElementById('pmeta').textContent =
-        연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'};
-      document.getElementById('pupdated').textContent = res.updated || '';
-      document.getElementById('pbox').style.display = '';
-
-      buildTable(res.rows||[]);
-    }
-
-    /** 날짜 파싱(예: "10/1", "10-01", "10-01신운철" 등) → 2025-10-DD */
-    function parseSheetDate(s){
-      const t = String(s||'').trim();
-      let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
-      if(m){ return new Date(2025, 9, Number(m[2])); } // Oct=9
-      m = t.match(/10[^0-9]*(\d{1,2})/);
-      if(m){ return new Date(2025, 9, Number(m[1])); }
-      return new Date(2100,0,1);
-    }
-
-    /** 테이블(2단 헤더 + 합계 + U/V 열) */
-    function buildTable(rows){
-      const box = document.getElementById('tblwrap');
-      if(!rows.length){
-        box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>';
-        return;
-      }
-
-      const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
-
-      const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
-      sorted.forEach(r=>{
-        sum.J += toNum(r[COL.J]);
-        sum.K += toNum(r[COL.K]);
-        sum.L += toNum(r[COL.L]);
-        sum.M += toNum(r[COL.M]);
-        sum.N += toNum(r[COL.N]);
-        sum.O += toNum(r[COL.O]);
-        sum.P += toNum(r[COL.P]);
-      });
-
-      const headRow1 =
-        <tr class="thead1">
-          <th rowspan="2">날짜</th>
-          <th rowspan="2">근무 형태</th>
-          <th class="center" colspan="2">출근/퇴근(대양웍스)</th>
-          <th class="center" colspan="2">출근/퇴근(수정)</th>
-          <th class="center" rowspan="2">정규<span class="subsum">(${fmt(sum.J)})</span></th>
-          <th class="center" rowspan="2">연장<span class="subsum">(${fmt(sum.K)})</span></th>
-          <th class="center" rowspan="2">야근<span class="subsum">(${fmt(sum.L)})</span></th>
-          <th class="center" rowspan="2">휴일<span class="subsum">(${fmt(sum.M)})</span></th>
-          <th class="center" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>
-          <th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>
-          <th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>
-          <th rowspan="2">특이사항</th>
-          <th rowspan="2">신청서</th>
-        </tr>;
-
-      const headRow2 =
-        <tr class="thead2">
-          <th class="center">출근</th>
-          <th class="center">퇴근</th>
-          <th class="center">출근</th>
-          <th class="center">퇴근</th>
-        </tr>;
-
-      const body = sorted.map(r=>{
-        const cells = [
-          safe(r[COL.DATE]),
-          safe(r[COL.TYPE]),
-          safe(r[COL.W_IN]),
-          safe(r[COL.W_OUT]),
-          safe(r[COL.M_IN]),
-          safe(r[COL.M_OUT]),
-          hideZero(r[COL.J]),
-          hideZero(r[COL.K]),
-          hideZero(r[COL.L]),
-          hideZero(r[COL.M]),
-          hideZero(r[COL.N]),
-          hideZero(r[COL.O]),
-          hideZero(r[COL.P]),
-          safe(r[COL.NOTE_U]),
-          safe(r[COL.FORM_V])
-        ];
-        return
-          <tr>
-            <td>${esc(cells[0])}</td>
-            <td>${esc(cells[1])}</td>
-            <td class="center">${esc(cells[2])}</td>
-            <td class="center">${esc(cells[3])}</td>
-            <td class="center">${esc(cells[4])}</td>
-            <td class="center">${esc(cells[5])}</td>
-            <td class="center">${esc(cells[6])}</td>
-            <td class="center">${esc(cells[7])}</td>
-            <td class="center">${esc(cells[8])}</td>
-            <td class="center">${esc(cells[9])}</td>
-            <td class="center">${esc(cells[10])}</td>
-            <td class="center">${esc(cells[11])}</td>
-            <td class="center">${esc(cells[12])}</td>
-            <td>${linkify(cells[13])}</td>
-            <td>${linkify(cells[14])}</td>
-          </tr>;
-      }).join('');
-
-      document.getElementById('tblwrap').innerHTML =
-        <table>
-          <thead>${headRow1}${headRow2}</thead>
-          <tbody>${body}</tbody>
-        </table>;
-    }
-
-    /** 유틸 */
-    function toNum(v){
-      const t = String(v??'').replace(/[, ]/g,'').trim();
-      if(t==='' || isNaN(Number(t))) return 0;
-      return Number(t);
-    }
-    function fmt(n){ return (Math.round(n*100)/100).toString(); }
-    function hideZero(v){
-      const t = String(v??'').trim();
-      if(t==='' || /^0+(\.0+)?$/.test(t)) return '';
-      return t;
-    }
-    function safe(v){ return (v==null)?'':String(v); }
-    function looksLikeSecret(v){
-      if(!v) return false;
-      const t = String(v).trim();
-      if(t.includes('::')) return true;
-      if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
-      if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
-      return false;
-    }
-    function esc(s){
-      return String(s).replace(/[&<>"']/g, m => ({
-        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-      })[m]);
-    }
-    function showError(m){
-      const e = document.getElementById('error');
-      e.textContent = m;
-      e.style.display = 'block';
-    }
-    function linkify(v){
-      const t = (v||'').trim();
-      if(!t) return '';
-      try{
-        const u = new URL(t);
-        return <a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>;
-      }catch(_){
-        return esc(t);
-      }
-    }
-  </script>
+/** 유틸 */
+function toNum(v){
+  const t=String(v??'').replace(/[, ]/g,'').trim();
+  if(t===''||isNaN(Number(t))) return 0;
+  return Number(t);
+}
+function fmt(n){ return (Math.round(n*100)/100).toString(); }
+function hideZero(v){
+  const t=String(v??'').trim();
+  if(t===''||/^0+(\.0+)?$/.test(t)) return '';
+  return t;
+}
+function safe(v){ return (v==null)?'':String(v); }
+function looksLikeSecret(v){
+  if(!v) return false;
+  const t = String(v).trim();
+  if(t.includes('::')) return true;
+  if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
+  if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
+  return false;
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[m]);
+}
+function showError(m){
+  const e=document.getElementById('error');
+  e.textContent=m;
+  e.style.display='block';
+}
+function linkify(v){
+  const t = (v||'').trim();
+  if(!t) return '';
+  try{
+    const u = new URL(t);
+    return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`;
+  }catch(_){
+    return esc(t);
+  }
+}
+</script>
 </body>
 </html>
