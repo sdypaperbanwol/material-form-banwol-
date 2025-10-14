@@ -13,11 +13,13 @@
   .err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
   .top{display:grid;gap:12px;margin-bottom:16px}
   .zcard{padding:12px 14px}
+
   .profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
   .h1{margin:0 0 4px;font-size:18px}
   .meta{color:var(--muted);font-size:13px}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
   .right{color:var(--muted);font-size:12px}
+
   .tblwrap{overflow:auto;margin-top:16px}
   table{width:100%;border-collapse:separate;border-spacing:0}
   thead th{
@@ -29,12 +31,14 @@
   thead tr.thead1 th{position:sticky;top:0;z-index:2}
   thead tr.thead2 th{position:sticky;top:38px;z-index:2}
   .subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
+
   tbody td{
     padding:8px 8px;white-space:pre-line;
     border-bottom:1px solid var(--line);border-left:1px solid var(--line);
   }
   tbody td:last-child{border-right:1px solid var(--line)}
   tbody tr:nth-child(odd) td{background:#fcfcff}
+
   th.center, td.center{ text-align:center }
   .hint a{font-weight:700;text-decoration:underline}
 </style>
@@ -42,7 +46,11 @@
 <body>
 <div class="wrap">
   <div id="error" class="card err" style="display:none"></div>
+
+  <!-- 공용 헤더(Z1:Z4) -->
   <div class="top" id="zbox"></div>
+
+  <!-- 프로필 -->
   <div class="card profile" id="pbox" style="display:none">
     <div>
       <div class="h1" id="pname"></div>
@@ -50,12 +58,14 @@
     </div>
     <div class="right" id="pupdated"></div>
   </div>
+
+  <!-- 메인 표 -->
   <div class="card tblwrap" id="tblwrap"></div>
 </div>
 
 <script>
-/** ⬇⬇ 배포한 GAS 웹앱 exec URL로 맞춰주세요 */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyhu_SWybYhGc0C-YLCEN5cTNJzEZf1jEs79OCWOT0iXgJ1xhIlxoG08pNDvcc6o7Dy1w/exec';
+/** ⬇⬇ 너의 GAS exec URL로 교체 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwU2piK9MfCCSN4QPG6cKLRSeULZORDNqrfFWRmvC65iMUwbc_ll51n9bqIHlpUZzsb-g/exec';
 
 /** 쿼리 파라미터 */
 const q   = new URLSearchParams(location.search);
@@ -66,17 +76,21 @@ const sig = q.get('sig') || '';
 const UA = navigator.userAgent || '';
 const IS_INAPP = /KAKAOTALK|NAVER|FBAN|FBAV|Line\/|Instagram/i.test(UA);
 
-/** 컬럼 인덱스(A=0) — V 제거 */
+/** 컬럼 인덱스(A=0) — V(신청서) 제거 */
 const COL = {
   DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
   J:9, K:10, L:11, M:12, N:13, O:14, P:15,
   NOTE_U:20
 };
 
-/** 인앱 안내 배너(선택) */
+/** 인앱 안내 배너 + “GAS로 직접 열기” */
 (function(){
-  if (!IS_INAPP) return;
   const wrap = document.querySelector('.wrap');
+  if (!emp) {
+    showError('잘못된 접근(emp 누락)');
+    return;
+  }
+  if (!IS_INAPP) return;
   const div = document.createElement('div');
   div.className = 'card err hint';
   div.style.marginBottom = '12px';
@@ -88,7 +102,7 @@ const COL = {
 
 /** ===== 로더: JSONP → 실패 시 iframe 브릿지 ===== */
 (async function load(){
-  if(!emp){ return showError('잘못된 접근(emp 누락)'); }
+  if(!emp){ return; }
 
   function loadJsonp(){
     return new Promise((resolve, reject)=>{
@@ -161,7 +175,7 @@ const COL = {
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
-  // Z1:Z4 공용 헤더
+  // Z1:Z4 공용 헤더(토큰/키로 보이는 문자열 숨김)
   const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
   document.getElementById('zbox').innerHTML =
     z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
@@ -187,12 +201,13 @@ function parseSheetDate(s){
   if(m){ return new Date(2025, 9, Number(m[1])); }
   return new Date(2100,0,1);
 }
-
 function buildTable(rows){
   const box = document.getElementById('tblwrap');
   if(!rows.length){ box.innerHTML = '<div style="padding:28px;color:#666">표시할 데이터 없음</div>'; return; }
 
   const sorted = [...rows].sort((a,b)=> parseSheetDate(a[COL.DATE]) - parseSheetDate(b[COL.DATE]));
+
+  // 합계 (정규~주휴)
   const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
   sorted.forEach(r=>{
     sum.J+=toNum(r[COL.J]); sum.K+=toNum(r[COL.K]); sum.L+=toNum(r[COL.L]);
@@ -210,8 +225,8 @@ function buildTable(rows){
       <th class="center" rowspan="2">야근<span class="subsum">(${fmt(sum.L)})</span></th>
       <th class="center" rowspan="2">휴일<span class="subsum">(${fmt(sum.M)})</span></th>
       <th class="center" rowspan="2">휴연<span class="subsum">(${fmt(sum.N)})</span></th>
-      <th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum.O)})</span></th>
-      <th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum.P)})</span></th>
+      <th class="center" rowspan="2">유급<span class="subsum">(${fmt(sum(O))})</span></th>
+      <th class="center" rowspan="2">주휴<span class="subsum">(${fmt(sum(P))})</span></th>
       <th rowspan="2">특이사항</th>
     </tr>`;
   const headRow2 = `
@@ -247,7 +262,8 @@ function buildTable(rows){
     </tr>`;
   }).join('');
 
-  document.getElementById('tblwrap').innerHTML = `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
+  document.getElementById('tblwrap').innerHTML =
+    `<table><thead>${headRow1}${headRow2}</thead><tbody>${body}</tbody></table>`;
 }
 
 /** ====== 유틸 ====== */
