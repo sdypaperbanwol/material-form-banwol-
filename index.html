@@ -1,7 +1,8 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-store" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>자재 신청</title>
   <style>
@@ -18,19 +19,16 @@
     #quantity-display { font-size:2rem; margin-bottom:1rem; font-weight:bold; }
     #record-buttons:not(.hidden) { display:flex; justify-content:center; gap:0.8rem; margin:0.5rem 0 1rem 0; flex-wrap:wrap; }
 
-    /* 오버레이 */
-   /* 그대로 둠: 공통 오버레이 스타일 */
-#submitOverlay, #loadingOverlay, #initialLoadingOverlay {
-  position: fixed; top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.5);
-  display: none; justify-content: center; align-items: center;
-  z-index: 9999;  /* 기본값 */
-  color: white; font-size: 1.4rem;
-}
-
-/* 추가로 이 한 줄(규칙)만 더 넣어서 submitOverlay만 위로 */
-#submitOverlay { z-index: 10050; }  /* ✅ 모달(9999) 위로 */
+    /* 오버레이 (공통) */
+    #submitOverlay, #loadingOverlay, #initialLoadingOverlay {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.5);
+      display: none; justify-content: center; align-items: center;
+      z-index: 9999;
+      color: white; font-size: 1.4rem;
+    }
+    #submitOverlay { z-index: 10050; }  /* 모달 위로 */
     #initialLoadingOverlay { display:flex; }
     #submitOverlay span {
       background:white; padding:20px 40px; border-radius:12px; font-size:1.3rem;
@@ -49,7 +47,7 @@
     .numpad-grid button { padding:1rem; font-size:1.5rem; border-radius:10px; background:#e0e0e0; border:none; cursor:pointer; transition:background .2s; }
     .numpad-grid button:hover { background:#ccc; }
 
-    /* ✅ 로그인창: 원래대로 복구 (세로 스택, 폭/여백 동일) */
+    /* 로그인 박스 */
     #login-section { display:block; }
     #login-section input {
       padding:1.00rem; font-size:1.05rem; margin:0.8rem auto;
@@ -61,6 +59,13 @@
       width:80%; max-width:300px;
     }
   </style>
+
+  <script>
+    // (필요시) 서비스워커가 index.html을 강캐싱하면, 한두 번만 주석 해제해서 캐시 끊기
+    // if ('serviceWorker' in navigator) {
+    //   navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+    // }
+  </script>
 </head>
 <body>
 <div id="initialLoadingOverlay">⏳ 로딩 중입니다...</div>
@@ -156,7 +161,22 @@
 </div>
 
 <script>
+  // ✅ 최종 배포 /exec URL로 바꿔 넣으세요
   const endpoint = 'https://script.google.com/macros/s/AKfycby1W5ansyu5_sQ0iCuD-BywByCZPYomCQV_UvQWBFGyF5BME5MRnkh7Am85GtSLopx7/exec';
+
+  // ===== 공용 유틸 (캐시버스터 + 프리플라이트 회피) =====
+  function g(u){ return u + (u.includes('?') ? '&' : '?') + 't=' + Date.now(); }
+  async function postForm(u, params) {
+    const res = await fetch(g(u), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: new URLSearchParams(params).toString(),
+      cache: 'no-store',
+      redirect: 'follow'
+    });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    return res.json();
+  }
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -174,38 +194,33 @@
     document.getElementById('loginLoadingText').classList.remove('hidden');
     document.querySelector('#login-section button').style.display = 'none';
 
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ empId, empName })
-    })
-    .then(res => res.json())
-    .then(async data => {
-      document.getElementById('loginLoadingText').classList.add('hidden');
-      if (data.result === 'success') {
-        loginInfo = { empId, empName };
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('form-section').classList.remove('hidden');
-        document.getElementById('title').innerText = "🔎 신청·조사 시스템";
-        document.getElementById('record-buttons').classList.remove('hidden');
-        document.getElementById('loadingOverlay').style.display = 'flex';
-        try { zMeta = await fetch(`${endpoint}?mode=zinfo`).then(r=>r.json()) || {}; } catch(e) { console.warn('zinfo 로드 실패', e); }
-        loadItems();
-      } else {
-        document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
-        document.querySelector('#login-section button').style.display = 'inline-block';
-      }
-    })
-    .catch(error => {
-      document.getElementById('loginLoadingText').classList.add('hidden');
-      document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
-      document.querySelector('#login-section button').style.display = 'block';
-    });
+    postForm(endpoint, { empId, empName })
+      .then(async data => {
+        document.getElementById('loginLoadingText').classList.add('hidden');
+        if (data.result === 'success') {
+          loginInfo = { empId, empName };
+          document.getElementById('login-section').classList.add('hidden');
+          document.getElementById('form-section').classList.remove('hidden');
+          document.getElementById('title').innerText = "🔎 신청·조사 시스템";
+          document.getElementById('record-buttons').classList.remove('hidden');
+          document.getElementById('loadingOverlay').style.display = 'flex';
+          try { zMeta = await fetch(g(`${endpoint}?mode=zinfo`), { cache:'no-store' }).then(r=>r.json()) || {}; } catch(e) { console.warn('zinfo 로드 실패', e); }
+          loadItems();
+        } else {
+          document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
+          document.querySelector('#login-section button').style.display = 'inline-block';
+        }
+      })
+      .catch(error => {
+        document.getElementById('loginLoadingText').classList.add('hidden');
+        document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
+        document.querySelector('#login-section button').style.display = 'block';
+      });
   }
 
   // 목록 로드
   function loadItems() {
-    fetch(endpoint)
+    fetch(g(endpoint), { cache:'no-store' })
       .then(res => res.json())
       .then(data => {
         itemData = data;
@@ -359,7 +374,7 @@
           구매요청수량
         };
 
-        await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(payload) });
+        await postForm(endpoint, payload);
       }
       alert("✅ 모든 항목이 신청되었습니다.");
       location.reload();
@@ -380,7 +395,7 @@
   document.getElementById("viewPhotosType").addEventListener("click", () => {
     const category = selected.category; if (!category) return alert("먼저 대분류를 선택해주세요.");
     document.getElementById("loadingOverlay").style.display = "flex";
-    fetch(`${endpoint}?mode=photo`)
+    fetch(g(`${endpoint}?mode=photo`), { cache:'no-store' })
       .then(res => res.json())
       .then(photoMap => {
         const urls = photoMap[category];
@@ -403,7 +418,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     const box = document.getElementById("inlineNoticeBox");
     const loading = document.getElementById("initialLoadingOverlay");
-    fetch(`${endpoint}?mode=notice`)
+    fetch(g(`${endpoint}?mode=notice`), { cache:'no-store' })
       .then(res => res.json())
       .then(data => { const notice = data.notice?.trim(); if (notice) { box.textContent = notice; box.style.display = "block"; } })
       .catch(err => console.warn("공지사항 로딩 실패:", err))
@@ -414,7 +429,7 @@
   function openMyRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
+    fetch(g(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`), { cache:'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data.result !== "success") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("❌ 신청 내역을 불러올 수 없습니다."); }
@@ -426,7 +441,7 @@
   function openTeamRecords() {
     const empId = loginInfo.empId;
     document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
+    fetch(g(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`), { cache:'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data.result === "forbidden") { document.getElementById('loadingOverlay').style.display = 'none'; return alert("⚠️ 팀 내역 조회 권한이 없습니다."); }
@@ -497,20 +512,16 @@
 
     try {
       for (const item of itemsToSubmit) {
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            name: item.name,
-            category: item.category, // 라벨
-            zcode: item.zcode,       // Z1/Z3
-            subcategory: item.subcategory,
-            size: item.size,
-            quantity: item.quantity,
-            remarks: item.remarks,
-            지급수량: item.quantity,
-            구매요청수량: 0
-          })
+        await postForm(endpoint, {
+          name: item.name,
+          category: item.category, // 라벨
+          zcode: item.zcode,       // Z1/Z3
+          subcategory: item.subcategory,
+          size: item.size,
+          quantity: item.quantity,
+          remarks: item.remarks,
+          지급수량: item.quantity,
+          구매요청수량: 0
         });
       }
       alert("✅ 신청이 완료되었습니다.");
@@ -604,7 +615,7 @@
   }
   function closeZ2UniformModal() { document.getElementById("modalZ2Uniform").style.display = "none"; }
 
-  /* ✅ Z2 유니폼 — 중복 클릭 방지 + 중앙 “신청 중입니다..” 오버레이 */
+  /* Z2 유니폼 — 중복 클릭 방지 + 중앙 “신청 중입니다..” 오버레이 */
   let isSubmittingZ2Uniform = false;
 
   async function submitZ2Uniform() {
@@ -632,7 +643,6 @@
 
     if (itemsToSubmit.length === 0) return alert("수량을 1개 이상 입력해주세요.");
 
-    // 중앙 오버레이 띄우고 버튼 비활성화
     const overlay = document.getElementById('submitOverlay');
     const overlaySpan = overlay.querySelector('span');
     const prevText = overlaySpan.textContent;
@@ -645,20 +655,16 @@
 
     try {
       for (const item of itemsToSubmit) {
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            name: item.name,
-            category: item.category, // 라벨
-            zcode: item.zcode,       // Z2
-            subcategory: item.subcategory,
-            size: item.size,
-            quantity: item.quantity,
-            remarks: item.remarks,
-            지급수량: item.quantity, // 필요 시 재고반영 로직으로 교체 가능
-            구매요청수량: 0
-          })
+        await postForm(endpoint, {
+          name: item.name,
+          category: item.category, // 라벨
+          zcode: item.zcode,       // Z2
+          subcategory: item.subcategory,
+          size: item.size,
+          quantity: item.quantity,
+          remarks: item.remarks,
+          지급수량: item.quantity, // 필요 시 재고반영 로직으로 교체 가능
+          구매요청수량: 0
         });
       }
       alert("✅ 유니폼 신청이 완료되었습니다.");
@@ -702,7 +708,6 @@
     </p>
     <div id="z2UniformContent"></div>
     <textarea id="z2UniformRemarks" placeholder="공통 비고 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
-    <!-- ✅ 중복 방지용 id 부여 -->
     <button id="z2UniformSubmitBtn" onclick="submitZ2Uniform()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
