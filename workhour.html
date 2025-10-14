@@ -67,13 +67,10 @@
 </div>
 
 <script>
-/** 🔧 이건 "데이터 API" 주소입니다. 브라우저로 직접 열면 JSON만 보이는 게 정상!
- * 반드시 '리디렉트된 최종 googleusercontent exec URL'을 넣으세요.
- * (PC 크롬에서 기존 exec 한번 열고, 주소창/네트워크 탭에서 바뀐 전체 URL 복사)
- */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyMhj-IwILUvAlrAiM7k-JA2UyO8QyEQnkT76pd_K2EGlDlPsfnEvqcvjZxON-5yaN9YQ/exec'; // ← 최종 exec로 교체
+/** ⬇⬇ 배포한 GAS 웹앱 exec URL로 교체 */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwF8VetZt2WPgiVzBNbJ4sAw-qMqXae3YwelImHkQDP8ew03hcINow3ZP-O8ivmdUOwlw/exec';
 
-/** 쿼리 파라미터 (GitHub 페이지를 이 주소로 접속해야 UI가 보임) */
+/** 쿼리 파라미터 */
 const q   = new URLSearchParams(location.search);
 const emp = q.get('emp') || '';
 const sig = q.get('sig') || '';
@@ -103,7 +100,7 @@ const COL = {
   wrap.insertBefore(div, wrap.firstChild);
 })();
 
-/** ===== 로더: 인앱=iframe 우선, 일반=JSONP→iframe ===== */
+/** ===== 로더: JSONP → 실패 시 iframe 브릿지 ===== */
 (async function load(){
   if(!emp){ return showError('잘못된 접근(emp 누락)'); }
 
@@ -114,15 +111,13 @@ const COL = {
       u.searchParams.set('callback','__RENDER__');
       u.searchParams.set('emp', emp);
       if(sig) u.searchParams.set('sig', sig);
-      u.searchParams.set('rnd', Date.now().toString(36));
 
       const s = document.createElement('script');
       s.src = u.toString();
-      s.referrerPolicy = 'no-referrer';
       s.onerror = () => reject(new Error('JSONP_LOAD_FAIL'));
       document.body.appendChild(s);
 
-      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 20000);
+      const t = setTimeout(()=>reject(new Error('JSONP_TIMEOUT')), 12000);
       window.__RENDER__ = (res)=>{ clearTimeout(t); resolve(res); };
     });
   }
@@ -133,48 +128,31 @@ const COL = {
       u.searchParams.set('embed','1');
       u.searchParams.set('emp', emp);
       if(sig) u.searchParams.set('sig', sig);
-      u.searchParams.set('rnd', Date.now().toString(36));
 
       const ifr = document.createElement('iframe');
       ifr.src = u.toString();
-      // ⛔ display:none 금지 — 일부 인앱은 로드 자체를 안 함
-      ifr.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;border:0;opacity:0;';
-      ifr.setAttribute('allow','cross-origin-isolated');
+      ifr.style.display = 'none';
       document.body.appendChild(ifr);
 
-      const ORIG_OK = new Set([
-        'https://script.googleusercontent.com',
-        'https://script.google.com',
-        'null' // 몇몇 인앱/웹뷰는 origin을 null로 보냄
-      ]);
-
+      const ORIG_OK = new Set(['https://script.google.com','https://script.googleusercontent.com']);
       const onMsg = (ev)=>{
         try{
-          const origin = ev.origin || 'null';
-          if(!ORIG_OK.has(origin)) return;
-          if (ev.source !== ifr.contentWindow) return;
-
+          if(!ORIG_OK.has(ev.origin)) return;
           const res = ev.data;
           if(res && res.ok){ cleanup(); resolve(res); }
           else { cleanup(); reject(new Error(res && res.error || 'IFR_BAD_PAYLOAD')); }
         }catch(e){ cleanup(); reject(new Error('IFR_MSG_ERROR')); }
       };
-      window.addEventListener('message', onMsg, false);
-      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 25000);
-
+      window.addEventListener('message', onMsg);
+      const t = setTimeout(()=>{ cleanup(); reject(new Error('IFR_TIMEOUT')); }, 15000);
       function cleanup(){ window.removeEventListener('message', onMsg); clearTimeout(t); ifr.remove(); }
     });
   }
 
   try{
     let data;
-    if (IS_INAPP) {
-      try { data = await loadIframe(); }
-      catch(_) { data = await loadJsonp(); }
-    } else {
-      try { data = await loadJsonp(); }
-      catch(_) { data = await loadIframe(); }
-    }
+    try { data = await loadJsonp(); }
+    catch(_) { data = await loadIframe(); }
     if(!data || !data.ok) throw new Error(data && data.error || 'BAD_PAYLOAD');
     render(data);
   }catch(e){
@@ -187,7 +165,7 @@ const COL = {
       'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)',
       'NOT_FOUND':'대상자 없음(NOT_FOUND)'
     };
-    showError((map[e.message] || ('네트워크 오류: '+e.message)) + ' [' + e.message + ']');
+    showError(map[e.message] || ('네트워크 오류: '+e.message));
   }
 })();
 
@@ -195,10 +173,12 @@ const COL = {
 function render(res){
   if(!res || !res.ok) return showError((res && res.error)||'데이터 로드 실패');
 
+  // Z1:Z4 공용 헤더(토큰/키로 보이는 문자열 숨김)
   const z = (res.zHeader||[]).filter(v => !looksLikeSecret(v));
   document.getElementById('zbox').innerHTML =
     z.map(v=>`<div class="zcard">${esc(v||'')}</div>`).join('');
 
+  // 프로필
   const p = res.person||{};
   document.getElementById('pname').innerHTML =
     `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
@@ -214,7 +194,7 @@ function render(res){
 function parseSheetDate(s){
   const t = String(s||'').trim();
   let m = t.match(/(\d{1,2})[\/\-](\d{1,2})/);
-  if(m){ return new Date(2025, 9, Number(m[2])); }
+  if(m){ return new Date(2025, 9, Number(m[2])); } // 10월
   m = t.match(/10[^0-9]*(\d{1,2})/);
   if(m){ return new Date(2025, 9, Number(m[1])); }
   return new Date(2100,0,1);
@@ -263,7 +243,7 @@ function buildTable(rows){
     ];
     return `
       <tr>
-        <td class="center">${esc(cells[0])}</td>
+        <td class="center">${esc(cells[0])}</td>  <!-- 날짜 값 가운데 정렬 -->
         <td>${esc(cells[1])}</td>
         <td class="center">${esc(cells[2])}</td>
         <td class="center">${esc(cells[3])}</td>
