@@ -20,34 +20,36 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
 .right{color:#666;font-size:12px}
 
-/* 표 컨테이너: 내부 스크롤 + sticky 기준 제공 */
+/* 표 컨테이너: 스크롤 영역 + sticky 기준 */
 .tblwrap{
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
+  position:relative;              /* sticky 기준 */
+  overflow:auto; -webkit-overflow-scrolling:touch;
   max-height:75vh;
-  --head1h:28px;  /* JS로 실제 높이 덮어씀 */
-  position:relative; /* sticky 기준을 이 컨테이너로 고정 */
+  --head1h:28px;                  /* JS로 실제 높이 보정 */
 }
-table{width:100%;border-collapse:separate;border-spacing:0}
+table{width:100%;border-collapse:separate;border-spacing:0;}
 
 /* ===== 헤더(상단 고정) ===== */
 thead th{
   position:-webkit-sticky; position:sticky;
-  background:#fbfbfd; /* 고정 시 겹침 방지 */
-  background-clip:padding-box;
+  background:#fbfbfd; background-clip:padding-box;
   font-weight:700; white-space:pre-line;
-  border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-left:1px solid var(--line);
-  padding:6px 6px; line-height:1.1; font-size:13px; z-index:5;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  padding:6px 6px; line-height:1.1; font-size:13px;
+  z-index:6;
 }
 thead th:last-child{border-right:1px solid var(--line)}
-thead tr.thead1 th{top:0; z-index:7}
-thead tr.thead2 th{top:var(--head1h); z-index:7}
+thead tr.thead1 th{top:0; z-index:8}
+thead tr.thead2 th{top:var(--head1h); z-index:8}
 
 /* 바디 */
 tbody td{
   padding:8px 8px; white-space:pre-line;
-  border-bottom:1px solid var(--line); border-left:1px solid var(--line);
-  background:#fff; /* 고정 셀과 겹침 대비 */
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  background:#fff;
 }
 tbody td:last-child{border-right:1px solid var(--line)}
 tbody tr:nth-child(odd) td{background:#fcfcff}
@@ -65,7 +67,6 @@ th.center,td.center{text-align:center}
 }
 th.metric .full{display:inline}
 th.metric .two{display:none}
-
 .subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
 
 /* ====== 근무형태(E열) ====== */
@@ -81,26 +82,29 @@ td.type-cell .type-two{display:none}
 @media (max-width:640px){
   td.type-cell{font-size:11px;line-height:1.1;padding:5px 4px;text-align:center}
   td.type-cell .type-full{display:none}
-  td.type-cell .type-two{display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;white-space:normal;text-align:center}
+  td.type-cell .type-two{
+    display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;
+    white-space:normal;text-align:center
+  }
 }
 
-/* 근무형태 칸 폭 */
+/* 칸 폭 */
 th.type-col,td.type-cell{min-width:110px}
 @media (max-width:640px){
-  th.type-col, td.type-cell { min-width:60px; width:auto; }
+  th.type-col, td.type-cell { min-width:60px; }
 }
-
-/* ====== 시간칸: 값이 없어도 폭 고정 ====== */
 th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
 @media (max-width:640px){
   th.time-col,td.time-col{min-width:44px;width:44px;padding:4px 2px;font-size:11px;white-space:nowrap}
 }
 
-/* === 본문 셀 폰트크기 통일 === */
-tbody td{font-size:13px}
+/* === 모바일 특이사항 폭 보장 === */
 @media (max-width:640px){
-  tbody td{font-size:11px}
-  td.metric{font-size:11px!important}
+  th.note,td.note{
+    min-width:320px !important;  /* ← 더 넓게 강제 */
+    white-space:normal !important;
+    word-break:break-word;
+  }
 }
 
 /* ==== 로딩 오버레이 ==== */
@@ -114,10 +118,11 @@ tbody td{font-size:13px}
 /* === ✅ 왼쪽 고정(날짜 열) === */
 th.freezeL, td.freezeL{
   position:-webkit-sticky; position:sticky;
-  left:0;
-  background:#fff;               /* 고정 셀은 흰 배경으로 명확히 */
-  z-index:9;                     /* 다른 셀보다 위 */
-  box-shadow:2px 0 0 rgba(0,0,0,.05);
+  left:0;                        /* 반드시 0 고정 */
+  background:#fff;               /* 고정 셀의 배경 불투명 */
+  z-index:9;                     /* 본문/헤더보다 위 */
+  box-shadow:2px 0 0 rgba(0,0,0,.06);
+  border-right:1px solid var(--line); /* 우측 경계선 유지 */
 }
 thead th.freezeL{ top:0; z-index:10; }
 tbody td.freezeL{ z-index:9; }
@@ -274,7 +279,17 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     }).join('');
 
     box.innerHTML = '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
-    setStickyOffsets();
+
+    // 헤더 높이 보정 (두 번 측정: 레이아웃 안정화 후)
+    const fixOffsets = () => {
+      const wrap=document.querySelector('.tblwrap');
+      const row1=wrap?.querySelector('thead tr.thead1');
+      if(!wrap||!row1) return;
+      const h=row1.getBoundingClientRect().height;
+      wrap.style.setProperty('--head1h',h+'px');
+    };
+    fixOffsets();
+    requestAnimationFrame(fixOffsets);
   }
 
   /* === 유틸 & 헬퍼 === */
@@ -309,22 +324,6 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
       `<span class="type-full">${esc(t)}</span>`+
       `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`
     );
-  }
-
-  function setStickyOffsets(){
-    const wrap=document.querySelector('.tblwrap');
-    const row1=wrap?.querySelector('thead tr.thead1');
-    if(!wrap||!row1) return;
-    const h=row1.getBoundingClientRect().height;
-    wrap.style.setProperty('--head1h',h+'px');
-  }
-  window.addEventListener('resize',setStickyOffsets);
-
-  function showLoading(on){
-    const el=document.getElementById('loading');
-    if(!el) return;
-    el.classList[on?'add':'remove']('show');
-    document.body.style.overflow=on?'hidden':'';
   }
 
   function toNum(v){
