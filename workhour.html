@@ -137,6 +137,45 @@ tbody td{font-size:13px}
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading .msg{margin-top:12px;color:#374151;font-weight:600}
+
+      /* === 그룹 경계선 색 정의 === */
+:root{
+  --b-metric: #ef4444; /* 정규~유급: 빨강 */
+  --b-manual: #0ea5e9; /* 수기: 하늘색(원하면 변경) */
+  --b-bedit:  #8b5cf6; /* 비콘~수정 묶음: 보라(원하면 변경) */
+}
+
+/* ── thead 1행(상단 큰 레이블 행) ── */
+/* 정규~유급(7칸) 시작/끝 */
+thead tr.thead1 th:nth-child(3){  border-left: 2px solid var(--b-metric) !important; }
+thead tr.thead1 th:nth-child(9){  border-right:2px solid var(--b-metric) !important; }
+/* 수기(2칸) 시작 */
+thead tr.thead1 th:nth-child(10){ border-left: 2px solid var(--b-manual) !important; }
+/* 비콘~수정(4칸=비콘2+수정2) 시작/끝 */
+thead tr.thead1 th:nth-child(11){ border-left: 2px solid var(--b-bedit)  !important; }
+thead tr.thead1 th:nth-child(12){ border-right:2px solid var(--b-bedit)  !important; }
+
+/* ── thead 2행(출근/퇴근 행) ── */
+/* 수기(Q/R) 2칸의 좌/우 */
+thead tr.thead2 th:nth-child(1){  border-left: 2px solid var(--b-manual) !important; }
+thead tr.thead2 th:nth-child(2){  border-right:2px solid var(--b-manual) !important; }
+/* 비콘~수정 묶음(4칸)의 좌/우 */
+thead tr.thead2 th:nth-child(3){  border-left: 2px solid var(--b-bedit)  !important; }
+thead tr.thead2 th:nth-child(6){  border-right:2px solid var(--b-bedit)  !important; }
+
+/* ── tbody(데이터 행) ── */
+/* 정규~유급(7칸: 3~9번째 셀)의 좌/우 경계 */
+tbody tr td:nth-child(3){  border-left: 2px solid var(--b-metric) !important; }
+tbody tr td:nth-child(9){  border-right:2px solid var(--b-metric) !important; }
+
+/* 수기(Q/R: 10~11번째 셀)의 좌/우 경계 */
+tbody tr td:nth-child(10){ border-left: 2px solid var(--b-manual) !important; }
+tbody tr td:nth-child(11){ border-right:2px solid var(--b-manual) !important; }
+
+/* 비콘~수정(4칸: 12~15번째 셀)의 좌/우 경계 */
+tbody tr td:nth-child(12){ border-left: 2px solid var(--b-bedit)  !important; }
+tbody tr td:nth-child(15){ border-right:2px solid var(--b-bedit)  !important; }
+
 </style>
 </head>
 <body>
