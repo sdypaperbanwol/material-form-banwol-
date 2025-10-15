@@ -1,696 +1,384 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>방문객·작업자 등록 시스템</title>
-  <style>
+<meta charset="utf-8"/>
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+<title>개인 근태 조회</title>
+<style>
+:root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--shadow:0 6px 18px rgba(0,0,0,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
+.wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
+.top{display:grid;gap:12px;margin-bottom:16px}
+.zcard{padding:12px 14px}
+.profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
+.h1{margin:0 0 4px;font-size:18px}
+.meta{color:var(--muted);font-size:13px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
+.right{color:#666;font-size:12px}
 
-        #map-image {
-      max-width: 90%;
-      height: auto;
-      border-radius: 12px;
-      margin-top: 20px;
-    }
+/* 표 컨테이너: sticky 기준 */
+.tblwrap{
+  position:relative;
+  overflow:auto; -webkit-overflow-scrolling:touch;
+  max-height:75vh;
+  --head1h:28px;
+}
+table{width:100%;border-collapse:separate;border-spacing:0}
 
- #purposeOther {
-    display: none;
-    margin-top: 10px;
-    width: 80%;
-    max-width: 300px;
-    padding: 10px;
-    font-size: 16px;
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
+/* ===== 헤더(상단 고정) ===== */
+thead th{
+  position:-webkit-sticky; position:sticky;
+  background:#fbfbfd; background-clip:padding-box;
+  font-weight:700; white-space:pre-line;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  padding:6px 6px; line-height:1.1; font-size:13px;
+  z-index:12;
+}
+thead th:last-child{border-right:1px solid var(--line)}
+thead tr.thead1 th{top:0; z-index:14}
+thead tr.thead2 th{top:var(--head1h); z-index:14}
+
+/* 바디 */
+tbody td{
+  padding:8px 8px; white-space:pre-line;
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  background:#fff;
+}
+tbody td:last-child{border-right:1px solid var(--line)}
+tbody tr:nth-child(odd) td{background:#fcfcff}
+
+th.center,td.center{text-align:center}
+
+/* ====== 메트릭 헤더(정/규 등) 반응형 축약 ====== */
+@media (max-width:640px){
+  th.metric .full{display:none!important}
+  th.metric .two{display:inline-grid!important;grid-auto-rows:auto;gap:2px;line-height:1;text-align:center}
+  th.metric .two .t,th.metric .two .b{display:block}
+  th.metric{min-width:34px;max-width:38px;padding-top:8px;padding-bottom:8px}
+  th.metric .subsum{font-size:10px;margin-top:2px}
+  td.metric{font-size:12px;padding:6px 4px}
+}
+th.metric .full{display:inline}
+th.metric .two{display:none}
+.subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
+
+/* ====== 근무형태(E열) ====== */
+th.type-col .t-full{display:inline}
+th.type-col .t-two{display:none}
+@media (max-width:640px){
+  th.type-col .t-full{display:none}
+  th.type-col .t-two{display:inline-block;line-height:1.05;text-align:center}
+}
+td.type-cell{font-size:13px;line-height:1.2;text-align:center}
+td.type-cell .type-full{display:inline}
+td.type-cell .type-two{display:none}
+@media (max-width:640px){
+  td.type-cell{font-size:11px;line-height:1.1;padding:5px 4px;text-align:center}
+  td.type-cell .type-full{display:none}
+  td.type-cell .type-two{
+    display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;
+    white-space:normal;text-align:center
   }
-
-#loadingOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
 }
 
-.loading-spinner {
-  background: white;
-  padding: 20px 30px;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+/* 칸 폭 */
+th.type-col,td.type-cell{min-width:110px}
+@media (max-width:640px){
+  th.type-col, td.type-cell { min-width:60px; }
+}
+th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
+@media (max-width:640px){
+  th.time-col,td.time-col{min-width:44px;width:44px;padding:4px 2px;font-size:11px;white-space:nowrap}
 }
 
-    body {
-      font-family: sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-
-    h1 {
-      margin-top: 40px;
-      margin-bottom: 70px; /* 👈 추가 */
-    }
-
-  .button-container {
-  display: flex;
-  flex-direction: column; /* 🔥 버튼을 세로로 쌓음 */
-  align-items: center;     /* 가운데 정렬 */
-  gap: 30px;
-  margin: 40px 0;
+/* === 모바일 특이사항 폭 보장 === */
+@media (max-width:640px){
+  th.note,td.note{
+    min-width:320px !important;
+    white-space:normal !important;
+    word-break:break-word;
+  }
 }
 
-    .menu-button {
-  width: 220px;          /* 🔧 더 넓게 */
-  height: 70px;         /* 🔧 살짝 줄여서 직사각형 비율 */
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 20px;
-  line-height: 1.4;
+/* ==== 로딩 오버레이 ==== */
+.loading{position:fixed; inset:0; background:rgba(255,255,255,.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:saturate(180%) blur(2px)}
+.loading.show{display:flex}
+.loading-box{display:flex;flex-direction:column;align-items:center}
+.spinner{width:44px;height:44px;border-radius:50%;border:3px solid #dbeafe;border-top-color:#2563eb;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading .msg{margin-top:12px;color:#374151;font-weight:600}
+
+/* === ✅ 왼쪽 고정(날짜 열 값들) === */
+th.freezeL, td.freezeL{
+  position:-webkit-sticky; position:sticky;
+  left:0;
+  background:#fff;
+  z-index:9;
+  box-shadow:2px 0 0 rgba(0,0,0,.06);
+  border-right:1px solid var(--line);
+}
+thead th.freezeL{ top:0; z-index:18; }
+
+@media (max-width:640px){
+  td.freezeL{ font-size:11px; padding:4px 2px; white-space:nowrap; }
 }
 
-.worker-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+/* === ✅ 좌상단 모서리(날짜 헤더): 행+열 모두 고정 === */
+th.freezeTL{
+  position:-webkit-sticky; position:sticky;
+  top:0; left:0; background:#fbfbfd; z-index:30;
+  box-shadow:2px 0 0 rgba(0,0,0,.06), 0 2px 0 rgba(0,0,0,.06);
+  border-right:1px solid var(--line); border-bottom:1px solid var(--line);
 }
 
-.worker-number {
-  width: 20px;
-  text-align: right;
-  font-weight: bold;
-}
-
-
-    .menu-button:hover {
-      background: #0056b3;
-    }
-
-    .form-section {
-      display: none;
-      max-width: 600px;
-      margin: 0 auto 50px;
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    .step input {
-      padding: 10px;
-      font-size: 16px;
-      width: 80%;
-      max-width: 300px;
-    }
-
-    .step-buttons {
-      margin-top: 20px;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-    }
-
-    .step-buttons button {
-      padding: 10px 24px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .step-buttons button:first-child {
-      background-color: #6c757d;
-      color: white;
-    }
-
-    .step-buttons button:last-child {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .step-buttons button:hover {
-      opacity: 0.85;
-    }
-
-.purpose-button {
-  padding: 14px 24px;
-  font-size: 16px;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  background: white;
-  color: #007bff;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-
-.purpose-button:hover {
-  background: #e6f0ff;
-}
-
-.purpose-button.selected {
-  background: #007bff;
-  color: white;
-}
-
-.department-button:hover {
-  background: #eaffea;
-}
-
-.department-button.selected {
-  background: #28a745;
-  color: white;
-}
-
- .department-buttons-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3개씩 배치 */
-  gap: 6px; /* 🔧 간격 줄이기 */
-  justify-items: center;
-  margin-top: 10px;
-  max-width: 360px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.department-button {
-  padding: 10px 14px;  /* 🔧 패딩 줄임 */
-  min-width: 100px;
-  text-align: center;
-  background-color: #f0f0f0;
-  border: 2px solid #28a745;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  color: #28a745;
-}
-
-.department-button.selected {
-  background-color: #28a745;
-  color: white;
-  border-color: #28a745;
-}
-
-
-
+/* === ✅ 빨간 테두리: 메트릭(정규~유급)만 적용 === */
+.g-metric.g-start{border-left:2px solid #ef4444 !important}
+.g-metric.g-end{border-right:2px solid #ef4444 !important}
+thead tr.thead1 th.g-metric{border-top:2px solid #ef4444 !important}
+tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
 </style>
-
-
 </head>
 <body>
-  <h1>방문객 · 작업자 등록 시스템</h1>
-
-  <div class="button-container">
-    <button class="menu-button" onclick="showSection('visitor')">📟 방문객 등록</button>
-    <button class="menu-button" onclick="showSection('worker')">👷 작업자 명단</button>
-    <button class="menu-button" onclick="showSection('map')">🗘 지도 보기</button>
-  </div>
-
-  <!-- 방문객 등록 -->
-  <div id="visitor" class="form-section">
-    <h2>📟 방문객 등록</h2>
-    <div id="visitorSteps">
-      <div class="step" id="step1">
-        <p>🚗 차량번호 (4자리 숫자)</p>
-        <input id="carNo" type="text" inputmode="numeric" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
-        <div class="step-buttons">
-          <button onclick="resetToMainMenu()">⬅ 처음으로</button>
-          <button onclick="nextStep(2, 'carNo')">다음</button>
-        </div>
+  <div class="wrap">
+    <div id="error" class="card err" style="display:none"></div>
+    <div class="top" id="zbox"></div>
+    <div class="card profile" id="pbox" style="display:none">
+      <div>
+        <div class="h1" id="pname"></div>
+        <div class="meta" id="pmeta"></div>
       </div>
-
-      <div class="step" id="step2" style="display:none;">
-        <p>🏢 업체명</p>
-        <input id="company" type="text" />
-        <div class="step-buttons">
-          <button onclick="prevStep(1)">뒤로</button>
-          <button onclick="nextStep(3, 'company')">다음</button>
-        </div>
-      </div>
-
-      <div class="step" id="step3" style="display:none;">
-        <p>👤 성명</p>
-        <input id="name" type="text" />
-        <div class="step-buttons">
-          <button onclick="prevStep(2)">뒤로</button>
-          <button onclick="nextStep(4, 'name')">다음</button>
-        </div>
-      </div>
-
-      <div class="step" id="step4" style="display:none;">
-        <p>📞 연락처 (11자리 숫자)</p>
-        <input id="phone" type="text" maxlength="13"
-  value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
-
-
-        <div class="step-buttons">
-          <button onclick="prevStep(3)">뒤로</button>
-          <button onclick="nextStep(5, 'phone')">다음</button>
-        </div>
-      </div>
-
-<div class="step" id="step5" style="display:none;">
-  <p>🌟 방문 목적</p>
-  <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-    <button type="button" class="purpose-button" onclick="selectPurpose(this, '납품')">납품</button>
-    <button type="button" class="purpose-button" onclick="selectPurpose(this, '설비 점검')">설비 점검</button>
-    <button type="button" class="purpose-button" onclick="selectPurpose(this, '회의')">회의</button>
-    <button type="button" class="purpose-button" onclick="selectPurpose(this, '기타')">기타</button>
-  </div>
-  <input id="purposeOther" type="text" placeholder="기타 입력" style="display:none; margin-top:10px; width:80%; max-width:300px; padding:10px; font-size:16px; text-align:center; margin-left:auto; margin-right:auto;" />
-
-  <!-- ✅ 관련 부서 선택 -->
- 
-
-  <div class="step-buttons" style="margin-top: 30px;">
-    <button onclick="prevStep(4)">뒤로</button>
-    <button onclick="nextStep(6, 'purpose')">다음</button>
-  </div>
-</div>
-
-
-      <div class="step" id="step6" style="display:none;">
-        <p>✍ 면담자 </p>
-        <input id="sign" type="text" />
- <div style="margin-top: 30px;">
-    <p>🏢 관련 부서 선택 (선택 사항)</p>
-    <div class="department-buttons-container">
-      <button type="button" class="department-button" onclick="selectDepartment(this, '초지')">초지</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '원질')">원질</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '공무')">공무</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '소각')">소각</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '환경')">환경</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '전기')">전기</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '안전')">안전</button>
-      <button type="button" class="department-button" onclick="selectDepartment(this, '인사(관리)')">인사(관리)</button>
+      <div class="right" id="pupdated"></div>
     </div>
+    <div class="card tblwrap" id="tblwrap"></div>
   </div>
-        
-        <div class="step-buttons">
-          <button onclick="prevStep(5)">뒤로</button>
-          <button onclick="submitVisitor()">✅ 제출</button>
-        </div>
-      </div>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading" class="loading">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div class="msg">로딩 중입니다...</div>
     </div>
   </div>
 
-  <!-- 작업자 등록 -->
-  <div id="worker" class="form-section">
-  <h2>👷 작업자 출입 명단</h2>
-  <div id="workerSteps">
-    <div class="step" id="wstep1">
-      <p>🏢 업체명</p>
-      <input id="wCompany" type="text" />
-      <div class="step-buttons">
-        <button onclick="resetToMainMenu()">⬅ 처음으로</button>
-        <button onclick="nextWStep(2, 'wCompany')">다음</button>
-      </div>
-    </div>
+<script>
+  const GAS_URL='https://script.google.com/macros/s/AKfycbyfmnPTzoq2yIZ-33uYOnB3kOJg0V8jOz1esIuaPeidH6ptKy1IDpt1L8abxFAX0MsQSQ/exec'; // 배포 URL로 교체
 
-    <div class="step" id="wstep2" style="display:none;">
-      <p>👥 작업자 명단 입력</p>
+  const q=new URLSearchParams(location.search);
+  const emp=q.get('emp')||'';
+  const sig=q.get('sig')||'';
+  const legacy=q.get('legacy')==='1' ? '1' : '0'; // A/B 강제 플래그
 
-      <div id="workerList">
-  <div class="worker-row">
-    <span class="worker-number">1</span>
-    <input type="text" name="wName[]" placeholder="성명" />
-    <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
-  inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+  // 동적 컬럼 맵 (백엔드가 내려주면 덮어씀)
+  let COL = {
+    DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
+    J:9, K:10, L:11, M:12, N:13, O:14, P:15, Q:16, R:17, NOTE_U:20
+  };
 
-  </div>
-</div>
-
-<p style="font-size: 14px; color: #888; margin-top: 10px;">
-  👉 이름과 번호를 입력하면 아래 줄이 자동 생성됩니다.<br>
-  ✅ 작성 완료 시 <strong>제출</strong>을 눌러주세요.
-</p>
-
-
-
-      <div class="step-buttons">
-        <button onclick="prevWStep(1)">뒤로</button>
-        <button onclick="submitWorker()">✅ 제출</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-  <!-- 지도 -->
-  <div id="map" class="form-section">
-    <h2>🗘 회사 지도</h2>
-    <img id="map-image" src="https://sdypaperbanwol.github.io/material-form-banwol-/%EC%8B%A0%EB%8C%80%EC%96%91%EC%A0%9C%EC%A7%80%EB%B0%98%EC%9B%94_%EB%93%9C%EB%A1%A04.png" alt="회사 지도 이미지" />
- <div class="step-buttons" style="margin-top: 30px;">
-    <button onclick="resetToMainMenu()">⬅ 처음으로</button>
-  </div>
-  </div>
-
-  <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyfmnPTzoq2yIZ-33uYOnB3kOJg0V8jOz1esIuaPeidH6ptKy1IDpt1L8abxFAX0MsQSQ/exec'; // 실제 Web App URL로 교체
-
-    function showSection(sectionId) {
-      ['visitor', 'worker', 'map'].forEach(id => {
-        document.getElementById(id).style.display = id === sectionId ? 'block' : 'none';
+  (async function load(){
+    if(!emp){ return showError('잘못된 접근(emp 누락)'); }
+    showLoading(true);
+    try{
+      const res=await fetch(GAS_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({action:'workhour_read',emp,sig,legacy})
       });
-      document.querySelector(".button-container").style.display = "none";
-    }
-
-   function nextStep(stepNumber, inputId) {
-  let valid = true;
-  const input = document.getElementById(inputId);
-  const value = input?.value.trim();
-
-  if (inputId === 'carNo') {
-  valid = /^\d{4}$/.test(value);
-} else if (inputId === 'phone') {
-  valid = /^010-\d{4}-\d{4}$/.test(value);
-} else if (inputId === 'purpose') {
-  const other = document.getElementById("purposeOther");
-  valid = other.style.display === "block"
-    ? other.value.trim().length > 0
-    : !!other.dataset.selected;
-} else {
-  valid = value.length > 0;
-}
-
-
-  if (!valid) {
-    alert("입력값을 확인해주세요.");
-    return;
-  }
-
-  document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
-  document.getElementById(`step${stepNumber}`).style.display = "block";
-}
-
-
-    function prevStep(stepNumber) {
-      document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
-      document.getElementById(`step${stepNumber}`).style.display = "block";
-    }
-
-    function nextWStep(stepNumber, inputId) {
-  const input = document.getElementById(inputId);
-  const value = input?.value.trim();
-
-  let valid = true;
-  if (!value) valid = false;
-  else if (inputId === 'wPhone') valid = /^\d{11}$/.test(value); // ✅ 11자리 확인
-
-  if (!valid) {
-    alert("입력값을 확인해주세요.");
-    return;
-  }
-
-  document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
-  document.getElementById(`wstep${stepNumber}`).style.display = "block";
-}
-
-
-    function prevWStep(stepNumber) {
-      document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
-      document.getElementById(`wstep${stepNumber}`).style.display = "block";
-    }
-
-    function selectPurpose(value) {
-      const input = document.getElementById("purposeOther");
-      if (value === "기타") {
-        input.style.display = "block";
-        input.focus();
-      } else {
-        input.style.display = "none";
-        input.value = "";
-        input.dataset.selected = value;
+      const txt = await res.text();
+      let data;
+      try{ data = JSON.parse(txt) }catch(_){
+        throw new Error('응답 JSON 파싱 실패 – 백엔드 응답 확인 필요');
       }
+      if(!data||!data.ok) throw new Error(data&&data.error||'BAD_PAYLOAD');
+      render(data);
+    }catch(e){
+      const map={'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)','NOT_FOUND':'대상자 없음(NOT_FOUND)','BAD_PAYLOAD':'데이터 로드 실패'};
+      showError(map[e.message]||('네트워크/요청 오류: '+e.message));
+      console.error('[workhour_read] error:', e);
+    }finally{
+      showLoading(false);
+    }
+  })();
+
+  function render(res){
+    if (res.colmap) COL = res.colmap; // ★ 동적 컬럼 맵 적용
+
+    const z=(res.zHeader||[]).filter(v=>!looksLikeSecret(v));
+    document.getElementById('zbox').innerHTML=z.map(v=>'<div class="zcard">'+esc(v||'')+'</div>').join('');
+
+    const p=res.person||{};
+    const age = res.cacheAgeSec ? ` · 데이터기준 ${res.cacheAgeSec}s 전 (${esc(res.mode||'')})` : '';
+    document.getElementById('pname').innerHTML=
+      `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
+    document.getElementById('pmeta').textContent=
+      `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}${age}`;
+    document.getElementById('pupdated').textContent=res.updated||'';
+    document.getElementById('pbox').style.display='';
+
+    buildTable(res.rows||[]);
+  }
+
+  function buildTable(rows){
+    const box=document.getElementById('tblwrap');
+    if(!rows.length){
+      box.innerHTML='<div style="padding:28px;color:#666">표시할 데이터 없음</div>';
+      return;
     }
 
-    function resetToMainMenu() {
-  // 방문자 입력 초기화
-  document.querySelectorAll("#visitor input").forEach(i => i.value = "");
-  document.getElementById("purposeOther").style.display = "none";
-  delete document.getElementById("purposeOther").dataset.selected;
-  document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
-  document.getElementById("step1").style.display = "block";
+    const sorted=[...rows].sort((a,b)=>String(a[COL.DATE]||'2100-12-31').localeCompare(String(b[COL.DATE]||'2100-12-31')));
 
-  // 작업자 입력 초기화
-  ["wCompany", "wName", "wPhone"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-  document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
-  document.getElementById("wstep1").style.display = "block";
+    const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
+    sorted.forEach(r=>{
+      sum.J+=toNum(r[COL.J]); sum.K+=toNum(r[COL.K]); sum.L+=toNum(r[COL.L]);
+      sum.M+=toNum(r[COL.M]); sum.N+=toNum(r[COL.N]); sum.O+=toNum(r[COL.O]); sum.P+=toNum(r[COL.P]);
+    });
 
-  // 🔹 작업자 목록도 초기화!
- document.getElementById("workerList").innerHTML = `
-  <div class="worker-row">
-    <span class="worker-number">1</span>
-    <input type="text" name="wName[]" placeholder="성명" />
-    <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
-      inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
-  </div>
-`;
+    const headRow1 =
+      '<tr class="thead1">' +
+        '<th class="center freezeTL" rowspan="2">날짜</th>' +
+        '<th class="type-col" rowspan="2">' +
+          '<span class="t-full">근무 형태</span>' +
+          '<span class="t-two">근무<br>형태</span>' +
+        '</th>' +
+        metricThC('정규',sum.J,'g-metric g-start') +
+        metricThC('연장',sum.K,'g-metric') +
+        metricThC('야근',sum.L,'g-metric') +
+        metricThC('휴일',sum.M,'g-metric') +
+        metricThC('휴연',sum.N,'g-metric') +
+        metricThC('주휴',sum.P,'g-metric') +
+        metricThC('유급',sum.O,'g-metric g-end') +
+        '<th class="center" colspan="2">근무시간</th>' +
+        '<th class="center" colspan="2">비콘</th>' +
+        '<th class="center" colspan="2">수정</th>' +
+        '<th class="note" rowspan="2">특이사항</th>' +
+      '</tr>';
 
+    const headRow2 =
+      '<tr class="thead2">' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+      '</tr>';
 
-  // 화면 구성 초기화
-  ['visitor', 'worker', 'map'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
-  });
+    const body = sorted.map(r=>{
+      const cells=[
+        safe(r[COL.DATE]), safe(r[COL.TYPE]),
+        safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
+        safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
+        hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
+        hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
+        hideZero(r[COL.Q]), hideZero(r[COL.R]),
+        safe(r[COL.NOTE_U])
+      ];
+      return (
+        '<tr>' +
+          `<td class="center freezeL">${esc(cells[0])}</td>` +
+          `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
+          `<td class="center metric g-metric g-start">${esc(cells[6])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[7])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[8])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[9])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[10])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[12])}</td>` +
+          `<td class="center metric g-metric g-end">${esc(cells[11])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>`  +
+          `<td class="note">${linkify(cells[15])}</td>` +
+        '</tr>'
+      );
+    }).join('');
 
-  document.querySelector(".button-container").style.display = "flex";
-}
+    document.getElementById('tblwrap').innerHTML =
+      '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
 
-
-    function submitVisitor() {
-  const carNo = document.getElementById("carNo").value.trim();
-  const company = document.getElementById("company").value.trim();
-  const name = document.getElementById("name").value.trim();
-  const phone = document.getElementById("phone").value.trim();
-  const purposeOther = document.getElementById("purposeOther");
-  const purpose = purposeOther.style.display === "block"
-    ? purposeOther.value.trim()
-    : purposeOther.dataset.selected;
-  const interviewer = document.getElementById("sign").value.trim();
-
-  if (!carNo || !company || !name || !phone || !purpose || !interviewer) {
-    alert("모든 항목을 입력해주세요.");
-    return;
+    const fixOffsets = () => {
+      const wrap=document.querySelector('.tblwrap');
+      const row1=wrap?.querySelector('thead tr.thead1');
+      if(!wrap||!row1) return;
+      const h=row1.getBoundingClientRect().height;
+      wrap.style.setProperty('--head1h',h+'px');
+    };
+    fixOffsets();
+    requestAnimationFrame(fixOffsets);
+    window.addEventListener('resize', fixOffsets, {passive:true});
+    window.addEventListener('orientationchange', ()=>setTimeout(fixOffsets, 60), {passive:true});
   }
 
-  const data = { type: "visitor", carNo, company, name, phone, purpose, interviewer };
-
-  if (selectedDepartment) {
-    data.department = selectedDepartment;
+  /* === 유틸 & 헬퍼 === */
+  function showLoading(on){
+    const el=document.getElementById('loading');
+    if(!el) return;
+    if(on) el.classList.add('show'); else el.classList.remove('show');
   }
-
-  showLoading(); // ⏳ 로딩 시작
-
-  fetch(scriptURL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(data)
-  })
-  .then(() => {
-    hideLoading(); // ✅ 로딩 끝
-    alert("✅ 방문객 등록 완료");
-    resetToMainMenu();
-  })
-  .catch(err => {
-    hideLoading();
-    alert("❌ 오류: " + err);
-  });
-}
-
-
-   
-
-function selectPurpose(el, value) {
-  // 모든 버튼 선택 해제
-  document.querySelectorAll(".purpose-button").forEach(btn => {
-    btn.classList.remove("selected");
-  });
-
-  // 현재 클릭한 버튼만 선택 표시
-  el.classList.add("selected");
-
-  const input = document.getElementById("purposeOther");
-
-  if (value === "기타") {
-    input.style.display = "block";
-    input.focus();
-    delete input.dataset.selected;
-  } else {
-    input.style.display = "none";
-    input.value = "";
-    input.dataset.selected = value;
+  function metricThC(label,total,extraCls=''){
+    return (
+      `<th class="center metric ${extraCls}" rowspan="2">
+         <span class="full">${esc(label)}</span>
+         <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
+         <span class="subsum">(${fmt(total)})</span>
+       </th>`
+    );
   }
-}
-
-let selectedDepartment = "";
-
-function selectDepartment(el, dept) {
-  const wasSelected = el.classList.contains("selected");
-
-  // 모든 버튼 초기화
-  document.querySelectorAll(".department-button").forEach(btn => {
-    btn.classList.remove("selected");
-  });
-
-  if (!wasSelected) {
-    el.classList.add("selected");
-    selectedDepartment = dept;
-  } else {
-    selectedDepartment = ""; // 선택 해제
-  }
-}
-
-  // ✅ 자동 행 추가 기능
-function initWorkerInputLogic() {
-  const container = document.getElementById("workerList");
-
-  container.addEventListener("input", (e) => {
-    const rows = container.querySelectorAll(".worker-row");
-    const lastRow = rows[rows.length - 1];
-    const name = lastRow.querySelector("input[name='wName[]']").value.trim();
-    const phone = lastRow.querySelector("input[name='wPhone[]']").value.trim();
-
-    if (name && /^010-\d{4}-\d{4}$/.test(phone)) {
-
-      const newRow = document.createElement("div");
-      newRow.className = "worker-row";
-      newRow.innerHTML = `
-  <span class="worker-number">${rows.length + 1}</span>
-  <input type="text" name="wName[]" placeholder="성명" />
-  <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13" inputmode="numeric"
-    value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
-`;
-
-      container.appendChild(newRow);
+  function makeTypeHTML(v){
+    const t=(v||'').trim();
+    const clean=t.replace(/\s+/g,'');
+    if(/\(.*\)/.test(clean)){
+      const idx=clean.indexOf('(');
+      const top=clean.slice(0,idx);
+      const bottom=clean.slice(idx);
+      return (
+        `<span class="type-full">${esc(t)}</span>`+
+        `<span class="type-two"><span>${esc(top)}</span><span>${esc(bottom)}</span></span>`
+      );
     }
-  });
-}
-
-
-  document.addEventListener("DOMContentLoaded", initWorkerInputLogic);
-
-  // ✅ 제출 시 여러 명 저장
- function submitWorker() {
-  const company = document.getElementById("wCompany").value.trim();
-  const rows = document.querySelectorAll("#workerList .worker-row");
-  const dataList = [];
-
-  if (!company) {
-    alert("업체명을 입력해주세요.");
-    return;
+    let twoTop='',twoBottom='';
+    if(clean.length===4){ twoTop=clean.slice(0,2); twoBottom=clean.slice(2,4); }
+    else if(clean.length===2){ twoTop=clean; twoBottom=''; }
+    else { twoTop=clean.length<=3?clean:clean.slice(0,3); twoBottom=clean.length>3?clean.slice(3):''; }
+    return (
+      `<span class="type-full">${esc(t)}</span>`+
+      `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`
+    );
   }
-
-  let valid = false;
-
-  rows.forEach(row => {
-    const name = row.querySelector("input[name='wName[]']").value.trim();
-    const phone = row.querySelector("input[name='wPhone[]']").value.trim();
-
-   if (name && /^010-\d{4}-\d{4}$/.test(phone)) {
-
-      dataList.push({
-        type: "worker",
-        company,
-        name,
-        phone,
-        date: new Date().toISOString()
-      });
-      valid = true;
-    }
-  });
-
-  if (!valid) {
-    alert("1명 이상의 작업자 성명과 11자리 전화번호를 입력해주세요.");
-    return;
+  function toNum(v){
+    let s = String(v ?? '').trim();
+    if (!s) return 0;
+    s = s.replace(/\s+/g, '');
+    if (s.includes(',') && !s.includes('.')) s = s.replace(',', '.');
+    s = s.replace(/,/g, '');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
   }
-
-  showLoading(); // ⏳ 로딩 시작
-
-  Promise.all(
-    dataList.map(data =>
-      fetch(scriptURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams(data)
-      })
-    )
-  )
-  .then(() => {
-    hideLoading(); // ✅ 로딩 끝
-    alert("✅ 작업자 등록 완료");
-    resetToMainMenu();
-  })
-  .catch(err => {
-    hideLoading();
-    alert("❌ 오류: " + err);
-  });
-}
-
-
-function showLoading() {
-  document.getElementById("loadingOverlay").style.display = "flex";
-}
-
-function hideLoading() {
-  document.getElementById("loadingOverlay").style.display = "none";
-}
-
-function formatPhoneInput(input) {
-  let raw = input.value.replace(/[^0-9]/g, "");
-
-  if (!raw.startsWith("010")) {
-    raw = "010" + raw.replace(/^010/, "");
+  function fmt(n){ return (Math.round(n*100)/100).toString(); }
+  function hideZero(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
+  function safe(v){ return (v==null)?'':String(v); }
+  function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function looksLikeSecret(v){
+    if(!v) return false;
+    const t=String(v).trim();
+    if(t.includes('::')) return true;
+    if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
+    if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
+    return false;
   }
-
-  if (raw.length > 11) {
-    raw = raw.slice(0, 11);
+  function showError(m){ const e=document.getElementById('error'); e.textContent=m; e.style.display='block'; }
+  function cellOrNbsp(v){ const t=(v==null?'':String(v).trim()); return t===''?'&nbsp;':esc(t); }
+  function linkify(v){
+    const t=(v||'').trim();
+    if(!t) return '';
+    try{ const u=new URL(t); return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`; }
+    catch(_){ return esc(t); }
   }
-
-  let formatted = raw;
-  if (raw.length >= 4 && raw.length <= 7) {
-    formatted = raw.slice(0, 3) + "-" + raw.slice(3);
-  } else if (raw.length >= 8) {
-    formatted = raw.slice(0, 3) + "-" + raw.slice(3, 7) + "-" + raw.slice(7);
-  }
-
-  input.value = formatted;
-
-  // 커서를 항상 끝으로 보내기
-  setTimeout(() => {
-    input.selectionStart = input.selectionEnd = input.value.length;
-  }, 0);
-}
-d
-  </script>
-
-<div id="loadingOverlay" style="display:none;">
-  <div class="loading-spinner">⏳ 저장 중입니다...</div>
-</div>
-
+</script>
 </body>
-
 </html>
