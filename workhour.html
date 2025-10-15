@@ -22,10 +22,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 
 /* 표 컨테이너: 스크롤 영역 + sticky 기준 */
 .tblwrap{
-  position:relative;              /* sticky 기준 */
+  position:relative;
   overflow:auto; -webkit-overflow-scrolling:touch;
   max-height:75vh;
-  --head1h:28px;                  /* JS로 실제 높이 보정 */
+  --head1h:28px;
 }
 table{width:100%;border-collapse:separate;border-spacing:0;}
 
@@ -38,7 +38,7 @@ thead th{
   border-bottom:1px solid var(--line);
   border-left:1px solid var(--line);
   padding:6px 6px; line-height:1.1; font-size:13px;
-  z-index:12; /* 기본 헤더 레이어 */
+  z-index:12;
 }
 thead th:last-child{border-right:1px solid var(--line)}
 thead tr.thead1 th{top:0; z-index:14}
@@ -107,7 +107,7 @@ th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
   }
 }
 
-/* ==== 로딩 오버레이 ==== */
+/* ==== 로딩 오버레이 (복구) ==== */
 .loading{position:fixed; inset:0; background:rgba(255,255,255,.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:saturate(180%) blur(2px)}
 .loading.show{display:flex}
 .loading-box{display:flex;flex-direction:column;align-items:center}
@@ -131,11 +131,11 @@ th.freezeTL{
   position:-webkit-sticky; position:sticky;
   top:0;
   left:0;
-  background:#fbfbfd;  /* 헤더와 동일 배경 */
-  z-index:30;          /* 가장 위로 */
+  background:#fbfbfd;
+  z-index:30;
   box-shadow:
-    2px 0 0 rgba(0,0,0,.06),   /* 오른쪽 경계(세로) */
-    0 2px 0 rgba(0,0,0,.06);   /* 아래 경계(가로) */
+    2px 0 0 rgba(0,0,0,.06),
+    0 2px 0 rgba(0,0,0,.06);
   border-right:1px solid var(--line);
   border-bottom:1px solid var(--line);
 }
@@ -161,6 +161,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     <div class="card tblwrap" id="tblwrap"></div>
   </div>
 
+  <!-- 로딩 오버레이 (복구) -->
   <div id="loading" class="loading">
     <div class="loading-box">
       <div class="spinner"></div>
@@ -187,12 +188,17 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
         headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:new URLSearchParams({action:'workhour_read',emp,sig})
       });
-      const data=await res.json();
+      const txt = await res.text();
+      let data;
+      try{ data = JSON.parse(txt) }catch(_){
+        throw new Error('응답 JSON 파싱 실패 – 백엔드 응답 확인 필요');
+      }
       if(!data||!data.ok) throw new Error(data&&data.error||'BAD_PAYLOAD');
       render(data);
     }catch(e){
       const map={'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)','NOT_FOUND':'대상자 없음(NOT_FOUND)','BAD_PAYLOAD':'데이터 로드 실패'};
-      showError(map[e.message]||('네트워크 오류: '+e.message));
+      showError(map[e.message]||('네트워크/요청 오류: '+e.message));
+      console.error('[workhour_read] error:', e);
     }finally{
       showLoading(false);
     }
@@ -230,7 +236,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     // --- 헤더 1행 ---
     const headRow1 =
       '<tr class="thead1">' +
-        '<th class="center freezeTL" rowspan="2">날짜</th>' +  /* ← 코너(행+열) 고정 */
+        '<th class="center freezeTL" rowspan="2">날짜</th>' +
         '<th class="type-col" rowspan="2">' +
           '<span class="t-full">근무 형태</span>' +
           '<span class="t-two">근무<br>형태</span>' +
@@ -251,9 +257,9 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     // --- 헤더 2행 ---
     const headRow2 =
       '<tr class="thead2">' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 근무시간
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 비콘
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수정
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
       '</tr>';
 
     // --- 바디 ---
@@ -271,27 +277,26 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
         '<tr>' +
           `<td class="center freezeL">${esc(cells[0])}</td>` +
           `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
-          // 메트릭 7개 (정규~유급)
-          `<td class="center metric g-metric g-start">${esc(cells[6])}</td>` +  // 정규
-          `<td class="center metric g-metric">${esc(cells[7])}</td>` +         // 연장
-          `<td class="center metric g-metric">${esc(cells[8])}</td>` +         // 야근
-          `<td class="center metric g-metric">${esc(cells[9])}</td>` +         // 휴일
-          `<td class="center metric g-metric">${esc(cells[10])}</td>` +        // 휴연
-          `<td class="center metric g-metric">${esc(cells[12])}</td>` +        // 주휴
-          `<td class="center metric g-metric g-end">${esc(cells[11])}</td>` +  // 유급
-          // 시간 6개 (근무시간/비콘/수정)
-          `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` + // 근무시간 출근 (Q)
-          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` + // 근무시간 퇴근 (R)
-          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`  + // 비콘 출근 (W_IN)
-          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>`  + // 비콘 퇴근 (W_OUT)
-          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>`  + // 수정 출근 (M_IN)
-          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>`  + // 수정 퇴근 (M_OUT)
+          `<td class="center metric g-metric g-start">${esc(cells[6])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[7])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[8])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[9])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[10])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[12])}</td>` +
+          `<td class="center metric g-metric g-end">${esc(cells[11])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>`  +
           `<td class="note">${linkify(cells[15])}</td>` +
         '</tr>'
       );
     }).join('');
 
-    box.innerHTML = '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
+    document.getElementById('tblwrap').innerHTML =
+      '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
 
     // 헤더 높이 보정
     const fixOffsets = () => {
@@ -306,6 +311,11 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
   }
 
   /* === 유틸 & 헬퍼 === */
+  function showLoading(on){
+    const el=document.getElementById('loading');
+    if(!el) return;
+    if(on) el.classList.add('show'); else el.classList.remove('show');
+  }
   function metricThC(label,total,extraCls=''){
     return (
       `<th class="center metric ${extraCls}" rowspan="2">
@@ -315,7 +325,6 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
        </th>`
     );
   }
-
   function makeTypeHTML(v){
     const t=(v||'').trim();
     const clean=t.replace(/\s+/g,'');
@@ -332,13 +341,11 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     if(clean.length===4){ twoTop=clean.slice(0,2); twoBottom=clean.slice(2,4); }
     else if(clean.length===2){ twoTop=clean; twoBottom=''; }
     else { twoTop=clean.length<=3?clean:clean.slice(0,3); twoBottom=clean.length>3?clean.slice(3):''; }
-
     return (
       `<span class="type-full">${esc(t)}</span>`+
       `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`
     );
   }
-
   function toNum(v){
     let s = String(v ?? '').trim();
     if (!s) return 0;
