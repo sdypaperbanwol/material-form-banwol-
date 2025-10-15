@@ -38,11 +38,11 @@ thead th{
   border-bottom:1px solid var(--line);
   border-left:1px solid var(--line);
   padding:6px 6px; line-height:1.1; font-size:13px;
-  z-index:6;
+  z-index:12; /* 기본 헤더 레이어 */
 }
 thead th:last-child{border-right:1px solid var(--line)}
-thead tr.thead1 th{top:0; z-index:8}
-thead tr.thead2 th{top:var(--head1h); z-index:8}
+thead tr.thead1 th{top:0; z-index:14}
+thead tr.thead2 th{top:var(--head1h); z-index:14}
 
 /* 바디 */
 tbody td{
@@ -101,7 +101,7 @@ th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
 /* === 모바일 특이사항 폭 보장 === */
 @media (max-width:640px){
   th.note,td.note{
-    min-width:320px !important;  /* ← 더 넓게 강제 */
+    min-width:320px !important;
     white-space:normal !important;
     word-break:break-word;
   }
@@ -118,14 +118,27 @@ th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
 /* === ✅ 왼쪽 고정(날짜 열) === */
 th.freezeL, td.freezeL{
   position:-webkit-sticky; position:sticky;
-  left:0;                        /* 반드시 0 고정 */
-  background:#fff;               /* 고정 셀의 배경 불투명 */
-  z-index:9;                     /* 본문/헤더보다 위 */
+  left:0;
+  background:#fff;
+  z-index:9;
   box-shadow:2px 0 0 rgba(0,0,0,.06);
-  border-right:1px solid var(--line); /* 우측 경계선 유지 */
+  border-right:1px solid var(--line);
 }
-thead th.freezeL{ top:0; z-index:10; }
-tbody td.freezeL{ z-index:9; }
+thead th.freezeL{ top:0; z-index:18; }
+
+/* === ✅ 좌상단 모서리(날짜 헤더): 행+열 모두 고정 === */
+th.freezeTL{
+  position:-webkit-sticky; position:sticky;
+  top:0;
+  left:0;
+  background:#fbfbfd;  /* 헤더와 동일 배경 */
+  z-index:30;          /* 가장 위로 */
+  box-shadow:
+    2px 0 0 rgba(0,0,0,.06),   /* 오른쪽 경계(세로) */
+    0 2px 0 rgba(0,0,0,.06);   /* 아래 경계(가로) */
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
 
 /* === ✅ 빨간 테두리: 메트릭(정규~유급)만 적용 === */
 .g-metric.g-start{border-left:2px solid #ef4444 !important}
@@ -217,7 +230,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     // --- 헤더 1행 ---
     const headRow1 =
       '<tr class="thead1">' +
-        '<th class="center freezeL" rowspan="2">날짜</th>' +
+        '<th class="center freezeTL" rowspan="2">날짜</th>' +  /* ← 코너(행+열) 고정 */
         '<th class="type-col" rowspan="2">' +
           '<span class="t-full">근무 형태</span>' +
           '<span class="t-two">근무<br>형태</span>' +
@@ -280,7 +293,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
 
     box.innerHTML = '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
 
-    // 헤더 높이 보정 (두 번 측정: 레이아웃 안정화 후)
+    // 헤더 높이 보정
     const fixOffsets = () => {
       const wrap=document.querySelector('.tblwrap');
       const row1=wrap?.querySelector('thead tr.thead1');
