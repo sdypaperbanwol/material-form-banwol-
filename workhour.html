@@ -231,8 +231,8 @@ tbody td{font-size:13px}
         metricTh('야근',sum.L) +
         metricTh('휴일',sum.M) +
         metricTh('휴연',sum.N) +
-        metricTh('유급',sum.O) +
         metricTh('주휴',sum.P) +
+        metricTh('유급',sum.O) +     
         '<th class="center" colspan="2">비콘</th>' +
         '<th class="center" colspan="2">수정</th>' +
         '<th class="note" rowspan="2">특이사항</th>' +
@@ -263,9 +263,8 @@ tbody td{font-size:13px}
           `<td class="center metric">${esc(cells[8])}</td>` +
           `<td class="center metric">${esc(cells[9])}</td>` +
           `<td class="center metric">${esc(cells[10])}</td>` +
-          `<td class="center metric">${esc(cells[11])}</td>` +
-          `<td class="center metric">${esc(cells[12])}</td>` +
-
+          `<td class="center metric">${esc(cells[12])}</td>` + // P 먼저
+          `<td class="center metric">${esc(cells[11])}</td>` + // O 다음
           `<td class="center time-col">${cellOrNbsp(cells[2])}</td>` +
           `<td class="center time-col">${cellOrNbsp(cells[3])}</td>` +
           `<td class="center time-col">${cellOrNbsp(cells[4])}</td>` +
