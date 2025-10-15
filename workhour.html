@@ -20,14 +20,14 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
 .right{color:#666;font-size:12px}
 
-/* 표 컨테이너: 스크롤 영역 + sticky 기준 */
+/* 표 컨테이너: sticky 기준 */
 .tblwrap{
   position:relative;
   overflow:auto; -webkit-overflow-scrolling:touch;
   max-height:75vh;
   --head1h:28px;
 }
-table{width:100%;border-collapse:separate;border-spacing:0;}
+table{width:100%;border-collapse:separate;border-spacing:0}
 
 /* ===== 헤더(상단 고정) ===== */
 thead th{
@@ -107,7 +107,7 @@ th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
   }
 }
 
-/* ==== 로딩 오버레이 (복구) ==== */
+/* ==== 로딩 오버레이 ==== */
 .loading{position:fixed; inset:0; background:rgba(255,255,255,.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:saturate(180%) blur(2px)}
 .loading.show{display:flex}
 .loading-box{display:flex;flex-direction:column;align-items:center}
@@ -115,7 +115,7 @@ th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading .msg{margin-top:12px;color:#374151;font-weight:600}
 
-/* === ✅ 왼쪽 고정(날짜 열) === */
+/* === ✅ 왼쪽 고정(날짜 열 값들) === */
 th.freezeL, td.freezeL{
   position:-webkit-sticky; position:sticky;
   left:0;
@@ -125,6 +125,15 @@ th.freezeL, td.freezeL{
   border-right:1px solid var(--line);
 }
 thead th.freezeL{ top:0; z-index:18; }
+
+/* 🔧 모바일에서 '날짜' 값 셀도 오른쪽과 같은 크기로 */
+@media (max-width:640px){
+  td.freezeL{
+    font-size:11px;           /* time-col과 동일 */
+    padding:4px 2px;          /* time-col과 동일 */
+    white-space:nowrap;       /* 숫자 줄바꿈 방지 */
+  }
+}
 
 /* === ✅ 좌상단 모서리(날짜 헤더): 행+열 모두 고정 === */
 th.freezeTL{
@@ -161,7 +170,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     <div class="card tblwrap" id="tblwrap"></div>
   </div>
 
-  <!-- 로딩 오버레이 (복구) -->
+  <!-- 로딩 오버레이 -->
   <div id="loading" class="loading">
     <div class="loading-box">
       <div class="spinner"></div>
@@ -298,7 +307,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     document.getElementById('tblwrap').innerHTML =
       '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
 
-    // 헤더 높이 보정
+    // 헤더 높이 보정 + 회전/리사이즈 대응
     const fixOffsets = () => {
       const wrap=document.querySelector('.tblwrap');
       const row1=wrap?.querySelector('thead tr.thead1');
@@ -308,6 +317,8 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
     };
     fixOffsets();
     requestAnimationFrame(fixOffsets);
+    window.addEventListener('resize', fixOffsets, {passive:true});
+    window.addEventListener('orientationchange', ()=>setTimeout(fixOffsets, 60), {passive:true});
   }
 
   /* === 유틸 & 헬퍼 === */
