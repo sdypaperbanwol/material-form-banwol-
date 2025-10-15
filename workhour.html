@@ -113,9 +113,20 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
 
 .g-time.g-start{border-left:2px solid #ef4444 !important}
 .g-time.g-end{border-right:2px solid #ef4444 !important}
-/* 상단선은 1행 헤더(수기/비콘/수정)에만 주면 상자 윗변이 깔끔함 */
 thead tr.thead1 th.g-time{border-top:2px solid #ef4444 !important}
 tbody tr:last-child td.g-time{border-bottom:2px solid #ef4444 !important}
+
+/* === ✅ 왼쪽 고정(날짜 열) === */
+th.freezeL, td.freezeL{
+  position:-webkit-sticky; position:sticky;
+  left:0;
+  background:inherit;            /* 홀짝 배경 유지 */
+  z-index:6;                     /* 기본 셀보다 위 */
+  box-shadow:2px 0 0 rgba(0,0,0,.04); /* 경계 느낌 */
+}
+thead th.freezeL{ top:0; z-index:8; }         /* 헤더 1행 */
+thead tr.thead2 th.freezeL{ top:var(--head1h); z-index:8; } /* 헤더 2행에 적용 가능 대비 */
+tbody td.freezeL{ z-index:5; }
 </style>
 </head>
 <body>
@@ -201,7 +212,7 @@ tbody tr:last-child td.g-time{border-bottom:2px solid #ef4444 !important}
     // --- 헤더 1행 ---
     const headRow1 =
       '<tr class="thead1">' +
-        '<th class="center" rowspan="2">날짜</th>' +
+        '<th class="center freezeL" rowspan="2">날짜</th>' +
         '<th class="type-col" rowspan="2">' +
           '<span class="t-full">근무 형태</span>' +
           '<span class="t-two">근무<br>형태</span>' +
@@ -219,7 +230,7 @@ tbody tr:last-child td.g-time{border-bottom:2px solid #ef4444 !important}
         '<th class="note" rowspan="2">특이사항</th>' +
       '</tr>';
 
-    // --- 헤더 2행 (시간 칼럼들에 g-time 부여) ---
+    // --- 헤더 2행 ---
     const headRow2 =
       '<tr class="thead2">' +
         '<th class="center time-col g-time g-start">출근</th><th class="center time-col g-time">퇴근</th>' + // 수기
@@ -240,7 +251,7 @@ tbody tr:last-child td.g-time{border-bottom:2px solid #ef4444 !important}
       ];
       return (
         '<tr>' +
-          `<td class="center">${esc(cells[0])}</td>` +
+          `<td class="center freezeL">${esc(cells[0])}</td>` +
           `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
           // 메트릭 7개 (정규~유급)
           `<td class="center metric g-metric g-start">${esc(cells[6])}</td>` +  // 정규
