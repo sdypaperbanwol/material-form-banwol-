@@ -239,9 +239,9 @@ const EXTRA_HEADERS = {
         metricTh('휴연',sum.N) +
         metricTh('주휴',sum.P) +
         metricTh('유급',sum.O) +
+        '<th class="center" colspan="2">수기</th>' +
         '<th class="center" colspan="2">비콘</th>' +
-        '<th class="center" colspan="2">수정</th>' +
-        '<th class="center" colspan="2">수기</th>' +    
+        '<th class="center" colspan="2">수정</th>' +   
         '<th class="note" rowspan="2">특이사항</th>' +
       '</tr>';
 function metricThPlain(label){
@@ -255,9 +255,9 @@ function metricThPlain(label){
 
     const headRow2 =
       '<tr class="thead2">' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수기
+      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수기
+      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 비콘
+      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수정
       '</tr>';
 
     const body = sorted.map(r=>{
@@ -281,12 +281,12 @@ function metricThPlain(label){
           `<td class="center metric">${esc(cells[10])}</td>` +
           `<td class="center metric">${esc(cells[12])}</td>` + // P (주휴)
           `<td class="center metric">${esc(cells[11])}</td>` + // O (유급)
-          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>` +  // 비콘 출근
-          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>` +  // 비콘 퇴근
-          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>` +  // 수정 출근
-          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>` +  // 수정 퇴근
           `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` + // 수기 출근 (Q)
-          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` +   // 수기 퇴근 (R)
+          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` + // 수기 퇴근 (R)
+          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`  + // 비콘 출근 (W_IN)
+          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>`  + // 비콘 퇴근 (W_OUT)
+          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>`  + // 수정 출근 (M_IN)
+          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>`  +  // 수정 퇴근 (M_OUT)
           `<td class="note">${linkify(cells[15])}</td>` +
         '</tr>'
       );
