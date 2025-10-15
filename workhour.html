@@ -1,283 +1,696 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
-<title>파트별 근태(일자별)</title>
-<style>
-:root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--shadow:0 6px 18px rgba(0,0,0,.06)}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
-.wrap{max-width:1200px;margin:28px auto;padding:0 16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
-.h1{margin:0;font-size:18px}
-.meta{color:var(--muted);font-size:13px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
-.btn{padding:8px 12px;border:1px solid #d1d5db;border-radius:10px;background:#f9fafb;cursor:pointer}
-.btn:hover{background:#f3f4f6}
-.actions{display:flex;gap:8px;align-items:center}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>방문객·작업자 등록 시스템</title>
+  <style>
 
-.err{padding:12px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
-.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
-.stat{color:#374151;font-size:12px}
+        #map-image {
+      max-width: 90%;
+      height: auto;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
 
-.tblwrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:75vh;margin-top:12px}
-table{width:100%;border-collapse:separate;border-spacing:0}
-thead th,tbody td{border-bottom:1px solid var(--line);border-left:1px solid var(--line);padding:8px 8px;white-space:nowrap;background:#fff}
-thead th{position:sticky;top:0;background:#fbfbfd;font-weight:700;z-index:5}
-thead th:last-child,tbody td:last-child{border-right:1px solid var(--line)}
-tfoot td{font-weight:700;background:#fcfcff}
+ #purposeOther {
+    display: none;
+    margin-top: 10px;
+    width: 80%;
+    max-width: 300px;
+    padding: 10px;
+    font-size: 16px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
-.loading{position:fixed;inset:0;background:rgba(255,255,255,.85);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:saturate(180%) blur(2px)}
-.loading.show{display:flex}
-.spinner{width:44px;height:44px;border-radius:50%;border:3px solid #dbeafe;border-top-color:#2563eb;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+#loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-spinner {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 40px;
+      margin-bottom: 70px; /* 👈 추가 */
+    }
+
+  .button-container {
+  display: flex;
+  flex-direction: column; /* 🔥 버튼을 세로로 쌓음 */
+  align-items: center;     /* 가운데 정렬 */
+  gap: 30px;
+  margin: 40px 0;
+}
+
+    .menu-button {
+  width: 220px;          /* 🔧 더 넓게 */
+  height: 70px;         /* 🔧 살짝 줄여서 직사각형 비율 */
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  line-height: 1.4;
+}
+
+.worker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.worker-number {
+  width: 20px;
+  text-align: right;
+  font-weight: bold;
+}
+
+
+    .menu-button:hover {
+      background: #0056b3;
+    }
+
+    .form-section {
+      display: none;
+      max-width: 600px;
+      margin: 0 auto 50px;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .step input {
+      padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      max-width: 300px;
+    }
+
+    .step-buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .step-buttons button {
+      padding: 10px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .step-buttons button:first-child {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .step-buttons button:last-child {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .step-buttons button:hover {
+      opacity: 0.85;
+    }
+
+.purpose-button {
+  padding: 14px 24px;
+  font-size: 16px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  background: white;
+  color: #007bff;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.purpose-button:hover {
+  background: #e6f0ff;
+}
+
+.purpose-button.selected {
+  background: #007bff;
+  color: white;
+}
+
+.department-button:hover {
+  background: #eaffea;
+}
+
+.department-button.selected {
+  background: #28a745;
+  color: white;
+}
+
+ .department-buttons-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3개씩 배치 */
+  gap: 6px; /* 🔧 간격 줄이기 */
+  justify-items: center;
+  margin-top: 10px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.department-button {
+  padding: 10px 14px;  /* 🔧 패딩 줄임 */
+  min-width: 100px;
+  text-align: center;
+  background-color: #f0f0f0;
+  border: 2px solid #28a745;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: #28a745;
+}
+
+.department-button.selected {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+
+
 </style>
+
+
 </head>
 <body>
-<div class="wrap">
-  <div id="error" class="card err" style="display:none"></div>
+  <h1>방문객 · 작업자 등록 시스템</h1>
 
-  <div class="card" style="padding:14px">
-    <div class="top">
-      <div>
-        <div class="h1" id="title">파트별 근태 <span class="badge">일자별</span></div>
-        <div class="meta" id="subtitle">일자를 선택해 해당 파트 인원의 근태를 조회합니다.</div>
-      </div>
-      <div class="row">
-        <select id="partSel" title="파트 선택"></select>
-        <select id="dateSel" title="일자 선택(최근 45일)"></select>
-        <div class="actions">
-          <button class="btn" id="btnGo">조회</button>
-          <button class="btn" id="btnToday">오늘</button>
-          <button class="btn" id="btnCSV">CSV</button>
+  <div class="button-container">
+    <button class="menu-button" onclick="showSection('visitor')">📟 방문객 등록</button>
+    <button class="menu-button" onclick="showSection('worker')">👷 작업자 명단</button>
+    <button class="menu-button" onclick="showSection('map')">🗘 지도 보기</button>
+  </div>
+
+  <!-- 방문객 등록 -->
+  <div id="visitor" class="form-section">
+    <h2>📟 방문객 등록</h2>
+    <div id="visitorSteps">
+      <div class="step" id="step1">
+        <p>🚗 차량번호 (4자리 숫자)</p>
+        <input id="carNo" type="text" inputmode="numeric" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+        <div class="step-buttons">
+          <button onclick="resetToMainMenu()">⬅ 처음으로</button>
+          <button onclick="nextStep(2, 'carNo')">다음</button>
         </div>
       </div>
-    </div>
-    <div class="stat" id="stat"></div>
-    <div class="tblwrap card" id="tblwrap" style="border:none;box-shadow:none"></div>
+
+      <div class="step" id="step2" style="display:none;">
+        <p>🏢 업체명</p>
+        <input id="company" type="text" />
+        <div class="step-buttons">
+          <button onclick="prevStep(1)">뒤로</button>
+          <button onclick="nextStep(3, 'company')">다음</button>
+        </div>
+      </div>
+
+      <div class="step" id="step3" style="display:none;">
+        <p>👤 성명</p>
+        <input id="name" type="text" />
+        <div class="step-buttons">
+          <button onclick="prevStep(2)">뒤로</button>
+          <button onclick="nextStep(4, 'name')">다음</button>
+        </div>
+      </div>
+
+      <div class="step" id="step4" style="display:none;">
+        <p>📞 연락처 (11자리 숫자)</p>
+        <input id="phone" type="text" maxlength="13"
+  value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+
+
+        <div class="step-buttons">
+          <button onclick="prevStep(3)">뒤로</button>
+          <button onclick="nextStep(5, 'phone')">다음</button>
+        </div>
+      </div>
+
+<div class="step" id="step5" style="display:none;">
+  <p>🌟 방문 목적</p>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '납품')">납품</button>
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '설비 점검')">설비 점검</button>
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '회의')">회의</button>
+    <button type="button" class="purpose-button" onclick="selectPurpose(this, '기타')">기타</button>
+  </div>
+  <input id="purposeOther" type="text" placeholder="기타 입력" style="display:none; margin-top:10px; width:80%; max-width:300px; padding:10px; font-size:16px; text-align:center; margin-left:auto; margin-right:auto;" />
+
+  <!-- ✅ 관련 부서 선택 -->
+ 
+
+  <div class="step-buttons" style="margin-top: 30px;">
+    <button onclick="prevStep(4)">뒤로</button>
+    <button onclick="nextStep(6, 'purpose')">다음</button>
   </div>
 </div>
 
-<div class="loading" id="loading"><div><div class="spinner"></div></div></div>
 
-<script>
-  /* ====== 설정 ====== */
-  // ★ 여기만 네 GAS 웹앱 /exec URL로 교체하세요.
-  const GAS_URL='https://script.google.com/macros/s/AKfycbzGqMrrCV65ZpLqcWuO8kDDEL5OfBkbVncje7jWPDhqK3njWLnEfC9bOId1ZpHW9H1SLA/exec';
+      <div class="step" id="step6" style="display:none;">
+        <p>✍ 면담자 </p>
+        <input id="sign" type="text" />
+ <div style="margin-top: 30px;">
+    <p>🏢 관련 부서 선택 (선택 사항)</p>
+    <div class="department-buttons-container">
+      <button type="button" class="department-button" onclick="selectDepartment(this, '초지')">초지</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '원질')">원질</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '공무')">공무</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '소각')">소각</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '환경')">환경</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '전기')">전기</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '안전')">안전</button>
+      <button type="button" class="department-button" onclick="selectDepartment(this, '인사(관리)')">인사(관리)</button>
+    </div>
+  </div>
+        
+        <div class="step-buttons">
+          <button onclick="prevStep(5)">뒤로</button>
+          <button onclick="submitVisitor()">✅ 제출</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  const ALLOWED_PARTS=[
-    '반월 초지파트','반월 원질파트','반월 공무파트',
-    '반월 소각파트','반월 환경파트','반월 전기파트'
-  ];
+  <!-- 작업자 등록 -->
+  <div id="worker" class="form-section">
+  <h2>👷 작업자 출입 명단</h2>
+  <div id="workerSteps">
+    <div class="step" id="wstep1">
+      <p>🏢 업체명</p>
+      <input id="wCompany" type="text" />
+      <div class="step-buttons">
+        <button onclick="resetToMainMenu()">⬅ 처음으로</button>
+        <button onclick="nextWStep(2, 'wCompany')">다음</button>
+      </div>
+    </div>
 
-  /* ====== 엘리먼트 ====== */
-  const selPart = document.getElementById('partSel');
-  const selDate = document.getElementById('dateSel');
-  const btnGo   = document.getElementById('btnGo');
-  const btnToday= document.getElementById('btnToday');
-  const btnCSV  = document.getElementById('btnCSV');
-  const statEl  = document.getElementById('stat');
+    <div class="step" id="wstep2" style="display:none;">
+      <p>👥 작업자 명단 입력</p>
 
-  // 파트 셀렉트 구성
-  const q=new URLSearchParams(location.search);
-  const urlPart=q.get('part')||'';
-  selPart.innerHTML = ALLOWED_PARTS.map(p=>`<option value="${esc(p)}"${p===urlPart?' selected':''}>${esc(p)}</option>`).join('');
-  if(!urlPart && ALLOWED_PARTS.length) selPart.value = ALLOWED_PARTS[0];
+      <div id="workerList">
+  <div class="worker-row">
+    <span class="worker-number">1</span>
+    <input type="text" name="wName[]" placeholder="성명" />
+    <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
+  inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
 
-  // 일자 드롭다운(최근 45일)
-  selDate.innerHTML = buildRecentDaysOptions(45);
+  </div>
+</div>
 
-  // 초기 선택: URL에 date 있으면 그걸로, 없으면 오늘
-  const urlDate=q.get('date');
-  if(urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)){
-    selectDateIfExists(urlDate);
-  }else{
-    selectDateIfExists(todayYMD());
-  }
+<p style="font-size: 14px; color: #888; margin-top: 10px;">
+  👉 이름과 번호를 입력하면 아래 줄이 자동 생성됩니다.<br>
+  ✅ 작성 완료 시 <strong>제출</strong>을 눌러주세요.
+</p>
 
-  btnGo.addEventListener('click', load);
-  btnToday.addEventListener('click', ()=>{
-    selectDateIfExists(todayYMD());
-    load();
-  });
-  btnCSV.addEventListener('click', exportCSV);
 
-  window.addEventListener('load', load);
 
-  let lastData = null; // CSV 내보내기용 캐시
+      <div class="step-buttons">
+        <button onclick="prevWStep(1)">뒤로</button>
+        <button onclick="submitWorker()">✅ 제출</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-  async function load(){
-    const part = selPart.value;
-    const ymd  = selDate.value;
-    if(!part){ return showError('파트를 선택하세요.'); }
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(ymd)){ return showError('날짜 형식이 올바르지 않습니다.'); }
 
-    showError('', false);
-    statEl.textContent = '';
-    showLoading(true);
-    try{
-      const res = await fetch(GAS_URL, {
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({ action:'part_daily', part, date: ymd })
+  <!-- 지도 -->
+  <div id="map" class="form-section">
+    <h2>🗘 회사 지도</h2>
+    <img id="map-image" src="https://sdypaperbanwol.github.io/material-form-banwol-/%EC%8B%A0%EB%8C%80%EC%96%91%EC%A0%9C%EC%A7%80%EB%B0%98%EC%9B%94_%EB%93%9C%EB%A1%A04.png" alt="회사 지도 이미지" />
+ <div class="step-buttons" style="margin-top: 30px;">
+    <button onclick="resetToMainMenu()">⬅ 처음으로</button>
+  </div>
+  </div>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyfmnPTzoq2yIZ-33uYOnB3kOJg0V8jOz1esIuaPeidH6ptKy1IDpt1L8abxFAX0MsQSQ/exec'; // 실제 Web App URL로 교체
+
+    function showSection(sectionId) {
+      ['visitor', 'worker', 'map'].forEach(id => {
+        document.getElementById(id).style.display = id === sectionId ? 'block' : 'none';
       });
-      const data = await res.json();
-      if(!data.ok) throw new Error(data.error || 'BAD_RESPONSE');
-      lastData = data;
-      renderTable(data);
-      statEl.textContent = `파트: ${part} · 날짜: ${ymd} · 인원 ${data.rows?.length||0}명`;
-    }catch(e){
-      showError('조회 실패: '+e.message);
-      console.error(e);
-    }finally{
-      showLoading(false);
+      document.querySelector(".button-container").style.display = "none";
     }
+
+   function nextStep(stepNumber, inputId) {
+  let valid = true;
+  const input = document.getElementById(inputId);
+  const value = input?.value.trim();
+
+  if (inputId === 'carNo') {
+  valid = /^\d{4}$/.test(value);
+} else if (inputId === 'phone') {
+  valid = /^010-\d{4}-\d{4}$/.test(value);
+} else if (inputId === 'purpose') {
+  const other = document.getElementById("purposeOther");
+  valid = other.style.display === "block"
+    ? other.value.trim().length > 0
+    : !!other.dataset.selected;
+} else {
+  valid = value.length > 0;
+}
+
+
+  if (!valid) {
+    alert("입력값을 확인해주세요.");
+    return;
   }
 
-  function renderTable(data){
-    const rows = data.rows || [];
-    const C = data.colmap || { DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
-      J:9,K:10,L:11,M:12,N:13,O:14,P:15,Q:16,R:17,NOTE_U:20 };
+  document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
+  document.getElementById(`step${stepNumber}`).style.display = "block";
+}
 
-    // 합계 계산
-    const sum = {J:0,K:0,L:0,M:0,N:0,O:0,P:0};
-    rows.forEach(r=>{
-      sum.J+=toNum(r[C.J]); sum.K+=toNum(r[C.K]); sum.L+=toNum(r[C.L]);
-      sum.M+=toNum(r[C.M]); sum.N+=toNum(r[C.N]); sum.O+=toNum(r[C.O]); sum.P+=toNum(r[C.P]);
-    });
-    const fmt = n => (Math.round(n*100)/100).toString();
 
-    // 테이블 렌더
-    const cols = [
-      { key:'name',  label:'이름',      get:r=>safe(r[3]) }, // D열 이름
-      { key:'type',  label:'근무형태',  get:r=>safe(r[C.TYPE]) },
-      { key:'j',     label:'정규',      get:r=>nz(r[C.J]) },
-      { key:'k',     label:'연장',      get:r=>nz(r[C.K]) },
-      { key:'l',     label:'야근',      get:r=>nz(r[C.L]) },
-      { key:'m',     label:'휴일',      get:r=>nz(r[C.M]) },
-      { key:'n',     label:'휴연',      get:r=>nz(r[C.N]) },
-      { key:'p',     label:'주휴',      get:r=>nz(r[C.P]) },
-      { key:'o',     label:'유급',      get:r=>nz(r[C.O]) },
-      { key:'wIn',   label:'근무 출근', get:r=>safe(r[C.W_IN]) },
-      { key:'wOut',  label:'근무 퇴근', get:r=>safe(r[C.W_OUT]) },
-      { key:'qIn',   label:'비콘 출근', get:r=>safe(r[C.Q]) },
-      { key:'qOut',  label:'비콘 퇴근', get:r=>safe(r[C.R]) },
-      { key:'mIn',   label:'수정 출근', get:r=>safe(r[C.M_IN]) },
-      { key:'mOut',  label:'수정 퇴근', get:r=>safe(r[C.M_OUT]) },
-      { key:'note',  label:'특이사항',  get:r=>linkify(r[C.NOTE_U]) }
-    ];
-
-    const th = cols.map(c=>`<th>${esc(c.label)}</th>`).join('');
-    const tr = rows.map(r=>`<tr>${cols.map(c=>`<td>${c.get(r)}</td>`).join('')}</tr>`).join('');
-    const tfoot =
-      `<tfoot><tr>
-         <td colspan="2" style="text-align:right">합계</td>
-         <td>${esc(fmt(sum.J))}</td>
-         <td>${esc(fmt(sum.K))}</td>
-         <td>${esc(fmt(sum.L))}</td>
-         <td>${esc(fmt(sum.M))}</td>
-         <td>${esc(fmt(sum.N))}</td>
-         <td>${esc(fmt(sum.P))}</td>
-         <td>${esc(fmt(sum.O))}</td>
-         <td colspan="6"></td>
-       </tr></tfoot>`;
-
-    const html = `
-      <table>
-        <thead><tr>${th}</tr></thead>
-        <tbody>${rows.length?tr:`<tr><td colspan="${cols.length}" style="color:#666;padding:18px">해당 날짜의 데이터가 없습니다.</td></tr>`}</tbody>
-        ${rows.length?tfoot:''}
-      </table>`;
-    document.getElementById('tblwrap').innerHTML = html;
-  }
-
-  function exportCSV(){
-    if(!lastData){ showError('먼저 조회를 해주세요.'); return; }
-    const rows = lastData.rows || [];
-    const C = lastData.colmap || { DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
-      J:9,K:10,L:11,M:12,N:13,O:14,P:15,Q:16,R:17,NOTE_U:20 };
-
-    const header = ['이름','근무형태','정규','연장','야근','휴일','휴연','주휴','유급','근무출근','근무퇴근','비콘출근','비콘퇴근','수정출근','수정퇴근','특이사항'];
-    const lines = [header.join(',')];
-
-    rows.forEach(r=>{
-      const line = [
-        csvSafe(safe(r[3])),
-        csvSafe(safe(r[C.TYPE])),
-        csvSafe(nz(r[C.J])), csvSafe(nz(r[C.K])), csvSafe(nz(r[C.L])),
-        csvSafe(nz(r[C.M])), csvSafe(nz(r[C.N])), csvSafe(nz(r[C.P])),
-        csvSafe(nz(r[C.O])),
-        csvSafe(safe(r[C.W_IN])), csvSafe(safe(r[C.W_OUT])),
-        csvSafe(safe(r[C.Q])),    csvSafe(safe(r[C.R])),
-        csvSafe(safe(r[C.M_IN])), csvSafe(safe(r[C.M_OUT])),
-        csvSafe(stripTags(safe(r[C.NOTE_U])))
-      ];
-      lines.push(line.join(','));
-    });
-
-    const blob = new Blob([`\uFEFF${lines.join('\n')}`], {type:'text/csv;charset=utf-8;'});
-    const part = selPart.value;
-    const ymd  = selDate.value;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `파트별근태_${part}_${ymd}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  }
-
-  /* ====== 헬퍼 ====== */
-  function buildRecentDaysOptions(days){
-    const opts=[];
-    const today = new Date(); today.setHours(0,0,0,0);
-    for(let i=0;i<days;i++){
-      const d = new Date(today); d.setDate(today.getDate()-i);
-      const ymd = toYMD(d);
-      const label = `${ymd} (${['일','월','화','수','목','금','토'][d.getDay()]})`;
-      opts.push(`<option value="${ymd}">${label}</option>`);
+    function prevStep(stepNumber) {
+      document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
+      document.getElementById(`step${stepNumber}`).style.display = "block";
     }
-    return opts.join('');
+
+    function nextWStep(stepNumber, inputId) {
+  const input = document.getElementById(inputId);
+  const value = input?.value.trim();
+
+  let valid = true;
+  if (!value) valid = false;
+  else if (inputId === 'wPhone') valid = /^\d{11}$/.test(value); // ✅ 11자리 확인
+
+  if (!valid) {
+    alert("입력값을 확인해주세요.");
+    return;
   }
-  function selectDateIfExists(ymd){
-    const opt = Array.from(selDate.options).find(o=>o.value===ymd);
-    selDate.value = opt ? ymd : selDate.options[0]?.value || todayYMD();
+
+  document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
+  document.getElementById(`wstep${stepNumber}`).style.display = "block";
+}
+
+
+    function prevWStep(stepNumber) {
+      document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
+      document.getElementById(`wstep${stepNumber}`).style.display = "block";
+    }
+
+    function selectPurpose(value) {
+      const input = document.getElementById("purposeOther");
+      if (value === "기타") {
+        input.style.display = "block";
+        input.focus();
+      } else {
+        input.style.display = "none";
+        input.value = "";
+        input.dataset.selected = value;
+      }
+    }
+
+    function resetToMainMenu() {
+  // 방문자 입력 초기화
+  document.querySelectorAll("#visitor input").forEach(i => i.value = "");
+  document.getElementById("purposeOther").style.display = "none";
+  delete document.getElementById("purposeOther").dataset.selected;
+  document.querySelectorAll("#visitorSteps .step").forEach(el => el.style.display = "none");
+  document.getElementById("step1").style.display = "block";
+
+  // 작업자 입력 초기화
+  ["wCompany", "wName", "wPhone"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  document.querySelectorAll("#workerSteps .step").forEach(el => el.style.display = "none");
+  document.getElementById("wstep1").style.display = "block";
+
+  // 🔹 작업자 목록도 초기화!
+ document.getElementById("workerList").innerHTML = `
+  <div class="worker-row">
+    <span class="worker-number">1</span>
+    <input type="text" name="wName[]" placeholder="성명" />
+    <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13"
+      inputmode="numeric" value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+  </div>
+`;
+
+
+  // 화면 구성 초기화
+  ['visitor', 'worker', 'map'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  document.querySelector(".button-container").style.display = "flex";
+}
+
+
+    function submitVisitor() {
+  const carNo = document.getElementById("carNo").value.trim();
+  const company = document.getElementById("company").value.trim();
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const purposeOther = document.getElementById("purposeOther");
+  const purpose = purposeOther.style.display === "block"
+    ? purposeOther.value.trim()
+    : purposeOther.dataset.selected;
+  const interviewer = document.getElementById("sign").value.trim();
+
+  if (!carNo || !company || !name || !phone || !purpose || !interviewer) {
+    alert("모든 항목을 입력해주세요.");
+    return;
   }
-  function todayYMD(){ return toYMD(new Date()); }
-  function toYMD(d){
-    const z = n=>String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+
+  const data = { type: "visitor", carNo, company, name, phone, purpose, interviewer };
+
+  if (selectedDepartment) {
+    data.department = selectedDepartment;
   }
-  function showLoading(on){ document.getElementById('loading').classList.toggle('show', !!on); }
-  function showError(msg, show=true){
-    const el=document.getElementById('error');
-    if(show===false || !msg){ el.style.display='none'; el.textContent=''; return; }
-    el.style.display='block'; el.textContent=msg;
+
+  showLoading(); // ⏳ 로딩 시작
+
+  fetch(scriptURL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(data)
+  })
+  .then(() => {
+    hideLoading(); // ✅ 로딩 끝
+    alert("✅ 방문객 등록 완료");
+    resetToMainMenu();
+  })
+  .catch(err => {
+    hideLoading();
+    alert("❌ 오류: " + err);
+  });
+}
+
+
+   
+
+function selectPurpose(el, value) {
+  // 모든 버튼 선택 해제
+  document.querySelectorAll(".purpose-button").forEach(btn => {
+    btn.classList.remove("selected");
+  });
+
+  // 현재 클릭한 버튼만 선택 표시
+  el.classList.add("selected");
+
+  const input = document.getElementById("purposeOther");
+
+  if (value === "기타") {
+    input.style.display = "block";
+    input.focus();
+    delete input.dataset.selected;
+  } else {
+    input.style.display = "none";
+    input.value = "";
+    input.dataset.selected = value;
   }
-  function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-  function stripTags(s){ return String(s).replace(/<[^>]*>/g,''); }
-  function linkify(v){
-    const t=(v||'').toString().trim();
-    if(!t) return '';
-    try{ const u=new URL(t); return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`; }
-    catch(_){ return esc(t); }
+}
+
+let selectedDepartment = "";
+
+function selectDepartment(el, dept) {
+  const wasSelected = el.classList.contains("selected");
+
+  // 모든 버튼 초기화
+  document.querySelectorAll(".department-button").forEach(btn => {
+    btn.classList.remove("selected");
+  });
+
+  if (!wasSelected) {
+    el.classList.add("selected");
+    selectedDepartment = dept;
+  } else {
+    selectedDepartment = ""; // 선택 해제
   }
-  function safe(v){ return (v==null)?'':String(v); }
-  function nz(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
-  function toNum(v){
-    let s = String(v ?? '').trim();
-    if (!s) return 0;
-    s = s.replace(/\s+/g, '');
-    if (s.includes(',') && !s.includes('.')) s = s.replace(',', '.');
-    s = s.replace(/,/g, '');
-    const n = parseFloat(s);
-    return isNaN(n) ? 0 : n;
+}
+
+  // ✅ 자동 행 추가 기능
+function initWorkerInputLogic() {
+  const container = document.getElementById("workerList");
+
+  container.addEventListener("input", (e) => {
+    const rows = container.querySelectorAll(".worker-row");
+    const lastRow = rows[rows.length - 1];
+    const name = lastRow.querySelector("input[name='wName[]']").value.trim();
+    const phone = lastRow.querySelector("input[name='wPhone[]']").value.trim();
+
+    if (name && /^010-\d{4}-\d{4}$/.test(phone)) {
+
+      const newRow = document.createElement("div");
+      newRow.className = "worker-row";
+      newRow.innerHTML = `
+  <span class="worker-number">${rows.length + 1}</span>
+  <input type="text" name="wName[]" placeholder="성명" />
+  <input type="text" name="wPhone[]" placeholder="전화번호" maxlength="13" inputmode="numeric"
+    value="010-" oninput="formatPhoneInput(this)" onfocus="moveCursorToEnd(this)" />
+`;
+
+      container.appendChild(newRow);
+    }
+  });
+}
+
+
+  document.addEventListener("DOMContentLoaded", initWorkerInputLogic);
+
+  // ✅ 제출 시 여러 명 저장
+ function submitWorker() {
+  const company = document.getElementById("wCompany").value.trim();
+  const rows = document.querySelectorAll("#workerList .worker-row");
+  const dataList = [];
+
+  if (!company) {
+    alert("업체명을 입력해주세요.");
+    return;
   }
-  function csvSafe(s){
-    const t = String(s??'');
-    if (/[",\n]/.test(t)) return `"${t.replace(/"/g,'""')}"`;
-    return t;
+
+  let valid = false;
+
+  rows.forEach(row => {
+    const name = row.querySelector("input[name='wName[]']").value.trim();
+    const phone = row.querySelector("input[name='wPhone[]']").value.trim();
+
+   if (name && /^010-\d{4}-\d{4}$/.test(phone)) {
+
+      dataList.push({
+        type: "worker",
+        company,
+        name,
+        phone,
+        date: new Date().toISOString()
+      });
+      valid = true;
+    }
+  });
+
+  if (!valid) {
+    alert("1명 이상의 작업자 성명과 11자리 전화번호를 입력해주세요.");
+    return;
   }
-</script>
+
+  showLoading(); // ⏳ 로딩 시작
+
+  Promise.all(
+    dataList.map(data =>
+      fetch(scriptURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(data)
+      })
+    )
+  )
+  .then(() => {
+    hideLoading(); // ✅ 로딩 끝
+    alert("✅ 작업자 등록 완료");
+    resetToMainMenu();
+  })
+  .catch(err => {
+    hideLoading();
+    alert("❌ 오류: " + err);
+  });
+}
+
+
+function showLoading() {
+  document.getElementById("loadingOverlay").style.display = "flex";
+}
+
+function hideLoading() {
+  document.getElementById("loadingOverlay").style.display = "none";
+}
+
+function formatPhoneInput(input) {
+  let raw = input.value.replace(/[^0-9]/g, "");
+
+  if (!raw.startsWith("010")) {
+    raw = "010" + raw.replace(/^010/, "");
+  }
+
+  if (raw.length > 11) {
+    raw = raw.slice(0, 11);
+  }
+
+  let formatted = raw;
+  if (raw.length >= 4 && raw.length <= 7) {
+    formatted = raw.slice(0, 3) + "-" + raw.slice(3);
+  } else if (raw.length >= 8) {
+    formatted = raw.slice(0, 3) + "-" + raw.slice(3, 7) + "-" + raw.slice(7);
+  }
+
+  input.value = formatted;
+
+  // 커서를 항상 끝으로 보내기
+  setTimeout(() => {
+    input.selectionStart = input.selectionEnd = input.value.length;
+  }, 0);
+}
+d
+  </script>
+
+<div id="loadingOverlay" style="display:none;">
+  <div class="loading-spinner">⏳ 저장 중입니다...</div>
+</div>
+
 </body>
+
 </html>
