@@ -238,11 +238,10 @@ const EXTRA_HEADERS = {
         metricTh('휴일',sum.M) +
         metricTh('휴연',sum.N) +
         metricTh('주휴',sum.P) +
-        metricTh('유급',sum.O) +     
-        metricThPlain(EXTRA_HEADERS.Q) +
-        metricThPlain(EXTRA_HEADERS.R) +
+        metricTh('유급',sum.O) +
         '<th class="center" colspan="2">비콘</th>' +
         '<th class="center" colspan="2">수정</th>' +
+        '<th class="center" colspan="2">수기</th>' +    
         '<th class="note" rowspan="2">특이사항</th>' +
       '</tr>';
 function metricThPlain(label){
@@ -258,6 +257,7 @@ function metricThPlain(label){
       '<tr class="thead2">' +
         '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
         '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수기
       '</tr>';
 
     const body = sorted.map(r=>{
@@ -274,22 +274,20 @@ function metricThPlain(label){
         '<tr>' +
           `<td class="center">${esc(cells[0])}</td>` +
           `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
-
           `<td class="center metric">${esc(cells[6])}</td>` +
           `<td class="center metric">${esc(cells[7])}</td>` +
           `<td class="center metric">${esc(cells[8])}</td>` +
           `<td class="center metric">${esc(cells[9])}</td>` +
           `<td class="center metric">${esc(cells[10])}</td>` +
-          `<td class="center metric">${esc(cells[12])}</td>` + // P 먼저
-          `<td class="center metric">${esc(cells[11])}</td>` + // O 다음
-          `<td class="center metric">${esc(cells[13])}</td>` + // Q
-          `<td class="center metric">${esc(cells[14])}</td>` + // R
-          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>` +
-
-         `<td class="note">${linkify(cells[15])}</td>` +
+          `<td class="center metric">${esc(cells[12])}</td>` + // P (주휴)
+          `<td class="center metric">${esc(cells[11])}</td>` + // O (유급)
+          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>` +  // 비콘 출근
+          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>` +  // 비콘 퇴근
+          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>` +  // 수정 출근
+          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>` +  // 수정 퇴근
+          `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` + // 수기 출근 (Q)
+          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>`   // 수기 퇴근 (R)
+          `<td class="note">${linkify(cells[15])}</td>` +
         '</tr>'
       );
     }).join('');
