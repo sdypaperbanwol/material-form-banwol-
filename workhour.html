@@ -24,16 +24,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 .tblwrap{
   position:relative;              /* sticky 기준 */
   overflow:auto; -webkit-overflow-scrolling:touch;
-  /* max-height:75vh;  ← 삭제 */
-  height:75vh;                    /* 내부 스크롤 강제 */
+  max-height:75vh;
   --head1h:28px;                  /* JS로 실제 높이 보정 */
 }
-table{width:100%;border-collapse:separate;border-spacing:0;position:relative;} /* sticky 레이어 안정화 */
+table{width:100%;border-collapse:separate;border-spacing:0;}
 
 /* ===== 헤더(상단 고정) ===== */
 thead th{
   position:-webkit-sticky; position:sticky;
-  background:#fbfbfd; background-clip:padding-box; top:0;   /* 기본 top=0 */
+  background:#fbfbfd; background-clip:padding-box;
   font-weight:700; white-space:pre-line;
   border-top:1px solid var(--line);
   border-bottom:1px solid var(--line);
@@ -125,10 +124,8 @@ th.freezeL, td.freezeL{
   box-shadow:2px 0 0 rgba(0,0,0,.06);
   border-right:1px solid var(--line); /* 우측 경계선 유지 */
 }
-thead th.freezeL{
-  top:0; z-index:12; background:#fbfbfd; /* 교차 셀 우선 레이어 */
-}
-thead th.freezeL, thead tr.thead1 th.freezeL{top:0} /* 우선순위 안전핀 */
+thead th.freezeL{ top:0; z-index:10; }
+tbody td.freezeL{ z-index:9; }
 
 /* === ✅ 빨간 테두리: 메트릭(정규~유급)만 적용 === */
 .g-metric.g-start{border-left:2px solid #ef4444 !important}
