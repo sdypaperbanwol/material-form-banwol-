@@ -168,8 +168,14 @@ tbody td{font-size:13px}
   const emp=q.get('emp')||'';
   const sig=q.get('sig')||'';
 
-  const COL={ DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
-              J:9, K:10, L:11, M:12, N:13, O:14, P:15, NOTE_U:20 };
+ const COL={ DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
+ J:9, K:10, L:11, M:12, N:13, O:14, P:15, Q:16, R:17, NOTE_U:20 };
+      // ↑ GAS_URL 아래 아무데나
+const EXTRA_HEADERS = {
+  Q: 'Q헤더',   // ← 여기 원하는 이름
+  R: 'R헤더',   // ← 여기 원하는 이름
+};
+
 
   (async function load(){
     if(!emp){ return showError('잘못된 접근(emp 누락)'); }
@@ -233,10 +239,20 @@ tbody td{font-size:13px}
         metricTh('휴연',sum.N) +
         metricTh('주휴',sum.P) +
         metricTh('유급',sum.O) +     
+        metricThPlain(EXTRA_HEADERS.Q) +
+        metricThPlain(EXTRA_HEADERS.R) +
         '<th class="center" colspan="2">비콘</th>' +
         '<th class="center" colspan="2">수정</th>' +
         '<th class="note" rowspan="2">특이사항</th>' +
       '</tr>';
+function metricThPlain(label){
+  return (
+    `<th class="center metric" rowspan="2">
+       <span class="full">${esc(label)}</span>
+       <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
+     </th>`
+  );
+}
 
     const headRow2 =
       '<tr class="thead2">' +
@@ -251,7 +267,8 @@ tbody td{font-size:13px}
         safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
         hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
         hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
-        safe(r[COL.NOTE_U])
+        hideZero(r[COL.Q]), hideZero(r[COL.R]),
+       safe(r[COL.NOTE_U])
       ];
       return (
         '<tr>' +
@@ -265,12 +282,14 @@ tbody td{font-size:13px}
           `<td class="center metric">${esc(cells[10])}</td>` +
           `<td class="center metric">${esc(cells[12])}</td>` + // P 먼저
           `<td class="center metric">${esc(cells[11])}</td>` + // O 다음
+          `<td class="center metric">${esc(cells[13])}</td>` + // Q
+          `<td class="center metric">${esc(cells[14])}</td>` + // R
           `<td class="center time-col">${cellOrNbsp(cells[2])}</td>` +
           `<td class="center time-col">${cellOrNbsp(cells[3])}</td>` +
           `<td class="center time-col">${cellOrNbsp(cells[4])}</td>` +
           `<td class="center time-col">${cellOrNbsp(cells[5])}</td>` +
 
-          `<td class="note">${linkify(cells[13])}</td>` +
+         `<td class="note">${linkify(cells[15])}</td>` +
         '</tr>'
       );
     }).join('');
