@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+<title>개인 근태 조회</title>
+<style>
+:root{--ink:#222;--muted:#666;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--shadow:0 6px 18px rgba(0,0,0,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
+.wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.err{padding:14px 16px;border-left:4px solid #ef4444;background:#fff0f0;color:#991b1b;margin-bottom:12px}
+.top{display:grid;gap:12px;margin-bottom:16px}
+.zcard{padding:12px 14px}
+.profile{padding:16px;display:flex;justify-content:space-between;gap:16px}
+.h1{margin:0 0 4px;font-size:18px}
+.meta{color:var(--muted);font-size:13px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
+.right{color:#666;font-size:12px}
+
+/* 표 컨테이너: sticky 기준 */
+.tblwrap{
+  position:relative;
+  overflow:auto; -webkit-overflow-scrolling:touch;
+  max-height:75vh;
+  --head1h:28px;
+}
+table{width:100%;border-collapse:separate;border-spacing:0}
+
+/* ===== 헤더(상단 고정) ===== */
+thead th{
+  position:-webkit-sticky; position:sticky;
+  background:#fbfbfd; background-clip:padding-box;
+  font-weight:700; white-space:pre-line;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  padding:6px 6px; line-height:1.1; font-size:13px;
+  z-index:12;
+}
+thead th:last-child{border-right:1px solid var(--line)}
+thead tr.thead1 th{top:0; z-index:14}
+thead tr.thead2 th{top:var(--head1h); z-index:14}
+
+/* 바디 */
+tbody td{
+  padding:8px 8px; white-space:pre-line;
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  background:#fff;
+}
+tbody td:last-child{border-right:1px solid var(--line)}
+tbody tr:nth-child(odd) td{background:#fcfcff}
+
+th.center,td.center{text-align:center}
+
+/* ====== 메트릭 헤더(정/규 등) 반응형 축약 ====== */
+@media (max-width:640px){
+  th.metric .full{display:none!important}
+  th.metric .two{display:inline-grid!important;grid-auto-rows:auto;gap:2px;line-height:1;text-align:center}
+  th.metric .two .t,th.metric .two .b{display:block}
+  th.metric{min-width:34px;max-width:38px;padding-top:8px;padding-bottom:8px}
+  th.metric .subsum{font-size:10px;margin-top:2px}
+  td.metric{font-size:12px;padding:6px 4px}
+}
+th.metric .full{display:inline}
+th.metric .two{display:none}
+.subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
+
+/* ====== 근무형태(E열) ====== */
+th.type-col .t-full{display:inline}
+th.type-col .t-two{display:none}
+@media (max-width:640px){
+  th.type-col .t-full{display:none}
+  th.type-col .t-two{display:inline-block;line-height:1.05;text-align:center}
+}
+td.type-cell{font-size:13px;line-height:1.2;text-align:center}
+td.type-cell .type-full{display:inline}
+td.type-cell .type-two{display:none}
+@media (max-width:640px){
+  td.type-cell{font-size:11px;line-height:1.1;padding:5px 4px;text-align:center}
+  td.type-cell .type-full{display:none}
+  td.type-cell .type-two{
+    display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;
+    white-space:normal;text-align:center
+  }
+}
+
+/* 칸 폭 */
+th.type-col,td.type-cell{min-width:110px}
+@media (max-width:640px){
+  th.type-col, td.type-cell { min-width:60px; }
+}
+th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
+@media (max-width:640px){
+  th.time-col,td.time-col{min-width:44px;width:44px;padding:4px 2px;font-size:11px;white-space:nowrap}
+}
+
+/* === 모바일 특이사항 폭 보장 === */
+@media (max-width:640px){
+  th.note,td.note{
+    min-width:320px !important;
+    white-space:normal !important;
+    word-break:break-word;
+  }
+}
+
+/* ==== 로딩 오버레이 ==== */
+.loading{position:fixed; inset:0; background:rgba(255,255,255,.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:saturate(180%) blur(2px)}
+.loading.show{display:flex}
+.loading-box{display:flex;flex-direction:column;align-items:center}
+.spinner{width:44px;height:44px;border-radius:50%;border:3px solid #dbeafe;border-top-color:#2563eb;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading .msg{margin-top:12px;color:#374151;font-weight:600}
+
+/* === ✅ 왼쪽 고정(날짜 열 값들) === */
+th.freezeL, td.freezeL{
+  position:-webkit-sticky; position:sticky;
+  left:0;
+  background:#fff;
+  z-index:9;
+  box-shadow:2px 0 0 rgba(0,0,0,.06);
+  border-right:1px solid var(--line);
+}
+thead th.freezeL{ top:0; z-index:18; }
+
+@media (max-width:640px){
+  td.freezeL{ font-size:11px; padding:4px 2px; white-space:nowrap; }
+}
+
+/* === ✅ 좌상단 모서리(날짜 헤더): 행+열 모두 고정 === */
+th.freezeTL{
+  position:-webkit-sticky; position:sticky;
+  top:0; left:0; background:#fbfbfd; z-index:30;
+  box-shadow:2px 0 0 rgba(0,0,0,.06), 0 2px 0 rgba(0,0,0,.06);
+  border-right:1px solid var(--line); border-bottom:1px solid var(--line);
+}
+
+/* === ✅ 빨간 테두리: 메트릭(정규~유급)만 적용 === */
+.g-metric.g-start{border-left:2px solid #ef4444 !important}
+.g-metric.g-end{border-right:2px solid #ef4444 !important}
+thead tr.thead1 th.g-metric{border-top:2px solid #ef4444 !important}
+tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="error" class="card err" style="display:none"></div>
+    <div class="top" id="zbox"></div>
+    <div class="card profile" id="pbox" style="display:none">
+      <div>
+        <div class="h1" id="pname"></div>
+        <div class="meta" id="pmeta"></div>
+      </div>
+      <div class="right" id="pupdated"></div>
+    </div>
+    <div class="card tblwrap" id="tblwrap"></div>
+  </div>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading" class="loading">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div class="msg">로딩 중입니다...</div>
+    </div>
+  </div>
+
+<script>
+  const GAS_URL='https://script.google.com/macros/s/AKfycby4KI3JpQkxJQefGkqmE0bvn5cPofPyf5tpFKMK50NawGeCFCmjbthp8H813B-5dHCebw/exec'; // 배포 URL로 교체
+
+  const q=new URLSearchParams(location.search);
+  const emp=q.get('emp')||'';
+  const sig=q.get('sig')||'';
+  const legacy=q.get('legacy')==='1' ? '1' : '0'; // A/B 강제 플래그
+
+  // 동적 컬럼 맵 (백엔드가 내려주면 덮어씀)
+  let COL = {
+    DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
+    J:9, K:10, L:11, M:12, N:13, O:14, P:15, Q:16, R:17, NOTE_U:20
+  };
+
+  (async function load(){
+    if(!emp){ return showError('잘못된 접근(emp 누락)'); }
+    showLoading(true);
+    try{
+      const res=await fetch(GAS_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({action:'workhour_read',emp,sig,legacy})
+      });
+      const txt = await res.text();
+      let data;
+      try{ data = JSON.parse(txt) }catch(_){
+        throw new Error('응답 JSON 파싱 실패 – 백엔드 응답 확인 필요');
+      }
+      if(!data||!data.ok) throw new Error(data&&data.error||'BAD_PAYLOAD');
+      render(data);
+    }catch(e){
+      const map={'BAD_SIGNATURE':'서명 오류(BAD_SIGNATURE)','NOT_FOUND':'대상자 없음(NOT_FOUND)','BAD_PAYLOAD':'데이터 로드 실패'};
+      showError(map[e.message]||('네트워크/요청 오류: '+e.message));
+      console.error('[workhour_read] error:', e);
+    }finally{
+      showLoading(false);
+    }
+  })();
+
+  function render(res){
+    if (res.colmap) COL = res.colmap; // ★ 동적 컬럼 맵 적용
+
+    const z=(res.zHeader||[]).filter(v=>!looksLikeSecret(v));
+    document.getElementById('zbox').innerHTML=z.map(v=>'<div class="zcard">'+esc(v||'')+'</div>').join('');
+
+    const p=res.person||{};
+    const age = res.cacheAgeSec ? ` · 데이터기준 ${res.cacheAgeSec}s 전 (${esc(res.mode||'')})` : '';
+    document.getElementById('pname').innerHTML=
+      `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
+    document.getElementById('pmeta').textContent=
+      `연락처: ${p.tel||'-'} · 파트: ${p.part||'-'} · 직책: ${p.role||'-'}${age}`;
+    document.getElementById('pupdated').textContent=res.updated||'';
+    document.getElementById('pbox').style.display='';
+
+    buildTable(res.rows||[]);
+  }
+
+  function buildTable(rows){
+    const box=document.getElementById('tblwrap');
+    if(!rows.length){
+      box.innerHTML='<div style="padding:28px;color:#666">표시할 데이터 없음</div>';
+      return;
+    }
+
+    const sorted=[...rows].sort((a,b)=>String(a[COL.DATE]||'2100-12-31').localeCompare(String(b[COL.DATE]||'2100-12-31')));
+
+    const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
+    sorted.forEach(r=>{
+      sum.J+=toNum(r[COL.J]); sum.K+=toNum(r[COL.K]); sum.L+=toNum(r[COL.L]);
+      sum.M+=toNum(r[COL.M]); sum.N+=toNum(r[COL.N]); sum.O+=toNum(r[COL.O]); sum.P+=toNum(r[COL.P]);
+    });
+
+    const headRow1 =
+      '<tr class="thead1">' +
+        '<th class="center freezeTL" rowspan="2">날짜</th>' +
+        '<th class="type-col" rowspan="2">' +
+          '<span class="t-full">근무 형태</span>' +
+          '<span class="t-two">근무<br>형태</span>' +
+        '</th>' +
+        metricThC('정규',sum.J,'g-metric g-start') +
+        metricThC('연장',sum.K,'g-metric') +
+        metricThC('야근',sum.L,'g-metric') +
+        metricThC('휴일',sum.M,'g-metric') +
+        metricThC('휴연',sum.N,'g-metric') +
+        metricThC('주휴',sum.P,'g-metric') +
+        metricThC('유급',sum.O,'g-metric g-end') +
+        '<th class="center" colspan="2">근무시간</th>' +
+        '<th class="center" colspan="2">비콘</th>' +
+        '<th class="center" colspan="2">수정</th>' +
+        '<th class="note" rowspan="2">특이사항</th>' +
+      '</tr>';
+
+    const headRow2 =
+      '<tr class="thead2">' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+      '</tr>';
+
+    const body = sorted.map(r=>{
+      const cells=[
+        safe(r[COL.DATE]), safe(r[COL.TYPE]),
+        safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
+        safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
+        hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
+        hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
+        hideZero(r[COL.Q]), hideZero(r[COL.R]),
+        safe(r[COL.NOTE_U])
+      ];
+      return (
+        '<tr>' +
+          `<td class="center freezeL">${esc(cells[0])}</td>` +
+          `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
+          `<td class="center metric g-metric g-start">${esc(cells[6])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[7])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[8])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[9])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[10])}</td>` +
+          `<td class="center metric g-metric">${esc(cells[12])}</td>` +
+          `<td class="center metric g-metric g-end">${esc(cells[11])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` +
+          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>`  +
+          `<td class="note">${linkify(cells[15])}</td>` +
+        '</tr>'
+      );
+    }).join('');
+
+    document.getElementById('tblwrap').innerHTML =
+      '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
+
+    const fixOffsets = () => {
+      const wrap=document.querySelector('.tblwrap');
+      const row1=wrap?.querySelector('thead tr.thead1');
+      if(!wrap||!row1) return;
+      const h=row1.getBoundingClientRect().height;
+      wrap.style.setProperty('--head1h',h+'px');
+    };
+    fixOffsets();
+    requestAnimationFrame(fixOffsets);
+    window.addEventListener('resize', fixOffsets, {passive:true});
+    window.addEventListener('orientationchange', ()=>setTimeout(fixOffsets, 60), {passive:true});
+  }
+
+  /* === 유틸 & 헬퍼 === */
+  function showLoading(on){
+    const el=document.getElementById('loading');
+    if(!el) return;
+    if(on) el.classList.add('show'); else el.classList.remove('show');
+  }
+  function metricThC(label,total,extraCls=''){
+    return (
+      `<th class="center metric ${extraCls}" rowspan="2">
+         <span class="full">${esc(label)}</span>
+         <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
+         <span class="subsum">(${fmt(total)})</span>
+       </th>`
+    );
+  }
+  function makeTypeHTML(v){
+    const t=(v||'').trim();
+    const clean=t.replace(/\s+/g,'');
+    if(/\(.*\)/.test(clean)){
+      const idx=clean.indexOf('(');
+      const top=clean.slice(0,idx);
+      const bottom=clean.slice(idx);
+      return (
+        `<span class="type-full">${esc(t)}</span>`+
+        `<span class="type-two"><span>${esc(top)}</span><span>${esc(bottom)}</span></span>`
+      );
+    }
+    let twoTop='',twoBottom='';
+    if(clean.length===4){ twoTop=clean.slice(0,2); twoBottom=clean.slice(2,4); }
+    else if(clean.length===2){ twoTop=clean; twoBottom=''; }
+    else { twoTop=clean.length<=3?clean:clean.slice(0,3); twoBottom=clean.length>3?clean.slice(3):''; }
+    return (
+      `<span class="type-full">${esc(t)}</span>`+
+      `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`
+    );
+  }
+  function toNum(v){
+    let s = String(v ?? '').trim();
+    if (!s) return 0;
+    s = s.replace(/\s+/g, '');
+    if (s.includes(',') && !s.includes('.')) s = s.replace(',', '.');
+    s = s.replace(/,/g, '');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+  function fmt(n){ return (Math.round(n*100)/100).toString(); }
+  function hideZero(v){ const t=String(v??'').trim(); return (t===''||/^0+(\.0+)?$/.test(t))?'':t; }
+  function safe(v){ return (v==null)?'':String(v); }
+  function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function looksLikeSecret(v){
+    if(!v) return false;
+    const t=String(v).trim();
+    if(t.includes('::')) return true;
+    if(/^[A-Fa-f0-9]{32,}$/.test(t)) return true;
+    if(/^[A-Za-z0-9_-]{28,}$/.test(t)) return true;
+    return false;
+  }
+  function showError(m){ const e=document.getElementById('error'); e.textContent=m; e.style.display='block'; }
+  function cellOrNbsp(v){ const t=(v==null?'':String(v).trim()); return t===''?'&nbsp;':esc(t); }
+  function linkify(v){
+    const t=(v||'').trim();
+    if(!t) return '';
+    try{ const u=new URL(t); return `<a href="${esc(u.href)}" target="_blank" rel="noopener">${esc(u.href)}</a>`; }
+    catch(_){ return esc(t); }
+  }
+</script>
+</body>
+</html>
