@@ -20,49 +20,41 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-app
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3ff;color:#2651ff;font-weight:600;font-size:12px;margin-left:8px}
 .right{color:#666;font-size:12px}
 
-/* 표 컨테이너: 내부 스크롤 + sticky 헤더 보정 변수 */
+/* 표 컨테이너: 내부 스크롤 + sticky 기준 제공 */
 .tblwrap{
   overflow:auto;
   -webkit-overflow-scrolling:touch;
   max-height:75vh;
-  --head1h:28px;
-  position:relative; /* sticky 기준 명확화 */
+  --head1h:28px;  /* JS로 실제 높이 덮어씀 */
+  position:relative; /* sticky 기준을 이 컨테이너로 고정 */
 }
 table{width:100%;border-collapse:separate;border-spacing:0}
 
-/* 헤더 기본(상단 고정) */
+/* ===== 헤더(상단 고정) ===== */
 thead th{
-  background:#fbfbfd; /* 헤더 고정 시 투명 겹침 방지 */
+  position:-webkit-sticky; position:sticky;
+  background:#fbfbfd; /* 고정 시 겹침 방지 */
   background-clip:padding-box;
-  font-weight:700;
-  white-space:pre-line;
-  border-top:1px solid var(--line);
-  border-bottom:1px solid var(--line);
-  border-left:1px solid var(--line);
-  padding:6px 6px;
-  line-height:1.1;
-  font-size:13px;
-  z-index:5;
-  position:-webkit-sticky; /* iOS */
-  position:sticky;
+  font-weight:700; white-space:pre-line;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-left:1px solid var(--line);
+  padding:6px 6px; line-height:1.1; font-size:13px; z-index:5;
 }
 thead th:last-child{border-right:1px solid var(--line)}
-thead tr.thead1 th{top:0;z-index:6}
-thead tr.thead2 th{top:var(--head1h);z-index:6}
-
-.subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
+thead tr.thead1 th{top:0; z-index:7}
+thead tr.thead2 th{top:var(--head1h); z-index:7}
 
 /* 바디 */
 tbody td{
-  padding:8px 8px;white-space:pre-line;
-  border-bottom:1px solid var(--line);border-left:1px solid var(--line)
+  padding:8px 8px; white-space:pre-line;
+  border-bottom:1px solid var(--line); border-left:1px solid var(--line);
+  background:#fff; /* 고정 셀과 겹침 대비 */
 }
 tbody td:last-child{border-right:1px solid var(--line)}
 tbody tr:nth-child(odd) td{background:#fcfcff}
 
 th.center,td.center{text-align:center}
 
-/* ====== 메트릭 헤더(정/규 등) ====== */
+/* ====== 메트릭 헤더(정/규 등) 반응형 축약 ====== */
 @media (max-width:640px){
   th.metric .full{display:none!important}
   th.metric .two{display:inline-grid!important;grid-auto-rows:auto;gap:2px;line-height:1;text-align:center}
@@ -73,6 +65,8 @@ th.center,td.center{text-align:center}
 }
 th.metric .full{display:inline}
 th.metric .two{display:none}
+
+.subsum{display:block;font-weight:600;color:#3b82f6;margin-top:2px}
 
 /* ====== 근무형태(E열) ====== */
 th.type-col .t-full{display:inline}
@@ -87,10 +81,7 @@ td.type-cell .type-two{display:none}
 @media (max-width:640px){
   td.type-cell{font-size:11px;line-height:1.1;padding:5px 4px;text-align:center}
   td.type-cell .type-full{display:none}
-  td.type-cell .type-two{
-    display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;
-    white-space:normal;text-align:center
-  }
+  td.type-cell .type-two{display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;white-space:normal;text-align:center}
 }
 
 /* 근무형태 칸 폭 */
@@ -105,11 +96,6 @@ th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
   th.time-col,td.time-col{min-width:44px;width:44px;padding:4px 2px;font-size:11px;white-space:nowrap}
 }
 
-/* 특이사항은 모바일에서 가로로 길게 */
-@media (max-width:640px){
-  th.note,td.note{writing-mode:horizontal-tb;min-width:240px}
-}
-
 /* === 본문 셀 폰트크기 통일 === */
 tbody td{font-size:13px}
 @media (max-width:640px){
@@ -118,19 +104,10 @@ tbody td{font-size:13px}
 }
 
 /* ==== 로딩 오버레이 ==== */
-.loading{
-  position:fixed; inset:0;
-  background:rgba(255,255,255,.85);
-  display:none; align-items:center; justify-content:center;
-  z-index:9999; backdrop-filter:saturate(180%) blur(2px);
-}
+.loading{position:fixed; inset:0; background:rgba(255,255,255,.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:saturate(180%) blur(2px)}
 .loading.show{display:flex}
 .loading-box{display:flex;flex-direction:column;align-items:center}
-.spinner{
-  width:44px;height:44px;border-radius:50%;
-  border:3px solid #dbeafe;border-top-color:#2563eb;
-  animation:spin 1s linear infinite
-}
+.spinner{width:44px;height:44px;border-radius:50%;border:3px solid #dbeafe;border-top-color:#2563eb;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading .msg{margin-top:12px;color:#374151;font-weight:600}
 
@@ -138,13 +115,18 @@ tbody td{font-size:13px}
 th.freezeL, td.freezeL{
   position:-webkit-sticky; position:sticky;
   left:0;
-  background:inherit;            /* 홀짝 배경 유지 */
-  z-index:7;                     /* 기본 셀보다 위 */
-  box-shadow:2px 0 0 rgba(0,0,0,.04); /* 경계 느낌 */
+  background:#fff;               /* 고정 셀은 흰 배경으로 명확히 */
+  z-index:9;                     /* 다른 셀보다 위 */
+  box-shadow:2px 0 0 rgba(0,0,0,.05);
 }
-/* 헤더는 위에도 고정되므로 z-index 더 높임 */
-thead th.freezeL{ top:0; z-index:9; }
-tbody td.freezeL{ z-index:8; }
+thead th.freezeL{ top:0; z-index:10; }
+tbody td.freezeL{ z-index:9; }
+
+/* === ✅ 빨간 테두리: 메트릭(정규~유급)만 적용 === */
+.g-metric.g-start{border-left:2px solid #ef4444 !important}
+.g-metric.g-end{border-right:2px solid #ef4444 !important}
+thead tr.thead1 th.g-metric{border-top:2px solid #ef4444 !important}
+tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444 !important}
 </style>
 </head>
 <body>
@@ -235,14 +217,14 @@ tbody td.freezeL{ z-index:8; }
           '<span class="t-full">근무 형태</span>' +
           '<span class="t-two">근무<br>형태</span>' +
         '</th>' +
-        metricTh('정규',sum.J) +
-        metricTh('연장',sum.K) +
-        metricTh('야근',sum.L) +
-        metricTh('휴일',sum.M) +
-        metricTh('휴연',sum.N) +
-        metricTh('주휴',sum.P) +
-        metricTh('유급',sum.O) +
-        '<th class="center" colspan="2">근무시간</th>' +  /* ← "수기" → "근무시간" */
+        metricThC('정규',sum.J,'g-metric g-start') +
+        metricThC('연장',sum.K,'g-metric') +
+        metricThC('야근',sum.L,'g-metric') +
+        metricThC('휴일',sum.M,'g-metric') +
+        metricThC('휴연',sum.N,'g-metric') +
+        metricThC('주휴',sum.P,'g-metric') +
+        metricThC('유급',sum.O,'g-metric g-end') +
+        '<th class="center" colspan="2">근무시간</th>' +
         '<th class="center" colspan="2">비콘</th>' +
         '<th class="center" colspan="2">수정</th>' +
         '<th class="note" rowspan="2">특이사항</th>' +
@@ -272,14 +254,14 @@ tbody td.freezeL{ z-index:8; }
           `<td class="center freezeL">${esc(cells[0])}</td>` +
           `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
           // 메트릭 7개 (정규~유급)
-          `<td class="center metric">${esc(cells[6])}</td>` +   // 정규
-          `<td class="center metric">${esc(cells[7])}</td>` +   // 연장
-          `<td class="center metric">${esc(cells[8])}</td>` +   // 야근
-          `<td class="center metric">${esc(cells[9])}</td>` +   // 휴일
-          `<td class="center metric">${esc(cells[10])}</td>` +  // 휴연
-          `<td class="center metric">${esc(cells[12])}</td>` +  // 주휴
-          `<td class="center metric">${esc(cells[11])}</td>` +  // 유급
-          // 시간 6개 (근무시간~수정)
+          `<td class="center metric g-metric g-start">${esc(cells[6])}</td>` +  // 정규
+          `<td class="center metric g-metric">${esc(cells[7])}</td>` +         // 연장
+          `<td class="center metric g-metric">${esc(cells[8])}</td>` +         // 야근
+          `<td class="center metric g-metric">${esc(cells[9])}</td>` +         // 휴일
+          `<td class="center metric g-metric">${esc(cells[10])}</td>` +        // 휴연
+          `<td class="center metric g-metric">${esc(cells[12])}</td>` +        // 주휴
+          `<td class="center metric g-metric g-end">${esc(cells[11])}</td>` +  // 유급
+          // 시간 6개 (근무시간/비콘/수정)
           `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` + // 근무시간 출근 (Q)
           `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` + // 근무시간 퇴근 (R)
           `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`  + // 비콘 출근 (W_IN)
@@ -296,9 +278,9 @@ tbody td.freezeL{ z-index:8; }
   }
 
   /* === 유틸 & 헬퍼 === */
-  function metricTh(label,total){
+  function metricThC(label,total,extraCls=''){
     return (
-      `<th class="center metric" rowspan="2">
+      `<th class="center metric ${extraCls}" rowspan="2">
          <span class="full">${esc(label)}</span>
          <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
          <span class="subsum">(${fmt(total)})</span>
@@ -306,14 +288,13 @@ tbody td.freezeL{ z-index:8; }
     );
   }
 
-  // 근무형태: 데스크톱 full, 모바일 two (괄호는 아래 줄로)
   function makeTypeHTML(v){
     const t=(v||'').trim();
     const clean=t.replace(/\s+/g,'');
     if(/\(.*\)/.test(clean)){
       const idx=clean.indexOf('(');
       const top=clean.slice(0,idx);
-      const bottom=clean.slice(idx); // 괄호 포함
+      const bottom=clean.slice(idx);
       return (
         `<span class="type-full">${esc(t)}</span>`+
         `<span class="type-two"><span>${esc(top)}</span><span>${esc(bottom)}</span></span>`
