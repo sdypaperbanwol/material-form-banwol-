@@ -358,6 +358,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
   }
 
   // ⬇️ 기존 renderPartDay 전체를 이걸로 교체
+// ⬇️ 이 함수로 교체
 function renderPartDay(payload){
   const C = payload.colmap || COL;
   const rows = payload.rows || [];
@@ -370,7 +371,7 @@ function renderPartDay(payload){
   // 집계(정규~유급/주휴)
   const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
   rows.forEach(rowObj=>{
-    const r = rowObj.cells || rowObj; // 신/구 포맷 호환
+    const r = rowObj.cells || rowObj;
     sum.J+=toNum(r[C.J]); sum.K+=toNum(r[C.K]); sum.L+=toNum(r[C.L]);
     sum.M+=toNum(r[C.M]); sum.N+=toNum(r[C.N]); sum.O+=toNum(r[C.O]); sum.P+=toNum(r[C.P]);
   });
@@ -402,21 +403,45 @@ function renderPartDay(payload){
       '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수정
     '</tr>';
 
+  // 시간 문자열 판별(예: 8:05, 08:05, 8시05분, 0805 등)
+  const looksTime = (v)=>{
+    const t=String(v||'').trim();
+    if(!t) return false;
+    return /^([01]?\d|2[0-3]):[0-5]\d$/.test(t)      // 8:05, 18:30
+        || /^([01]?\d|2[0-3])시[0-5]?\d?분?$/.test(t) // 8시5분, 8시
+        || /^([01]?\d|2[0-3])[0-5]\d$/.test(t);      // 805, 0830
+  };
+
   const body = rows.map(rowObj=>{
     const name = safe(rowObj.__NAME || '');
-    const r = rowObj.cells || rowObj; // 배열 본문
+    const r = rowObj.cells || rowObj;
 
-    // ✅ 의미기반 매핑(헷갈림 방지)
+    // 원시값
+    const wInRaw = r[C.W_IN],  wOutRaw = r[C.W_OUT]; // 근무시간(원래 기대)
+    const bInRaw = r[C.Q],     bOutRaw = r[C.R];      // 비콘(원래 기대)
+    const mInRaw = r[C.M_IN],  mOutRaw = r[C.M_OUT];  // 수정
+
+    // 행별 자동 보정: 어느 쪽이 "시간처럼" 보이는지 판단
+    const wLooks = looksTime(wInRaw) || looksTime(wOutRaw);
+    const bLooks = looksTime(bInRaw) || looksTime(bOutRaw);
+
+    // 기본은 (근무시간= W_IN/OUT, 비콘= Q/R)
+    let wIn = wInRaw,  wOut = wOutRaw;
+    let bIn = bInRaw,  bOut = bOutRaw;
+
+    // 만약 W 쪽이 시간처럼 안 보이고, Q/R이 시간처럼 보이면 스왑
+    if (!wLooks && bLooks) {
+      wIn = bInRaw; wOut = bOutRaw;
+      bIn = wInRaw; bOut = wOutRaw;
+    }
+
     const vals = {
       type: safe(r[C.TYPE]),
       j: hideZero(r[C.J]), k: hideZero(r[C.K]), l: hideZero(r[C.L]),
       m: hideZero(r[C.M]), n: hideZero(r[C.N]), p: hideZero(r[C.P]), o: hideZero(r[C.O]),
-      // 근무시간
-      wIn:  safe(r[C.W_IN]),  wOut:  safe(r[C.W_OUT]),
-      // 비콘
-      bIn:  hideZero(r[C.Q]), bOut:  hideZero(r[C.R]),
-      // 수정
-      mIn:  safe(r[C.M_IN]),  mOut:  safe(r[C.M_OUT]),
+      wIn: safe(wIn),  wOut: safe(wOut),
+      bIn: hideZero(bIn), bOut: hideZero(bOut),
+      mIn: safe(mInRaw),  mOut: safe(mOutRaw),
       note: safe(r[C.NOTE_U]),
     };
 
@@ -431,7 +456,7 @@ function renderPartDay(payload){
         `<td class="center metric g-metric">${esc(vals.n)}</td>` +
         `<td class="center metric g-metric">${esc(vals.p)}</td>` +
         `<td class="center metric g-metric g-end">${esc(vals.o)}</td>` +
-        // === 출력 순서 헤더와 동일하게 ===
+        // === 헤더 순서대로 출력 ===
         // 근무시간
         `<td class="center time-col">${cellOrNbsp(vals.wIn)}</td>` +
         `<td class="center time-col">${cellOrNbsp(vals.wOut)}</td>` +
@@ -451,6 +476,7 @@ function renderPartDay(payload){
 
   fixStickyOffsets('#ptbl');
 }
+
 
 
   /* =============== 공통 유틸 =============== */
