@@ -112,7 +112,8 @@ th.time-col,td.time-col{min-width:50px;width:50px;text-align:center}
 .loading.show{display:flex}
 .loading-box{display:flex;flex-direction:column;align-items:center}
 .spinner{width:44px;height:44px;border-radius:50%;border:3px solid #dbeafe;border-top-color:#2563eb;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spin{to{transform:rotate(360deg)}
+}
 .loading .msg{margin-top:12px;color:#374151;font-weight:600}
 
 /* 왼쪽 고정 */
@@ -320,17 +321,18 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
         metricThC('휴연',sum.N,'g-metric') +
         metricThC('주휴',sum.P,'g-metric') +
         metricThC('유급',sum.O,'g-metric g-end') +
-        '<th class="center" colspan="2">근무시간</th>' +
+        /* ✅ 라벨 스왑: 비콘 → 근무시간 */
         '<th class="center" colspan="2">비콘</th>' +
+        '<th class="center" colspan="2">근무시간</th>' +
         '<th class="center" colspan="2">수정</th>' +
         '<th class="note" rowspan="2">특이사항</th>' +
       '</tr>';
 
     const headRow2 =
       '<tr class="thead2">' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 비콘(먼저)
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 근무시간(그다음)
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수정
       '</tr>';
 
     const body = sorted.map(r=>{
@@ -346,11 +348,11 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
           `<td class="center metric g-metric">${esc(v.n)}</td>` +
           `<td class="center metric g-metric">${esc(v.p)}</td>` +
           `<td class="center metric g-metric g-end">${esc(v.o)}</td>` +
-          // === 근무시간 → 비콘 → 수정 ===
-          `<td class="center time-col">${cellOrNbsp(v.wIn)}</td>` +
-          `<td class="center time-col">${cellOrNbsp(v.wOut)}</td>` +
+          /* ✅ 출력 순서 스왑: 비콘 → 근무시간 → 수정 */
           `<td class="center time-col">${cellOrNbsp(v.bIn)}</td>` +
           `<td class="center time-col">${cellOrNbsp(v.bOut)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.wIn)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.wOut)}</td>` +
           `<td class="center time-col">${cellOrNbsp(v.mIn)}</td>` +
           `<td class="center time-col">${cellOrNbsp(v.mOut)}</td>` +
           `<td class="note">${linkify(v.note)}</td>` +
@@ -445,17 +447,18 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
         metricThC('휴연',sum.N,'g-metric') +
         metricThC('주휴',sum.P,'g-metric') +
         metricThC('유급',sum.O,'g-metric g-end') +
-        '<th class="center" colspan="2">근무시간</th>' +
+        /* ✅ 라벨 스왑: 비콘 → 근무시간 */
         '<th class="center" colspan="2">비콘</th>' +
+        '<th class="center" colspan="2">근무시간</th>' +
         '<th class="center" colspan="2">수정</th>' +
         '<th class="note" rowspan="2">특이사항</th>' +
       '</tr>';
 
     const headRow2 =
       '<tr class="thead2">' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 비콘(먼저)
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 근무시간(그다음)
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수정
       '</tr>';
 
     const body = rows.map(rowObj=>{
@@ -474,11 +477,11 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
           `<td class="center metric g-metric">${esc(v.n)}</td>` +
           `<td class="center metric g-metric">${esc(v.p)}</td>` +
           `<td class="center metric g-metric g-end">${esc(v.o)}</td>` +
-          // === 근무시간 → 비콘 → 수정 ===
-          `<td class="center time-col">${cellOrNbsp(v.wIn)}</td>` +
-          `<td class="center time-col">${cellOrNbsp(v.wOut)}</td>` +
+          /* ✅ 출력 순서 스왑: 비콘 → 근무시간 → 수정 */
           `<td class="center time-col">${cellOrNbsp(v.bIn)}</td>`  +
           `<td class="center time-col">${cellOrNbsp(v.bOut)}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(v.wIn)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.wOut)}</td>` +
           `<td class="center time-col">${cellOrNbsp(v.mIn)}</td>`  +
           `<td class="center time-col">${cellOrNbsp(v.mOut)}</td>`  +
           `<td class="note">${linkify(v.note)}</td>` +
