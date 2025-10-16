@@ -175,7 +175,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
   </div>
 
 <script>
-  // 배포 URL로 교체
+  /* ===================== 설정/쿼리 ===================== */
   const GAS_URL='https://script.google.com/macros/s/AKfycbx1kIMY_49TLMKsefFCRJTKLseblboUgA9ENBFUQ5FQbW-4JCXRW7pLRd5337q-0zOxTQ/exec';
 
   const q=new URLSearchParams(location.search);
@@ -186,7 +186,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
   const psig=q.get('psig')||'';
   const qdate=q.get('date')||'';
 
-  // 개인용 동적 컬럼 맵 (백엔드가 내려주면 덮어씀)
+  // 백엔드 덮어쓰기 전 기본 맵
   let COL = {
     DATE:1, TYPE:4, W_IN:5, W_OUT:6, M_IN:7, M_OUT:8,
     J:9, K:10, L:11, M:12, N:13, O:14, P:15, Q:16, R:17, NOTE_U:20
@@ -198,7 +198,68 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
     await loadPersonal();
   })();
 
-  /* ================= 개인 모드 ================= */
+  /* ===================== 공통 헬퍼 ===================== */
+
+  // 시간 문자열 감지 (HH:MM, HH:MM:SS, HHMM, HH.MM, 8시5분, 8시, AM/PM)
+  function looksTime(v){
+    const t=String(v||'').trim();
+    if(!t) return false;
+    if (/^([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(t)) return true;
+    if (/^([01]?\d|2[0-3])[.:][0-5]\d$/.test(t)) return true;
+    if (/^([01]?\d|2[0-3])[0-5]\d$/.test(t)) return true;
+    if (/^([01]?\d|2[0-3])\s*시(\s*[0-5]?\d\s*분?)?$/.test(t)) return true;
+    if (/^(am|pm)\s*([01]?\d):[0-5]\d(:[0-5]\d)?$/i.test(t)) return true;
+    if (/^([01]?\d):[0-5]\d(:[0-5]\d)?\s*(am|pm)$/i.test(t)) return true;
+    return false;
+  }
+
+  // 한 행의 값을 추출하고, 근무시간-비콘 자동 보정(필요 시)까지 적용
+  function extractRowVals(r, C, autoSwap=true){
+    // 원시값
+    const raw = {
+      date: safe(r[C.DATE]),
+      type: safe(r[C.TYPE]),
+      j: hideZero(r[C.J]), k: hideZero(r[C.K]), l: hideZero(r[C.L]),
+      m: hideZero(r[C.M]), n: hideZero(r[C.N]), p: hideZero(r[C.P]), o: hideZero(r[C.O]),
+      wIn: r[C.W_IN],  wOut: r[C.W_OUT],   // 근무시간(기대)
+      bIn: r[C.Q],     bOut: r[C.R],       // 비콘(기대)
+      mIn: r[C.M_IN],  mOut: r[C.M_OUT],   // 수정
+      note: safe(r[C.NOTE_U]),
+    };
+
+    let wIn = raw.wIn, wOut = raw.wOut, bIn = raw.bIn, bOut = raw.bOut;
+    if (autoSwap){
+      const wLooks = looksTime(raw.wIn) || looksTime(raw.wOut);
+      const bLooks = looksTime(raw.bIn) || looksTime(raw.bOut);
+      // 근무시간 칸이 비고 비콘 칸에 시간처럼 보이면 스왑
+      if (!wLooks && bLooks) {
+        wIn = raw.bIn; wOut = raw.bOut;
+        bIn = raw.wIn; bOut = raw.wOut;
+      }
+    }
+
+    return {
+      date: raw.date,
+      type: raw.type,
+      j: raw.j, k: raw.k, l: raw.l, m: raw.m, n: raw.n, p: raw.p, o: raw.o,
+      wIn: safe(wIn), wOut: safe(wOut),
+      bIn: hideZero(bIn), bOut: hideZero(bOut),
+      mIn: safe(raw.mIn), mOut: safe(raw.mOut),
+      note: raw.note
+    };
+  }
+
+  function metricThC(label,total,extraCls=''){
+    return (
+      `<th class="center metric ${extraCls}" rowspan="2">
+         <span class="full">${esc(label)}</span>
+         <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
+         <span class="subsum">(${fmt(total)})</span>
+       </th>`
+    );
+  }
+
+  /* ===================== 개인 모드 ===================== */
   async function loadPersonal(){
     showLoading(true);
     try{
@@ -273,33 +334,26 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
       '</tr>';
 
     const body = sorted.map(r=>{
-      const cells=[
-        safe(r[COL.DATE]), safe(r[COL.TYPE]),
-        safe(r[COL.W_IN]), safe(r[COL.W_OUT]),
-        safe(r[COL.M_IN]), safe(r[COL.M_OUT]),
-        hideZero(r[COL.J]), hideZero(r[COL.K]), hideZero(r[COL.L]),
-        hideZero(r[COL.M]), hideZero(r[COL.N]), hideZero(r[COL.O]), hideZero(r[COL.P]),
-        hideZero(r[COL.Q]), hideZero(r[COL.R]),
-        safe(r[COL.NOTE_U])
-      ];
+      const v = extractRowVals(r, COL, /*autoSwap=*/true); // 개인도 동일 로직 적용
       return (
         '<tr>' +
-          `<td class="center freezeL">${esc(cells[0])}</td>` +
-          `<td class="type-cell">${makeTypeHTML(cells[1])}</td>` +
-          `<td class="center metric g-metric g-start">${esc(cells[6])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[7])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[8])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[9])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[10])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[12])}</td>` +
-          `<td class="center metric g-metric g-end">${esc(cells[11])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[13])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[14])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[2])}</td>`  +
-          `<td class="center time-col">${cellOrNbsp(cells[3])}</td>`  +
-          `<td class="center time-col">${cellOrNbsp(cells[4])}</td>`  +
-          `<td class="center time-col">${cellOrNbsp(cells[5])}</td>`  +
-          `<td class="note">${linkify(cells[15])}</td>` +
+          `<td class="center freezeL">${esc(safe(r[COL.DATE]))}</td>` +
+          `<td class="type-cell">${makeTypeHTML(v.type)}</td>` +
+          `<td class="center metric g-metric g-start">${esc(v.j)}</td>` +
+          `<td class="center metric g-metric">${esc(v.k)}</td>` +
+          `<td class="center metric g-metric">${esc(v.l)}</td>` +
+          `<td class="center metric g-metric">${esc(v.m)}</td>` +
+          `<td class="center metric g-metric">${esc(v.n)}</td>` +
+          `<td class="center metric g-metric">${esc(v.p)}</td>` +
+          `<td class="center metric g-metric g-end">${esc(v.o)}</td>` +
+          // === 근무시간 → 비콘 → 수정 ===
+          `<td class="center time-col">${cellOrNbsp(v.wIn)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.wOut)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.bIn)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.bOut)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.mIn)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.mOut)}</td>` +
+          `<td class="note">${linkify(v.note)}</td>` +
         '</tr>'
       );
     }).join('');
@@ -310,7 +364,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
     fixStickyOffsets('.tblwrap');
   }
 
-  /* ================= 파트 모드 ================= */
+  /* ===================== 파트 모드 ===================== */
   async function initPartMode(){
     document.getElementById('pname').innerHTML=
       `${esc(part)} <span class="badge">파트</span>`;
@@ -357,129 +411,88 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
     }
   }
 
-  // ⬇️ 기존 renderPartDay 전체를 이걸로 교체
-// ⬇️ 이 함수로 교체
-function renderPartDay(payload){
-  const C = payload.colmap || COL;
-  const rows = payload.rows || [];
+  function renderPartDay(payload){
+    // 디버깅용 훅(콘솔에서 window.__last_part_payload로 확인 가능)
+    window.__last_part_payload = payload;
 
-  if(!rows.length){
-    document.getElementById('ptbl').innerHTML='<div style="padding:16px;color:#666">데이터 없음</div>';
-    return;
-  }
+    const C = payload.colmap || COL;
+    const rows = payload.rows || [];
 
-  // 집계(정규~유급/주휴)
-  const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
-  rows.forEach(rowObj=>{
-    const r = rowObj.cells || rowObj;
-    sum.J+=toNum(r[C.J]); sum.K+=toNum(r[C.K]); sum.L+=toNum(r[C.L]);
-    sum.M+=toNum(r[C.M]); sum.N+=toNum(r[C.N]); sum.O+=toNum(r[C.O]); sum.P+=toNum(r[C.P]);
-  });
-
-  const headRow1 =
-    '<tr class="thead1">' +
-      '<th class="center freezeTL" rowspan="2">이름</th>' +
-      '<th class="type-col" rowspan="2">' +
-        '<span class="t-full">근무 형태</span>' +
-        '<span class="t-two">근무<br>형태</span>' +
-      '</th>' +
-      metricThC('정규',sum.J,'g-metric g-start') +
-      metricThC('연장',sum.K,'g-metric') +
-      metricThC('야근',sum.L,'g-metric') +
-      metricThC('휴일',sum.M,'g-metric') +
-      metricThC('휴연',sum.N,'g-metric') +
-      metricThC('주휴',sum.P,'g-metric') +
-      metricThC('유급',sum.O,'g-metric g-end') +
-      '<th class="center" colspan="2">근무시간</th>' +
-      '<th class="center" colspan="2">비콘</th>' +
-      '<th class="center" colspan="2">수정</th>' +
-      '<th class="note" rowspan="2">특이사항</th>' +
-    '</tr>';
-
-  const headRow2 =
-    '<tr class="thead2">' +
-      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 근무시간
-      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 비콘
-      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수정
-    '</tr>';
-
-  // 시간 문자열 판별(예: 8:05, 08:05, 8시05분, 0805 등)
-  const looksTime = (v)=>{
-    const t=String(v||'').trim();
-    if(!t) return false;
-    return /^([01]?\d|2[0-3]):[0-5]\d$/.test(t)      // 8:05, 18:30
-        || /^([01]?\d|2[0-3])시[0-5]?\d?분?$/.test(t) // 8시5분, 8시
-        || /^([01]?\d|2[0-3])[0-5]\d$/.test(t);      // 805, 0830
-  };
-
-  const body = rows.map(rowObj=>{
-    const name = safe(rowObj.__NAME || '');
-    const r = rowObj.cells || rowObj;
-
-    // 원시값
-    const wInRaw = r[C.W_IN],  wOutRaw = r[C.W_OUT]; // 근무시간(원래 기대)
-    const bInRaw = r[C.Q],     bOutRaw = r[C.R];      // 비콘(원래 기대)
-    const mInRaw = r[C.M_IN],  mOutRaw = r[C.M_OUT];  // 수정
-
-    // 행별 자동 보정: 어느 쪽이 "시간처럼" 보이는지 판단
-    const wLooks = looksTime(wInRaw) || looksTime(wOutRaw);
-    const bLooks = looksTime(bInRaw) || looksTime(bOutRaw);
-
-    // 기본은 (근무시간= W_IN/OUT, 비콘= Q/R)
-    let wIn = wInRaw,  wOut = wOutRaw;
-    let bIn = bInRaw,  bOut = bOutRaw;
-
-    // 만약 W 쪽이 시간처럼 안 보이고, Q/R이 시간처럼 보이면 스왑
-    if (!wLooks && bLooks) {
-      wIn = bInRaw; wOut = bOutRaw;
-      bIn = wInRaw; bOut = wOutRaw;
+    if(!rows.length){
+      document.getElementById('ptbl').innerHTML='<div style="padding:16px;color:#666">데이터 없음</div>';
+      return;
     }
 
-    const vals = {
-      type: safe(r[C.TYPE]),
-      j: hideZero(r[C.J]), k: hideZero(r[C.K]), l: hideZero(r[C.L]),
-      m: hideZero(r[C.M]), n: hideZero(r[C.N]), p: hideZero(r[C.P]), o: hideZero(r[C.O]),
-      wIn: safe(wIn),  wOut: safe(wOut),
-      bIn: hideZero(bIn), bOut: hideZero(bOut),
-      mIn: safe(mInRaw),  mOut: safe(mOutRaw),
-      note: safe(r[C.NOTE_U]),
-    };
+    // 집계(정규~유급/주휴)
+    const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
+    rows.forEach(rowObj=>{
+      const r = rowObj.cells || rowObj;
+      sum.J+=toNum(r[C.J]); sum.K+=toNum(r[C.K]); sum.L+=toNum(r[C.L]);
+      sum.M+=toNum(r[C.M]); sum.N+=toNum(r[C.N]); sum.O+=toNum(r[C.O]); sum.P+=toNum(r[C.P]);
+    });
 
-    return (
-      '<tr>' +
-        `<td class="center freezeL">${esc(name)}</td>` +
-        `<td class="type-cell">${makeTypeHTML(vals.type)}</td>` +
-        `<td class="center metric g-metric g-start">${esc(vals.j)}</td>` +
-        `<td class="center metric g-metric">${esc(vals.k)}</td>` +
-        `<td class="center metric g-metric">${esc(vals.l)}</td>` +
-        `<td class="center metric g-metric">${esc(vals.m)}</td>` +
-        `<td class="center metric g-metric">${esc(vals.n)}</td>` +
-        `<td class="center metric g-metric">${esc(vals.p)}</td>` +
-        `<td class="center metric g-metric g-end">${esc(vals.o)}</td>` +
-        // === 헤더 순서대로 출력 ===
-        // 근무시간
-        `<td class="center time-col">${cellOrNbsp(vals.wIn)}</td>` +
-        `<td class="center time-col">${cellOrNbsp(vals.wOut)}</td>` +
-        // 비콘
-        `<td class="center time-col">${cellOrNbsp(vals.bIn)}</td>`  +
-        `<td class="center time-col">${cellOrNbsp(vals.bOut)}</td>`  +
-        // 수정
-        `<td class="center time-col">${cellOrNbsp(vals.mIn)}</td>`  +
-        `<td class="center time-col">${cellOrNbsp(vals.mOut)}</td>`  +
-        `<td class="note">${linkify(vals.note)}</td>` +
-      '</tr>'
-    );
-  }).join('');
+    const headRow1 =
+      '<tr class="thead1">' +
+        '<th class="center freezeTL" rowspan="2">이름</th>' +
+        '<th class="type-col" rowspan="2">' +
+          '<span class="t-full">근무 형태</span>' +
+          '<span class="t-two">근무<br>형태</span>' +
+        '</th>' +
+        metricThC('정규',sum.J,'g-metric g-start') +
+        metricThC('연장',sum.K,'g-metric') +
+        metricThC('야근',sum.L,'g-metric') +
+        metricThC('휴일',sum.M,'g-metric') +
+        metricThC('휴연',sum.N,'g-metric') +
+        metricThC('주휴',sum.P,'g-metric') +
+        metricThC('유급',sum.O,'g-metric g-end') +
+        '<th class="center" colspan="2">근무시간</th>' +
+        '<th class="center" colspan="2">비콘</th>' +
+        '<th class="center" colspan="2">수정</th>' +
+        '<th class="note" rowspan="2">특이사항</th>' +
+      '</tr>';
 
-  document.getElementById('ptbl').innerHTML =
-    '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
+    const headRow2 =
+      '<tr class="thead2">' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
+      '</tr>';
 
-  fixStickyOffsets('#ptbl');
-}
+    const body = rows.map(rowObj=>{
+      const name = safe(rowObj.__NAME || '');
+      const r = rowObj.cells || rowObj;
+      const v = extractRowVals(r, C, /*autoSwap=*/true); // 파트도 동일 로직 적용
 
+      return (
+        '<tr>' +
+          `<td class="center freezeL">${esc(name)}</td>` +
+          `<td class="type-cell">${makeTypeHTML(v.type)}</td>` +
+          `<td class="center metric g-metric g-start">${esc(v.j)}</td>` +
+          `<td class="center metric g-metric">${esc(v.k)}</td>` +
+          `<td class="center metric g-metric">${esc(v.l)}</td>` +
+          `<td class="center metric g-metric">${esc(v.m)}</td>` +
+          `<td class="center metric g-metric">${esc(v.n)}</td>` +
+          `<td class="center metric g-metric">${esc(v.p)}</td>` +
+          `<td class="center metric g-metric g-end">${esc(v.o)}</td>` +
+          // === 근무시간 → 비콘 → 수정 ===
+          `<td class="center time-col">${cellOrNbsp(v.wIn)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.wOut)}</td>` +
+          `<td class="center time-col">${cellOrNbsp(v.bIn)}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(v.bOut)}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(v.mIn)}</td>`  +
+          `<td class="center time-col">${cellOrNbsp(v.mOut)}</td>`  +
+          `<td class="note">${linkify(v.note)}</td>` +
+        '</tr>'
+      );
+    }).join('');
 
+    document.getElementById('ptbl').innerHTML =
+      '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
 
-  /* =============== 공통 유틸 =============== */
+    fixStickyOffsets('#ptbl');
+  }
+
+  /* ===================== 공통 유틸 ===================== */
   async function apiPost(obj){
     const res = await fetch(GAS_URL,{
       method:'POST',
@@ -496,15 +509,7 @@ function renderPartDay(payload){
     if(!el) return;
     if(on) el.classList.add('show'); else el.classList.remove('show');
   }
-  function metricThC(label,total,extraCls=''){
-    return (
-      `<th class="center metric ${extraCls}" rowspan="2">
-         <span class="full">${esc(label)}</span>
-         <span class="two"><span class="t">${esc(label[0]||'')}</span><span class="b">${esc(label[1]||'')}</span></span>
-         <span class="subsum">(${fmt(total)})</span>
-       </th>`
-    );
-  }
+
   function makeTypeHTML(v){
     const t=(v||'').trim();
     const clean=t.replace(/\s+/g,'');
@@ -526,6 +531,7 @@ function renderPartDay(payload){
       `<span class="type-two"><span>${esc(twoTop)}</span>${twoBottom?`<span>${esc(twoBottom)}</span>`:''}</span>`
     );
   }
+
   function toNum(v){
     let s = String(v ?? '').trim();
     if (!s) return 0;
