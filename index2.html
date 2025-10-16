@@ -27,7 +27,6 @@
       z-index: 9999;
       color: white; font-size: 1.4rem;
     }
-    /* submitOverlay만 위로 */
     #submitOverlay { z-index: 10050; }
     #initialLoadingOverlay { display:flex; }
     #submitOverlay span {
@@ -154,7 +153,7 @@
 </div>
 
 <script>
-  const endpoint = 'https://script.google.com/macros/s/AKfycbz0whnb8bx52KggRV-TJGvYUZBcKIG6ruKu9tkKwqMw42zBFEv8tk4oYBSEZEEy1uL0/exec';
+  const endpoint = 'https://script.google.com/macros/s/AKfycbz8id3shVH1ardwmzhm7MhGj4QnykLFpe61HK36i7WadxKpe952jkCHW1ei7PCH2SU1/exec';
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -489,10 +488,14 @@
     selectedBtn.classList.add('selected');
   }
 
-  // Z1 모달 (달력/다이어리) — 공지 동적 반영
+  // Z1 모달 (달력/다이어리) — 헤더/공지 동적 반영
   function openZ1Modal() {
-    // 선택된 Z코드(Z1/Z3)에 맞춰 공지 주입 (없으면 Z1 공지 fallback)
-    const code = (selected.zcode || 'Z1').toUpperCase();
+    const code = (selected.zcode || 'Z1').toUpperCase(); // Z1 또는 Z3
+    // 헤더
+    const headerEl = document.getElementById('z1Header');
+    const headerTxt = zMeta?.[code]?.header || '📅 정기 신청 (Z1/Z3)';
+    if (headerEl) headerEl.innerText = headerTxt;
+    // 안내문
     const notice = zMeta?.[code]?.notice || zMeta?.Z1?.notice || '';
     renderNoticeTo(document.getElementById('z1RuleText'), notice);
 
@@ -617,7 +620,11 @@
   }
 
   function openZ2UniformModal() {
-    // 🔔 Z2 공지 동적 반영
+    // 헤더
+    const headerEl = document.getElementById('z2Header');
+    const headerTxt = zMeta?.Z2?.header || '👕 유니폼 일괄 신청 (Z2)';
+    if (headerEl) headerEl.innerText = headerTxt;
+    // 안내문
     const z2Notice = zMeta?.Z2?.notice || '';
     renderNoticeTo(document.getElementById('z2RuleText'), z2Notice);
 
@@ -744,7 +751,7 @@
 <div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
   <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;width:90%;position:relative;">
     <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
-    <h3>📅 정기 신청 (Z1/Z3)</h3>
+    <h3 id="z1Header">📅 정기 신청 (Z1/Z3)</h3>
     <p id="z1RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;"></p>
     <div id="z1-item-list"></div>
     <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
@@ -756,11 +763,10 @@
 <div id="modalZ2Uniform" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
   <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:800px;width:95%;max-height:80vh;overflow:auto;position:relative;">
     <button onclick="closeZ2UniformModal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
-    <h3>👕 유니폼 일괄 신청 (Z2)</h3>
+    <h3 id="z2Header">👕 유니폼 일괄 신청 (Z2)</h3>
     <p id="z2RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;"></p>
     <div id="z2UniformContent"></div>
     <textarea id="z2UniformRemarks" placeholder="공통 비고 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
-    <!-- 중복 방지용 id -->
     <button id="z2UniformSubmitBtn" onclick="submitZ2Uniform()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
