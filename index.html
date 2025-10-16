@@ -24,11 +24,10 @@
       width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.5);
       display: none; justify-content: center; align-items: center;
-      z-index: 9999; /* 기본값 */
+      z-index: 9999;
       color: white; font-size: 1.4rem;
     }
-    /* submitOverlay만 위로 */
-    #submitOverlay { z-index: 10050; } /* ✅ 모달(9999) 위로 */
+    #submitOverlay { z-index: 10050; }
     #initialLoadingOverlay { display:flex; }
     #submitOverlay span {
       background:white; padding:20px 40px; border-radius:12px; font-size:1.3rem;
@@ -154,7 +153,7 @@
 </div>
 
 <script>
-  const endpoint = 'https://script.google.com/macros/s/AKfycbxKupzVug38O4VGdytSgyISSxiAFJzpoyD8Xj888P1fqWXyj455WWZ7ohSebytZ3Wor/exec';
+  const endpoint = 'https://script.google.com/macros/s/AKfycbwAZDOQJ_b6IDOr6kTh7hSgp8Q4UYMKHjUtMuEHygPEqxVbaB0mNmI-O5wtx3HWelbe/exec';
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -162,6 +161,14 @@
   let itemList = [];
   let selected = { category: '', type: '', size: '', zcode: '' };
   let quantityValue = "";
+
+  /* 공지 렌더 유틸 */
+  function renderNoticeTo(el, text) {
+    if (!el) return;
+    const safe = String(text || '').replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))
+                                   .replace(/\n/g, '<br/>');
+    el.innerHTML = safe;
+  }
 
   // 로그인
   function handleLogin() {
@@ -217,22 +224,21 @@
           const btn = document.createElement('button');
           const activationCode = data[cat].activation; // Y/Z1/Z2/Z3
 
-          // Z계열: Z1 제목 라벨 사용
-          btn.innerText = (activationCode && activationCode.startsWith('Z'))
-            ? (zMeta?.Z1?.title || cat)
-            : cat;
-
-          if (activationCode?.startsWith("Z")) {
+          if (activationCode && activationCode.startsWith('Z')) {
+            const code = activationCode.toUpperCase();
+            const titleFromMeta = zMeta?.[code]?.title;
+            btn.innerText = titleFromMeta || cat;
             btn.style.backgroundColor = "#fff9c4";
             btn.style.color = "#f57f17";
             btn.style.fontWeight = "bold";
             btn.style.border = "1px solid #fbc02d";
+          } else {
+            btn.innerText = cat;
           }
 
           btn.onclick = () => {
-            selected.category = cat;               // 라벨
-            selected.zcode = activationCode || ''; // Z1/Z2/Z3 또는 ''
-
+            selected.category = cat;
+            selected.zcode = activationCode || '';
             if (activationCode === "Z2") openZ2UniformModal();
             else if (activationCode === "Z1" || activationCode === "Z3") openZ1Modal();
             else { updateSelection(container, btn); selectCategory(cat); }
@@ -305,7 +311,7 @@
 
     const item = {
       name: `${loginInfo.empId} ${loginInfo.empName}`,
-      category: selected.category,   // 라벨(일반품목)
+      category: selected.category,
       subcategory: selected.type,
       size: selected.size,
       quantity: requestedQty,
@@ -352,7 +358,7 @@
 
         const payload = {
           name: item.name,
-          category: item.category, // 라벨
+          category: item.category,
           subcategory: item.subcategory,
           size: item.size,
           quantity,
@@ -409,7 +415,7 @@
   });
   document.getElementById("closeModal").addEventListener("click", () => { document.getElementById("photoModal").style.display = "none"; });
 
-  // 공지 로딩
+  // 공지 로딩(상단 박스)
   document.addEventListener("DOMContentLoaded", () => {
     const box = document.getElementById("inlineNoticeBox");
     const loading = document.getElementById("initialLoadingOverlay");
@@ -481,8 +487,15 @@
     selectedBtn.classList.add('selected');
   }
 
-  // Z1 모달 (달력/다이어리)
+  // Z1/Z3 모달 — 헤더/공지 동적 반영, 수량 제한 없음
   function openZ1Modal() {
+    const code = (selected.zcode || 'Z1').toUpperCase();
+    const headerEl = document.getElementById('z1Header');
+    const headerTxt = zMeta?.[code]?.header || '📅 정기 신청 (Z1/Z3)';
+    if (headerEl) headerEl.innerText = headerTxt;
+    const notice = zMeta?.[code]?.notice || zMeta?.Z1?.notice || '';
+    renderNoticeTo(document.getElementById('z1RuleText'), notice);
+
     const listContainer = document.getElementById("z1-item-list");
     listContainer.innerHTML = "";
     const stockMap = itemData[selected.category]?.stockMap || {};
@@ -501,7 +514,7 @@
       const inputId = `z1_qty_${name}`;
       row.innerHTML = `
         <div style="flex:1;">${name}</div>
-        <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
+        <input type="number" id="${inputId}" placeholder="수량" min="0" value="1"
                style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
       `;
       listContainer.appendChild(row);
@@ -511,7 +524,7 @@
   }
   function closeZ1Modal() { document.getElementById("modalZ1").style.display = "none"; }
 
-  // ★ Z1/Z3 즉시 전송
+  // ★ Z1/Z3 즉시 전송 (수량 제한 없이)
   async function submitZ1() {
     const remarks = document.getElementById("z1-remarks").value;
     const stockMap = itemData[selected.category]?.stockMap || {};
@@ -524,8 +537,8 @@
       if (qty > 0) {
         itemsToSubmit.push({
           name: `${loginInfo.empId} ${loginInfo.empName}`,
-          category: selected.category,           // 라벨
-          zcode: (selected.zcode || 'Z1'),       // 코드
+          category: selected.category,
+          zcode: (selected.zcode || 'Z1'),
           subcategory: name,
           size: "개",
           quantity: qty,
@@ -544,8 +557,8 @@
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             name: item.name,
-            category: item.category, // 라벨
-            zcode: item.zcode,       // Z1/Z3
+            category: item.category,
+            zcode: item.zcode,
             subcategory: item.subcategory,
             size: item.size,
             quantity: item.quantity,
@@ -564,46 +577,15 @@
     }
   }
 
-  // Z2 유니폼 모달 + 한도
-  const Z2_TYPES_ORDER = ["상의", "하의", "긴팔티", "반팔티"];
-  const Z2_LIMITS = { "상의":2, "하의":2, "티셔츠합산":2, T_TYPES:["반팔티","긴팔티"] };
-
-  function z2SumByType(type) {
-    const inputs = document.querySelectorAll('#z2UniformContent input[data-z2-type]');
-    let sum = 0; inputs.forEach(inp => { if (inp.dataset.z2Type === type) sum += parseInt(inp.value || "0", 10); });
-    return sum;
-  }
-  function z2SumTshirts() { return Z2_LIMITS.T_TYPES.reduce((acc, t) => acc + z2SumByType(t), 0); }
-  function z2EnforceLimits(e) {
-    const inp = e.target;
-    const type = inp.dataset.z2Type;
-    let val = parseInt(inp.value || "0", 10);
-    if (isNaN(val) || val < 0) val = 0;
-    inp.value = val;
-
-    if (type === "상의" || type === "하의") {
-      const limit = Z2_LIMITS[type];
-      const sum = z2SumByType(type);
-      if (sum > limit) inp.value = Math.max(0, val - (sum - limit));
-    }
-    if (Z2_LIMITS.T_TYPES.includes(type)) {
-      const tSum = z2SumTshirts();
-      if (tSum > Z2_LIMITS["티셔츠합산"]) inp.value = Math.max(0, val - (tSum - Z2_LIMITS["티셔츠합산"]));
-    }
-  }
-  function z2ValidateBeforeSubmit() {
-    const errs = [];
-    if (z2SumByType("상의") > Z2_LIMITS["상의"]) errs.push(`상의는 최대 ${Z2_LIMITS["상의"]}벌`);
-    if (z2SumByType("하의") > Z2_LIMITS["하의"]) errs.push(`하의는 최대 ${Z2_LIMITS["하의"]}벌`);
-    if (z2SumTshirts() > Z2_LIMITS["티셔츠합산"]) errs.push(`남자 티(반팔/긴팔 합산)는 최대 ${Z2_LIMITS["티셔츠합산"]}벌`);
-    if (errs.length) {
-      alert("❌ 신청 한도를 초과했습니다.\n- " + errs.join("\n- "));
-      return false;
-    }
-    return true;
-  }
-
+  // Z2 유니폼 모달 — 수량 제한/검증 없음
   function openZ2UniformModal() {
+    const headerEl = document.getElementById('z2Header');
+    const headerTxt = zMeta?.Z2?.header || '👕 유니폼 일괄 신청 (Z2)';
+    if (headerEl) headerEl.innerText = headerTxt;
+
+    const z2Notice = zMeta?.Z2?.notice || '';
+    renderNoticeTo(document.getElementById('z2RuleText'), z2Notice);
+
     const wrap = document.getElementById("z2UniformContent");
     wrap.innerHTML = "";
     const stockMap = itemData[selected.category]?.stockMap || {};
@@ -614,13 +596,11 @@
       byType[type].push({ size, stock: stockMap[k] });
     });
 
-    (Z2_TYPES_ORDER.filter(t => byType[t])).forEach(type => {
+    (Object.keys(byType)).forEach(type => {
       const sizes = byType[type].sort((a,b) => a.size.localeCompare(b.size, 'ko', {numeric:true}));
-
       const section = document.createElement("div");
       section.style.marginBottom = "16px";
       section.innerHTML = `<h4 style="text-align:left;margin:8px 0;">${type}</h4>`;
-
       const table = document.createElement("table"); table.style.width="100%"; table.style.borderCollapse="collapse";
       const thead = document.createElement("thead"); const tbody = document.createElement("tbody");
       thead.innerHTML = `
@@ -638,8 +618,6 @@
             <input type="number" min="0" value="0" data-z2-type="${type}" data-z2-size="${size}"
                    style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
           </td>`;
-        const inputEl = row.querySelector('input[type="number"]');
-        inputEl.addEventListener('input', z2EnforceLimits);
         tbody.appendChild(row);
       });
       table.appendChild(thead); table.appendChild(tbody);
@@ -650,11 +628,9 @@
   }
   function closeZ2UniformModal() { document.getElementById("modalZ2Uniform").style.display = "none"; }
 
-  /* ✅ Z2 유니폼 — 중복 클릭 방지 + 중앙 “신청 중입니다..” 오버레이 */
   let isSubmittingZ2Uniform = false;
 
   async function submitZ2Uniform() {
-    if (!z2ValidateBeforeSubmit()) return;
     if (isSubmittingZ2Uniform) return;
 
     const inputs = document.querySelectorAll('#z2UniformContent input[type="number"][data-z2-type][data-z2-size]');
@@ -666,10 +642,10 @@
       if (qty > 0) {
         itemsToSubmit.push({
           name: `${loginInfo.empId} ${loginInfo.empName}`,
-          category: selected.category,       // 라벨 (예: ■ 하계 유니폼 신청)
-          zcode: (selected.zcode || 'Z2'),   // 코드
-          subcategory: inp.dataset.z2Type,   // 상의/하의/긴팔티/반팔티
-          size: inp.dataset.z2Size,          // XL(100), 30, ...
+          category: selected.category,
+          zcode: (selected.zcode || 'Z2'),
+          subcategory: inp.dataset.z2Type,
+          size: inp.dataset.z2Size,
           quantity: qty,
           remarks
         });
@@ -695,13 +671,13 @@
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             name: item.name,
-            category: item.category, // 라벨
-            zcode: item.zcode,       // Z2
+            category: item.category,
+            zcode: item.zcode,
             subcategory: item.subcategory,
             size: item.size,
             quantity: item.quantity,
             remarks: item.remarks,
-            지급수량: item.quantity, // 필요 시 재고반영 로직으로 교체 가능
+            지급수량: item.quantity,
             구매요청수량: 0
           })
         });
@@ -727,10 +703,8 @@
 <div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
   <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;width:90%;position:relative;">
     <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
-    <h3>📅 정기 신청 (Z1/Z3)</h3>
-    <p style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;">
-      <b>📌 신청 안내</b><br/>벽걸이 + 탁상 = 최대 2개<br/>다이어리 = 0개 또는 1개 신청 가능
-    </p>
+    <h3 id="z1Header">📅 정기 신청 (Z1/Z3)</h3>
+    <p id="z1RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;"></p>
     <div id="z1-item-list"></div>
     <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
     <button onclick="submitZ1()" style="margin-top:10px;">✅ 신청하기</button>
@@ -741,23 +715,13 @@
 <div id="modalZ2Uniform" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
   <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:800px;width:95%;max-height:80vh;overflow:auto;position:relative;">
     <button onclick="closeZ2UniformModal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
-    <h3>👕 유니폼 일괄 신청 (Z2)</h3>
-    <p id="z2RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;">
-      <b>📌 신청 안내</b><br/>상의 = 최대 2벌<br/>하의 = 최대 2벌<br/>남자 티(반팔/긴팔 합산) = 최대 2벌
-    </p>
+    <h3 id="z2Header">👕 유니폼 일괄 신청 (Z2)</h3>
+    <p id="z2RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;"></p>
     <div id="z2UniformContent"></div>
     <textarea id="z2UniformRemarks" placeholder="공통 비고 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
-    <!-- 중복 방지용 id -->
     <button id="z2UniformSubmitBtn" onclick="submitZ2Uniform()" style="margin-top:10px;">✅ 신청하기</button>
   </div>
 </div>
 
 </body>
 </html>
-
-
-
-
-
-
-
