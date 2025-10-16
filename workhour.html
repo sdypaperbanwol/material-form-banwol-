@@ -78,17 +78,18 @@ th.metric .two{display:none}
 th.type-col .t-full{display:inline}
 th.type-col .t-two{display:none}
 @media (max-width:640px){
-  th.type-col .t-full{display:none}
-  th.type-col .t-two{display:inline-block;line-height:1.05;text-align:center}
+  th.type-col .t-full{display:none !important}
+  th.type-col .t-two{display:inline-block !important; line-height:1.05; text-align:center}
 }
 td.type-cell{font-size:13px;line-height:1.2;text-align:center}
 td.type-cell .type-full{display:inline}
 td.type-cell .type-two{display:none}
 @media (max-width:640px){
   td.type-cell{font-size:11px;line-height:1.1;padding:5px 4px;text-align:center}
+  td.type-cell .type-full{display:none !important}
   td.type-cell .type-two{
-    display:inline-grid;grid-auto-rows:auto;gap:1px;line-height:1.0;
-    white-space:normal;text-align:center
+    display:inline-grid !important;
+    grid-auto-rows:auto;gap:1px;line-height:1.0;white-space:normal;text-align:center
   }
 }
 
