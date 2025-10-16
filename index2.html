@@ -153,7 +153,7 @@
 </div>
 
 <script>
-  const endpoint = 'https://script.google.com/macros/s/AKfycbz8id3shVH1ardwmzhm7MhGj4QnykLFpe61HK36i7WadxKpe952jkCHW1ei7PCH2SU1/exec';
+  const endpoint = 'https://script.google.com/macros/s/AKfycbzokFR4vv8KkdO0cUoPPLzXg_UokOsCnR4FW2h6UwvyR6AkzQBoyAhhdi02urr5jKs/exec';
 
   let loginInfo = { empId: '', empName: '' };
   let itemData = {};
@@ -162,7 +162,7 @@
   let selected = { category: '', type: '', size: '', zcode: '' };
   let quantityValue = "";
 
-  /* ---------- 공지 렌더 유틸: 안전치환 + 줄바꿈 ---------- */
+  /* 공지 렌더 유틸 */
   function renderNoticeTo(el, text) {
     if (!el) return;
     const safe = String(text || '').replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))
@@ -224,9 +224,8 @@
           const btn = document.createElement('button');
           const activationCode = data[cat].activation; // Y/Z1/Z2/Z3
 
-          // Z계열: 각 코드별 제목 사용 (없으면 기존 라벨)
           if (activationCode && activationCode.startsWith('Z')) {
-            const code = activationCode.toUpperCase(); // Z1/Z2/Z3
+            const code = activationCode.toUpperCase();
             const titleFromMeta = zMeta?.[code]?.title;
             btn.innerText = titleFromMeta || cat;
             btn.style.backgroundColor = "#fff9c4";
@@ -238,8 +237,8 @@
           }
 
           btn.onclick = () => {
-            selected.category = cat;               // 라벨
-            selected.zcode = activationCode || ''; // Z1/Z2/Z3 또는 ''
+            selected.category = cat;
+            selected.zcode = activationCode || '';
             if (activationCode === "Z2") openZ2UniformModal();
             else if (activationCode === "Z1" || activationCode === "Z3") openZ1Modal();
             else { updateSelection(container, btn); selectCategory(cat); }
@@ -488,14 +487,12 @@
     selectedBtn.classList.add('selected');
   }
 
-  // Z1 모달 (달력/다이어리) — 헤더/공지 동적 반영
+  // Z1/Z3 모달 — 헤더/공지 동적 반영, 수량 제한 없음
   function openZ1Modal() {
-    const code = (selected.zcode || 'Z1').toUpperCase(); // Z1 또는 Z3
-    // 헤더
+    const code = (selected.zcode || 'Z1').toUpperCase();
     const headerEl = document.getElementById('z1Header');
     const headerTxt = zMeta?.[code]?.header || '📅 정기 신청 (Z1/Z3)';
     if (headerEl) headerEl.innerText = headerTxt;
-    // 안내문
     const notice = zMeta?.[code]?.notice || zMeta?.Z1?.notice || '';
     renderNoticeTo(document.getElementById('z1RuleText'), notice);
 
@@ -517,7 +514,7 @@
       const inputId = `z1_qty_${name}`;
       row.innerHTML = `
         <div style="flex:1;">${name}</div>
-        <input type="number" id="${inputId}" placeholder="수량" min="0" max="2" value="1"
+        <input type="number" id="${inputId}" placeholder="수량" min="0" value="1"
                style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
       `;
       listContainer.appendChild(row);
@@ -527,7 +524,7 @@
   }
   function closeZ1Modal() { document.getElementById("modalZ1").style.display = "none"; }
 
-  // ★ Z1/Z3 즉시 전송
+  // ★ Z1/Z3 즉시 전송 (수량 제한 없이)
   async function submitZ1() {
     const remarks = document.getElementById("z1-remarks").value;
     const stockMap = itemData[selected.category]?.stockMap || {};
@@ -580,51 +577,12 @@
     }
   }
 
-  // Z2 유니폼 모달 + 한도
-  const Z2_TYPES_ORDER = ["상의", "하의", "긴팔티", "반팔티"];
-  const Z2_LIMITS = { "상의":2, "하의":2, "티셔츠합산":2, T_TYPES:["반팔티","긴팔티"] };
-
-  function z2SumByType(type) {
-    const inputs = document.querySelectorAll('#z2UniformContent input[data-z2-type]');
-    let sum = 0; inputs.forEach(inp => { if (inp.dataset.z2Type === type) sum += parseInt(inp.value || "0", 10); });
-    return sum;
-  }
-  function z2SumTshirts() { return Z2_LIMITS.T_TYPES.reduce((acc, t) => acc + z2SumByType(t), 0); }
-  function z2EnforceLimits(e) {
-    const inp = e.target;
-    const type = inp.dataset.z2Type;
-    let val = parseInt(inp.value || "0", 10);
-    if (isNaN(val) || val < 0) val = 0;
-    inp.value = val;
-
-    if (type === "상의" || type === "하의") {
-      const limit = Z2_LIMITS[type];
-      const sum = z2SumByType(type);
-      if (sum > limit) inp.value = Math.max(0, val - (sum - limit));
-    }
-    if (Z2_LIMITS.T_TYPES.includes(type)) {
-      const tSum = z2SumTshirts();
-      if (tSum > Z2_LIMITS["티셔츠합산"]) inp.value = Math.max(0, val - (tSum - Z2_LIMITS["티셔츠합산"]));
-    }
-  }
-  function z2ValidateBeforeSubmit() {
-    const errs = [];
-    if (z2SumByType("상의") > Z2_LIMITS["상의"]) errs.push(`상의는 최대 ${Z2_LIMITS["상의"]}벌`);
-    if (z2SumByType("하의") > Z2_LIMITS["하의"]) errs.push(`하의는 최대 ${Z2_LIMITS["하의"]}벌`);
-    if (z2SumTshirts() > Z2_LIMITS["티셔츠합산"]) errs.push(`남자 티(반팔/긴팔 합산)는 최대 ${Z2_LIMITS["티셔츠합산"]}벌`);
-    if (errs.length) {
-      alert("❌ 신청 한도를 초과했습니다.\n- " + errs.join("\n- "));
-      return false;
-    }
-    return true;
-  }
-
+  // Z2 유니폼 모달 — 수량 제한/검증 없음
   function openZ2UniformModal() {
-    // 헤더
     const headerEl = document.getElementById('z2Header');
     const headerTxt = zMeta?.Z2?.header || '👕 유니폼 일괄 신청 (Z2)';
     if (headerEl) headerEl.innerText = headerTxt;
-    // 안내문
+
     const z2Notice = zMeta?.Z2?.notice || '';
     renderNoticeTo(document.getElementById('z2RuleText'), z2Notice);
 
@@ -638,13 +596,11 @@
       byType[type].push({ size, stock: stockMap[k] });
     });
 
-    (Z2_TYPES_ORDER.filter(t => byType[t])).forEach(type => {
+    (Object.keys(byType)).forEach(type => {
       const sizes = byType[type].sort((a,b) => a.size.localeCompare(b.size, 'ko', {numeric:true}));
-
       const section = document.createElement("div");
       section.style.marginBottom = "16px";
       section.innerHTML = `<h4 style="text-align:left;margin:8px 0;">${type}</h4>`;
-
       const table = document.createElement("table"); table.style.width="100%"; table.style.borderCollapse="collapse";
       const thead = document.createElement("thead"); const tbody = document.createElement("tbody");
       thead.innerHTML = `
@@ -662,8 +618,6 @@
             <input type="number" min="0" value="0" data-z2-type="${type}" data-z2-size="${size}"
                    style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
           </td>`;
-        const inputEl = row.querySelector('input[type="number"]');
-        inputEl.addEventListener('input', z2EnforceLimits);
         tbody.appendChild(row);
       });
       table.appendChild(thead); table.appendChild(tbody);
@@ -674,11 +628,9 @@
   }
   function closeZ2UniformModal() { document.getElementById("modalZ2Uniform").style.display = "none"; }
 
-  /* ✅ Z2 유니폼 — 중복 클릭 방지 + 중앙 “신청 중입니다..” 오버레이 */
   let isSubmittingZ2Uniform = false;
 
   async function submitZ2Uniform() {
-    if (!z2ValidateBeforeSubmit()) return;
     if (isSubmittingZ2Uniform) return;
 
     const inputs = document.querySelectorAll('#z2UniformContent input[type="number"][data-z2-type][data-z2-size]');
