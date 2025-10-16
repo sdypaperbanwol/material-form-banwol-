@@ -357,89 +357,101 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
     }
   }
 
-  function renderPartDay(payload){
-    const C = payload.colmap || COL;
-    const rows = payload.rows || [];
+  // ⬇️ 기존 renderPartDay 전체를 이걸로 교체
+function renderPartDay(payload){
+  const C = payload.colmap || COL;
+  const rows = payload.rows || [];
 
-    if(!rows.length){
-      document.getElementById('ptbl').innerHTML='<div style="padding:16px;color:#666">데이터 없음</div>';
-      return;
-    }
-
-    // 집계(정규~유급/주휴)
-    const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
-    rows.forEach(rowObj=>{
-      const r = rowObj.cells || rowObj; // 신/구 포맷 호환
-      sum.J+=toNum(r[C.J]); sum.K+=toNum(r[C.K]); sum.L+=toNum(r[C.L]);
-      sum.M+=toNum(r[C.M]); sum.N+=toNum(r[C.N]); sum.O+=toNum(r[C.O]); sum.P+=toNum(r[C.P]);
-    });
-
-    const headRow1 =
-      '<tr class="thead1">' +
-        '<th class="center freezeTL" rowspan="2">이름</th>' +
-        '<th class="type-col" rowspan="2">' +
-          '<span class="t-full">근무 형태</span>' +
-          '<span class="t-two">근무<br>형태</span>' +
-        '</th>' +
-        metricThC('정규',sum.J,'g-metric g-start') +
-        metricThC('연장',sum.K,'g-metric') +
-        metricThC('야근',sum.L,'g-metric') +
-        metricThC('휴일',sum.M,'g-metric') +
-        metricThC('휴연',sum.N,'g-metric') +
-        metricThC('주휴',sum.P,'g-metric') +
-        metricThC('유급',sum.O,'g-metric g-end') +
-        '<th class="center" colspan="2">근무시간</th>' +
-        '<th class="center" colspan="2">비콘</th>' +
-        '<th class="center" colspan="2">수정</th>' +
-        '<th class="note" rowspan="2">특이사항</th>' +
-      '</tr>';
-
-    const headRow2 =
-      '<tr class="thead2">' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-        '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' +
-      '</tr>';
-
-    const body = rows.map(rowObj=>{
-      const name = safe(rowObj.__NAME || '');      // 이름은 __NAME
-      const r = rowObj.cells || rowObj;            // 값들은 cells 배열(구버전 호환)
-      const cells=[
-        safe(r[C.TYPE]),
-        hideZero(r[C.J]), hideZero(r[C.K]), hideZero(r[C.L]),
-        hideZero(r[C.M]), hideZero(r[C.N]), hideZero(r[C.P]), hideZero(r[C.O]),
-        hideZero(r[C.Q]), hideZero(r[C.R]),
-        safe(r[C.W_IN]), safe(r[C.W_OUT]),
-        safe(r[C.M_IN]), safe(r[C.M_OUT]),
-        safe(r[C.NOTE_U])
-      ];
-      return (
-        '<tr>' +
-          `<td class="center freezeL">${esc(name)}</td>` +
-          `<td class="type-cell">${makeTypeHTML(cells[0])}</td>` +
-          `<td class="center metric g-metric g-start">${esc(cells[1])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[2])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[3])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[4])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[5])}</td>` +
-          `<td class="center metric g-metric">${esc(cells[6])}</td>` +
-          `<td class="center metric g-metric g-end">${esc(cells[7])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[10])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[11])}</td>` +
-          `<td class="center time-col">${cellOrNbsp(cells[8])}</td>`  +
-          `<td class="center time-col">${cellOrNbsp(cells[9])}</td>`  +
-          `<td class="center time-col">${cellOrNbsp(cells[12])}</td>`  +
-          `<td class="center time-col">${cellOrNbsp(cells[13])}</td>`  +
-          `<td class="note">${linkify(cells[14])}</td>` +
-        '</tr>'
-      );
-    }).join('');
-
-    document.getElementById('ptbl').innerHTML =
-      '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
-
-    fixStickyOffsets('#ptbl');
+  if(!rows.length){
+    document.getElementById('ptbl').innerHTML='<div style="padding:16px;color:#666">데이터 없음</div>';
+    return;
   }
+
+  // 집계(정규~유급/주휴)
+  const sum={J:0,K:0,L:0,M:0,N:0,O:0,P:0};
+  rows.forEach(rowObj=>{
+    const r = rowObj.cells || rowObj; // 신/구 포맷 호환
+    sum.J+=toNum(r[C.J]); sum.K+=toNum(r[C.K]); sum.L+=toNum(r[C.L]);
+    sum.M+=toNum(r[C.M]); sum.N+=toNum(r[C.N]); sum.O+=toNum(r[C.O]); sum.P+=toNum(r[C.P]);
+  });
+
+  const headRow1 =
+    '<tr class="thead1">' +
+      '<th class="center freezeTL" rowspan="2">이름</th>' +
+      '<th class="type-col" rowspan="2">' +
+        '<span class="t-full">근무 형태</span>' +
+        '<span class="t-two">근무<br>형태</span>' +
+      '</th>' +
+      metricThC('정규',sum.J,'g-metric g-start') +
+      metricThC('연장',sum.K,'g-metric') +
+      metricThC('야근',sum.L,'g-metric') +
+      metricThC('휴일',sum.M,'g-metric') +
+      metricThC('휴연',sum.N,'g-metric') +
+      metricThC('주휴',sum.P,'g-metric') +
+      metricThC('유급',sum.O,'g-metric g-end') +
+      '<th class="center" colspan="2">근무시간</th>' +
+      '<th class="center" colspan="2">비콘</th>' +
+      '<th class="center" colspan="2">수정</th>' +
+      '<th class="note" rowspan="2">특이사항</th>' +
+    '</tr>';
+
+  const headRow2 =
+    '<tr class="thead2">' +
+      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 근무시간
+      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 비콘
+      '<th class="center time-col">출근</th><th class="center time-col">퇴근</th>' + // 수정
+    '</tr>';
+
+  const body = rows.map(rowObj=>{
+    const name = safe(rowObj.__NAME || '');
+    const r = rowObj.cells || rowObj; // 배열 본문
+
+    // ✅ 의미기반 매핑(헷갈림 방지)
+    const vals = {
+      type: safe(r[C.TYPE]),
+      j: hideZero(r[C.J]), k: hideZero(r[C.K]), l: hideZero(r[C.L]),
+      m: hideZero(r[C.M]), n: hideZero(r[C.N]), p: hideZero(r[C.P]), o: hideZero(r[C.O]),
+      // 근무시간
+      wIn:  safe(r[C.W_IN]),  wOut:  safe(r[C.W_OUT]),
+      // 비콘
+      bIn:  hideZero(r[C.Q]), bOut:  hideZero(r[C.R]),
+      // 수정
+      mIn:  safe(r[C.M_IN]),  mOut:  safe(r[C.M_OUT]),
+      note: safe(r[C.NOTE_U]),
+    };
+
+    return (
+      '<tr>' +
+        `<td class="center freezeL">${esc(name)}</td>` +
+        `<td class="type-cell">${makeTypeHTML(vals.type)}</td>` +
+        `<td class="center metric g-metric g-start">${esc(vals.j)}</td>` +
+        `<td class="center metric g-metric">${esc(vals.k)}</td>` +
+        `<td class="center metric g-metric">${esc(vals.l)}</td>` +
+        `<td class="center metric g-metric">${esc(vals.m)}</td>` +
+        `<td class="center metric g-metric">${esc(vals.n)}</td>` +
+        `<td class="center metric g-metric">${esc(vals.p)}</td>` +
+        `<td class="center metric g-metric g-end">${esc(vals.o)}</td>` +
+        // === 출력 순서 헤더와 동일하게 ===
+        // 근무시간
+        `<td class="center time-col">${cellOrNbsp(vals.wIn)}</td>` +
+        `<td class="center time-col">${cellOrNbsp(vals.wOut)}</td>` +
+        // 비콘
+        `<td class="center time-col">${cellOrNbsp(vals.bIn)}</td>`  +
+        `<td class="center time-col">${cellOrNbsp(vals.bOut)}</td>`  +
+        // 수정
+        `<td class="center time-col">${cellOrNbsp(vals.mIn)}</td>`  +
+        `<td class="center time-col">${cellOrNbsp(vals.mOut)}</td>`  +
+        `<td class="note">${linkify(vals.note)}</td>` +
+      '</tr>'
+    );
+  }).join('');
+
+  document.getElementById('ptbl').innerHTML =
+    '<table><thead>'+headRow1+headRow2+'</thead><tbody>'+body+'</tbody></table>';
+
+  fixStickyOffsets('#ptbl');
+}
+
 
   /* =============== 공통 유틸 =============== */
   async function apiPost(obj){
