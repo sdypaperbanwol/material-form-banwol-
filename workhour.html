@@ -297,7 +297,7 @@ tbody tr:last-child td.g-metric{border-bottom:2px solid #ef4444!important}
     document.getElementById('zbox').innerHTML=z.map(v=>'<div class="zcard">'+esc(v||'')+'</div>').join('');
 
     const p=res.person||{};
-    const age = res.cacheAgeSec ? ` · 데이터기준 ${res.cacheAgeSec}s 전 (${esc(res.mode||'')})` : '';
+    const age = res.cacheAgeSec ? ` · 데이터기준 ${res.cacheAgeSec}s 전` : '';
     document.getElementById('pname').innerHTML=
       `${esc(p.name||'-')} <span class="badge">사번 ${esc(p.emp||'-')}</span>`;
     document.getElementById('pmeta').textContent=
