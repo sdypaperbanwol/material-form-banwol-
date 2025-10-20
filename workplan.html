@@ -1,4 +1,3 @@
-<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8"/>
@@ -35,7 +34,6 @@ textarea{min-height:92px;resize:vertical}
 .table{width:100%;border-collapse:collapse;border:1px solid var(--line)}
 .table th,.table td{border:1px solid var(--line);padding:8px 10px;font-size:13px;vertical-align:top}
 .table th{background:#fbfbfb}
-.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center}
 .group{border:1px dashed var(--line);border-radius:12px;padding:12px}
 .chkgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 @media(min-width:860px){.chkgrid{grid-template-columns:repeat(4, minmax(0,1fr))}}
@@ -45,8 +43,6 @@ textarea{min-height:92px;resize:vertical}
 .note{background:#fffefd;border-left:4px solid var(--amber);padding:10px 12px;border-radius:8px}
 .ok{padding:10px 12px;border-left:4px solid var(--ok);background:#f0fff4;border-radius:8px}
 .err{padding:10px 12px;border-left:4px solid var(--warn);background:#fff1f1;border-radius:8px}
-hr.sep{height:1px;border:0;background:var(--line);margin:10px 0}
-/* 서명 캔버스 */
 .sig{display:grid;gap:6px}
 .sig canvas{width:100%;height:140px;border:1px solid var(--line);border-radius:8px;background:#fff;touch-action:none}
 </style>
@@ -73,7 +69,7 @@ hr.sep{height:1px;border:0;background:var(--line);margin:10px 0}
     </div>
     <div class="section grid cols-3">
       <div><label class="lbl req">작업 책임자</label><input class="inp" name="책임자" required/></div>
-      <div><label class="lbl req">연락처</label><input class="inp" name="연락처" required placeholder="010-0000-0000" pattern="0\d{1,2}-\d{3,4}-\d{4}"/></div>
+      <div><label class="lbl req">연락처</label><input class="inp" name="연락처" required placeholder="010-0000-0000" pattern="0\\d{1,2}-\\d{3,4}-\\d{4}"/></div>
       <div><label class="lbl">협력업체</label><input class="inp" name="업체"/></div>
     </div>
     <div class="section grid cols-3">
@@ -280,18 +276,17 @@ hr.sep{height:1px;border:0;background:var(--line);margin:10px 0}
 </div>
 
 <script>
-/* === 환경설정: 네가 준 GAS 웹앱 URL === */
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzG7vy6JDEahh0sDu7OTUx_vAyelA8rEfW935F97WJXBSa3ziSDmP_keWXH0fljYOHExA/exec';
+/* === 환경설정: 배포한 GAS 웹앱 /exec URL === */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyGgo6aFF8NErXCFYZObhkwC9gv00AKaKoakslqAjd8kvP8t2HTJeXjC_lvk_fCEmli4Q/exec';
 
 const $ = (s,p=document)=>p.querySelector(s);
 const $$=(s,p=document)=>[...p.querySelectorAll(s)];
-const riskT = $('#riskTable tbody');
-const crewT = $('#crewTable tbody');
-const tbmT  = $('#tbmTable tbody');
-const pv = $('#preview');
-const info = $('#info');
+const riskT = document.querySelector('#riskTable tbody');
+const crewT = document.querySelector('#crewTable tbody');
+const tbmT  = document.querySelector('#tbmTable tbody');
+const pv = document.querySelector('#preview');
+const info = document.querySelector('#info');
 
-/* ---------- 공통 유틸 ---------- */
 function addRow(tbody, cols){
   const tr = document.createElement('tr');
   cols.forEach(html=>{const td=document.createElement('td');td.innerHTML=html;tr.appendChild(td)});
@@ -301,7 +296,6 @@ function addRow(tbody, cols){
   tdDel.appendChild(btn);tr.appendChild(tdDel);tbody.appendChild(tr);return tr;
 }
 
-/* ---------- 3) 위험성 평가 행 ---------- */
 function addRiskRow(){
   addRow(riskT,[
     '<input class="inp" name="risk_공정" placeholder="공정/작업">',
@@ -312,9 +306,8 @@ function addRiskRow(){
     '<input class="inp" name="risk_비고" placeholder="비고">'
   ]);
 }
-$('#addRisk').onclick=addRiskRow; addRiskRow(); addRiskRow();
+document.querySelector('#addRisk').onclick=addRiskRow; addRiskRow(); addRiskRow();
 
-/* ---------- 5) 인원/장비 행 ---------- */
 function addCrewRow(){
   addRow(crewT,[
     '<select class="inp" name="crew_구분"><option>근로자</option><option>장비</option></select>',
@@ -324,9 +317,8 @@ function addCrewRow(){
     '<input class="inp" name="crew_비고" placeholder="비고">'
   ]);
 }
-$('#addCrew').onclick=addCrewRow; addCrewRow();
+document.querySelector('#addCrew').onclick=addCrewRow; addCrewRow();
 
-/* ---------- 6) TBM 행 ---------- */
 function addTBMRow(){
   addRow(tbmT,[
     '<input class="inp" type="date" name="tbm_일자">',
@@ -337,10 +329,10 @@ function addTBMRow(){
     '<input class="inp" name="tbm_조치">'
   ]);
 }
-$('#addTBM').onclick=addTBMRow; addTBMRow();
+document.querySelector('#addTBM').onclick=addTBMRow; addTBMRow();
 
-/* ---------- 사진 미리보기 ---------- */
-$('#photoInput')?.addEventListener('change', (e)=>{
+// 사진 미리보기
+document.querySelector('#photoInput')?.addEventListener('change', (e)=>{
   pv.innerHTML = '';
   const files=[...(e.target.files||[])].slice(0,6);
   files.forEach(f=>{
@@ -348,7 +340,7 @@ $('#photoInput')?.addEventListener('change', (e)=>{
   });
 });
 
-/* ========= 서명패드: 고해상도 + 곡선 보간(부드럽게) ========= */
+// ====== 서명패드: 고해상도 + 곡선 보간 ======
 class SignaturePad {
   constructor(canvas){
     this.c = canvas;
@@ -392,7 +384,6 @@ class SignaturePad {
     this.ctx.beginPath();
     this.ctx.moveTo(cx, cy);
     this.ctx.quadraticCurveTo(p1.x, p1.y, cx2, cy2);
-    // 가벼운 압력 반영(있으면)
     this.ctx.lineWidth = Math.max(1.5, Math.min(3.5, 2.2 * (p.p || 0.5) + 1.2));
     this.ctx.stroke();
   }
@@ -421,7 +412,6 @@ class SignaturePad {
   clear(){ this.ctx.clearRect(0,0,this.c.width,this.c.height); }
   dataURL(){ return this.c.toDataURL('image/png'); }
 }
-// 인스턴스 생성
 const sigs = {};
 ['sigWriter','sigManager','sigSafety','sigEquip','sigEnv'].forEach(id=>{
   const el = document.getElementById(id);
@@ -429,11 +419,10 @@ const sigs = {};
 });
 $$('[data-clear]').forEach(b=>b.addEventListener('click',()=>sigs[b.dataset.clear]?.clear()));
 
-/* ---------- JSON 수집 ---------- */
 function collectForm(){
-  const data={}
-  ;['작업명','작업위치','문서번호','시작','종료','위험등급','책임자','연락처','업체','인원','장비','참조'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value?.trim()||'')
-  ;['작업개요','작업절차','자재장비상세','품질포인트'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value?.trim()||'')
+  const data={};
+  ['작업명','작업위치','문서번호','시작','종료','위험등급','책임자','연락처','업체','인원','장비','참조'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value?.trim()||'');
+  ['작업개요','작업절차','자재장비상세','품질포인트'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value?.trim()||'');
   data.위험성평가=[...riskT.querySelectorAll('tr')].map(tr=>({
     공정:tr.querySelector('[name="risk_공정"]')?.value||'',
     위험원:tr.querySelector('[name="risk_위험원"]')?.value||'',
@@ -441,17 +430,17 @@ function collectForm(){
     개선대책:tr.querySelector('[name="risk_개선대책"]')?.value||'',
     개선후:tr.querySelector('[name="risk_개선후"]')?.value||'',
     비고:tr.querySelector('[name="risk_비고"]')?.value||''
-  }))
-  data.인허가=[...$$('input[name="인허가"]:checked')].map(x=>x.value)
-  data.보호구=[...$$('input[name="보호구"]:checked')].map(x=>x.value)
-  data.안전조치=document.querySelector('textarea[name="안전조치"]')?.value||''
+  }));
+  data.인허가=[...$$('input[name="인허가"]:checked')].map(x=>x.value);
+  data.보호구=[...$$('input[name="보호구"]:checked')].map(x=>x.value);
+  data.안전조치=document.querySelector('textarea[name="안전조치"]')?.value||'';
   data.인원장비=[...crewT.querySelectorAll('tr')].map(tr=>({
     구분:tr.querySelector('[name="crew_구분"]')?.value||'',
     명칭:tr.querySelector('[name="crew_명칭"]')?.value||'',
     연락규격:tr.querySelector('[name="crew_연락규격"]')?.value||'',
     교육점검:tr.querySelector('[name="crew_교육"]')?.value||'',
     비고:tr.querySelector('[name="crew_비고"]')?.value||''
-  }))
+  }));
   data.TBM=[...tbmT.querySelectorAll('tr')].map(tr=>({
     일자:tr.querySelector('[name="tbm_일자"]')?.value||'',
     주제:tr.querySelector('[name="tbm_주제"]')?.value||'',
@@ -459,40 +448,30 @@ function collectForm(){
     참석자:tr.querySelector('[name="tbm_참석자"]')?.value||'',
     결과:tr.querySelector('[name="tbm_결과"]')?.value||'',
     조치:tr.querySelector('[name="tbm_조치"]')?.value||''
-  }))
-  ;['긴급연락망','비상조치','환경대책'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value||'')
-  // 서명(base64)
+  }));
+  ['긴급연락망','비상조치','환경대책'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value||'');
   data.서명={}; Object.keys(sigs).forEach(id=>data.서명[id]=sigs[id].dataURL());
   return data;
 }
 
-/* ---------- JSON 미리보기 ---------- */
-$('#btnExport').onclick=()=>{
+document.querySelector('#btnExport').onclick=()=>{
   const data = collectForm();
   const pretty = JSON.stringify(data,null,2);
   info.innerHTML = '<div class="ok"><b>수집된 JSON</b><pre style="white-space:pre-wrap;font-size:12px;overflow:auto;max-height:300px">'+
     pretty.replace(/[&<>]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[s])) + '</pre></div>';
   window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
 };
-$('#btnScrollTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
 
-/* ---------- 저장(시트로 POST) + 사진 base64 전송 ---------- */
+document.querySelector('#btnScrollTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+
 function fileToBase64(file){
-  return new Promise((res, rej)=>{
-    const r=new FileReader();
-    r.onload=()=>res(r.result);
-    r.onerror=rej;
-    r.readAsDataURL(file);
-  });
+  return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
 }
 
-$('#btnSave').onclick = async () => {
-  if (!GAS_URL || !/^https?:\/\//.test(GAS_URL)) {
-    alert('GAS_URL이 비어있거나 잘못되었습니다.'); return;
-  }
+document.querySelector('#btnSave').onclick = async () => {
+  if (!GAS_URL || !/^https?:\/\//.test(GAS_URL)) { alert('GAS_URL이 비어있거나 잘못되었습니다.'); return; }
   try {
     const payload = collectForm();
-    // 사진 전송 (최대 6장)
     const fi = document.querySelector('#photoInput');
     if (fi && fi.files && fi.files.length) {
       const files = [...fi.files].slice(0, 6);
@@ -502,15 +481,13 @@ $('#btnSave').onclick = async () => {
       }
     }
     const res = await fetch(GAS_URL, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }, // ← 프리플라이트 회피
       body: JSON.stringify(payload)
     });
     const js = await res.json();
-    if (js.ok) {
-      alert('저장 완료! (ID: ' + js.id + ')');
-    } else {
-      alert('저장 실패: ' + (js.error || '원인 미상'));
-    }
+    if (js.ok) { alert('저장 완료! (ID: ' + js.id + ')'); }
+    else { alert('저장 실패: ' + (js.error || '원인 미상')); }
   } catch (e) {
     alert('에러: ' + e.message);
   }
