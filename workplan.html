@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover"/>
+<title>작업계획서 및 인허가 (8장 통합 프론트)</title>
+<style>
+:root{--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--brand:#2563eb;--ok:#16a34a;--warn:#dc2626;--amber:#f59e0b;--shadow:0 10px 30px rgba(0,0,0,.08)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Arial,sans-serif}
+.container{max-width:1120px;margin:28px auto;padding:0 16px}
+.h1{font-size:22px;margin:0 0 10px}
+.sub{color:var(--muted);margin-top:-2px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+.card-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:5}
+.card-hd h2{margin:0;font-size:16px}
+.grid{display:grid;gap:10px}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:1fr 1fr 1fr}
+@media(min-width:860px){.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:repeat(3,1fr)}}
+.section{padding:14px 16px}
+label.lbl{font-weight:600;font-size:13px}
+.req::after{content:" *";color:var(--warn)}
+.inp, select, textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+textarea{min-height:92px;resize:vertical}
+.hint{font-size:12px;color:var(--muted)}
+.row{display:grid;gap:8px}
+.badge{display:inline-block;padding:.2rem .55rem;border:1px solid var(--line);border-radius:999px;font-size:12px;color:var(--muted);background:#fff}
+.actions{display:flex;gap:10px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line);background:#fafafa;position:sticky;bottom:0;z-index:5}
+.btn{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer}
+.btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+.btn.ghost{background:#fff}
+.btn.warn{background:#fff3f3;border-color:#ffe1e1;color:#b91c1c}
+.table{width:100%;border-collapse:collapse;border:1px solid var(--line)}
+.table th,.table td{border:1px solid var(--line);padding:8px 10px;font-size:13px;vertical-align:top}
+.table th{background:#fbfbfb}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center}
+.group{border:1px dashed var(--line);border-radius:12px;padding:12px}
+.chkgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(min-width:860px){.chkgrid{grid-template-columns:repeat(4, minmax(0,1fr))}}
+.preview{display:flex;gap:8px;flex-wrap:wrap}
+.preview img{width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.small{font-size:12px}
+.note{background:#fffefd;border-left:4px solid var(--amber);padding:10px 12px;border-radius:8px}
+.ok{padding:10px 12px;border-left:4px solid var(--ok);background:#f0fff4;border-radius:8px}
+.err{padding:10px 12px;border-left:4px solid var(--warn);background:#fff1f1;border-radius:8px}
+hr.sep{height:1px;border:0;background:var(--line);margin:10px 0}
+/* 서명 캔버스 */
+.sig{display:grid;gap:6px}
+.sig canvas{width:100%;height:140px;border:1px solid var(--line);border-radius:8px;background:#fff;touch-action:none}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="h1">작업계획서 및 인허가 (프론트 · 8장 커버)</h1>
+  <p class="sub">양식 원문(8장)을 섹션으로 구성. 라벨 변경 요청 즉시 반영 가능.</p>
+
+  <!-- 1장. 기본정보 -->
+  <div class="card" id="p1">
+    <div class="card-hd"><h2>1) 기본정보</h2><span class="badge">프로젝트/작업 식별</span></div>
+    <div class="section grid cols-3">
+      <div><label class="lbl req">작업명</label><input class="inp" name="작업명" required placeholder="예: 야적장 바닥 급결 공사"/></div>
+      <div><label class="lbl req">작업 위치</label><input class="inp" name="작업위치" required placeholder="예: 본공장 야적장 A구역"/></div>
+      <div><label class="lbl">문서번호</label><input class="inp" name="문서번호" placeholder="예: ENG-2025-001"/></div>
+    </div>
+    <div class="section grid cols-3">
+      <div><label class="lbl req">작업 시작</label><input class="inp" type="datetime-local" name="시작" required/></div>
+      <div><label class="lbl req">작업 종료</label><input class="inp" type="datetime-local" name="종료" required/></div>
+      <div><label class="lbl req">위험등급</label>
+        <select class="inp" name="위험등급" required><option value="">선택</option><option>낮음</option><option>중간</option><option>높음</option></select>
+      </div>
+    </div>
+    <div class="section grid cols-3">
+      <div><label class="lbl req">작업 책임자</label><input class="inp" name="책임자" required/></div>
+      <div><label class="lbl req">연락처</label><input class="inp" name="연락처" required placeholder="010-0000-0000" pattern="0\d{1,2}-\d{3,4}-\d{4}"/></div>
+      <div><label class="lbl">협력업체</label><input class="inp" name="업체"/></div>
+    </div>
+    <div class="section grid cols-3">
+      <div><label class="lbl">투입 인원(명)</label><input class="inp" type="number" min="0" step="1" name="인원"/></div>
+      <div><label class="lbl">장비</label><input class="inp" name="장비" placeholder="예: 5톤 트럭, 절단기"/></div>
+      <div><label class="lbl">관련도면/참조</label><input class="inp" name="참조" placeholder="파일명/링크"/></div>
+    </div>
+  </div>
+
+  <!-- 2장. 작업개요/공법/절차 -->
+  <div class="card" id="p2">
+    <div class="card-hd"><h2>2) 작업개요 · 공법 · 절차</h2><span class="badge">Method Statement</span></div>
+    <div class="section grid cols-2">
+      <div class="group"><label class="lbl">작업 개요</label><textarea class="inp" name="작업개요" placeholder="작업 목적, 범위, 주요 공정"></textarea></div>
+      <div class="group"><label class="lbl">작업 절차</label><textarea class="inp" name="작업절차" placeholder="단계별 작업 순서"></textarea></div>
+    </div>
+    <div class="section grid cols-2">
+      <div class="group"><label class="lbl">사용 자재/장비 상세</label><textarea class="inp" name="자재장비상세"></textarea></div>
+      <div class="group"><label class="lbl">품질관리 포인트</label><textarea class="inp" name="품질포인트"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 3장. 위험성평가표 -->
+  <div class="card" id="p3">
+    <div class="card-hd"><h2>3) 위험성 평가표</h2><span class="badge">JSA · HIRA</span></div>
+    <div class="section">
+      <div class="note small">공정 단위로 위험원/유해요인을 식별하고, 기존/개선 후 위험도를 기록합니다.</div>
+      <div style="overflow:auto">
+        <table class="table" id="riskTable">
+          <thead>
+            <tr>
+              <th style="min-width:160px">공정/작업</th>
+              <th style="min-width:160px">위험원/유해요인</th>
+              <th style="min-width:140px">기존 위험도(LxS)</th>
+              <th style="min-width:220px">개선대책</th>
+              <th style="min-width:140px">개선 후 위험도</th>
+              <th style="min-width:120px">비고</th>
+              <th style="width:80px">삭제</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="actions"><button class="btn" type="button" id="addRisk">행 추가</button></div>
+    </div>
+  </div>
+
+  <!-- 4장. 안전조치/보호구/인허가 체크리스트 -->
+  <div class="card" id="p4">
+    <div class="card-hd"><h2>4) 안전조치 · 보호구 · 인허가 체크리스트</h2><span class="badge">Checklist</span></div>
+    <div class="section grid cols-2">
+      <div class="group">
+        <label class="lbl">필요 인허가</label>
+        <div class="chkgrid">
+          <label><input type="checkbox" name="인허가" value="화기작업"> 화기작업</label>
+          <label><input type="checkbox" name="인허가" value="전기작업"> 전기작업</label>
+          <label><input type="checkbox" name="인허가" value="밀폐공간"> 밀폐공간</label>
+          <label><input type="checkbox" name="인허가" value="고소작업"> 고소작업</label>
+          <label><input type="checkbox" name="인허가" value="중장비"> 중장비</label>
+          <label><input type="checkbox" name="인허가" value="굴착"> 굴착</label>
+          <label><input type="checkbox" name="인허가" value="가스"> 가스</label>
+          <label><input type="checkbox" name="인허가" value="기타"> 기타</label>
+        </div>
+      </div>
+      <div class="group">
+        <label class="lbl">보호구</label>
+        <div class="chkgrid">
+          <label><input type="checkbox" name="보호구" value="안전모"> 안전모</label>
+          <label><input type="checkbox" name="보호구" value="안전화"> 안전화</label>
+          <label><input type="checkbox" name="보호구" value="보안경"> 보안경</label>
+          <label><input type="checkbox" name="보호구" value="방진마스크"> 방진마스크</label>
+          <label><input type="checkbox" name="보호구" value="귀마개"> 귀마개</label>
+          <label><input type="checkbox" name="보호구" value="안전벨트"> 안전벨트</label>
+          <label><input type="checkbox" name="보호구" value="장갑"> 장갑</label>
+          <label><input type="checkbox" name="보호구" value="기타"> 기타</label>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <label class="lbl">현장 안전조치 상세</label>
+      <textarea class="inp" name="안전조치" placeholder="출입통제, 작업구역 표시, 화재/감전/끼임 방지조치 등"></textarea>
+    </div>
+  </div>
+
+  <!-- 5장. 인원/장비/협력업체 교육/출입 -->
+  <div class="card" id="p5">
+    <div class="card-hd"><h2>5) 인원 · 장비 · 협력업체 교육</h2><span class="badge">Man/Machine</span></div>
+    <div class="section">
+      <div class="note small">협력업체 출입교육, 장비점검 여부 등을 기록합니다. (필요 시 행 추가)</div>
+      <div style="overflow:auto">
+        <table class="table" id="crewTable">
+          <thead>
+            <tr>
+              <th>구분(근로자/장비)</th>
+              <th>성명/장비명</th>
+              <th>연락처/규격</th>
+              <th>교육/점검여부</th>
+              <th>비고</th>
+              <th>삭제</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="actions"><button class="btn" type="button" id="addCrew">행 추가</button></div>
+    </div>
+  </div>
+
+  <!-- 6장. 일일 TBM/점검표 -->
+  <div class="card" id="p6">
+    <div class="card-hd"><h2>6) 작업 전 TBM · 일일점검표</h2><span class="badge">Daily</span></div>
+    <div class="section">
+      <div class="note small">작업일별로 TBM(안전미팅)과 주요 체크항목을 기록합니다.</div>
+      <div style="overflow:auto">
+        <table class="table" id="tbmTable">
+          <thead>
+            <tr>
+              <th>일자</th>
+              <th>TBM 주제</th>
+              <th>주요 위험/대책 공유</th>
+              <th>참석자</th>
+              <th>점검 결과(적합/부적합)</th>
+              <th>조치사항</th>
+              <th>삭제</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="actions"><button class="btn" type="button" id="addTBM">행 추가</button></div>
+    </div>
+  </div>
+
+  <!-- 7장. 긴급연락망/비상조치/환경 -->
+  <div class="card" id="p7">
+    <div class="card-hd"><h2>7) 긴급연락망 · 비상/환경 조치</h2><span class="badge">Emergency/Env</span></div>
+    <div class="section grid cols-2">
+      <div class="group">
+        <label class="lbl">긴급연락망</label>
+        <textarea class="inp" name="긴급연락망" placeholder="내부(안전/설비/환경), 외부(119, 병원 등) 연락처"></textarea>
+      </div>
+      <div class="group">
+        <label class="lbl">비상조치 계획</label>
+        <textarea class="inp" name="비상조치" placeholder="사고유형별 초기대응, 대피경로, 집결지"></textarea>
+      </div>
+    </div>
+    <div class="section grid cols-2">
+      <div class="group">
+        <label class="lbl">환경 영향/대책</label>
+        <textarea class="inp" name="환경대책" placeholder="비산먼지, 소음/진동, 폐기물, 누출 등"></textarea>
+      </div>
+      <div class="group">
+        <label class="lbl">현장 사진(최대 6장)</label>
+        <input class="inp" id="photoInput" type="file" accept="image/*" multiple/>
+        <div class="hint">사진은 저장 시 함께 전송됩니다.</div>
+        <div id="preview" class="preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8장. 승인/서명 -->
+  <div class="card" id="p8">
+    <div class="card-hd"><h2>8) 승인 · 서명</h2><span class="badge">Signatures</span></div>
+    <div class="section grid cols-2">
+      <div class="sig">
+        <label class="lbl">작성자 서명</label>
+        <canvas id="sigWriter"></canvas>
+        <div class="actions"><button class="btn" type="button" data-clear="sigWriter">지우기</button></div>
+      </div>
+      <div class="sig">
+        <label class="lbl">현장책임자 서명</label>
+        <canvas id="sigManager"></canvas>
+        <div class="actions"><button class="btn" type="button" data-clear="sigManager">지우기</button></div>
+      </div>
+    </div>
+    <div class="section grid cols-3">
+      <div class="sig">
+        <label class="lbl">안전팀 승인</label>
+        <canvas id="sigSafety"></canvas>
+        <div class="actions"><button class="btn" type="button" data-clear="sigSafety">지우기</button></div>
+      </div>
+      <div class="sig">
+        <label class="lbl">설비팀 승인</label>
+        <canvas id="sigEquip"></canvas>
+        <div class="actions"><button class="btn" type="button" data-clear="sigEquip">지우기</button></div>
+      </div>
+      <div class="sig">
+        <label class="lbl">환경팀 승인</label>
+        <canvas id="sigEnv"></canvas>
+        <div class="actions"><button class="btn" type="button" data-clear="sigEnv">지우기</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 공통 액션 -->
+  <div class="card">
+    <div class="actions">
+      <button class="btn ghost" type="button" id="btnScrollTop">맨 위로</button>
+      <button class="btn" type="button" id="btnExport">JSON 미리보기</button>
+      <button class="btn primary" type="button" id="btnSave">구글시트 저장</button>
+    </div>
+    <div id="info" class="section small muted"></div>
+  </div>
+</div>
+
+<script>
+/* === 환경설정: 네가 준 GAS 웹앱 URL === */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzG7vy6JDEahh0sDu7OTUx_vAyelA8rEfW935F97WJXBSa3ziSDmP_keWXH0fljYOHExA/exec';
+
+const $ = (s,p=document)=>p.querySelector(s);
+const $$=(s,p=document)=>[...p.querySelectorAll(s)];
+const riskT = $('#riskTable tbody');
+const crewT = $('#crewTable tbody');
+const tbmT  = $('#tbmTable tbody');
+const pv = $('#preview');
+const info = $('#info');
+
+/* ---------- 공통 유틸 ---------- */
+function addRow(tbody, cols){
+  const tr = document.createElement('tr');
+  cols.forEach(html=>{const td=document.createElement('td');td.innerHTML=html;tr.appendChild(td)});
+  const tdDel=document.createElement('td');
+  const btn=document.createElement('button');btn.textContent='삭제';btn.className='btn warn';btn.type='button';
+  btn.onclick=()=>tr.remove();
+  tdDel.appendChild(btn);tr.appendChild(tdDel);tbody.appendChild(tr);return tr;
+}
+
+/* ---------- 3) 위험성 평가 행 ---------- */
+function addRiskRow(){
+  addRow(riskT,[
+    '<input class="inp" name="risk_공정" placeholder="공정/작업">',
+    '<input class="inp" name="risk_위험원" placeholder="위험원/유해요인">',
+    '<input class="inp" name="risk_기존" placeholder="예: 3x3=9">',
+    '<textarea class="inp" name="risk_개선대책" placeholder="개선조치"></textarea>',
+    '<input class="inp" name="risk_개선후" placeholder="예: 2x2=4">',
+    '<input class="inp" name="risk_비고" placeholder="비고">'
+  ]);
+}
+$('#addRisk').onclick=addRiskRow; addRiskRow(); addRiskRow();
+
+/* ---------- 5) 인원/장비 행 ---------- */
+function addCrewRow(){
+  addRow(crewT,[
+    '<select class="inp" name="crew_구분"><option>근로자</option><option>장비</option></select>',
+    '<input class="inp" name="crew_명칭" placeholder="성명 또는 장비명">',
+    '<input class="inp" name="crew_연락규격" placeholder="연락처 또는 규격">',
+    '<select class="inp" name="crew_교육"><option>적합</option><option>부적합</option></select>',
+    '<input class="inp" name="crew_비고" placeholder="비고">'
+  ]);
+}
+$('#addCrew').onclick=addCrewRow; addCrewRow();
+
+/* ---------- 6) TBM 행 ---------- */
+function addTBMRow(){
+  addRow(tbmT,[
+    '<input class="inp" type="date" name="tbm_일자">',
+    '<input class="inp" name="tbm_주제">',
+    '<textarea class="inp" name="tbm_위험대책"></textarea>',
+    '<input class="inp" name="tbm_참석자" placeholder="쉼표로 구분">',
+    '<select class="inp" name="tbm_결과"><option>적합</option><option>부적합</option></select>',
+    '<input class="inp" name="tbm_조치">'
+  ]);
+}
+$('#addTBM').onclick=addTBMRow; addTBMRow();
+
+/* ---------- 사진 미리보기 ---------- */
+$('#photoInput')?.addEventListener('change', (e)=>{
+  pv.innerHTML = '';
+  const files=[...(e.target.files||[])].slice(0,6);
+  files.forEach(f=>{
+    const url=URL.createObjectURL(f); const img=new Image(); img.src=url; img.alt=f.name; pv.appendChild(img);
+  });
+});
+
+/* ========= 서명패드: 고해상도 + 곡선 보간(부드럽게) ========= */
+class SignaturePad {
+  constructor(canvas){
+    this.c = canvas;
+    this.ctx = canvas.getContext('2d', { willReadFrequently: true });
+    this.dpr = window.devicePixelRatio || 1;
+    this.points = [];
+    this.drawing = false;
+    this.lineWidth = 2;
+    this.resize();
+    this.bind();
+  }
+  resize(){
+    const w = this.c.clientWidth || 600;
+    const h = this.c.clientHeight || 140;
+    this.c.width = Math.floor(w * this.dpr);
+    this.c.height = Math.floor(h * this.dpr);
+    this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.ctx.strokeStyle = '#111';
+    this.ctx.lineWidth = this.lineWidth;
+  }
+  pos(e){
+    const r = this.c.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : (e.pointerType ? e : e);
+    return { x:(p.clientX - r.left), y:(p.clientY - r.top), p:(p.pressure || 0.5) };
+  }
+  start(e){ this.drawing = true; this.points = [this.pos(e)]; }
+  move(e){
+    if(!this.drawing) return;
+    const p = this.pos(e);
+    const pts = this.points;
+    pts.push(p);
+    if (pts.length < 3) {
+      const a = pts[0], b = p;
+      this.ctx.beginPath(); this.ctx.moveTo(a.x, a.y); this.ctx.lineTo(b.x, b.y); this.ctx.stroke(); return;
+    }
+    const [p0, p1, p2] = pts.slice(-3);
+    const cx = (p0.x + p1.x) / 2, cy = (p0.y + p1.y) / 2;
+    const cx2 = (p1.x + p2.x) / 2, cy2 = (p1.y + p2.y) / 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx, cy);
+    this.ctx.quadraticCurveTo(p1.x, p1.y, cx2, cy2);
+    // 가벼운 압력 반영(있으면)
+    this.ctx.lineWidth = Math.max(1.5, Math.min(3.5, 2.2 * (p.p || 0.5) + 1.2));
+    this.ctx.stroke();
+  }
+  end(){ this.drawing = false; this.points = []; }
+  bind(){
+    const c = this.c;
+    const start = (e)=>{ e.preventDefault(); this.start(e); };
+    const move  = (e)=>{ e.preventDefault(); this.move(e); };
+    const end   = (e)=>{ e.preventDefault(); this.end(e); };
+    if (window.PointerEvent) {
+      c.addEventListener('pointerdown', start);
+      c.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+    } else {
+      c.addEventListener('mousedown', start);
+      c.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', end);
+      c.addEventListener('touchstart', start, {passive:false});
+      c.addEventListener('touchmove', move, {passive:false});
+      window.addEventListener('touchend', end);
+      window.addEventListener('touchcancel', end);
+    }
+    window.addEventListener('resize', ()=>this.resize());
+  }
+  clear(){ this.ctx.clearRect(0,0,this.c.width,this.c.height); }
+  dataURL(){ return this.c.toDataURL('image/png'); }
+}
+// 인스턴스 생성
+const sigs = {};
+['sigWriter','sigManager','sigSafety','sigEquip','sigEnv'].forEach(id=>{
+  const el = document.getElementById(id);
+  if (el) sigs[id] = new SignaturePad(el);
+});
+$$('[data-clear]').forEach(b=>b.addEventListener('click',()=>sigs[b.dataset.clear]?.clear()));
+
+/* ---------- JSON 수집 ---------- */
+function collectForm(){
+  const data={}
+  ;['작업명','작업위치','문서번호','시작','종료','위험등급','책임자','연락처','업체','인원','장비','참조'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value?.trim()||'')
+  ;['작업개요','작업절차','자재장비상세','품질포인트'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value?.trim()||'')
+  data.위험성평가=[...riskT.querySelectorAll('tr')].map(tr=>({
+    공정:tr.querySelector('[name="risk_공정"]')?.value||'',
+    위험원:tr.querySelector('[name="risk_위험원"]')?.value||'',
+    기존:tr.querySelector('[name="risk_기존"]')?.value||'',
+    개선대책:tr.querySelector('[name="risk_개선대책"]')?.value||'',
+    개선후:tr.querySelector('[name="risk_개선후"]')?.value||'',
+    비고:tr.querySelector('[name="risk_비고"]')?.value||''
+  }))
+  data.인허가=[...$$('input[name="인허가"]:checked')].map(x=>x.value)
+  data.보호구=[...$$('input[name="보호구"]:checked')].map(x=>x.value)
+  data.안전조치=document.querySelector('textarea[name="안전조치"]')?.value||''
+  data.인원장비=[...crewT.querySelectorAll('tr')].map(tr=>({
+    구분:tr.querySelector('[name="crew_구분"]')?.value||'',
+    명칭:tr.querySelector('[name="crew_명칭"]')?.value||'',
+    연락규격:tr.querySelector('[name="crew_연락규격"]')?.value||'',
+    교육점검:tr.querySelector('[name="crew_교육"]')?.value||'',
+    비고:tr.querySelector('[name="crew_비고"]')?.value||''
+  }))
+  data.TBM=[...tbmT.querySelectorAll('tr')].map(tr=>({
+    일자:tr.querySelector('[name="tbm_일자"]')?.value||'',
+    주제:tr.querySelector('[name="tbm_주제"]')?.value||'',
+    위험대책:tr.querySelector('[name="tbm_위험대책"]')?.value||'',
+    참석자:tr.querySelector('[name="tbm_참석자"]')?.value||'',
+    결과:tr.querySelector('[name="tbm_결과"]')?.value||'',
+    조치:tr.querySelector('[name="tbm_조치"]')?.value||''
+  }))
+  ;['긴급연락망','비상조치','환경대책'].forEach(k=>data[k]=$(`[name="${k}"]`)?.value||'')
+  // 서명(base64)
+  data.서명={}; Object.keys(sigs).forEach(id=>data.서명[id]=sigs[id].dataURL());
+  return data;
+}
+
+/* ---------- JSON 미리보기 ---------- */
+$('#btnExport').onclick=()=>{
+  const data = collectForm();
+  const pretty = JSON.stringify(data,null,2);
+  info.innerHTML = '<div class="ok"><b>수집된 JSON</b><pre style="white-space:pre-wrap;font-size:12px;overflow:auto;max-height:300px">'+
+    pretty.replace(/[&<>]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[s])) + '</pre></div>';
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+};
+$('#btnScrollTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+
+/* ---------- 저장(시트로 POST) + 사진 base64 전송 ---------- */
+function fileToBase64(file){
+  return new Promise((res, rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+$('#btnSave').onclick = async () => {
+  if (!GAS_URL || !/^https?:\/\//.test(GAS_URL)) {
+    alert('GAS_URL이 비어있거나 잘못되었습니다.'); return;
+  }
+  try {
+    const payload = collectForm();
+    // 사진 전송 (최대 6장)
+    const fi = document.querySelector('#photoInput');
+    if (fi && fi.files && fi.files.length) {
+      const files = [...fi.files].slice(0, 6);
+      payload.photos = [];
+      for (const f of files) {
+        payload.photos.push({ filename: f.name, mime: f.type, data: await fileToBase64(f) });
+      }
+    }
+    const res = await fetch(GAS_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const js = await res.json();
+    if (js.ok) {
+      alert('저장 완료! (ID: ' + js.id + ')');
+    } else {
+      alert('저장 실패: ' + (js.error || '원인 미상'));
+    }
+  } catch (e) {
+    alert('에러: ' + e.message);
+  }
+};
+</script>
+</body>
+</html>
