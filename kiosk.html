@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>간단 길안내 키오스크 (HTML 단일 파일)</title>
+<style>
+  html,body {height:100%; margin:0; font-family:system-ui,apple sd gothic neo,Segoe UI,Roboto,Helvetica,Arial;}
+  .app {display:grid; grid-template-columns: 380px 1fr; height:100%;}
+  .left {border-right:1px solid #eee; padding:16px; display:flex; flex-direction:column; gap:12px;}
+  .search {display:flex; gap:8px;}
+  .search input {flex:1; padding:12px; font-size:18px; border:1px solid #ddd; border-radius:12px;}
+  .search button {padding:12px 14px; border:1px solid #ddd; border-radius:12px; background:#fafafa; cursor:pointer}
+  .chips {display:flex; flex-wrap:wrap; gap:8px}
+  .chip {padding:8px 10px; border:1px solid #ddd; border-radius:999px; cursor:pointer; font-size:14px;}
+  .list {overflow:auto; border-top:1px solid #eee; padding-top:8px}
+  .item {padding:10px 8px; border-bottom:1px dashed #eee; cursor:pointer}
+  .item small{color:#666}
+  .right {position:relative; background:#f6f7f8}
+  .stage {position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
+  .map-wrap {position:relative; width:96%; height:94%; background:#e9ecef; border-radius:16px; box-shadow:inset 0 0 0 2px #d4d8dd}
+  .map-bg {position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#9aa1a7; font-size:24px;}
+  .poi {position:absolute; transform:translate(-50%,-100%); pointer-events:auto;}
+  .poi .dot{width:16px; height:16px; border-radius:50%; background:#ff4d4f; border:2px solid white; box-shadow:0 0 0 2px rgba(0,0,0,.15)}
+  .poi .label{white-space:nowrap; transform:translateY(-6px); background:#111; color:#fff; padding:4px 6px; border-radius:6px; font-size:12px}
+  .route{position:absolute; inset:0; pointer-events:none}
+  .now {position:absolute; transform:translate(-50%,-50%); width:18px; height:18px; border-radius:50%; background:#1677ff; border:2px solid #fff; box-shadow:0 0 0 3px rgba(22,119,255,.25)}
+  .footer {position:absolute; left:12px; bottom:12px; background:#fff; border:1px solid #eee; border-radius:12px; padding:8px 12px; box-shadow:0 6px 16px rgba(0,0,0,.08); font-size:14px}
+  .btn-clear{margin-left:8px; font-size:12px; color:#666; text-decoration:underline; cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="left">
+    <div class="search">
+      <input id="q" placeholder="무엇을 찾으세요? 예) 유리 세정제 / 화장실" />
+      <button id="btnSearch">검색</button>
+    </div>
+    <div style="font-size:13px;color:#666">최근검색:
+      <span id="recent" class="chips"></span>
+      <span class="btn-clear" id="clearRecent">지우기</span>
+    </div>
+    <div class="chips" id="cats"></div>
+    <div class="list" id="list"></div>
+  </section>
+  <section class="right">
+    <div class="stage">
+      <div class="map-wrap" id="map">
+        <!-- 배경: 실제 운영시 아래 div 대신 SVG 파일을 img로 넣으세요 -->
+        <div class="map-bg">여기에 1F.svg 같은 층별 SVG를 넣어주세요</div>
+        <!-- 경로 -->
+        <svg class="route" viewBox="0 0 1000 700" preserveAspectRatio="none">
+          <polyline id="routeLine" points="" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="10 8"></polyline>
+        </svg>
+        <!-- 현재 위치(고정형 키오스크 기준) -->
+        <div id="now" class="now" style="left: 120px; top: 560px;"></div>
+        <!-- POI 마커가 JS로 생성됩니다 -->
+      </div>
+    </div>
+    <div class="footer"><b>안내:</b> 항목을 누르면 위치와 경로가 표시됩니다. 두 번 탭하면 확대/축소가 가능합니다(브라우저 기본 제스처).</div>
+  </section>
+</div>
+
+<!-- Fuse.js (간단 모호검색용) -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+<script>
+/** ===== ① 데이터(예시) : 좌표는 1000x700 기준 픽셀 ===== */
+const POIS = [
+  {id:"A", name:"유리 세정제", cat:"생활", x: 760, y: 140, aliases:["세정제","유리클리너"], route:[ [120,560],[260,560],[520,420],[760,160] ]},
+  {id:"B", name:"수납용품",   cat:"생활", x: 560, y: 220, aliases:["정리함"],               route:[ [120,560],[260,560],[520,420],[560,240] ]},
+  {id:"WC",name:"화장실",     cat:"편의", x: 160, y: 120, aliases:["화장실(남)","toilet"],   route:[ [120,560],[120,360],[120,200],[160,140] ]},
+  {id:"CS",name:"고객센터",   cat:"편의", x: 880, y: 560, aliases:["안내데스크"],            route:[ [120,560],[300,560],[520,560],[700,560],[880,560] ]},
+];
+const CATS = [...new Set(POIS.map(p=>p.cat))];
+
+/** ===== ② 맵 크기 ↔ 좌표 보정 ===== */
+const MAP_VIEWBOX = {w:1000,h:700};
+function toScreen(x,y){
+  const el = document.getElementById('map');
+  const r = el.getBoundingClientRect();
+  // 내부 패딩 없이 꽉 채운다고 가정(비율 유지)
+  const scale = Math.min(r.width/MAP_VIEWBOX.w, r.height/MAP_VIEWBOX.h);
+  const offsetX = (r.width - MAP_VIEWBOX.w * scale)/2;
+  const offsetY = (r.height - MAP_VIEWBOX.h * scale)/2;
+  return {left: offsetX + x*scale, top: offsetY + y*scale};
+}
+function toPolylinePoints(route){
+  // viewBox 기준 좌표 그대로 polyline에 입력
+  return route.map(p=>p.join(",")).join(" ");
+}
+
+/** ===== ③ POI 렌더 ===== */
+function renderPOIs(){
+  const map = document.getElementById('map');
+  // 기존 마커 제거
+  [...map.querySelectorAll('.poi')].forEach(n=>n.remove());
+  POIS.forEach(p=>{
+    const pos = toScreen(p.x,p.y);
+    const d = document.createElement('div');
+    d.className = 'poi';
+    d.style.left = pos.left+'px';
+    d.style.top  = pos.top +'px';
+    d.innerHTML = `<div class="dot"></div><div class="label">${p.name}</div>`;
+    d.onclick = ()=> focusPOI(p);
+    map.appendChild(d);
+  });
+}
+
+/** ===== ④ 경로/포커스 ===== */
+function focusPOI(p){
+  // 경로 표시
+  const line = document.getElementById('routeLine');
+  line.setAttribute('points', toPolylinePoints(p.route));
+  line.setAttribute('stroke', '#ff4d4f');
+
+  // 최근검색 저장
+  addRecent(p.name);
+}
+
+/** ===== ⑤ 검색/목록 ===== */
+const fuse = new Fuse(POIS, { keys:["name","aliases","cat"], threshold:0.32, ignoreLocation:true });
+
+function renderList(rows){
+  const box = document.getElementById('list');
+  box.innerHTML = rows.map(p=>`
+    <div class="item" onclick="focusPOIById('${p.id}')">
+      <div><b>${p.name}</b></div>
+      <small>${p.cat}</small>
+    </div>`).join('');
+}
+function focusPOIById(id){
+  const p = POIS.find(x=>x.id===id);
+  if (p) focusPOI(p);
+}
+function onSearch(){
+  const q = document.getElementById('q').value.trim();
+  if(!q){ renderList(POIS); return; }
+  const result = fuse.search(q).map(r=>r.item);
+  renderList(result);
+  if(result[0]) focusPOI(result[0]);
+  addRecent(q);
+}
+
+/** ===== ⑥ 카테고리/최근검색 ===== */
+function renderCats(){
+  const wrap = document.getElementById('cats');
+  wrap.innerHTML = CATS.map(c=>`<span class="chip" onclick="filterCat('${c}')">${c}</span>`).join('');
+}
+function filterCat(cat){
+  const rows = POIS.filter(p=>p.cat===cat);
+  renderList(rows);
+}
+function addRecent(q){
+  const k='wf_recent';
+  const arr = JSON.parse(localStorage.getItem(k)||'[]').filter(x=>x!==q);
+  arr.unshift(q); if(arr.length>6) arr.length=6;
+  localStorage.setItem(k, JSON.stringify(arr));
+  renderRecent();
+}
+function renderRecent(){
+  const k='wf_recent';
+  const arr = JSON.parse(localStorage.getItem(k)||'[]');
+  const wrap = document.getElementById('recent');
+  wrap.innerHTML = arr.map(x=>`<span class="chip" onclick="setQ('${x}')">${x}</span>`).join('');
+}
+function setQ(v){ document.getElementById('q').value=v; onSearch(); }
+
+/** ===== ⑦ 이벤트 ===== */
+document.getElementById('btnSearch').onclick = onSearch;
+document.getElementById('q').addEventListener('keydown', e=>{ if(e.key==='Enter') onSearch();});
+document.getElementById('clearRecent').onclick = ()=>{ localStorage.removeItem('wf_recent'); renderRecent(); };
+window.addEventListener('resize', ()=>renderPOIs());
+
+/** ===== ⑧ 초기 렌더 ===== */
+renderPOIs();
+renderList(POIS);
+renderCats();
+renderRecent();
+</script>
+</body>
+</html>
