@@ -215,7 +215,7 @@
     const k = (keyword || '').trim();
 
     const filtered = empList
-      .filter(emp => (emp.use || emp.useYN || 'Y') === 'Y')  // 사용여부=Y만
+      .filter(emp => ['Y', 'Z'].includes((emp.use || emp.useYN || 'Y')))
       .filter(emp => {
         if (!k) return true;
         const t = (emp.team || '') + (emp.empName || '') + (emp.empId || '');
