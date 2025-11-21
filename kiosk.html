@@ -33,14 +33,6 @@
       background:#f9fafb; border:1px dashed var(--line); border-radius:12px;
       padding:12px; margin-top:8px;
     }
-.cat-link{
-  margin-top:6px;
-  font-size:13px;
-  font-weight:800;
-  color:#0b63c9;
-  text-decoration:underline;
-}
-.cat-link:visited{ color:#0b63c9; }
 
     h2{font-size:17px; margin:0 0 8px;}
     h3{font-size:15px; margin:12px 0 6px;}
@@ -76,6 +68,37 @@
       filter: drop-shadow(0 3px 6px rgba(0,0,0,.12));
     }
 
+    /* ✅ 2공장 가는길 독립 카드 */
+    .route-card{
+      background:#ffffff;
+      border:2px solid #0b63c9;
+      border-radius:16px;
+      padding:14px;
+      margin-top:12px;
+      text-align:center;
+    }
+    .route-title{
+      font-size:16px;
+      font-weight:900;
+      margin-bottom:8px;
+    }
+    .route-btn{
+      display:block;
+      width:100%;
+      background:#0b63c9;
+      color:#fff;
+      text-decoration:none;
+      font-weight:900;
+      font-size:17px;
+      padding:14px 12px;
+      border-radius:12px;
+    }
+    .route-sub{
+      margin-top:6px;
+      font-size:12px;
+      color:#555;
+    }
+
     /* 단계/이미지 */
     .step{display:flex; gap:8px; margin:8px 0;}
     .step .n{
@@ -108,8 +131,6 @@
     }
     .mode-in{ background:var(--in-bg); border-color:var(--in-line); color:var(--in-ink); }
     .mode-out{ background:var(--out-bg); border-color:var(--out-line); color:var(--out-ink); }
-
-    /* ✅ 제품 서류 출력 전용 블록 */
     .mode-doc{ background:var(--doc-bg); border-color:var(--doc-line); color:var(--doc-ink); }
 
     /* 섹션 토글 */
@@ -143,7 +164,7 @@
       </div>
     </header>
 
-    <!-- 상단 버튼 -->
+    <!-- 첫 화면: 품목 선택 -->
     <div class="card">
       <h2>내 품목 선택</h2>
       <div class="cat-grid">
@@ -165,19 +186,22 @@
           <div class="desc">원지/완제품 출고</div>
         </button>
 
-       <button class="cat-btn" data-target="sec-cont">
-  <img class="cat-icon" src="kiosk/18.png" alt="컨테이너 아이콘">
-  컨테이너
-  <div class="desc">수입원지 / UKP</div>
-
-  <!-- ✅ 추가된 길찾기 링크 -->
-  <a class="cat-link" target="_blank" rel="noopener"
-     href="https://map.naver.com/p/directions/14112141.4901618,4481375.1125269,%EA%B2%BD%EA%B8%B0%20%EC%95%88%EC%82%B0%EC%8B%9C%20%EB%8B%A8%EC%9B%90%EA%B5%AC%20%EB%AA%A9%EB%82%B4%EB%A1%9C%2029,,ADDRESS_POI/14111944.5968519,4481609.9243175,%EA%B2%BD%EA%B8%B0%20%EC%95%88%EC%82%B0%EC%8B%9C%20%EB%8B%A8%EC%9B%90%EA%B5%AC%20%EB%B3%84%EB%A7%9D%EB%A1%9C%20408,,ADDRESS_POI/-/car?c=16.00,0,0,0,dh">
-     신대양제지반월 2공장 가는길
-  </a>
-</button>
-
+        <button class="cat-btn" data-target="sec-cont">
+          <img class="cat-icon" src="kiosk/18.png" alt="컨테이너 아이콘">
+          컨테이너
+          <div class="desc">수입원지 / UKP</div>
+        </button>
       </div>
+    </div>
+
+    <!-- ✅ 2공장 가는길 독립 안내 -->
+    <div class="route-card">
+      <div class="route-title">신대양제지반월 2공장 가는길</div>
+      <a class="route-btn" target="_blank" rel="noopener"
+         href="https://map.naver.com/p/directions/14112141.4901618,4481375.1125269,%EA%B2%BD%EA%B8%B0%20%EC%95%88%EC%82%B0%EC%8B%9C%20%EB%8B%A8%EC%9B%90%EA%B5%AC%20%EB%AA%A9%EB%82%B4%EB%A1%9C%2029,,ADDRESS_POI/14111944.5968519,4481609.9243175,%EA%B2%BD%EA%B8%B0%20%EC%95%88%EC%82%B0%EC%8B%9C%20%EB%8B%A8%EC%9B%90%EA%B5%AC%20%EB%B3%84%EB%A7%9D%EB%A1%9C%20408,,ADDRESS_POI/-/car?c=16.00,0,0,0,dh">
+        🚚 네이버지도 길찾기 열기
+      </a>
+      <div class="route-sub">※ 2공장/컨테이너 차량은 위 버튼 눌러 길찾기 확인</div>
     </div>
 
     <!-- ======================= 원료 ======================= -->
@@ -197,15 +221,10 @@
         </div>
 
         <div class="mode-block mode-in">
-          <div class="mode-title">
-            <span class="mode-badge">입차</span> 여기까지가 입차 절차
-          </div>
+          <div class="mode-title"><span class="mode-badge">입차</span> 여기까지가 입차 절차</div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 원료</b> 선택</div></div>
-          <div class="imgbox">
-            <img src="kiosk/2.png" alt="">
-            <div class="caption">[사진2] 원료 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 원료 선택</div></div>
 
           <div class="hr"></div>
 
@@ -213,29 +232,18 @@
           <div class="step"><div class="n">3</div><div class="t">품목(압축/바라)</div></div>
           <div class="step"><div class="n">4</div><div class="t">차량형태(카고/윙)</div></div>
           <div class="step"><div class="n">5</div><div class="t">베일수 선택 → 확인</div></div>
-          <div class="imgbox">
-            <img src="kiosk/3.png" alt="">
-            <div class="caption">[사진3] 입차 입력 화면</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/3.png"><div class="caption">[사진3] 입차 입력 화면</div></div>
         </div>
 
         <div class="mode-block mode-out">
-          <div class="mode-title">
-            <span class="mode-badge">출차</span> 여기부터 출차 절차
-          </div>
+          <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
 
-          <div class="imgbox">
-            <img src="kiosk/1.png" alt="">
-            <div class="caption">[사진1] 출차 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 원료</b> 선택</div></div>
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리</div></div>
           <div class="step"><div class="n">3</div><div class="t">업체명 확인 → 확인</div></div>
-          <div class="imgbox">
-            <img src="kiosk/8.png" alt="">
-            <div class="caption">[사진8] 원료 출차</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/8.png"><div class="caption">[사진8] 원료 출차</div></div>
         </div>
       </div>
     </div>
@@ -250,10 +258,7 @@
           <h3>0) 첫 화면: 입차 / 출차</h3>
           <div class="step"><div class="n">입</div><div class="t"><b>입차</b> : 처음 계근</div></div>
           <div class="step"><div class="n">출</div><div class="t"><b>출차</b> : 두 번째 계근</div></div>
-          <div class="imgbox">
-            <img src="kiosk/1.png" alt="">
-            <div class="caption">[사진1] 입차 / 출차 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차 / 출차 선택</div></div>
         </div>
 
         <div class="mode-block mode-in">
@@ -269,10 +274,7 @@
         <div class="mode-block mode-out">
           <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
 
-          <div class="imgbox">
-            <img src="kiosk/1.png" alt="">
-            <div class="caption">[사진1] 출차 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 부자재</b> 선택</div></div>
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리</div></div>
@@ -304,10 +306,7 @@
           <h3>0) 첫 화면: 입차 / 출차</h3>
           <div class="step"><div class="n">입</div><div class="t"><b>입차</b> : 처음 계근</div></div>
           <div class="step"><div class="n">출</div><div class="t"><b>출차</b> : 두 번째 계근</div></div>
-          <div class="imgbox">
-            <img src="kiosk/1.png" alt="">
-            <div class="caption">[사진1] 입차 / 출차 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차 / 출차 선택</div></div>
         </div>
 
         <!-- 제품 입차 -->
@@ -325,119 +324,60 @@
         <div class="mode-block mode-out">
           <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
 
-          <div class="imgbox">
-            <img src="kiosk/1.png" alt="">
-            <div class="caption">[사진1] 출차 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 제품</b> 선택</div></div>
           <div class="step"><div class="n">2</div><div class="t">차량번호 → 계근표 장수 → 확인</div></div>
           <div class="imgbox"><img src="kiosk/12.png"><div class="caption">[사진12]</div></div>
         </div>
 
-        <!-- ✅ 제품 전용: 출고지시서/거래명세서 출력 -->
+        <!-- 제품 전용: 서류 출력 -->
         <div class="mode-block mode-doc">
-          <div class="mode-title">
-            <span class="mode-badge">서류 출력</span> 출고지시서 / 거래명세서 (제품 전용)
-          </div>
+          <div class="mode-title"><span class="mode-badge">서류 출력</span> 출고지시서 / 거래명세서 (제품 전용)</div>
 
           <h3>1) 상차 전: 출고지시서 출력</h3>
           <div class="step">
             <div class="n">1</div>
             <div class="t">
-              첫 화면에서 <b>차량번호 뒤 4자리 × 2번(총 8글자)</b> 입력  
-              → <b>9번 아래 ‘엔터’</b>를 누르면 조회됩니다.  
-              <div class="tiny muted">※ 또는 출고정보 QR을 키오스크 아래 리더기에 대면 자동 입력</div>
-              <div class="tiny muted">※ 용차는 차량번호가 안 될 경우 <b>대양통운 문의</b> 후 지정번호(보통 1001~1009)로 입력</div>
+              차량번호 뒤 4자리 × 2번(총 8글자) 입력 → 9번 아래 <b>엔터</b>  
+              <div class="tiny muted">※ 또는 출고정보QR을 키오스크 아래 리더기에 대면 자동입력</div>
+              <div class="tiny muted">※ 용차는 번호 입력이 안 되면 <b>대양통운 문의</b>(보통 1001~1009)</div>
             </div>
           </div>
-          <div class="imgbox">
-            <img src="kiosk/20.png" alt="차량번호/QR 입력">
-            <div class="caption">[사진20] 차량번호 8자리 입력 / QR 자동입력</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/20.png"><div class="caption">[사진20] 차량번호/QR 입력</div></div>
 
-          <div class="step"><div class="n">2</div><div class="t">
-            화면에서 <b>납품처/거래처/주문롤수 확인</b> 후 <b>해당 오더 클릭</b>
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/21.png" alt="오더 선택">
-            <div class="caption">[사진21] 오더 선택 화면</div>
-          </div>
+          <div class="step"><div class="n">2</div><div class="t">납품처/거래처/주문롤수 확인 → <b>해당 오더 클릭</b></div></div>
+          <div class="imgbox"><img src="kiosk/21.png"><div class="caption">[사진21] 오더 선택</div></div>
 
-          <div class="step"><div class="n">3</div><div class="t">
-            <b>출고지시서 출력</b> 버튼 → <b>출력</b> 클릭
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/22.png" alt="출고지시서 출력 버튼">
-            <div class="caption">[사진22] 출고지시서 출력 버튼</div>
-          </div>
+          <div class="step"><div class="n">3</div><div class="t"><b>출고지시서 출력</b> 버튼 → <b>출력</b></div></div>
+          <div class="imgbox"><img src="kiosk/22.png"><div class="caption">[사진22] 출고지시서 출력</div></div>
 
-          <div class="step"><div class="n">4</div><div class="t">
-            출력물은 <b>키오스크 중간 출력구</b>에서 나옵니다.  
-            출력물 들고 <b>상차 장소로 이동 후 상차</b>하세요.
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/23.png" alt="출력구">
-            <div class="caption">[사진23] 출력 위치</div>
-          </div>
+          <div class="step"><div class="n">4</div><div class="t">출력물은 키오스크 중간 출력구에서 나옴 → 들고 상차 장소로 이동</div></div>
+          <div class="imgbox"><img src="kiosk/23.png"><div class="caption">[사진23] 출력 위치</div></div>
 
           <div class="hr"></div>
 
           <h3>2) 상차 후: 거래명세서 출력</h3>
-          <div class="step"><div class="n">1</div><div class="t">
-            상차 완료 후 다시 <b>차량번호 8자리 입력</b> → <b>엔터</b>
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/20.png" alt="">
-            <div class="caption">[사진20] 차량번호 재입력</div>
-          </div>
+          <div class="step"><div class="n">1</div><div class="t">상차 완료 후 다시 <b>차량번호 8자리 입력 → 엔터</b></div></div>
+          <div class="imgbox"><img src="kiosk/20.png"><div class="caption">[사진20] 차량번호 재입력</div></div>
 
-          <div class="step"><div class="n">2</div><div class="t">
-            아까 선택한 <b>같은 오더 클릭</b>
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/21.png" alt="">
-            <div class="caption">[사진21] 오더 재선택</div>
-          </div>
+          <div class="step"><div class="n">2</div><div class="t">아까 선택한 <b>같은 오더 클릭</b></div></div>
+          <div class="imgbox"><img src="kiosk/21.png"><div class="caption">[사진21] 오더 재선택</div></div>
 
-          <div class="step"><div class="n">3</div><div class="t">
-            <b>상차롤수 vs 주문롤수</b> 확인 후  
-            <b>상차완료</b> 버튼을 먼저 누름
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/22.png" alt="">
-            <div class="caption">[사진22] 상차완료 버튼</div>
-          </div>
+          <div class="step"><div class="n">3</div><div class="t">상차롤수/주문롤수 확인 → <b>상차완료</b> 먼저 클릭</div></div>
+          <div class="imgbox"><img src="kiosk/22.png"><div class="caption">[사진22] 상차완료 버튼</div></div>
 
-          <div class="step"><div class="n">4</div><div class="t">
-            그 다음 <b>거래명세서 출력</b> 버튼 → <b>출력</b>  
-            출력물은 출고지시서와 동일한 곳에서 나옵니다.
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/23.png" alt="">
-            <div class="caption">[사진23] 거래명세서 출력 위치</div>
-          </div>
+          <div class="step"><div class="n">4</div><div class="t"><b>거래명세서 출력</b> → <b>출력</b> (출고지시서와 동일 위치)</div></div>
+          <div class="imgbox"><img src="kiosk/23.png"><div class="caption">[사진23] 거래명세서 출력 위치</div></div>
 
           <div class="hr"></div>
 
-          <h3>3) 예외: 롤 추가 등록(Lot 입력)</h3>
-          <div class="step"><div class="n">1</div><div class="t">
-            실수로 못 찍었거나 추가 롤을 찍어야 하면  
-            <b>LOT 입력</b> 버튼 클릭
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/22.png" alt="">
-            <div class="caption">[사진22] LOT 입력 버튼 위치</div>
-          </div>
+          <h3>3) 예외: 롤 추가 등록(LOT 입력)</h3>
+          <div class="step"><div class="n">1</div><div class="t">추가 롤 필요 시 <b>LOT 입력</b> 버튼 클릭</div></div>
+          <div class="imgbox"><img src="kiosk/22.png"><div class="caption">[사진22] LOT 입력 버튼 위치</div></div>
 
-          <div class="step"><div class="n">2</div><div class="t">
-            해당 롤 LOT를 입력하면 <b>추가 등록</b>됩니다.  
-            <div class="tiny muted">※ 삭제가 필요하면 계근대에 문의</div>
-          </div></div>
-          <div class="imgbox">
-            <img src="kiosk/25.png" alt="">
-            <div class="caption">[사진25] LOT 입력 화면</div>
-          </div>
+          <div class="step"><div class="n">2</div><div class="t">LOT 입력하면 <b>추가 등록</b>됨<br><span class="tiny muted">※ 삭제는 계근대 문의</span></div></div>
+          <div class="imgbox"><img src="kiosk/25.png"><div class="caption">[사진25] LOT 입력 화면</div></div>
         </div>
       </div>
     </div>
@@ -452,10 +392,7 @@
           <h3>0) 첫 화면: 입차 / 출차</h3>
           <div class="step"><div class="n">입</div><div class="t"><b>입차</b> : 처음 계근</div></div>
           <div class="step"><div class="n">출</div><div class="t"><b>출차</b> : 두 번째 계근</div></div>
-          <div class="imgbox">
-            <img src="kiosk/1.png" alt="">
-            <div class="caption">[사진1] 입차 / 출차 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차 / 출차 선택</div></div>
         </div>
 
         <div class="mode-block mode-in">
@@ -471,10 +408,7 @@
         <div class="mode-block mode-out">
           <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
 
-          <div class="imgbox">
-            <img src="kiosk/1.png" alt="">
-            <div class="caption">[사진1] 출차 선택</div>
-          </div>
+          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 컨테이너</b> 선택</div></div>
 
