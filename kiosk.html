@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>반월공장 계근 키오스크 1분 매뉴얼</title>
+  <title>반월공장 계근 키오스크 매뉴얼</title>
   <style>
     :root{
       --brand:#1f7a4a; --ink:#111; --muted:#666; --bg:#f6f7f9; --line:#e5e7eb;
@@ -37,45 +37,36 @@
     .tiny{font-size:12px;}
     .hr{height:1px; background:var(--line); margin:10px 0;}
 
-    /* ===== 상단 4개 카테고리 버튼 : 1×4 ===== */
+    /* ===== 상단 4개 카테고리 버튼 : 4×1 세로 ===== */
     .cat-grid{
       display:grid;
-      grid-template-columns:repeat(4, 1fr); /* 1×4 */
-      gap:10px;
-      margin-top:8px;
+      grid-template-columns:1fr;   /* 4×1 */
+      gap:14px;
+      margin-top:10px;
     }
     .cat-btn{
-      border:2px solid var(--line); background:#fff; border-radius:14px;
-      padding:14px 12px; font-weight:800; font-size:16px; text-align:center;
+      border:2px solid var(--line); background:#fff; border-radius:16px;
+      padding:18px 14px; font-weight:800; font-size:18px; text-align:center;
       cursor:pointer; transition:.15s;
-      display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center;
-      min-height:170px;
+      display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center;
+      min-height:260px; /* 버튼 자체도 큼직하게 */
     }
-    .cat-btn .desc{font-size:12px; color:var(--muted); font-weight:600;}
+    .cat-btn .desc{
+      font-size:13px; color:var(--muted); font-weight:700;
+    }
     .cat-btn.active{
       border-color:var(--brand);
-      box-shadow:0 4px 14px rgba(31,122,74,.12);
+      box-shadow:0 6px 18px rgba(31,122,74,.14);
       transform:translateY(-1px);
     }
 
-    /* 버튼 아이콘 크게 */
+    /* 버튼 아이콘 크게 (기존 90px대 → 약 3배 체감) */
     .cat-icon{
-      width:92px;
-      height:92px;
+      width:min(280px, 90vw);
+      height:min(280px, 90vw);
       object-fit:contain;
       display:block;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,.08));
-    }
-
-    /* 모바일에서 4개가 너무 좁으면 가로 스크롤 */
-    @media (max-width: 720px){
-      .cat-grid{
-        grid-template-columns:repeat(4, minmax(160px, 1fr));
-        overflow-x:auto;
-        padding-bottom:6px;
-      }
-      .cat-btn{min-height:160px;}
-      .cat-icon{width:80px;height:80px;}
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,.12));
     }
 
     /* 단계/이미지 */
@@ -127,7 +118,7 @@
       </div>
     </header>
 
-    <!-- ====== 상단 4개 버튼 (1×4) ====== -->
+    <!-- ====== 상단 4개 버튼 (4×1) ====== -->
     <div class="card">
       <h2>내 품목 선택</h2>
       <div class="cat-grid">
@@ -163,7 +154,6 @@
         <div class="pill">원료</div>
         <h2>원료 차량 절차</h2>
 
-        <!-- 공통 내용 → 이제 각 섹션 맨 위에 -->
         <div class="subcard">
           <h3>0) 첫 화면: 입차 / 출차</h3>
           <div class="step"><div class="n">입</div><div class="t"><b>입차</b> : 공장 들어와서 <b>처음 계근</b></div></div>
