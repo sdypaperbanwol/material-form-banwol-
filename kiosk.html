@@ -1,181 +1,171 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>간단 길안내 키오스크 (HTML 단일 파일)</title>
-<style>
-  html,body {height:100%; margin:0; font-family:system-ui,apple sd gothic neo,Segoe UI,Roboto,Helvetica,Arial;}
-  .app {display:grid; grid-template-columns: 380px 1fr; height:100%;}
-  .left {border-right:1px solid #eee; padding:16px; display:flex; flex-direction:column; gap:12px;}
-  .search {display:flex; gap:8px;}
-  .search input {flex:1; padding:12px; font-size:18px; border:1px solid #ddd; border-radius:12px;}
-  .search button {padding:12px 14px; border:1px solid #ddd; border-radius:12px; background:#fafafa; cursor:pointer}
-  .chips {display:flex; flex-wrap:wrap; gap:8px}
-  .chip {padding:8px 10px; border:1px solid #ddd; border-radius:999px; cursor:pointer; font-size:14px;}
-  .list {overflow:auto; border-top:1px solid #eee; padding-top:8px}
-  .item {padding:10px 8px; border-bottom:1px dashed #eee; cursor:pointer}
-  .item small{color:#666}
-  .right {position:relative; background:#f6f7f8}
-  .stage {position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
-  .map-wrap {position:relative; width:96%; height:94%; background:#e9ecef; border-radius:16px; box-shadow:inset 0 0 0 2px #d4d8dd}
-  .map-bg {position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#9aa1a7; font-size:24px;}
-  .poi {position:absolute; transform:translate(-50%,-100%); pointer-events:auto;}
-  .poi .dot{width:16px; height:16px; border-radius:50%; background:#ff4d4f; border:2px solid white; box-shadow:0 0 0 2px rgba(0,0,0,.15)}
-  .poi .label{white-space:nowrap; transform:translateY(-6px); background:#111; color:#fff; padding:4px 6px; border-radius:6px; font-size:12px}
-  .route{position:absolute; inset:0; pointer-events:none}
-  .now {position:absolute; transform:translate(-50%,-50%); width:18px; height:18px; border-radius:50%; background:#1677ff; border:2px solid #fff; box-shadow:0 0 0 3px rgba(22,119,255,.25)}
-  .footer {position:absolute; left:12px; bottom:12px; background:#fff; border:1px solid #eee; border-radius:12px; padding:8px 12px; box-shadow:0 6px 16px rgba(0,0,0,.08); font-size:14px}
-  .btn-clear{margin-left:8px; font-size:12px; color:#666; text-decoration:underline; cursor:pointer}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>반월공장 계근 키오스크 1분 매뉴얼</title>
+  <style>
+    :root{
+      --brand:#1f7a4a; --ink:#111; --muted:#666; --bg:#f6f7f9; --line:#e5e7eb;
+      --card:#fff; --warn:#d64545;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font:15px/1.6 system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+    .wrap{max-width:720px; margin:0 auto; padding:16px 14px 80px;}
+    header{
+      background:#0f172a; color:#fff; padding:14px 16px; border-radius:14px;
+      display:flex; align-items:center; gap:10px; margin-bottom:14px;
+    }
+    header .title{font-weight:800; font-size:18px;}
+    header .sub{font-size:12px; opacity:.8;}
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:14px;
+      padding:14px; margin:10px 0; box-shadow:0 2px 8px rgba(0,0,0,.03);
+    }
+    .badge{
+      display:inline-block; background:#eaf6ef; color:var(--brand); font-weight:700;
+      padding:3px 8px; border-radius:999px; font-size:12px; margin-right:6px;
+    }
+    h2{font-size:17px; margin:0 0 8px;}
+    h3{font-size:15px; margin:10px 0 6px;}
+    .muted{color:var(--muted);}
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+    .btnlike{
+      border:1px solid var(--line); border-radius:12px; padding:10px; background:#f9fafb;
+      font-weight:700; text-align:center;
+    }
+    .step{
+      display:flex; gap:8px; margin:8px 0;
+    }
+    .step .n{
+      width:26px; height:26px; border-radius:8px; background:var(--brand); color:#fff;
+      display:flex; align-items:center; justify-content:center; font-weight:800; flex:0 0 auto;
+    }
+    .step .t{flex:1;}
+    .imgbox{
+      border:1px dashed var(--line); border-radius:12px; padding:8px; margin-top:6px;
+      background:#fafafa; text-align:center; font-size:13px; color:var(--muted);
+    }
+    .imgbox img{max-width:100%; border-radius:10px;}
+    .warn{
+      background:#fff5f5; border:1px solid #ffd9d9; color:#7a2222; padding:10px; border-radius:12px;
+      font-size:14px;
+    }
+    .sticky{
+      position:fixed; left:0; right:0; bottom:0; background:#ffffffcc; backdrop-filter: blur(8px);
+      border-top:1px solid var(--line);
+    }
+    .sticky .inner{
+      max-width:720px; margin:0 auto; padding:10px 14px; display:flex; gap:8px; align-items:center;
+      justify-content:space-between;
+    }
+    .call{
+      background:var(--brand); color:#fff; padding:10px 12px; border-radius:10px; font-weight:800; text-decoration:none;
+    }
+    ul{margin:6px 0 0 18px;}
+    li{margin:2px 0;}
+    .tiny{font-size:12px;}
+  </style>
 </head>
 <body>
-<div class="app">
-  <section class="left">
-    <div class="search">
-      <input id="q" placeholder="무엇을 찾으세요? 예) 유리 세정제 / 화장실" />
-      <button id="btnSearch">검색</button>
+  <div class="wrap">
+    <header>
+      <!-- 로고 넣고 싶으면 아래 img 태그 사용 -->
+      <!-- <img src="logo.png" width="36" height="36" style="border-radius:8px;"> -->
+      <div>
+        <div class="title">반월공장 계근 키오스크 1분 매뉴얼</div>
+        <div class="sub">처음 오신 기사님도 아래대로만 하시면 됩니다.</div>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>0. 3초만에 내 메뉴 찾기</h2>
+      <div class="grid2">
+        <div class="btnlike">원료(고지/폐지)</div>
+        <div class="btnlike">부자재(약품/폐기물/고철 등)</div>
+        <div class="btnlike">제품 출고(원지)</div>
+        <div class="btnlike">컨테이너(수입원지/UKP)</div>
+      </div>
+      <p class="muted tiny">※ 헷갈리면 “부자재”로 들어가서 업체명부터 찾으시면 됩니다.</p>
     </div>
-    <div style="font-size:13px;color:#666">최근검색:
-      <span id="recent" class="chips"></span>
-      <span class="btn-clear" id="clearRecent">지우기</span>
-    </div>
-    <div class="chips" id="cats"></div>
-    <div class="list" id="list"></div>
-  </section>
-  <section class="right">
-    <div class="stage">
-      <div class="map-wrap" id="map">
-        <!-- 배경: 실제 운영시 아래 div 대신 SVG 파일을 img로 넣으세요 -->
-        <div class="map-bg">여기에 1F.svg 같은 층별 SVG를 넣어주세요</div>
-        <!-- 경로 -->
-        <svg class="route" viewBox="0 0 1000 700" preserveAspectRatio="none">
-          <polyline id="routeLine" points="" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="10 8"></polyline>
-        </svg>
-        <!-- 현재 위치(고정형 키오스크 기준) -->
-        <div id="now" class="now" style="left: 120px; top: 560px;"></div>
-        <!-- POI 마커가 JS로 생성됩니다 -->
+
+    <div class="card">
+      <h2>1. 첫 화면: 입차 / 출차 선택</h2>
+      <div class="step"><div class="n">1</div><div class="t"><b>입차</b>: 공장 들어와서 <b>처음 계근할 때</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>출차</b>: 상/하차 후 나갈 때 <b>두 번째 계근</b></div></div>
+      <div class="imgbox">
+        <!-- 여기에 첫화면 스샷 넣기 -->
+        <!-- <img src="screen_inout.jpg" alt="입차/출차 화면"> -->
+        (스크린샷 자리: 입차/출차 화면)
       </div>
     </div>
-    <div class="footer"><b>안내:</b> 항목을 누르면 위치와 경로가 표시됩니다. 두 번 탭하면 확대/축소가 가능합니다(브라우저 기본 제스처).</div>
-  </section>
-</div>
 
-<!-- Fuse.js (간단 모호검색용) -->
-<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
-<script>
-/** ===== ① 데이터(예시) : 좌표는 1000x700 기준 픽셀 ===== */
-const POIS = [
-  {id:"A", name:"유리 세정제", cat:"생활", x: 760, y: 140, aliases:["세정제","유리클리너"], route:[ [120,560],[260,560],[520,420],[760,160] ]},
-  {id:"B", name:"수납용품",   cat:"생활", x: 560, y: 220, aliases:["정리함"],               route:[ [120,560],[260,560],[520,420],[560,240] ]},
-  {id:"WC",name:"화장실",     cat:"편의", x: 160, y: 120, aliases:["화장실(남)","toilet"],   route:[ [120,560],[120,360],[120,200],[160,140] ]},
-  {id:"CS",name:"고객센터",   cat:"편의", x: 880, y: 560, aliases:["안내데스크"],            route:[ [120,560],[300,560],[520,560],[700,560],[880,560] ]},
-];
-const CATS = [...new Set(POIS.map(p=>p.cat))];
+    <div class="card">
+      <h2>2. 입차 절차</h2>
 
-/** ===== ② 맵 크기 ↔ 좌표 보정 ===== */
-const MAP_VIEWBOX = {w:1000,h:700};
-function toScreen(x,y){
-  const el = document.getElementById('map');
-  const r = el.getBoundingClientRect();
-  // 내부 패딩 없이 꽉 채운다고 가정(비율 유지)
-  const scale = Math.min(r.width/MAP_VIEWBOX.w, r.height/MAP_VIEWBOX.h);
-  const offsetX = (r.width - MAP_VIEWBOX.w * scale)/2;
-  const offsetY = (r.height - MAP_VIEWBOX.h * scale)/2;
-  return {left: offsetX + x*scale, top: offsetY + y*scale};
-}
-function toPolylinePoints(route){
-  // viewBox 기준 좌표 그대로 polyline에 입력
-  return route.map(p=>p.join(",")).join(" ");
-}
+      <h3>2-1) 원료 입차</h3>
+      <div class="step"><div class="n">1</div><div class="t"><b>입차 → 원료 선택</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b> (예: 81가1234 → 1234)</div></div>
+      <div class="step"><div class="n">3</div><div class="t"><b>품목 선택</b> (압축 / 바라)</div></div>
+      <div class="step"><div class="n">4</div><div class="t"><b>차량형태 선택</b> (카고 / 윙)</div></div>
+      <div class="step"><div class="n">5</div><div class="t"><b>베일수 선택 후 확인</b></div></div>
 
-/** ===== ③ POI 렌더 ===== */
-function renderPOIs(){
-  const map = document.getElementById('map');
-  // 기존 마커 제거
-  [...map.querySelectorAll('.poi')].forEach(n=>n.remove());
-  POIS.forEach(p=>{
-    const pos = toScreen(p.x,p.y);
-    const d = document.createElement('div');
-    d.className = 'poi';
-    d.style.left = pos.left+'px';
-    d.style.top  = pos.top +'px';
-    d.innerHTML = `<div class="dot"></div><div class="label">${p.name}</div>`;
-    d.onclick = ()=> focusPOI(p);
-    map.appendChild(d);
-  });
-}
+      <h3>2-2) 부자재 / 제품 / 키오스크(기타) 입차</h3>
+      <div class="step"><div class="n">1</div><div class="t"><b>입차 → 해당 품목 선택</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력 후 확인</b></div></div>
+    </div>
 
-/** ===== ④ 경로/포커스 ===== */
-function focusPOI(p){
-  // 경로 표시
-  const line = document.getElementById('routeLine');
-  line.setAttribute('points', toPolylinePoints(p.route));
-  line.setAttribute('stroke', '#ff4d4f');
+    <div class="card">
+      <h2>3. 출차 절차</h2>
 
-  // 최근검색 저장
-  addRecent(p.name);
-}
+      <h3>3-1) 원료 출차</h3>
+      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 원료 선택</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
+      <div class="step"><div class="n">3</div><div class="t"><b>업체명 확인 후 확인</b></div></div>
 
-/** ===== ⑤ 검색/목록 ===== */
-const fuse = new Fuse(POIS, { keys:["name","aliases","cat"], threshold:0.32, ignoreLocation:true });
+      <h3>3-2) 부자재 출차 (약품/폐합성/폐기물/고철/기타)</h3>
+      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 부자재 선택</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
+      <div class="step"><div class="n">3</div><div class="t"><b>업체명 클릭 → 위 탭에서 품목군 먼저 선택</b></div></div>
+      <div class="step"><div class="n">4</div><div class="t"><b>아래 리스트에서 거래처 선택 후 확인</b></div></div>
+      <div class="step"><div class="n">5</div><div class="t"><b>품목도 동일하게 탭 선택 → 리스트에서 품목 선택</b></div></div>
+      <div class="step"><div class="n">6</div><div class="t"><b>계근표 장수 선택 후 확인</b></div></div>
+      <div class="warn">※ 팝업에 리스트가 안 보이면 <b>상단 탭(약품/폐기물/고철…)</b>을 먼저 누르세요.</div>
 
-function renderList(rows){
-  const box = document.getElementById('list');
-  box.innerHTML = rows.map(p=>`
-    <div class="item" onclick="focusPOIById('${p.id}')">
-      <div><b>${p.name}</b></div>
-      <small>${p.cat}</small>
-    </div>`).join('');
-}
-function focusPOIById(id){
-  const p = POIS.find(x=>x.id===id);
-  if (p) focusPOI(p);
-}
-function onSearch(){
-  const q = document.getElementById('q').value.trim();
-  if(!q){ renderList(POIS); return; }
-  const result = fuse.search(q).map(r=>r.item);
-  renderList(result);
-  if(result[0]) focusPOI(result[0]);
-  addRecent(q);
-}
+      <h3>3-3) 제품 출차</h3>
+      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 제품 선택</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
+      <div class="step"><div class="n">3</div><div class="t"><b>계근표 장수 선택 후 확인</b></div></div>
 
-/** ===== ⑥ 카테고리/최근검색 ===== */
-function renderCats(){
-  const wrap = document.getElementById('cats');
-  wrap.innerHTML = CATS.map(c=>`<span class="chip" onclick="filterCat('${c}')">${c}</span>`).join('');
-}
-function filterCat(cat){
-  const rows = POIS.filter(p=>p.cat===cat);
-  renderList(rows);
-}
-function addRecent(q){
-  const k='wf_recent';
-  const arr = JSON.parse(localStorage.getItem(k)||'[]').filter(x=>x!==q);
-  arr.unshift(q); if(arr.length>6) arr.length=6;
-  localStorage.setItem(k, JSON.stringify(arr));
-  renderRecent();
-}
-function renderRecent(){
-  const k='wf_recent';
-  const arr = JSON.parse(localStorage.getItem(k)||'[]');
-  const wrap = document.getElementById('recent');
-  wrap.innerHTML = arr.map(x=>`<span class="chip" onclick="setQ('${x}')">${x}</span>`).join('');
-}
-function setQ(v){ document.getElementById('q').value=v; onSearch(); }
+      <h3>3-4) 컨테이너 출차 (수입 원지 / U.K.P)</h3>
+      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 컨테이너 선택</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>컨테이너 번호 끝 4자리 입력</b></div></div>
+      <div class="step"><div class="n">3</div><div class="t"><b>품목 선택</b> (수입 원지 / U.K.P)</div></div>
+      <div class="step"><div class="n">4</div><div class="t"><b>계근표 장수 선택 후 확인</b></div></div>
+    </div>
 
-/** ===== ⑦ 이벤트 ===== */
-document.getElementById('btnSearch').onclick = onSearch;
-document.getElementById('q').addEventListener('keydown', e=>{ if(e.key==='Enter') onSearch();});
-document.getElementById('clearRecent').onclick = ()=>{ localStorage.removeItem('wf_recent'); renderRecent(); };
-window.addEventListener('resize', ()=>renderPOIs());
+    <div class="card">
+      <h2>4. 자주 묻는 질문</h2>
+      <ul>
+        <li><b>차량번호는 왜 4자리만 입력하나요?</b><br>
+          → 키오스크는 번호 끝 4자리로 조회합니다.</li>
+        <li><b>내 메뉴를 모르겠어요.</b><br>
+          → 0번의 “3초 메뉴 찾기” 기준으로 고르시면 됩니다. 그래도 헷갈리면 부자재로 들어가 업체명부터 찾으세요.</li>
+        <li><b>팝업이 빈 화면이에요.</b><br>
+          → 상단 탭(약품/폐기물/고철 등)을 먼저 누르면 리스트가 나타납니다.</li>
+      </ul>
+    </div>
+  </div>
 
-/** ===== ⑧ 초기 렌더 ===== */
-renderPOIs();
-renderList(POIS);
-renderCats();
-renderRecent();
-</script>
+  <div class="sticky">
+    <div class="inner">
+      <div class="tiny muted">문제가 있으면 계근 담당자에게 연락주세요.</div>
+      <!-- 전화번호/내선 넣기 -->
+      <a class="call" href="tel:031-000-0000">📞 계근 담당자</a>
+    </div>
+  </div>
 </body>
 </html>
