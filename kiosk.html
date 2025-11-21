@@ -154,19 +154,6 @@
       display:inline-block; font-weight:800; font-size:12px; background:#eaf6ef; color:var(--brand);
       padding:3px 8px; border-radius:999px; margin-bottom:6px;
     }
-
-    /* 하단 고정 */
-    .sticky{
-      position:fixed; left:0; right:0; bottom:0; background:#ffffffcc; backdrop-filter: blur(8px);
-      border-top:1px solid var(--line);
-    }
-    .sticky .inner{
-      max-width:980px; margin:0 auto; padding:10px 14px; display:flex; gap:8px; align-items:center;
-      justify-content:space-between;
-    }
-    .call{
-      background:var(--brand); color:#fff; padding:10px 12px; border-radius:10px; font-weight:800; text-decoration:none;
-    }
   </style>
 </head>
 <body>
@@ -229,12 +216,18 @@
 
           <h3>0) 첫 화면: 입차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>입차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차/출차 선택 화면</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-1] 입차/출차 선택 화면</div>
+          </div>
 
           <div class="hr"></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 원료</b> 선택</div></div>
-          <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 원료 선택</div></div>
+          <div class="imgbox">
+            <img src="kiosk/2.png">
+            <div class="caption">[사진2-1] 원료 선택</div>
+          </div>
 
           <div class="hr"></div>
 
@@ -242,7 +235,10 @@
           <div class="step"><div class="n">3</div><div class="t">품목(압축/바라)</div></div>
           <div class="step"><div class="n">4</div><div class="t">차량형태(카고/윙)</div></div>
           <div class="step"><div class="n">5</div><div class="t">베일수 선택 → 확인</div></div>
-          <div class="imgbox"><img src="kiosk/3.png"><div class="caption">[사진3] 입차 입력 화면</div></div>
+          <div class="imgbox">
+            <img src="kiosk/3.png">
+            <div class="caption">[사진3-1] 입차 입력 화면</div>
+          </div>
         </div>
 
         <div class="mode-block mode-out">
@@ -250,16 +246,25 @@
 
           <h3>0) 첫 화면: 출차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>출차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차/출차 선택 화면</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-2] 입차/출차 선택 화면</div>
+          </div>
 
           <div class="hr"></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 원료</b> 선택</div></div>
-          <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 원료 선택</div></div>
+          <div class="imgbox">
+            <img src="kiosk/2.png">
+            <div class="caption">[사진2-1] 원료 선택</div>
+          </div>
 
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리</div></div>
           <div class="step"><div class="n">3</div><div class="t">업체명 확인 → 확인</div></div>
-          <div class="imgbox"><img src="kiosk/8.png"><div class="caption">[사진8] 원료 출차</div></div>
+          <div class="imgbox">
+            <img src="kiosk/8.png">
+            <div class="caption">[사진8-1] 원료 출차</div>
+          </div>
         </div>
       </div>
     </div>
@@ -275,15 +280,24 @@
 
           <h3>0) 첫 화면: 입차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>입차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차/출차 선택 화면</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-1] 입차/출차 선택 화면</div>
+          </div>
 
           <div class="hr"></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 부자재</b> 선택</div></div>
-          <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 부자재 선택</div></div>
+          <div class="imgbox">
+            <img src="kiosk/2.png">
+            <div class="caption">[사진2-2] 부자재 선택</div>
+          </div>
 
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리 → 확인</div></div>
-          <div class="imgbox"><img src="kiosk/4.png"><div class="caption">[사진4] 부자재 입차</div></div>
+          <div class="imgbox">
+            <img src="kiosk/4.png">
+            <div class="caption">[사진4-1] 부자재 입차</div>
+          </div>
         </div>
 
         <div class="mode-block mode-out">
@@ -291,23 +305,38 @@
 
           <h3>0) 첫 화면: 출차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>출차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차/출차 선택 화면</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-2] 입차/출차 선택 화면</div>
+          </div>
 
           <div class="hr"></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 부자재</b> 선택</div></div>
-          <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 부자재 선택</div></div>
+          <div class="imgbox">
+            <img src="kiosk/2.png">
+            <div class="caption">[사진2-2] 부자재 선택</div>
+          </div>
 
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리</div></div>
-          <div class="imgbox"><img src="kiosk/9.png"><div class="caption">[사진9]</div></div>
+          <div class="imgbox">
+            <img src="kiosk/9.png">
+            <div class="caption">[사진9-1] 차량번호 입력</div>
+          </div>
 
           <div class="hr"></div>
           <div class="step"><div class="n">3</div><div class="t">업체명 클릭 → 상단 탭 먼저 선택</div></div>
-          <div class="imgbox"><img src="kiosk/10.png"><div class="caption">[사진10]</div></div>
+          <div class="imgbox">
+            <img src="kiosk/10.png">
+            <div class="caption">[사진10-1] 업체/탭 선택</div>
+          </div>
 
           <div class="hr"></div>
           <div class="step"><div class="n">4</div><div class="t">품목 탭 선택 → 리스트에서 선택</div></div>
-          <div class="imgbox"><img src="kiosk/11.png"><div class="caption">[사진11]</div></div>
+          <div class="imgbox">
+            <img src="kiosk/11.png">
+            <div class="caption">[사진11-1] 품목 선택</div>
+          </div>
 
           <div class="step"><div class="n">5</div><div class="t">계근표 장수 선택 → 확인</div></div>
           <div class="warn">※ 리스트 안 보이면 상단 탭부터!</div>
@@ -326,15 +355,24 @@
 
           <h3>0) 첫 화면: 입차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>입차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차/출차 선택 화면</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-1] 입차/출차 선택 화면</div>
+          </div>
 
           <div class="hr"></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 제품</b> 선택</div></div>
-          <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 제품 선택</div></div>
+          <div class="imgbox">
+            <img src="kiosk/2.png">
+            <div class="caption">[사진2-3] 제품 선택</div>
+          </div>
 
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리 → 확인</div></div>
-          <div class="imgbox"><img src="kiosk/4.png"><div class="caption">[사진4]</div></div>
+          <div class="imgbox">
+            <img src="kiosk/4.png">
+            <div class="caption">[사진4-1] 제품 입차</div>
+          </div>
         </div>
 
         <div class="mode-block mode-out">
@@ -342,15 +380,24 @@
 
           <h3>0) 첫 화면: 출차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>출차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 입차/출차 선택 화면</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-2] 입차/출차 선택 화면</div>
+          </div>
 
           <div class="hr"></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 제품</b> 선택</div></div>
-          <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 제품 선택</div></div>
+          <div class="imgbox">
+            <img src="kiosk/2.png">
+            <div class="caption">[사진2-3] 제품 선택</div>
+          </div>
 
           <div class="step"><div class="n">2</div><div class="t">차량번호 → 계근표 장수 → 확인</div></div>
-          <div class="imgbox"><img src="kiosk/12.png"><div class="caption">[사진12]</div></div>
+          <div class="imgbox">
+            <img src="kiosk/12.png">
+            <div class="caption">[사진12-1] 제품 출차</div>
+          </div>
         </div>
 
         <!-- 서류 출력(제품 전용) -->
@@ -414,7 +461,10 @@
 
           <h3>0) 첫 화면: 입차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>입차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1]</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-1]</div>
+          </div>
 
           <div class="hr"></div>
 
@@ -430,7 +480,10 @@
 
           <h3>0) 첫 화면: 출차 선택</h3>
           <div class="step"><div class="n">0</div><div class="t">첫 화면에서 <b>출차</b>를 누르세요.</div></div>
-          <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1]</div></div>
+          <div class="imgbox">
+            <img src="kiosk/1.png">
+            <div class="caption">[사진1-2]</div>
+          </div>
 
           <div class="hr"></div>
 
@@ -448,16 +501,6 @@
           <div class="imgbox"><img src="kiosk/14.png"><div class="caption">[사진14]</div></div>
         </div>
       </div>
-    </div>
-
-    <!-- FAQ -->
-    <div class="card">
-      <h2>자주 묻는 질문</h2>
-      <ul>
-        <li><b>차량번호는 왜 4자리만 입력하나요?</b><br>→ 끝 4자리로 조회합니다.</li>
-        <li><b>팝업이 빈 화면이에요.</b><br>→ 상단 탭부터 누르세요.</li>
-      </ul>
-      <p class="muted tiny">※ 반월공장 계근 키오스크 기준</p>
     </div>
 
   </div>
