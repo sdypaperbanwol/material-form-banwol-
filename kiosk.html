@@ -14,158 +14,302 @@
       margin:0; background:var(--bg); color:var(--ink);
       font:15px/1.6 system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     }
-    .wrap{max-width:720px; margin:0 auto; padding:16px 14px 80px;}
+    .wrap{max-width:860px; margin:0 auto; padding:16px 14px 120px;}
     header{
       background:#0f172a; color:#fff; padding:14px 16px; border-radius:14px;
-      display:flex; align-items:center; gap:10px; margin-bottom:14px;
+      display:flex; align-items:center; gap:10px; margin-bottom:12px;
     }
     header .title{font-weight:800; font-size:18px;}
-    header .sub{font-size:12px; opacity:.8;}
+    header .sub{font-size:12px; opacity:.85;}
+
     .card{
       background:var(--card); border:1px solid var(--line); border-radius:14px;
       padding:14px; margin:10px 0; box-shadow:0 2px 8px rgba(0,0,0,.03);
     }
-    .badge{
-      display:inline-block; background:#eaf6ef; color:var(--brand); font-weight:700;
-      padding:3px 8px; border-radius:999px; font-size:12px; margin-right:6px;
-    }
+
     h2{font-size:17px; margin:0 0 8px;}
-    h3{font-size:15px; margin:10px 0 6px;}
+    h3{font-size:15px; margin:12px 0 6px;}
     .muted{color:var(--muted);}
-    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
-    .btnlike{
-      border:1px solid var(--line); border-radius:12px; padding:10px; background:#f9fafb;
-      font-weight:700; text-align:center;
+    .tiny{font-size:12px;}
+    .hr{height:1px; background:var(--line); margin:10px 0;}
+
+    /* 상단 4개 카테고리 버튼 */
+    .cat-grid{
+      display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:8px;
     }
-    .step{
-      display:flex; gap:8px; margin:8px 0;
+    .cat-btn{
+      border:2px solid var(--line); background:#fff; border-radius:14px;
+      padding:14px 12px; font-weight:800; font-size:16px; text-align:center;
+      cursor:pointer; transition:.15s;
+      display:flex; flex-direction:column; gap:4px;
     }
+    .cat-btn .desc{font-size:12px; color:var(--muted); font-weight:600;}
+    .cat-btn.active{
+      border-color:var(--brand);
+      box-shadow:0 4px 14px rgba(31,122,74,.12);
+      transform:translateY(-1px);
+    }
+
+    /* 단계/이미지 */
+    .step{display:flex; gap:8px; margin:8px 0;}
     .step .n{
       width:26px; height:26px; border-radius:8px; background:var(--brand); color:#fff;
       display:flex; align-items:center; justify-content:center; font-weight:800; flex:0 0 auto;
     }
     .step .t{flex:1;}
     .imgbox{
-      border:1px dashed var(--line); border-radius:12px; padding:8px; margin-top:6px;
+      border:1px dashed var(--line); border-radius:12px; padding:8px; margin-top:8px;
       background:#fafafa; text-align:center; font-size:13px; color:var(--muted);
     }
-    .imgbox img{max-width:100%; border-radius:10px;}
+    .imgbox img{max-width:100%; border-radius:10px; display:block; margin:0 auto;}
+    .caption{font-size:12px; color:var(--muted); margin-top:6px;}
     .warn{
       background:#fff5f5; border:1px solid #ffd9d9; color:#7a2222; padding:10px; border-radius:12px;
-      font-size:14px;
+      font-size:14px; margin-top:8px;
     }
+
+    /* 섹션 토글 */
+    .section{display:none;}
+    .section.show{display:block;}
+    .pill{
+      display:inline-block; font-weight:800; font-size:12px; background:#eaf6ef; color:var(--brand);
+      padding:3px 8px; border-radius:999px; margin-bottom:6px;
+    }
+
+    /* 하단 고정 */
     .sticky{
       position:fixed; left:0; right:0; bottom:0; background:#ffffffcc; backdrop-filter: blur(8px);
       border-top:1px solid var(--line);
     }
     .sticky .inner{
-      max-width:720px; margin:0 auto; padding:10px 14px; display:flex; gap:8px; align-items:center;
+      max-width:860px; margin:0 auto; padding:10px 14px; display:flex; gap:8px; align-items:center;
       justify-content:space-between;
     }
     .call{
       background:var(--brand); color:#fff; padding:10px 12px; border-radius:10px; font-weight:800; text-decoration:none;
     }
-    ul{margin:6px 0 0 18px;}
-    li{margin:2px 0;}
-    .tiny{font-size:12px;}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <!-- 로고 넣고 싶으면 아래 img 태그 사용 -->
-      <!-- <img src="logo.png" width="36" height="36" style="border-radius:8px;"> -->
       <div>
         <div class="title">반월공장 계근 키오스크 1분 매뉴얼</div>
-        <div class="sub">처음 오신 기사님도 아래대로만 하시면 됩니다.</div>
+        <div class="sub">아래에서 본인 차량에 해당하는 메뉴만 눌러서 보시면 됩니다.</div>
       </div>
     </header>
 
+    <!-- 공통: 첫 화면 설명 -->
     <div class="card">
-      <h2>0. 3초만에 내 메뉴 찾기</h2>
-      <div class="grid2">
-        <div class="btnlike">원료(고지/폐지)</div>
-        <div class="btnlike">부자재(약품/폐기물/고철 등)</div>
-        <div class="btnlike">제품 출고(원지)</div>
-        <div class="btnlike">컨테이너(수입원지/UKP)</div>
-      </div>
-      <p class="muted tiny">※ 헷갈리면 “부자재”로 들어가서 업체명부터 찾으시면 됩니다.</p>
-    </div>
-
-    <div class="card">
-      <h2>1. 첫 화면: 입차 / 출차 선택</h2>
-      <div class="step"><div class="n">1</div><div class="t"><b>입차</b>: 공장 들어와서 <b>처음 계근할 때</b></div></div>
-      <div class="step"><div class="n">2</div><div class="t"><b>출차</b>: 상/하차 후 나갈 때 <b>두 번째 계근</b></div></div>
+      <h2>공통 ① 첫 화면: 입차 / 출차</h2>
+      <div class="step"><div class="n">입</div><div class="t"><b>입차</b> : 공장 들어와서 <b>처음 계근</b></div></div>
+      <div class="step"><div class="n">출</div><div class="t"><b>출차</b> : 상/하차 후 나갈 때 <b>두 번째 계근</b></div></div>
       <div class="imgbox">
-        <!-- 여기에 첫화면 스샷 넣기 -->
-        <!-- <img src="screen_inout.jpg" alt="입차/출차 화면"> -->
-        (스크린샷 자리: 입차/출차 화면)
+        <img src="kiosk/1.png" alt="입차/출차 선택 화면">
+        <div class="caption">[사진1] 입차 / 출차 선택 화면</div>
+      </div>
+      <p class="muted tiny">※ 아래에서 본인 품목을 선택하면 해당 절차만 펼쳐집니다.</p>
+    </div>
+
+    <!-- 카테고리 선택 -->
+    <div class="card">
+      <h2>공통 ② 내가 해당하는 품목 선택</h2>
+      <div class="cat-grid">
+        <button class="cat-btn" data-target="sec-raw">
+          원료
+          <div class="desc">고지 / 폐지 등 원료 입·출고</div>
+        </button>
+        <button class="cat-btn" data-target="sec-sub">
+          부자재
+          <div class="desc">약품 / 폐기물 / 고철 / 기타</div>
+        </button>
+        <button class="cat-btn" data-target="sec-prod">
+          제품
+          <div class="desc">원지/완제품 출고 차량</div>
+        </button>
+        <button class="cat-btn" data-target="sec-cont">
+          컨테이너
+          <div class="desc">수입원지 / UKP 컨테이너</div>
+        </button>
       </div>
     </div>
 
-    <div class="card">
-      <h2>2. 입차 절차</h2>
+    <!-- ======================= 원료 섹션 ======================= -->
+    <div id="sec-raw" class="section">
+      <div class="card">
+        <div class="pill">원료</div>
+        <h2>원료 차량 절차</h2>
 
-      <h3>2-1) 원료 입차</h3>
-      <div class="step"><div class="n">1</div><div class="t"><b>입차 → 원료 선택</b></div></div>
-      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b> (예: 81가1234 → 1234)</div></div>
-      <div class="step"><div class="n">3</div><div class="t"><b>품목 선택</b> (압축 / 바라)</div></div>
-      <div class="step"><div class="n">4</div><div class="t"><b>차량형태 선택</b> (카고 / 윙)</div></div>
-      <div class="step"><div class="n">5</div><div class="t"><b>베일수 선택 후 확인</b></div></div>
+        <h3>1) 원료 입차</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>입차 → 원료</b> 선택</div></div>
+        <div class="imgbox">
+          <img src="kiosk/2.png" alt="원료 입차 1단계">
+          <div class="caption">[사진2] 원료 선택 화면</div>
+        </div>
 
-      <h3>2-2) 부자재 / 제품 / 키오스크(기타) 입차</h3>
-      <div class="step"><div class="n">1</div><div class="t"><b>입차 → 해당 품목 선택</b></div></div>
-      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력 후 확인</b></div></div>
+        <div class="hr"></div>
+
+        <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b> (예: 81가1234 → 1234)</div></div>
+        <div class="step"><div class="n">3</div><div class="t"><b>품목 선택</b> (압축 / 바라)</div></div>
+        <div class="step"><div class="n">4</div><div class="t"><b>차량형태 선택</b> (카고 / 윙)</div></div>
+        <div class="step"><div class="n">5</div><div class="t"><b>베일수 선택 → 확인</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/3.png" alt="원료 입차 입력 화면">
+          <div class="caption">[사진3] 원료 입차 입력 화면</div>
+        </div>
+
+        <h3>2) 원료 출차</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>출차 → 원료</b> 선택</div></div>
+        <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
+        <div class="step"><div class="n">3</div><div class="t"><b>업체명 확인 → 확인</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/8.png" alt="원료 출차 화면">
+          <div class="caption">[사진8] 원료 출차 화면</div>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>3. 출차 절차</h2>
+    <!-- ======================= 부자재 섹션 ======================= -->
+    <div id="sec-sub" class="section">
+      <div class="card">
+        <div class="pill">부자재</div>
+        <h2>부자재 차량 절차</h2>
 
-      <h3>3-1) 원료 출차</h3>
-      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 원료 선택</b></div></div>
-      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
-      <div class="step"><div class="n">3</div><div class="t"><b>업체명 확인 후 확인</b></div></div>
+        <h3>1) 부자재 입차</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>입차 → 부자재</b> 선택</div></div>
+        <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력 → 확인</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/4.png" alt="부자재 입차 화면">
+          <div class="caption">[사진4] 부자재 입차 화면</div>
+        </div>
 
-      <h3>3-2) 부자재 출차 (약품/폐합성/폐기물/고철/기타)</h3>
-      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 부자재 선택</b></div></div>
-      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
-      <div class="step"><div class="n">3</div><div class="t"><b>업체명 클릭 → 위 탭에서 품목군 먼저 선택</b></div></div>
-      <div class="step"><div class="n">4</div><div class="t"><b>아래 리스트에서 거래처 선택 후 확인</b></div></div>
-      <div class="step"><div class="n">5</div><div class="t"><b>품목도 동일하게 탭 선택 → 리스트에서 품목 선택</b></div></div>
-      <div class="step"><div class="n">6</div><div class="t"><b>계근표 장수 선택 후 확인</b></div></div>
-      <div class="warn">※ 팝업에 리스트가 안 보이면 <b>상단 탭(약품/폐기물/고철…)</b>을 먼저 누르세요.</div>
+        <h3>2) 부자재 출차 (약품/폐합성/폐기물/고철/기타)</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>출차 → 부자재</b> 선택</div></div>
+        <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/9.png" alt="부자재 출차 차량번호 입력">
+          <div class="caption">[사진9] 차량번호 입력 화면</div>
+        </div>
 
-      <h3>3-3) 제품 출차</h3>
-      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 제품 선택</b></div></div>
-      <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력</b></div></div>
-      <div class="step"><div class="n">3</div><div class="t"><b>계근표 장수 선택 후 확인</b></div></div>
+        <div class="hr"></div>
 
-      <h3>3-4) 컨테이너 출차 (수입 원지 / U.K.P)</h3>
-      <div class="step"><div class="n">1</div><div class="t"><b>출차 → 컨테이너 선택</b></div></div>
-      <div class="step"><div class="n">2</div><div class="t"><b>컨테이너 번호 끝 4자리 입력</b></div></div>
-      <div class="step"><div class="n">3</div><div class="t"><b>품목 선택</b> (수입 원지 / U.K.P)</div></div>
-      <div class="step"><div class="n">4</div><div class="t"><b>계근표 장수 선택 후 확인</b></div></div>
+        <div class="step"><div class="n">3</div><div class="t"><b>업체명 클릭 → 위 탭에서 품목군 먼저 선택</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/10.png" alt="거래처 선택 팝업">
+          <div class="caption">[사진10] 거래처 선택 팝업</div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="step"><div class="n">4</div><div class="t"><b>품목도 탭 선택 → 아래 리스트에서 선택</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/11.png" alt="품목 선택 팝업">
+          <div class="caption">[사진11] 품목 선택 팝업</div>
+        </div>
+
+        <div class="step"><div class="n">5</div><div class="t"><b>계근표 장수 선택 → 확인</b></div></div>
+        <div class="warn">※ 팝업이 비어 보이면 <b>상단 탭(약품/폐기물/고철…)</b>을 먼저 누르세요.</div>
+      </div>
     </div>
 
+    <!-- ======================= 제품 섹션 ======================= -->
+    <div id="sec-prod" class="section">
+      <div class="card">
+        <div class="pill">제품</div>
+        <h2>제품 차량 절차</h2>
+
+        <h3>1) 제품 입차</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>입차 → 제품</b> 선택</div></div>
+        <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력 → 확인</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/4.png" alt="제품 입차">
+          <div class="caption">[사진4] 제품 입차 화면</div>
+        </div>
+
+        <h3>2) 제품 출차</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>출차 → 제품</b> 선택</div></div>
+        <div class="step"><div class="n">2</div><div class="t"><b>차량번호 끝 4자리 입력 → 계근표 장수 선택 → 확인</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/12.png" alt="제품 출차">
+          <div class="caption">[사진12] 제품 출차 화면</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================= 컨테이너 섹션 ======================= -->
+    <div id="sec-cont" class="section">
+      <div class="card">
+        <div class="pill">컨테이너</div>
+        <h2>컨테이너 차량 절차</h2>
+
+        <h3>1) 컨테이너 입차</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>입차 → 컨테이너</b> 선택</div></div>
+        <div class="step"><div class="n">2</div><div class="t"><b>컨테이너 번호 끝 4자리 입력 → 확인</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/6.png" alt="컨테이너 입차">
+          <div class="caption">[사진6] 컨테이너 입차 화면</div>
+        </div>
+
+        <h3>2) 컨테이너 출차 (수입 원지 / U.K.P)</h3>
+        <div class="step"><div class="n">1</div><div class="t"><b>출차 → 컨테이너</b> 선택</div></div>
+        <div class="hr"></div>
+
+        <div class="step"><div class="n">2</div><div class="t"><b>컨테이너 번호 끝 4자리 입력</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/13.png" alt="컨테이너 번호 입력">
+          <div class="caption">[사진13] 컨테이너 번호 입력 화면</div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="step"><div class="n">3</div><div class="t"><b>품목 선택(수입 원지 / U.K.P) → 계근표 장수 선택 → 확인</b></div></div>
+        <div class="imgbox">
+          <img src="kiosk/14.png" alt="컨테이너 품목 선택">
+          <div class="caption">[사진14] 컨테이너 품목/계근표 장수 선택 화면</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
     <div class="card">
-      <h2>4. 자주 묻는 질문</h2>
+      <h2>자주 묻는 질문</h2>
       <ul>
         <li><b>차량번호는 왜 4자리만 입력하나요?</b><br>
           → 키오스크는 번호 끝 4자리로 조회합니다.</li>
-        <li><b>내 메뉴를 모르겠어요.</b><br>
-          → 0번의 “3초 메뉴 찾기” 기준으로 고르시면 됩니다. 그래도 헷갈리면 부자재로 들어가 업체명부터 찾으세요.</li>
         <li><b>팝업이 빈 화면이에요.</b><br>
           → 상단 탭(약품/폐기물/고철 등)을 먼저 누르면 리스트가 나타납니다.</li>
       </ul>
+      <p class="muted tiny">※ 본 매뉴얼은 반월공장 계근 키오스크 기준입니다.</p>
     </div>
+
   </div>
 
   <div class="sticky">
     <div class="inner">
       <div class="tiny muted">문제가 있으면 계근 담당자에게 연락주세요.</div>
-      <!-- 전화번호/내선 넣기 -->
+      <!-- 전화번호/내선으로 바꿔주세요 -->
       <a class="call" href="tel:031-000-0000">📞 계근 담당자</a>
     </div>
   </div>
+
+  <script>
+    const btns = document.querySelectorAll('.cat-btn');
+    const sections = document.querySelectorAll('.section');
+
+    function showSection(id){
+      sections.forEach(s => s.classList.toggle('show', s.id === id));
+      btns.forEach(b => b.classList.toggle('active', b.dataset.target === id));
+      const el = document.getElementById(id);
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    btns.forEach(b => {
+      b.addEventListener('click', () => showSection(b.dataset.target));
+    });
+
+    // 첫 진입 시 아무 것도 안 펼쳐두고 싶으면 아래 줄 주석 유지.
+    // 기본으로 "원료" 먼저 펼치고 싶으면 다음 줄 주석 해제:
+    // showSection('sec-raw');
+  </script>
 </body>
 </html>
