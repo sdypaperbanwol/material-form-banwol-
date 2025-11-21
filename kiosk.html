@@ -32,6 +32,18 @@
     .muted{color:var(--muted);}
     .tiny{font-size:12px;}
     .hr{height:1px; background:var(--line); margin:10px 0;}
+/* 카테고리 버튼 안 아이콘 */
+.cat-icon{
+  width:56px;
+  height:56px;
+  object-fit:contain;
+  margin:0 auto 6px;
+  display:block;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.08));
+}
+.cat-btn{
+  gap:6px; /* 아이콘 들어가서 간격 조금 키움 */
+}
 
     /* 상단 4개 카테고리 버튼 */
     .cat-grid{
@@ -114,24 +126,32 @@
     <!-- 카테고리 선택 -->
     <div class="card">
       <h2>공통 ② 내가 해당하는 품목 선택</h2>
-      <div class="cat-grid">
-        <button class="cat-btn" data-target="sec-raw">
-          원료
-          <div class="desc">고지 / 폐지 등 원료 입·출고</div>
-        </button>
-        <button class="cat-btn" data-target="sec-sub">
-          부자재
-          <div class="desc">약품 / 폐기물 / 고철 / 기타</div>
-        </button>
-        <button class="cat-btn" data-target="sec-prod">
-          제품
-          <div class="desc">원지/완제품 출고 차량</div>
-        </button>
-        <button class="cat-btn" data-target="sec-cont">
-          컨테이너
-          <div class="desc">수입원지 / UKP 컨테이너</div>
-        </button>
-      </div>
+     <div class="cat-grid">
+  <button class="cat-btn" data-target="sec-raw">
+    <img class="cat-icon" src="kiosk/15.jpg" alt="원료 아이콘">
+    원료
+    <div class="desc">고지 / 폐지 등 원료 입·출고</div>
+  </button>
+
+  <button class="cat-btn" data-target="sec-sub">
+    <img class="cat-icon" src="kiosk/16.png" alt="부자재 아이콘">
+    부자재
+    <div class="desc">약품 / 폐기물 / 고철 / 기타</div>
+  </button>
+
+  <button class="cat-btn" data-target="sec-prod">
+    <img class="cat-icon" src="kiosk/17.jpg" alt="제품(원지) 아이콘">
+    제품
+    <div class="desc">원지/완제품 출고 차량</div>
+  </button>
+
+  <button class="cat-btn" data-target="sec-cont">
+    <img class="cat-icon" src="kiosk/18.png" alt="컨테이너 아이콘">
+    컨테이너
+    <div class="desc">수입원지 / UKP 컨테이너</div>
+  </button>
+</div>
+
     </div>
 
     <!-- ======================= 원료 섹션 ======================= -->
