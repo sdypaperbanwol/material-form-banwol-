@@ -121,17 +121,32 @@
     .mode-block{
       border-radius:14px; padding:12px; margin-top:12px; border:2px solid transparent;
     }
-    .mode-title{
-      display:flex; align-items:center; gap:8px;
-      font-weight:900; font-size:16px; margin-bottom:6px;
-    }
+  .mode-title{
+  display:flex; align-items:center; gap:8px;
+  font-weight:900; font-size:16px; margin-bottom:8px;
+  padding:8px 10px; border-radius:10px;
+  background:#f3f4f6;  /* 기본 라벨 배경 */
+}
+.mode-in .mode-title{ background:#eaf6ef; }  /* 입차 라벨 연녹색 */
+.mode-out .mode-title{ background:#fff1e6; } /* 출차 라벨 연주황 */
+
     .mode-badge{
       font-size:12px; font-weight:900; padding:3px 8px; border-radius:999px;
       background:#fff; border:1px solid currentColor;
     }
-    .mode-in{ background:var(--in-bg); border-color:var(--in-line); color:var(--in-ink); }
-    .mode-out{ background:var(--out-bg); border-color:var(--out-line); color:var(--out-ink); }
-    .mode-doc{ background:var(--doc-bg); border-color:var(--doc-line); color:var(--doc-ink); }
+   /* 배경은 흰색 유지 + 좌측 컬러 바 */
+.mode-in{
+  background:#fff;
+  border-color:#cfe9db;
+  color:var(--ink);
+  box-shadow: inset 8px 0 0 var(--brand);
+}
+.mode-out{
+  background:#fff;
+  border-color:#ffe3c7;
+  color:var(--ink);
+  box-shadow: inset 8px 0 0 #f59e0b; /* 출차는 주황이 직관적(나감/Exit) */
+}
 
     /* 섹션 토글 */
     .section{display:none;}
@@ -218,7 +233,7 @@
         </div>
 
         <div class="mode-block mode-in">
-          <div class="mode-title"><span class="mode-badge">입차</span> 여기까지가 입차 절차</div>
+          <div class="mode-title"><span class="mode-badge">입차</span> 입차 절차</div>
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 원료</b> 선택</div></div>
           <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 원료 선택</div></div>
           <div class="hr"></div>
@@ -230,7 +245,7 @@
         </div>
 
         <div class="mode-block mode-out">
-          <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
+          <div class="mode-title"><span class="mode-badge">출차</span> 출차 절차</div>
           <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 원료</b> 선택</div></div>
@@ -258,7 +273,7 @@
         </div>
 
         <div class="mode-block mode-in">
-          <div class="mode-title"><span class="mode-badge">입차</span> 여기까지가 입차 절차</div>
+          <div class="mode-title"><span class="mode-badge">입차</span> 입차 절차</div>
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 부자재</b> 선택</div></div>
           <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2] 품목 선택</div></div>
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리 → 확인</div></div>
@@ -266,7 +281,7 @@
         </div>
 
         <div class="mode-block mode-out">
-          <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
+          <div class="mode-title"><span class="mode-badge">출차</span> 출차 절차</div>
           <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 부자재</b> 선택</div></div>
@@ -304,7 +319,7 @@
         </div>
 
         <div class="mode-block mode-in">
-          <div class="mode-title"><span class="mode-badge">입차</span> 여기까지가 입차 절차</div>
+          <div class="mode-title"><span class="mode-badge">입차</span> 입차 절차</div>
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 제품</b> 선택</div></div>
           <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2]</div></div>
           <div class="step"><div class="n">2</div><div class="t">차량번호 끝 4자리 → 확인</div></div>
@@ -312,7 +327,7 @@
         </div>
 
         <div class="mode-block mode-out">
-          <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
+          <div class="mode-title"><span class="mode-badge">출차</span> 출차 절차</div>
           <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 제품</b> 선택</div></div>
@@ -388,7 +403,7 @@
         </div>
 
         <div class="mode-block mode-in">
-          <div class="mode-title"><span class="mode-badge">입차</span> 여기까지가 입차 절차</div>
+          <div class="mode-title"><span class="mode-badge">입차</span> 입차 절차</div>
           <div class="step"><div class="n">1</div><div class="t"><b>입차 → 컨테이너</b> 선택</div></div>
           <div class="imgbox"><img src="kiosk/2.png"><div class="caption">[사진2]</div></div>
           <div class="step"><div class="n">2</div><div class="t">컨테이너 번호 끝 4자리 → 확인</div></div>
@@ -396,7 +411,7 @@
         </div>
 
         <div class="mode-block mode-out">
-          <div class="mode-title"><span class="mode-badge">출차</span> 여기부터 출차 절차</div>
+          <div class="mode-title"><span class="mode-badge">출차</span> 출차 절차</div>
           <div class="imgbox"><img src="kiosk/1.png"><div class="caption">[사진1] 출차 선택</div></div>
 
           <div class="step"><div class="n">1</div><div class="t"><b>출차 → 컨테이너</b> 선택</div></div>
