@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>반월공장 계근 키오스크 A3 요약 포스터(통합 흐름+제품전용)</title>
+  <style>
+    @page { size: A3 portrait; margin: 8mm; }
+    :root{
+      --brand:#0f172a;
+      --accent:#1f7a4a;
+      --accent2:#f59e0b;
+      --ink:#0b0e14;
+      --muted:#4b5563;
+      --line:#e5e7eb;
+      --bg:#ffffff;
+      --soft:#f6f7f9;
+      --warn:#d64545;
+      --prod:#0b63c9;
+      --prod-soft:#eef5ff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font-family: system-ui, -apple-system, "Apple SD Gothic Neo","Noto Sans KR", sans-serif;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      word-break:keep-all;
+    }
+    .page{
+      width: 297mm;
+      min-height: 420mm;  /* ✅ 고정 height 대신 min-height */
+      height:auto;
+      padding: 8mm;
+      display:grid;
+      grid-template-rows:auto 1fr auto auto auto; /* ✅ flow가 1fr 먹도록 수정 */
+      gap:8mm;
+    }
+    header{
+      border:3px solid var(--brand);
+      border-radius:8mm;
+      padding:8mm;
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--soft);
+    }
+    .title{font-weight:900; font-size:34pt; letter-spacing:-0.5pt;}
+    .subtitle{font-size:16pt; color:var(--muted); font-weight:700; margin-top:2mm;}
+    .qrbox{
+      width:70mm; min-height:70mm;
+      border:3px dashed var(--line); border-radius:6mm;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:3mm; padding:4mm; background:#fff; text-align:center;
+    }
+    .qrbox img{ width:58mm; height:58mm; object-fit:contain; }
+    .qrbox .qrtext{ font-size:13pt; font-weight:800; color:var(--brand); }
+    .qrbox .tiny{ font-size:11pt; color:var(--muted); font-weight:700; }
+
+    .flow{
+      border:3px solid var(--line);
+      border-radius:8mm;
+      padding:8mm;
+      background:#fff;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8mm;
+    }
+    .stepbox{
+      border:2px solid var(--line);
+      border-radius:6mm;
+      padding:6mm;
+      background:var(--soft);
+    }
+    .stephead{
+      display:flex; align-items:center; gap:4mm;
+      font-size:24pt; font-weight:900;
+      margin-bottom:4mm;
+    }
+    .badge{
+      display:inline-block; padding:2mm 5mm; border-radius:999px;
+      font-size:16pt; font-weight:900; color:#fff; background:var(--accent);
+    }
+    .badge.out{ background:var(--accent2); }
+    .big{
+      font-size:22pt; font-weight:900; line-height:1.35;
+      margin:3mm 0;
+    }
+    .muted{ color:var(--muted); font-weight:800; }
+    .mini{
+      font-size:16pt; font-weight:800; line-height:1.5;
+      margin-top:2mm;
+    }
+
+    .cats{
+      margin-top:4mm;
+      display:grid; grid-template-columns:1fr; gap:3mm;
+      font-size:18pt; font-weight:900;
+    }
+    .catrow{
+      background:#fff; border:2px solid var(--line); border-radius:4mm;
+      padding:3mm 4mm; display:flex; justify-content:space-between; align-items:center;
+    }
+    .catrow .name{ display:flex; align-items:center; gap:3mm; }
+    .dot{
+      width:8mm; height:8mm; border-radius:2mm; background:var(--brand);
+      display:inline-block;
+    }
+    .catrow .k{ font-size:16pt; font-weight:800; color:var(--muted); }
+
+    .prod-box{
+      border:3px solid var(--prod);
+      border-radius:8mm;
+      padding:7mm 8mm;
+      background:var(--prod-soft);
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:6mm;
+    }
+    .prod-title{
+      grid-column:1 / -1;
+      font-size:22pt; font-weight:900; color:#0b2a57;
+      display:flex; align-items:center; gap:4mm;
+    }
+    .prod-pill{
+      display:inline-block; padding:2mm 5mm; border-radius:999px;
+      font-size:15pt; font-weight:900; color:#fff; background:var(--prod);
+    }
+    .prod-step{
+      background:#fff; border:2px solid rgba(11,99,201,.25);
+      border-radius:5mm; padding:5mm;
+    }
+    .prod-step h4{
+      margin:0 0 2mm; font-size:18pt; font-weight:900; color:#0b2a57;
+    }
+    .prod-step .line{
+      font-size:16pt; font-weight:900; line-height:1.5;
+      margin:1.5mm 0;
+    }
+
+    .note{
+      border:3px solid var(--warn);
+      border-radius:6mm;
+      padding:5mm 6mm;
+      font-size:16pt; font-weight:900; line-height:1.6;
+      background:#fff5f5; color:#7a2222;
+    }
+
+    footer{
+      display:flex; gap:6mm; align-items:center; justify-content:space-between;
+      font-size:12pt; color:var(--muted); font-weight:800;
+    }
+    .call{ font-size:16pt; font-weight:900; color:var(--brand); }
+
+    @media screen{
+      body{ background:#ddd; }
+      .page{ margin:10px auto; box-shadow:0 10px 30px rgba(0,0,0,.15); background:#fff; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div>
+        <div class="title">계근 키오스크 사용 요약</div>
+        <div class="subtitle">① 입차/출차 → ② 품목 → ③ 번호 입력/확인</div>
+      </div>
+
+      <div class="qrbox">
+        <img src="kiosk/QR.JPG" alt="상세 매뉴얼 QR">
+        <div class="qrtext">상세 매뉴얼</div>
+        <div class="tiny">QR 스캔해서 확인</div>
+      </div>
+    </header>
+
+    <div class="flow">
+      <div class="stepbox">
+        <div class="stephead"><span class="badge">STEP 1</span> 입차 / 출차 선택</div>
+        <div class="big">
+          첫 화면에서<br>
+          <span class="badge">입차</span> 또는 <span class="badge out">출차</span> 누르기
+        </div>
+        <div class="mini muted">※ 잘못 누르면 ‘뒤로가기’ 후 재선택</div>
+      </div>
+
+      <div class="stepbox">
+        <div class="stephead"><span class="badge">STEP 2</span> 내 품목 선택</div>
+        <div class="cats">
+          <div class="catrow"><div class="name"><span class="dot"></span>원료</div><div class="k">고지/폐지</div></div>
+          <div class="catrow"><div class="name"><span class="dot"></span>부자재</div><div class="k">약품·폐기물·고철·기타</div></div>
+          <div class="catrow"><div class="name"><span class="dot"></span>제품</div><div class="k">원지 출고</div></div>
+          <div class="catrow"><div class="name"><span class="dot"></span>컨테이너</div><div class="k">원지수출입/UKP</div></div>
+        </div>
+      </div>
+
+      <div class="stepbox">
+        <div class="stephead"><span class="badge">STEP 3</span> 입차 공통 입력</div>
+        <div class="big">
+          차량/컨테이너 번호<br>
+          <span class="muted">끝 4자리 입력</span> → 확인
+        </div>
+        <div class="mini">
+          원료만 추가 입력:<br>
+          품목(압축/바라) → 차량형태 → 베일수
+        </div>
+      </div>
+
+      <div class="stepbox">
+        <div class="stephead"><span class="badge out">STEP 3</span> 출차 공통 입력</div>
+        <div class="big">
+          차량/컨테이너 번호<br>
+          <span class="muted">끝 4자리 입력</span> → 다음
+        </div>
+        <div class="mini">
+          품목/오더 선택 →<br>
+          계근표 장수 입력 → 확인
+        </div>
+      </div>
+    </div>
+
+    <div class="prod-box">
+      <div class="prod-title"><span class="prod-pill">제품 전용</span> 출고지시서 / 거래명세서</div>
+
+      <div class="prod-step">
+        <h4>상차 전 (출고지시서)</h4>
+        <div class="line">1) 차량번호 끝 4자리 ×2 → 엔터</div>
+        <div class="line">2) 오더 확인 → 클릭</div>
+        <div class="line">3) 출고지시서 출력</div>
+        <div class="line">4) 출력물 수령 → 상차</div>
+      </div>
+
+      <div class="prod-step">
+        <h4>상차 후 (거래명세서)</h4>
+        <div class="line">1) 번호 8자리 재입력 → 엔터</div>
+        <div class="line">2) 같은 오더 클릭</div>
+        <div class="line">3) 상차롤수 확인 → 상차완료</div>
+        <div class="line">4) 거래명세서 출력</div>
+      </div>
+    </div>
+
+    <div class="note">
+      ✔ 화면이 안 보이면 “탭/목록” 먼저!<br>
+      ✔ 컨테이너는 번호 <b>끝 4자리</b>만 정확히!<br>
+      ✔ 제품 서류는 위 순서대로 진행.
+    </div>
+
+    <footer>
+      <div>반월공장 계근 키오스크</div>
+      <div class="call">문의: 계근대 / 출하 담당</div>
+    </footer>
+  </div>
+</body>
+</html>
