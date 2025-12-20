@@ -102,6 +102,19 @@
     .header{ box-shadow:none; border:none }
     .grid{ grid-template-columns:1fr 1fr }
   }
+    /* ✅ 계근 조회(제품) 테이블 헤더만: 1~2pt 축소 + 여백 축소 */
+#weighingPanel table thead th{
+  font-size: 13px;           /* 기존보다 약 -1~2pt 느낌 */
+  padding: 6px 8px;          /* 헤더 좌우 여백 축소 */
+}
+
+/* ✅ 정렬 아이콘(↕/▲/▼)이 폭 먹는 것 줄이기 */
+#weighingPanel table thead th .sort-icon{
+  font-size: 11px;           /* 아이콘만 더 작게 */
+  margin-left: 3px;
+  opacity: .85;
+}
+
   </style>
 
   <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
@@ -573,26 +586,32 @@
         </div>
         <div class="body">
           <table>
-            <thead>
-              <tr>
-                <th style="width:44px">No</th>
-                <th class="th-sort" data-sort="CARNUM" style="width:120px; white-space:nowrap; word-break:keep-all">
-                  차량번호 <span class="arrow">${arrow('CARNUM')}</span>
-                </th>
-                <th class="th-sort" data-sort="INTIME" style="width:74px;  white-space:nowrap; word-break:keep-all">
-                  입차시간 <span class="arrow">${arrow('INTIME')}</span>
-                </th>
-                <th class="th-sort" data-sort="OUTIME" style="width:74px;  white-space:nowrap; word-break:keep-all">
-                  출차시간 <span class="arrow">${arrow('OUTIME')}</span>
-                </th>
-                <th class="th-sort" data-sort="TOTWEI" style="width:84px">
-                  총중량 <span class="arrow">${arrow('TOTWEI')}</span>
-                </th>
-                <th class="th-sort" data-sort="SILWEI" style="width:84px">
-                  실중량 <span class="arrow">${arrow('SILWEI')}</span>
-                </th>
-              </tr>
-            </thead>
+           <thead>
+  <tr>
+    <th style="width:44px">No</th>
+
+    <th style="width:120px; white-space:nowrap; word-break:keep-all">
+      차량번호 <span class="sort-icon">↕</span>
+    </th>
+
+    <th style="width:74px; white-space:nowrap; word-break:keep-all">
+      입차시간 <span class="sort-icon">↕</span>
+    </th>
+
+    <th style="width:74px; white-space:nowrap; word-break:keep-all">
+      출차시간 <span class="sort-icon">▼</span>
+    </th>
+
+    <th style="width:84px">
+      총중량 <span class="sort-icon">↕</span>
+    </th>
+
+    <th style="width:84px">
+      실중량 <span class="sort-icon">↕</span>
+    </th>
+  </tr>
+</thead>
+
             <tbody>${body}</tbody>
           </table>
         </div>
