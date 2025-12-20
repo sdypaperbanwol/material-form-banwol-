@@ -75,10 +75,6 @@
   td.cell-hit{ background:#fff2cc !important }
   .badge.search-pill{ background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px }
 
-  /* ✅ 정렬 가능한 헤더 */
-  th.th-sort{ cursor:pointer; user-select:none; }
-  th.th-sort .arrow{ margin-left:6px; font-size:11px; color:#666; }
-
   /* toast & overlay */
   .toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111; color:#fff;
           padding:8px 12px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; }
@@ -94,6 +90,33 @@
   /* weighing panel scroll */
   #weighingPanel{ max-height:70vh; overflow:auto }
 
+  /* ✅ 계근 조회(제품) 테이블: 헤더 줄바꿈 방지 + 살짝 컴팩트 + 정렬 클릭 */
+  #weighingPanel table{
+    width:100%;
+    table-layout: fixed;
+  }
+  #weighingPanel table thead th{
+    font-size: 13px;              /* 기존보다 약 -1~2pt */
+    padding: 6px 8px;
+    white-space: nowrap;          /* ✅ 줄바꿈 금지 */
+    word-break: keep-all;         /* ✅ 한글 깨짐 방지 */
+  }
+  #weighingPanel table th,
+  #weighingPanel table td{
+    padding: 6px 8px;
+  }
+  #weighingPanel table thead th.th-sort{
+    cursor: pointer;
+    user-select: none;
+  }
+  #weighingPanel table thead th .sort-icon{
+    display:inline-block;
+    font-size: 11px;              /* 아이콘만 더 작게 */
+    margin-left: 3px;
+    opacity: .85;
+    vertical-align: middle;
+  }
+
   /* print */
   @media print{
     body{ background:#fff }
@@ -102,19 +125,6 @@
     .header{ box-shadow:none; border:none }
     .grid{ grid-template-columns:1fr 1fr }
   }
-    /* ✅ 계근 조회(제품) 테이블 헤더만: 1~2pt 축소 + 여백 축소 */
-#weighingPanel table thead th{
-  font-size: 13px;           /* 기존보다 약 -1~2pt 느낌 */
-  padding: 6px 8px;          /* 헤더 좌우 여백 축소 */
-}
-
-/* ✅ 정렬 아이콘(↕/▲/▼)이 폭 먹는 것 줄이기 */
-#weighingPanel table thead th .sort-icon{
-  font-size: 11px;           /* 아이콘만 더 작게 */
-  margin-left: 3px;
-  opacity: .85;
-}
-
   </style>
 
   <meta http-equiv="cache-control" content="max-age=0, no-cache, no-store, must-revalidate">
@@ -221,19 +231,17 @@
     return s0;
   }
 
-  function firstNonEmpty(...vals){
-    for (const v of vals){
-      if (v !== undefined && v !== null && String(v).trim() !== '') return v;
-    }
-    return '';
-  }
-
   function showToast(msg){ toast.textContent = msg || '완료'; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1200); }
   function stripeClass(c){ c=String(c||'').toLowerCase(); return c.includes('00ff00')?'green':'cyan'; }
-  function setLoading(on, src){ __loading=!!on; if(btnRefresh) btnRefresh.disabled=on;
-    if(on){ if(src==='manual'){ overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); }
+  function setLoading(on, src){
+    __loading=!!on;
+    if(btnRefresh) btnRefresh.disabled=on;
+    if(on){
+      if(src==='manual'){ overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); }
       elUpdated.innerHTML='<span class="mini-spinner"></span>업데이트 중…';
-    }else{ overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); }
+    }else{
+      overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true');
+    }
   }
 
   function loadCollapseMap(){ try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse)||'{}'); }catch(_){ return{}; } }
@@ -279,7 +287,7 @@
 
     const table = `
       <table>
-        <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">입차시간</th><th style="width:56px">공장</th></tr></thead>
+        <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${timeLabel}</th><th style="width:56px">공장</th></tr></thead>
         <tbody>${ total ? rowsHTML : '<tr><td colspan="4" class="empty">(없음)</td></tr>' }</tbody>
       </table>`;
 
@@ -413,8 +421,11 @@
     }finally{ setLoading(false); }
   }
 
-  function startInterval(){ if(__timer) clearInterval(__timer); if(!AUTO_REFRESH_MS) return;
-    __timer=setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS); }
+  function startInterval(){
+    if(__timer) clearInterval(__timer);
+    if(!AUTO_REFRESH_MS) return;
+    __timer=setInterval(()=>loadSnapshot({source:'auto'}), AUTO_REFRESH_MS);
+  }
 
   // 필터/검색 상태
   const plantSel = document.getElementById('plantFilter');
@@ -432,6 +443,7 @@
   plantSel.addEventListener('change', ()=>{
     localStorage.setItem(LS_KEYS.plant, plantSel.value);
     if (btnViewLive.classList.contains('active')) rerenderFromCache();
+    if (btnViewWeigh.classList.contains('active') && window.__lastWeigh) renderWeighingPanel(window.__lastWeigh);
   });
   searchInput.addEventListener('input', ()=>{
     localStorage.setItem(LS_KEYS.q, searchInput.value);
@@ -482,7 +494,7 @@
   // ✅ 정렬 지원 buildWeighTable (tableId 추가)
   function buildWeighTable(tableId, title, list, query){
     const rows = Array.isArray(list)? list : [];
-    const sortState = __weighSort[tableId] || { key:'INTIME', dir:'asc' };
+    const sortState = __weighSort[tableId] || (__weighSort[tableId] = { key:'INTIME', dir:'asc' });
 
     const q  = String(query||'').trim();
     const qq = q.replace(/\s+/g,'');
@@ -586,32 +598,36 @@
         </div>
         <div class="body">
           <table>
-           <thead>
-  <tr>
-    <th style="width:44px">No</th>
+            <thead>
+              <tr>
+                <th style="width:44px">No</th>
 
-    <th style="width:120px; white-space:nowrap; word-break:keep-all">
-      차량번호 <span class="sort-icon">↕</span>
-    </th>
+                <th class="th-sort" data-sort="CARNUM"
+                    style="width:120px; white-space:nowrap; word-break:keep-all">
+                  차량번호 <span class="sort-icon">${arrow('CARNUM')}</span>
+                </th>
 
-    <th style="width:74px; white-space:nowrap; word-break:keep-all">
-      입차시간 <span class="sort-icon">↕</span>
-    </th>
+                <th class="th-sort" data-sort="INTIME"
+                    style="width:74px; white-space:nowrap; word-break:keep-all">
+                  입차시간 <span class="sort-icon">${arrow('INTIME')}</span>
+                </th>
 
-    <th style="width:74px; white-space:nowrap; word-break:keep-all">
-      출차시간 <span class="sort-icon">▼</span>
-    </th>
+                <th class="th-sort" data-sort="OUTIME"
+                    style="width:74px; white-space:nowrap; word-break:keep-all">
+                  출차시간 <span class="sort-icon">${arrow('OUTIME')}</span>
+                </th>
 
-    <th style="width:84px">
-      총중량 <span class="sort-icon">↕</span>
-    </th>
+                <th class="th-sort" data-sort="TOTWEI"
+                    style="width:84px; white-space:nowrap; word-break:keep-all">
+                  총중량 <span class="sort-icon">${arrow('TOTWEI')}</span>
+                </th>
 
-    <th style="width:84px">
-      실중량 <span class="sort-icon">↕</span>
-    </th>
-  </tr>
-</thead>
-
+                <th class="th-sort" data-sort="SILWEI"
+                    style="width:84px; white-space:nowrap; word-break:keep-all">
+                  실중량 <span class="sort-icon">${arrow('SILWEI')}</span>
+                </th>
+              </tr>
+            </thead>
             <tbody>${body}</tbody>
           </table>
         </div>
@@ -633,14 +649,17 @@
     const sih = payload?.sihwa  ?? [];
     const q = (document.getElementById('searchInput').value || '').trim();
 
-    // ✅ tableId 추가해서 생성
     box.innerHTML = `
       <div class="col">${buildWeighTable('banwol','계근 조회(제품) – 반월', ban, q)}</div>
       <div class="col">${buildWeighTable('sihwa','계근 조회(제품) – 시화', sih, q)}</div>`;
     box.style.display='';
 
     box.querySelectorAll('[data-close-weigh]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ box.innerHTML=''; box.style.display='none'; setView('live'); });
+      btn.addEventListener('click', ()=>{
+        box.innerHTML='';
+        box.style.display='none';
+        setView('live');
+      });
     });
 
     // ✅ 정렬 클릭 이벤트 바인딩 (표 렌더링 직후)
@@ -706,7 +725,7 @@
   const btnViewWeigh=document.getElementById('btnViewWeigh');
 
   function setView(mode){
-    __currentView = mode; // ★ 현재 뷰 저장
+    __currentView = mode;
     const live=(mode==='live');
     elLivePanel.style.display = live? '' : 'none';
     elWeighPanel.style.display= live? 'none' : '';
