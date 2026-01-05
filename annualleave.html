@@ -76,18 +76,6 @@
     .who{display:flex;flex-direction:column;gap:4px;}
     .who .line1{font-weight:800;}
     .who .line2{font-size:12px;color:var(--muted);}
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:4px 10px;
-      border-radius:999px;
-      background:#111827;
-      color:#fff;
-      font-size:11px;
-      font-weight:700;
-      width:fit-content;
-    }
     .big{font-size:34px;font-weight:900;letter-spacing:-.5px;white-space:nowrap;}
     .small{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;}
     .details{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
@@ -130,6 +118,7 @@
             <option value="normal">정규직</option>
             <option value="contract">촉탁직</option>
           </select>
+          <div class="hint">※ 현재 계산 규칙은 정규/촉탁 동일(표시용)</div>
         </div>
 
         <div>
@@ -161,8 +150,6 @@
         <div class="who">
           <div class="line1" id="whoLine">-</div>
           <div class="line2" id="metaLine">-</div>
-          <!-- (자동) 배지는 제거/미사용: 디자인은 남겨두되 항상 숨김 -->
-          <div class="badge" id="modeBadge" style="display:none;">-</div>
         </div>
         <div class="big" id="outDays">-</div>
       </div>
@@ -207,13 +194,21 @@
     return `${y}-${m}-${dd}`;
   }
 
+  function addDays(date, n){
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+  function isJan1(d){ return d.getMonth() === 0 && d.getDate() === 1; }
+  function yearEnd(y){ return new Date(y,11,31); }
+
   function daysInYear(y){
     const a = new Date(y,0,1);
     const b = new Date(y+1,0,1);
     return Math.round((b-a)/86400000); // 365 or 366
   }
-
-  function yearEnd(y){ return new Date(y,11,31); }
 
   function diffDaysInclusive(a,b){
     const A = new Date(a.getFullYear(), a.getMonth(), a.getDate());
@@ -222,39 +217,15 @@
     return diff >= 0 ? diff + 1 : 0;
   }
 
-  function addDays(date, n){
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    d.setDate(d.getDate() + n);
-    return d;
-  }
-
-  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
-
-  function isJan1(d){ return d.getMonth() === 0 && d.getDate() === 1; }
-
-  // 15개 시작 "연도" (정규/촉탁의 1/1 부여 기준)
+  // 15개 시작 "연도"(정규 연부여 시작):
+  // - 1/1 입사: 다음해(=+1)부터 15개 시작
+  // - 그 외: 다다음해(=+2)부터 15개 시작
   function startYear15(join){
     return join.getFullYear() + (isJan1(join) ? 1 : 2);
   }
 
   // -----------------------------
-  // ✅ 고용노동부(상담/안내)식 월차 발생:
-  // "1개월을 채운 다음날 발생"
-  //
-  // 구현 방식:
-  // - n개월 후 "같은 일자"가 존재하면:
-  //     1개월 구간 종료일 = (n개월 후 같은 일자) - 1일
-  //     발생일 = (n개월 후 같은 일자)
-  //   예) 1/5 입사 -> 2/5 존재
-  //       1개월 구간: 1/5~2/4, 발생: 2/5
-  //
-  // - n개월 후 "같은 일자"가 없으면(말일 케이스):
-  //     1개월 구간 종료일 = n개월 후 해당월의 말일
-  //     발생일 = 종료일 + 1일 (= 다음달 1일)
-  //   예) 1/31 입사 -> 2/31 없음
-  //       종료: 2/28, 발생: 3/1
-  //   예) 3/31 입사 -> 4/31 없음
-  //       종료: 4/30, 발생: 5/1
+  // 월차(“1개월을 채운 다음날 발생”) 계산용
   // -----------------------------
   function monthPeriodEnd_MOEL(join, n){
     const y = join.getFullYear();
@@ -267,12 +238,8 @@
     const targetLast = new Date(targetY, targetM + 1, 0).getDate();
 
     if (day <= targetLast) {
-      // n개월 후 같은 일자가 존재 -> 종료일은 그 전날
-      // day=1이면 전날이 자연스럽게 전월 말일로 넘어감
       return new Date(targetY, targetM, day - 1);
     }
-
-    // 같은 일자 없음 -> 그 달 말일이 종료일
     return new Date(targetY, targetM, targetLast);
   }
 
@@ -280,53 +247,31 @@
     return addDays(monthPeriodEnd_MOEL(join, n), 1);
   }
 
-  // 신입 누적(기준일까지): 일할 + 월차(최대 11)
-  // - "입사 후 1개월 미만" 판정도 월차 발생일(=1개월 채운 다음날) 기준으로 컷
-  // - 신입(15개 시작 전) 구간에는 상한 25 적용 없음
-  function calcNewbieUpToBase(join, base){
-    const joinY = join.getFullYear();
-
+  function countMonthlyUpToBase(join, base){
+    // 월차는 최대 11개 (회사 룰 고정)
     const firstMonthlyAccrual = monthlyAccrualDate_MOEL(join, 1);
     if (base < firstMonthlyAccrual) {
       return {
-        total: 0,
-        detail: {
-          prorated: 0,
-          workedDays: diffDaysInclusive(join, base),
-          yDays: daysInYear(joinY),
-          endProrate: base,
-          monthly: 0,
-          accrualDates: [],
-          anniv: new Date(join.getFullYear()+1, join.getMonth(), join.getDate()),
-          firstMonthlyAccrual,
-          firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1)
-        }
+        monthly: 0,
+        accrualDates: [],
+        firstMonthlyAccrual,
+        firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1),
+        anniv: new Date(join.getFullYear()+1, join.getMonth(), join.getDate())
       };
     }
 
-    // (1) 일할(입사연도)
-    const endProrate = (base < yearEnd(joinY)) ? base : yearEnd(joinY);
-    const workedDays = diffDaysInclusive(join, endProrate);
-    const yDays = daysInYear(joinY);
-    const prorated = Math.ceil((workedDays / yDays) * 15);
-
-    // (2) 월차(최대 11, 기준일까지)
     const anniv = new Date(join.getFullYear()+1, join.getMonth(), join.getDate());
+    const annivMonth = anniv.getMonth();
+    const annivYear  = anniv.getFullYear();
 
     let monthly = 0;
     const accrualDates = [];
     for (let k=1; k<=11; k++){
-      accrualDates.push(monthlyAccrualDate_MOEL(join, k));
-    }
-
-    // 기준일까지 발생한 월차 카운트
-    // (기존 "마지막 1개 튐" 방지 장치 유지)
-    const annivMonth = anniv.getMonth();
-    const annivYear  = anniv.getFullYear();
-
-    for (const d of accrualDates){
+      const d = monthlyAccrualDate_MOEL(join, k);
+      accrualDates.push(d);
       if (d > base) continue;
 
+      // 기존 “마지막 1개 튐” 방지 장치 유지
       const isFirstDay = (d.getDate() === 1);
       const isMonthBeforeAnniv =
         (d.getFullYear() === annivYear) &&
@@ -341,41 +286,44 @@
 
     monthly = clamp(monthly, 0, 11);
 
-    const total = prorated + monthly; // ✅ 신입 구간 상한 없음
-
     return {
-      total,
-      detail: {
-        prorated,
-        workedDays,
-        yDays,
-        endProrate,
-        monthly,
-        accrualDates,
-        anniv,
-        firstMonthlyAccrual,
-        firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1)
-      }
+      monthly,
+      accrualDates,
+      firstMonthlyAccrual,
+      firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1),
+      anniv
     };
   }
 
-  // 정규/촉탁(연 1회 1/1 확정 부여): "기준일의 연도" 연차
-  function calcNormalForYear(join, baseYear){
+  // 전년도(입사연도) 일할(15기준) - 회사 룰:
+  // - 1/1 입사자는 “만근 처리”라서 전년도 일할 슬롯 자체가 없음(0)
+  // - 1/1이 아닌 입사자는 입사연도 근무분을 15기준으로 "올림" 일할 계산
+  //   (입사일~12/31 포함)
+  function proratedFromJoinYear(join){
+    if (isJan1(join)) return { prorated: 0, workedDays: 0, yDays: daysInYear(join.getFullYear()), periodEnd: yearEnd(join.getFullYear()) };
+
+    const joinY = join.getFullYear();
+    const end = yearEnd(joinY);
+    const workedDays = diffDaysInclusive(join, end);
+    const yDays = daysInYear(joinY);
+    const prorated = Math.ceil((workedDays / yDays) * 15);
+
+    return { prorated, workedDays, yDays, periodEnd: end };
+  }
+
+  // 정규 연부여(연 1회, 1/1 확정): baseYear의 “그 해 연차”
+  // - 15 시작연도(s15)부터 15
+  // - 2년에 1개 증가
+  // - 최대 25
+  function annualEntitlementForYear(join, baseYear){
     const s15 = startYear15(join);
     let leave = 0;
-
-    if (baseYear < s15) {
-      leave = 0;
-    } else {
+    if (baseYear < s15) leave = 0;
+    else {
       leave = 15 + Math.floor((baseYear - s15)/2);
       leave = Math.min(25, leave);
     }
-    return { total: leave, detail: { baseYear, s15 } };
-  }
-
-  function calcContractForYear(join, baseYear){
-    // 촉탁 별도 규칙 있으면 여기만 교체
-    return calcNormalForYear(join, baseYear);
+    return { leave, s15 };
   }
 
   // ---------- UI ----------
@@ -393,7 +341,6 @@
     el.textContent = msg;
   }
 
-  // ✅ 변경: 이름 옆에 "계산 모드"를 직접 표기 (자동 문구 제거)
   function showResult({name, whoLabel, join, base, total, explain}){
     $("emptyHelp").style.display = "none";
     $("resultBox").style.display = "flex";
@@ -402,10 +349,6 @@
     $("whoLine").textContent = `${name} · ${whoLabel}`;
     $("metaLine").textContent = `입사 ${fmt(join)} · 기준일 ${fmt(base)}`;
     $("outDays").textContent = `${total} 개`;
-
-    // (자동) 배지는 항상 숨김
-    $("modeBadge").style.display = "none";
-
     $("explain").textContent = explain;
   }
 
@@ -419,7 +362,6 @@
     $("resultBox").style.display = "none";
     $("details").style.display = "none";
     $("emptyHelp").style.display = "block";
-    $("modeBadge").style.display = "none";
   }
 
   $("resetBtn").addEventListener("click", resetAll);
@@ -441,49 +383,69 @@
       return;
     }
 
-    const baseYear = base.getFullYear();
+    const joinY = join.getFullYear();
+    const baseY = base.getFullYear();
     const s15 = startYear15(join);
 
+    const empLabel = (type === "contract") ? "촉탁직" : "정규직";
+
     let total = 0;
-    let explain = "";
     let whoLabel = "";
+    let explain = "";
 
-    if (baseYear < s15) {
-      const res = calcNewbieUpToBase(join, base);
-      total = res.total;
+    // 1) 입사연도: 월차만(기준일까지)
+    // 2) 입사 다음해(=joinY+1):
+    //    - 1/1 입사자: 그 해는 연부여(15 시작)로 간다
+    //    - 1/1 아닌 입사자: "월차(최대11, 기준일까지) + 전년도 일할(15기준, 올림)" 합산
+    //      (이 합산은 25 상한 미적용 가능)
+    // 3) 그 이후(s15 이상): 연부여(최대25)
 
-      // ✅ 변경: 신입 구간 표시를 이름 옆으로
-      whoLabel = (type === "contract") ? "신입(촉탁직)" : "신입(정규직)";
+    if (baseY === joinY) {
+      // 입사연도
+      const m = countMonthlyUpToBase(join, base);
+      total = m.monthly;
 
-      const d = res.detail;
+      whoLabel = `신입(${empLabel})`;
 
-      explain += `기준일까지 누적된 값으로 계산되었습니다.\n\n`;
+      explain += `【입사연도(${joinY})】\n`;
+      explain += `- 월차만 계산 (최대 11)\n\n`;
+      explain += `① 월차(최대 11)\n`;
+      explain += `- 1개월차 발생일: ${fmt(m.firstMonthlyAccrual)} (종료일 ${fmt(m.firstMonthlyEnd)})\n`;
+      explain += `- 기준일까지 발생: ${m.monthly}개\n\n`;
+      explain += `합계: ${total}개\n`;
+    }
+    else if (baseY === joinY + 1 && !isJan1(join)) {
+      // 입사 다음해 + 1/1 입사 아님: 월차(기준일까지) + 전년도 일할(올림)
+      const m = countMonthlyUpToBase(join, base);
+      const p = proratedFromJoinYear(join);
 
-      explain += `① 일할(입사연도)\n`;
-      explain += `- 기간: ${fmt(join)} ~ ${fmt(d.endProrate)}\n`;
-      explain += `- 해당 연도 일수(윤년 반영): ${d.yDays}일\n`;
-      explain += `- 근무일수(포함): ${d.workedDays}일\n`;
-      explain += `- 일할 결과: ${d.prorated}개\n\n`;
+      total = m.monthly + p.prorated;
 
-      explain += `② 월차(최대 11)\n`;
-      explain += `- 기준일까지 발생한 월차: ${d.monthly}개\n\n`;
+      whoLabel = `신입(${empLabel})`;
+
+
+      explain += `① 월차(최대 11)\n`;
+      explain += `- 기준일까지 발생: ${m.monthly}개\n\n`;
+
+      explain += `② 전년도(${joinY}) 일할(15기준, 올림)\n`;
+      explain += `- 기간: ${fmt(join)} ~ ${fmt(p.periodEnd)}\n`;
+      explain += `- 해당 연도 일수: ${p.yDays}일\n`;
+      explain += `- 근무일수(포함): ${p.workedDays}일\n`;
+      explain += `- 일할 결과(올림): ${p.prorated}개\n\n`;
 
       explain += `합계: ${total}개\n`;
-    } else {
-      const res = (type === "normal")
-        ? calcNormalForYear(join, baseYear)
-        : calcContractForYear(join, baseYear);
+    }
+    else {
+      // 연부여 구간(1/1 입사자의 다음해 포함) 또는 그 이후
+      const ent = annualEntitlementForYear(join, baseY);
+      total = ent.leave;
 
-      total = res.total;
+      whoLabel = `${empLabel}`;
 
-      // ✅ 변경: 일반/촉탁 표기 -> 정규직/촉탁직
-      whoLabel = (type === "contract") ? "촉탁직" : "정규직";
-
-      const d = res.detail;
-      explain += `${baseYear}년 연차로 계산되었습니다.\n\n`;
-      explain += `- 입사일: ${fmt(join)}\n`;
-      explain += `- 15개 시작: ${d.s15}년\n`;
-      explain += `- 증가 규칙: 2년에 1개 증가 (최대 25개)\n\n`;
+      explain += `【연부여 기준(${baseY}년)】\n`;
+      explain += `- 15개 시작연도: ${ent.s15}년\n`;
+      explain += `- 증가: 2년에 1개 증가\n`;
+      explain += `- 상한: 최대 25개(신입 합산 구간 제외)\n\n`;
       explain += `결과: ${total}개\n`;
     }
 
