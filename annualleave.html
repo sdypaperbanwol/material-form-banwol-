@@ -127,8 +127,8 @@
         <div>
           <label>구분</label>
           <select id="type">
-            <option value="normal">일반</option>
-            <option value="contract">촉탁</option>
+            <option value="normal">정규직</option>
+            <option value="contract">촉탁직</option>
           </select>
         </div>
 
@@ -161,6 +161,7 @@
         <div class="who">
           <div class="line1" id="whoLine">-</div>
           <div class="line2" id="metaLine">-</div>
+          <!-- (자동) 배지는 제거/미사용: 디자인은 남겨두되 항상 숨김 -->
           <div class="badge" id="modeBadge" style="display:none;">-</div>
         </div>
         <div class="big" id="outDays">-</div>
@@ -231,7 +232,7 @@
 
   function isJan1(d){ return d.getMonth() === 0 && d.getDate() === 1; }
 
-  // 15개 시작 "연도" (일반/촉탁의 1/1 부여 기준)
+  // 15개 시작 "연도" (정규/촉탁의 1/1 부여 기준)
   function startYear15(join){
     return join.getFullYear() + (isJan1(join) ? 1 : 2);
   }
@@ -319,7 +320,7 @@
     }
 
     // 기준일까지 발생한 월차 카운트
-    // (네가 원래 넣어둔 "마지막 1개 튐" 방지 장치 유지: '직전달 1일' 케이스 제외)
+    // (기존 "마지막 1개 튐" 방지 장치 유지)
     const annivMonth = anniv.getMonth();
     const annivYear  = anniv.getFullYear();
 
@@ -358,7 +359,7 @@
     };
   }
 
-  // 일반/촉탁(연 1회 1/1 확정 부여): "기준일의 연도" 연차
+  // 정규/촉탁(연 1회 1/1 확정 부여): "기준일의 연도" 연차
   function calcNormalForYear(join, baseYear){
     const s15 = startYear15(join);
     let leave = 0;
@@ -392,18 +393,18 @@
     el.textContent = msg;
   }
 
-  function showResult({name, typeLabel, join, base, total, explain, modeText}){
+  // ✅ 변경: 이름 옆에 "계산 모드"를 직접 표기 (자동 문구 제거)
+  function showResult({name, whoLabel, join, base, total, explain}){
     $("emptyHelp").style.display = "none";
     $("resultBox").style.display = "flex";
     $("details").style.display = "block";
 
-    $("whoLine").textContent = `${name} · ${typeLabel}`;
+    $("whoLine").textContent = `${name} · ${whoLabel}`;
     $("metaLine").textContent = `입사 ${fmt(join)} · 기준일 ${fmt(base)}`;
     $("outDays").textContent = `${total} 개`;
 
-    const badge = $("modeBadge");
-    badge.style.display = "inline-flex";
-    badge.textContent = modeText;
+    // (자동) 배지는 항상 숨김
+    $("modeBadge").style.display = "none";
 
     $("explain").textContent = explain;
   }
@@ -445,13 +446,14 @@
 
     let total = 0;
     let explain = "";
-    let modeText = "";
-    let typeLabel = (type === "normal") ? "일반" : "촉탁";
+    let whoLabel = "";
 
     if (baseYear < s15) {
       const res = calcNewbieUpToBase(join, base);
       total = res.total;
-      modeText = (type === "contract") ? "신입(촉탁·자동)" : "신입(자동)";
+
+      // ✅ 변경: 신입 구간 표시를 이름 옆으로
+      whoLabel = (type === "contract") ? "신입(촉탁직)" : "신입(정규직)";
 
       const d = res.detail;
 
@@ -478,7 +480,9 @@
         : calcContractForYear(join, baseYear);
 
       total = res.total;
-      modeText = (type === "contract") ? "촉탁(자동)" : "일반(자동)";
+
+      // ✅ 변경: 일반/촉탁 표기 -> 정규직/촉탁직
+      whoLabel = (type === "contract") ? "촉탁직" : "정규직";
 
       const d = res.detail;
       explain += `${baseYear}년 연차로 계산되었습니다.\n\n`;
@@ -488,7 +492,7 @@
       explain += `결과: ${total}개\n`;
     }
 
-    showResult({ name, typeLabel, join, base, total, explain, modeText });
+    showResult({ name, whoLabel, join, base, total, explain });
   });
 
   resetAll();
