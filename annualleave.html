@@ -459,11 +459,6 @@
 
       explain += `기준일까지 누적된 값으로 계산되었습니다.\n\n`;
 
-      explain += `※ 월차(고용노동부식): "1개월을 채운 다음날" 발생\n`;
-      explain += `- 1개월 구간 종료일: ${fmt(d.firstMonthlyEnd)}\n`;
-      explain += `- 1개월차 발생일: ${fmt(d.firstMonthlyAccrual)}\n`;
-      explain += `  (예: 1/31 입사 → 종료 2/28, 발생 3/1)\n\n`;
-
       explain += `① 일할(입사연도)\n`;
       explain += `- 기간: ${fmt(join)} ~ ${fmt(d.endProrate)}\n`;
       explain += `- 해당 연도 일수(윤년 반영): ${d.yDays}일\n`;
