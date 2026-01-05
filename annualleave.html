@@ -231,34 +231,62 @@
 
   function isJan1(d){ return d.getMonth() === 0 && d.getDate() === 1; }
 
+  // 15개 시작 "연도" (일반/촉탁의 1/1 부여 기준)
   function startYear15(join){
     return join.getFullYear() + (isJan1(join) ? 1 : 2);
   }
 
-  // anchor: 같은 일자 유지, 없으면 말일
-  function addMonthsAnchor(join, n){
+  // -----------------------------
+  // ✅ 고용노동부(상담/안내)식 월차 발생:
+  // "1개월을 채운 다음날 발생"
+  //
+  // 구현 방식:
+  // - n개월 후 "같은 일자"가 존재하면:
+  //     1개월 구간 종료일 = (n개월 후 같은 일자) - 1일
+  //     발생일 = (n개월 후 같은 일자)
+  //   예) 1/5 입사 -> 2/5 존재
+  //       1개월 구간: 1/5~2/4, 발생: 2/5
+  //
+  // - n개월 후 "같은 일자"가 없으면(말일 케이스):
+  //     1개월 구간 종료일 = n개월 후 해당월의 말일
+  //     발생일 = 종료일 + 1일 (= 다음달 1일)
+  //   예) 1/31 입사 -> 2/31 없음
+  //       종료: 2/28, 발생: 3/1
+  //   예) 3/31 입사 -> 4/31 없음
+  //       종료: 4/30, 발생: 5/1
+  // -----------------------------
+  function monthPeriodEnd_MOEL(join, n){
     const y = join.getFullYear();
     const m = join.getMonth();
     const day = join.getDate();
 
-    const targetLastDay = new Date(y, m + n + 1, 0).getDate();
-    const anchorDay = Math.min(day, targetLastDay);
-    return new Date(y, m + n, anchorDay);
+    const targetY = y + Math.floor((m + n) / 12);
+    const targetM = (m + n) % 12;
+
+    const targetLast = new Date(targetY, targetM + 1, 0).getDate();
+
+    if (day <= targetLast) {
+      // n개월 후 같은 일자가 존재 -> 종료일은 그 전날
+      // day=1이면 전날이 자연스럽게 전월 말일로 넘어감
+      return new Date(targetY, targetM, day - 1);
+    }
+
+    // 같은 일자 없음 -> 그 달 말일이 종료일
+    return new Date(targetY, targetM, targetLast);
   }
 
-  // effective: anchor 다음날
-  function monthlyEffectiveDate(join, n){
-    return addDays(addMonthsAnchor(join, n), 1);
+  function monthlyAccrualDate_MOEL(join, n){
+    return addDays(monthPeriodEnd_MOEL(join, n), 1);
   }
 
+  // 신입 누적(기준일까지): 일할 + 월차(최대 11)
+  // - "입사 후 1개월 미만" 판정도 월차 발생일(=1개월 채운 다음날) 기준으로 컷
+  // - 신입(15개 시작 전) 구간에는 상한 25 적용 없음
   function calcNewbieUpToBase(join, base){
     const joinY = join.getFullYear();
 
-    const firstMonthlyAnchor = addMonthsAnchor(join, 1);
-    const firstMonthlyEffective = monthlyEffectiveDate(join, 1);
-
-    // ✅ 1개월 효력 발생 전이면 0개
-    if (base < firstMonthlyEffective) {
+    const firstMonthlyAccrual = monthlyAccrualDate_MOEL(join, 1);
+    if (base < firstMonthlyAccrual) {
       return {
         total: 0,
         detail: {
@@ -267,11 +295,10 @@
           yDays: daysInYear(joinY),
           endProrate: base,
           monthly: 0,
-          accrualAnchors: [],
-          accrualEffectives: [],
+          accrualDates: [],
           anniv: new Date(join.getFullYear()+1, join.getMonth(), join.getDate()),
-          firstMonthlyAnchor,
-          firstMonthlyEffective
+          firstMonthlyAccrual,
+          firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1)
         }
       };
     }
@@ -282,43 +309,38 @@
     const yDays = daysInYear(joinY);
     const prorated = Math.ceil((workedDays / yDays) * 15);
 
-    // (2) 월차(최대 11, 기준일까지) - effective 기준
+    // (2) 월차(최대 11, 기준일까지)
     const anniv = new Date(join.getFullYear()+1, join.getMonth(), join.getDate());
 
     let monthly = 0;
-    const accrualAnchors = [];
-    const accrualEffectives = [];
-
+    const accrualDates = [];
     for (let k=1; k<=11; k++){
-      const a = addMonthsAnchor(join, k);
-      const e = addDays(a, 1);
-      accrualAnchors.push(a);
-      accrualEffectives.push(e);
+      accrualDates.push(monthlyAccrualDate_MOEL(join, k));
     }
 
+    // 기준일까지 발생한 월차 카운트
+    // (네가 원래 넣어둔 "마지막 1개 튐" 방지 장치 유지: '직전달 1일' 케이스 제외)
     const annivMonth = anniv.getMonth();
     const annivYear  = anniv.getFullYear();
 
-    for (let i=0; i<accrualAnchors.length; i++){
-      const a = accrualAnchors[i];
-      const e = accrualEffectives[i];
-      if (e > base) continue;
+    for (const d of accrualDates){
+      if (d > base) continue;
 
-      // 기존 "직전달 1일" 필터(원래 의도 유지)
-      const isFirstDay = (a.getDate() === 1);
+      const isFirstDay = (d.getDate() === 1);
       const isMonthBeforeAnniv =
-        (a.getFullYear() === annivYear) &&
-        (a.getMonth() === ((annivMonth + 11) % 12));
+        (d.getFullYear() === annivYear) &&
+        (d.getMonth() === ((annivMonth + 11) % 12)); // annivMonth-1
 
-      if (base < anniv && isFirstDay && isMonthBeforeAnniv) continue;
+      if (base < anniv && isFirstDay && isMonthBeforeAnniv) {
+        continue;
+      }
 
       monthly += 1;
     }
 
     monthly = clamp(monthly, 0, 11);
 
-    // ✅ 신입(15개 시작 전) 누적은 "상한 25" 적용하지 않음
-    const total = prorated + monthly;
+    const total = prorated + monthly; // ✅ 신입 구간 상한 없음
 
     return {
       total,
@@ -328,15 +350,15 @@
         yDays,
         endProrate,
         monthly,
-        accrualAnchors,
-        accrualEffectives,
+        accrualDates,
         anniv,
-        firstMonthlyAnchor,
-        firstMonthlyEffective
+        firstMonthlyAccrual,
+        firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1)
       }
     };
   }
 
+  // 일반/촉탁(연 1회 1/1 확정 부여): "기준일의 연도" 연차
   function calcNormalForYear(join, baseYear){
     const s15 = startYear15(join);
     let leave = 0;
@@ -351,6 +373,7 @@
   }
 
   function calcContractForYear(join, baseYear){
+    // 촉탁 별도 규칙 있으면 여기만 교체
     return calcNormalForYear(join, baseYear);
   }
 
@@ -434,9 +457,10 @@
 
       explain += `기준일까지 누적된 값으로 계산되었습니다.\n\n`;
 
-      explain += `※ '입사 후 1개월' 효력 발생 규칙\n`;
-      explain += `- 1개월 기준일: ${fmt(d.firstMonthlyAnchor)}\n`;
-      explain += `- 1개 발생: ${fmt(d.firstMonthlyEffective)}\n\n`;
+      explain += `※ 월차(고용노동부식): "1개월을 채운 다음날" 발생\n`;
+      explain += `- 1개월 구간 종료일: ${fmt(d.firstMonthlyEnd)}\n`;
+      explain += `- 1개월차 발생일: ${fmt(d.firstMonthlyAccrual)}\n`;
+      explain += `  (예: 1/31 입사 → 종료 2/28, 발생 3/1)\n\n`;
 
       explain += `① 일할(입사연도)\n`;
       explain += `- 기간: ${fmt(join)} ~ ${fmt(d.endProrate)}\n`;
@@ -447,7 +471,6 @@
       explain += `② 월차(최대 11)\n`;
       explain += `- 기준일까지 발생한 월차: ${d.monthly}개\n\n`;
 
-      // ✅ 신입 구간에는 상한 문구 없음
       explain += `합계: ${total}개\n`;
     } else {
       const res = (type === "normal")
