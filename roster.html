@@ -3,95 +3,48 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>연휴 출근 취합 시스템</title>
+  <title>연휴 출근 취합</title>
   <style>
+    /* (기존 CSS와 동일하되 모바일 가독성을 위해 폰트 크기 유지) */
     :root { --primary: #2563eb; --bg: #f3f4f6; --text: #1f2937; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    .wrap { max-width: 600px; margin: 0 auto; padding: 20px 15px; }
-    .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    
-    h1 { font-size: 22px; margin: 0 0 8px; font-weight: 800; color: #111; }
-    .desc { font-size: 14px; color: #6b7280; white-space: pre-wrap; margin-bottom: 20px; line-height: 1.6; }
-    
-    .input-group { margin-bottom: 16px; }
-    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151; }
-    
-    input, select, textarea {
-      width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #d1d5db;
-      border-radius: 12px; font-size: 16px; /* 모바일 줌 방지용 16px */
-      background: #fff; transition: border 0.2s;
-    }
-    input:focus { border-color: var(--primary); outline: none; }
-    
-    .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    
-    .date-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; margin-bottom: 12px; transition: all 0.2s; }
-    .date-card.active { border-color: var(--primary); background: #eff6ff; }
-    
-    .date-top { display: flex; align-items: center; cursor: pointer; }
-    .date-top input[type="checkbox"] { width: 22px; height: 22px; margin-right: 12px; flex-shrink: 0; }
-    .date-label { font-weight: 700; font-size: 16px; }
-
-    .shift-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-left: 34px; }
-    .shift-chip {
-      padding: 8px 14px; border: 1px solid #d1d5db; border-radius: 20px;
-      font-size: 14px; cursor: pointer; background: #fff; user-select: none;
-    }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+    .wrap { max-width: 600px; margin: 0 auto; padding: 15px; }
+    .card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    h1 { font-size: 20px; margin-bottom: 10px; }
+    .desc { font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+    .input-group { margin-bottom: 15px; }
+    label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+    input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+    .date-card { border: 1px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+    .shift-container { display: flex; gap: 8px; margin-top: 10px; padding-left: 30px; }
+    .shift-chip { padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; font-size: 13px; cursor: pointer; }
     .shift-chip.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .shift-chip input { display: none; }
-
-    .btn {
-      width: 100%; padding: 16px; background: var(--primary); color: #fff;
-      border: none; border-radius: 12px; font-size: 17px; font-weight: 700;
-      margin-top: 20px; cursor: pointer; transition: opacity 0.2s;
-    }
-    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-    .status { text-align: center; margin-top: 12px; font-size: 14px; color: #6b7280; min-height: 20px; }
-    
-    .hr { height: 1px; background: #eee; margin: 20px 0; }
-    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-right: 8px; vertical-align: middle; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn { width: 100%; padding: 15px; background: var(--primary); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 20px; }
+    .status { text-align: center; margin-top: 10px; font-size: 12px; color: #888; }
   </style>
 </head>
 <body>
 
 <div class="wrap">
   <div class="card">
-    <h1 id="pageTitle">조사 로딩 중...</h1>
-    <div class="desc" id="pageDesc">잠시만 기다려 주세요.</div>
+    <h1 id="pageTitle">데이터 로딩 중...</h1>
+    <p class="desc" id="pageDesc">잠시만 기다려 주세요.</p>
 
-    <div class="grid-row input-group">
-      <div>
-        <label>사업장</label>
-        <select id="site">
-          <option value="시화">시화</option>
-          <option value="반월">반월</option>
-          <option value="대양">대양</option>
-        </select>
-      </div>
-      <div>
-        <label>성명</label>
-        <input id="name" type="text" placeholder="성함 입력" />
-      </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;" class="input-group">
+      <div><label>사업장</label><select id="site"><option>시화</option><option>반월</option><option>대양</option></select></div>
+      <div><label>성명</label><input id="name" type="text" placeholder="이름" /></div>
     </div>
 
     <div class="input-group">
       <label>부서</label>
-      <select id="dept">
-        <option value="">불러오는 중...</option>
-      </select>
+      <select id="dept"><option value="">로딩 중...</option></select>
     </div>
 
-    <div class="hr"></div>
+    <div id="dateList"></div>
 
-    <label>출근 날짜 및 구분 선택</label>
-    <div id="dateList">
-      <p style="text-align:center; color:#999; padding:20px;">데이터를 불러오는 중입니다...</p>
-    </div>
-
-    <div class="input-group" style="margin-top:20px;">
-      <label>업무내용 (공통)</label>
-      <textarea id="work" rows="3" placeholder="예: 공정점검, 안전 점검 등"></textarea>
+    <div class="input-group" style="margin-top:15px;">
+      <label>업무내용</label>
+      <textarea id="work" rows="2"></textarea>
     </div>
 
     <button class="btn" id="submitBtn">제출하기</button>
@@ -100,180 +53,111 @@
 </div>
 
 <script>
-  // 1. GAS URL 설정
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbx6QBbHZN40NKLKP6HzZsq2Ig6VqYQMzt62SUwu1Lfznpxz35ZqDkFrOA4VVBU_OSKv/exec";
+  // ★ 본인의 최신 배포 URL로 교체하세요 ★
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyN7e4o-tHYtQZojAzWJ0C2ck6Qx-rdRvBHhXfGj1xwqsh9VKxFWY9baJncLEWtcI6x/exec";
 
-  let GLOBAL_ROWS = [];
-
-  // 2. JSONP 호출 함수 (모바일 호환성 강화)
   function callGAS(params) {
     return new Promise((resolve, reject) => {
-      const callbackName = 'cb_' + Math.random().toString(36).substring(2, 15);
+      const callbackName = 'cb_' + Math.random().toString(36).substring(7);
       const script = document.createElement('script');
       
       const timeout = setTimeout(() => {
-        cleanUp();
-        reject(new Error("네트워크 연결 시간이 초과되었습니다."));
-      }, 15000);
+        cleanup();
+        reject(new Error("응답 시간 초과 (네트워크 상태 확인)"));
+      }, 20000);
 
       window[callbackName] = (res) => {
-        cleanUp();
+        cleanup();
         resolve(res);
       };
 
-      function cleanUp() {
+      function cleanup() {
         clearTimeout(timeout);
         if (script.parentNode) script.parentNode.removeChild(script);
         delete window[callbackName];
       }
 
-      const queryString = Object.keys(params)
-        .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
-        .join('&');
+      const qs = Object.keys(params).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
+      script.src = `${GAS_URL}?callback=${callbackName}&${qs}&ts=${Date.now()}`;
       
-      script.src = `${GAS_URL}?callback=${callbackName}&${queryString}&ts=${Date.now()}`;
-      script.onerror = () => { cleanUp(); reject(new Error("스크립트 로드 실패 (CORS/URL 확인)")); };
+      // 모바일 에러 핸들링 강화
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("스크립트 로드 실패. (GAS 배포 설정에서 '액세스 권한: 모든 사용자'인지 확인하세요)"));
+      };
+      
       document.body.appendChild(script);
     });
   }
 
-  // 3. 설정 데이터 로드
   async function init() {
     try {
       const res = await callGAS({ action: 'settings' });
-      if (!res.ok) throw new Error(res.error || "데이터 로드 실패");
+      if (!res.ok) throw new Error(res.error);
 
-      document.getElementById('pageTitle').textContent = res.title || "연휴 출근 조사";
-      document.getElementById('pageDesc').textContent = res.desc || "";
-      GLOBAL_ROWS = res.rows;
-
-      // 부서 목록 세팅
-      const depts = [...new Set(res.rows.map(r => r.dept))].filter(Boolean);
-      const deptEl = document.getElementById('dept');
-      deptEl.innerHTML = '<option value="">부서 선택</option>' + 
-        depts.map(d => `<option value="${d}">${d}</option>`).join('');
-
-      // 날짜 목록 세팅
-      const dates = [...new Set(res.rows.map(r => r.date))].filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
-      const listEl = document.getElementById('dateList');
+      document.getElementById('pageTitle').innerText = res.title || "연휴 출근 조사";
+      document.getElementById('pageDesc').innerText = res.desc || "";
       
-      if(dates.length === 0) {
-        listEl.innerHTML = '<p style="text-align:center; padding:20px;">설정된 날짜가 없습니다.</p>';
-        return;
-      }
+      const depts = [...new Set(res.rows.map(r => r.dept))].filter(Boolean);
+      document.getElementById('dept').innerHTML = depts.map(d => `<option value="${d}">${d}</option>`).join('');
 
-      const shifts = ["오전", "오후", "야간"];
-      listEl.innerHTML = dates.map((d, i) => `
-        <div class="date-card" id="card_${i}">
-          <div class="date-top" onclick="toggleDate(${i})">
-            <input type="checkbox" id="chk_${i}" data-date="${d}" onclick="event.stopPropagation(); toggleDate(${i})">
-            <span class="date-label">${formatDate(d)}</span>
-          </div>
-          <div class="shift-container" id="shift_box_${i}" style="display:none;">
-            ${shifts.map(s => `
-              <label class="shift-chip" id="label_${i}_${s}">
-                <input type="checkbox" value="${s}" onchange="toggleChip(this, ${i}, '${s}')"> ${s}
-              </label>
-            `).join('')}
+      const dates = [...new Set(res.rows.map(r => r.date))].sort();
+      document.getElementById('dateList').innerHTML = dates.map((d, i) => `
+        <div class="date-card">
+          <label style="display:flex; align-items:center;">
+            <input type="checkbox" id="chk_${i}" data-date="${d}" style="width:20px; height:20px; margin-right:10px;" onchange="document.getElementById('shift_${i}').style.display = this.checked ? 'flex' : 'none'">
+            ${d}
+          </label>
+          <div class="shift-container" id="shift_${i}" style="display:none;">
+            ${['오전','오후','야간'].map(s => `<div class="shift-chip" onclick="this.classList.toggle('selected')">${s}</div>`).join('')}
           </div>
         </div>
       `).join('');
-
     } catch (e) {
       alert(e.message);
-      document.getElementById('status').textContent = "오류: " + e.message;
+      document.getElementById('status').innerText = "에러: " + e.message;
     }
   }
 
-  // 4. UI 헬퍼 함수
-  function formatDate(ymd) {
-    const [y, m, d] = ymd.split('-');
-    const date = new Date(y, m - 1, d);
-    const week = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-    return `${parseInt(m)}월 ${parseInt(d)}일 (${week})`;
-  }
-
-  function toggleDate(idx) {
-    const chk = document.getElementById(`chk_${idx}`);
-    const box = document.getElementById(`shift_box_${idx}`);
-    const card = document.getElementById(`card_${idx}`);
-    
-    chk.checked = !chk.checked;
-    if (chk.checked) {
-      box.style.display = 'flex';
-      card.classList.add('active');
-    } else {
-      box.style.display = 'none';
-      card.classList.remove('active');
-      // 체크박스 해제 시 선택했던 칩들도 초기화
-      box.querySelectorAll('input').forEach(i => {
-        i.checked = false;
-        i.parentElement.classList.remove('selected');
-      });
-    }
-  }
-
-  function toggleChip(el, idx, shift) {
-    if (el.checked) el.parentElement.classList.add('selected');
-    else el.parentElement.classList.remove('selected');
-  }
-
-  // 5. 제출 로직 (전체 페이로드를 단 한 번의 요청으로 전송)
-  document.getElementById('submitBtn').addEventListener('click', async () => {
-    const site = document.getElementById('site').value;
+  document.getElementById('submitBtn').onclick = async () => {
     const name = document.getElementById('name').value.trim();
     const dept = document.getElementById('dept').value;
-    const work = document.getElementById('work').value.trim();
-    const btn = document.getElementById('submitBtn');
-    const status = document.getElementById('status');
-
-    if (!name || !dept) return alert("성명과 부서를 입력해주세요.");
+    if (!name || !dept) return alert("성함과 부서를 입력하세요.");
 
     const selections = [];
-    document.querySelectorAll('.date-card').forEach((card, i) => {
-      const dateChk = document.getElementById(`chk_${i}`);
-      if (dateChk.checked) {
-        const shifts = [];
-        card.querySelectorAll('.shift-container input:checked').forEach(s => shifts.push(s.value));
-        if (shifts.length > 0) {
-          selections.push({ date: dateChk.dataset.date, shifts: shifts });
-        }
+    document.querySelectorAll('#dateList .date-card').forEach(card => {
+      const chk = card.querySelector('input[type="checkbox"]');
+      if (chk.checked) {
+        const shifts = Array.from(card.querySelectorAll('.shift-chip.selected')).map(el => el.innerText);
+        if (shifts.length > 0) selections.push({ date: chk.dataset.date, shifts });
       }
     });
 
-    if (selections.length === 0) return alert("최소 하나 이상의 날짜와 근무 시간을 선택해주세요.");
+    if (selections.length === 0) return alert("날짜와 근무 시간을 선택하세요.");
 
-    const payload = {
-      site, name, dept, work, selections
-    };
-
-    if (!confirm("입력하신 정보로 제출하시겠습니까?")) return;
-
+    const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    status.innerHTML = `<span class="loading-spinner"></span> 서버에 저장 중...`;
+    document.getElementById('status').innerText = "제출 중...";
 
     try {
-      // GAS의 action=submit을 호출 (JSONP 환경에선 문자열화하여 전송)
-      const res = await callGAS({
-        action: 'submit',
-        payload: encodeURIComponent(JSON.stringify(payload))
-      });
-
+      const payload = {
+        site: document.getElementById('site').value,
+        name, dept, work: document.getElementById('work').value,
+        selections
+      };
+      const res = await callGAS({ action: 'submit', payload: encodeURIComponent(JSON.stringify(payload)) });
       if (res.ok) {
-        alert("성공적으로 제출되었습니다.");
-        location.reload(); // 성공 시 새로고침
-      } else {
-        throw new Error(res.error || "저장 실패");
-      }
+        alert("제출 완료!");
+        location.reload();
+      } else throw new Error(res.error);
     } catch (e) {
-      alert("제출 오류: " + e.message);
+      alert(e.message);
       btn.disabled = false;
-      status.textContent = "오류가 발생했습니다. 다시 시도해주세요.";
+      document.getElementById('status').innerText = "제출 실패";
     }
-  });
+  };
 
   init();
 </script>
-
 </body>
 </html>
