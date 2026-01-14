@@ -81,16 +81,33 @@
   </div>
 
   <script>
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycby7Alw1Nni6etJBVHgI_A5oyewFAs29_WE7MW1nhKfX-_ERdQIkC8s2Ocw-S4mxSt-1/exec";
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbz0SiO2VLwnQVxUqfgitpM4VF3m_MkzY_eyg1NiZsW0GMQj-JKd2lrGL_iE85DUbx-e/exec";
 
-    let ROWS = []; // [{dept,date,shift,work}]
+    let ROWS = [];
     let TITLE = "";
     let DESC = "";
 
+    function uniq(arr) { return Array.from(new Set(arr.filter(Boolean))); }
+
     function loadSettings() {
-      const cbName = "cb_" + Date.now();
+      const cbName = "cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+
+      let done = false;
+      let timer = null;
+      let scriptEl = null;
+
+      function cleanup() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+        scriptEl = null;
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+      }
 
       window[cbName] = function(res) {
+        if (done) return;
+        done = true;
+        cleanup();
+
         try {
           if (!res || !res.ok) throw new Error(res && res.error ? res.error : "settings 응답 오류");
 
@@ -105,31 +122,41 @@
         } catch (e) {
           document.getElementById("dateList").innerHTML =
             `<div class="hint">불러오기 실패: ${escapeHtml(e.message || e)}</div>`;
-        } finally {
-          delete window[cbName];
         }
       };
 
-      const s = document.createElement("script");
-      s.src = `${GAS_EXEC_URL}?action=settings&callback=${cbName}&ts=${Date.now()}`;
-      s.onerror = () => {
+      const url = `${GAS_EXEC_URL}?action=settings&callback=${cbName}&ts=${Date.now()}`;
+
+      timer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup();
         document.getElementById("dateList").innerHTML =
-          `<div class="hint">설정 불러오기 실패(웹앱 URL/권한 확인)</div>`;
+          `<div class="hint">설정 불러오기 타임아웃(콜백 없음) - 모바일/사내브라우저에서 JSONP가 막혔을 가능성</div>`;
+      }, 12000);
+
+      scriptEl = document.createElement("script");
+      scriptEl.src = url;
+      scriptEl.async = true;
+
+      scriptEl.onerror = () => {
+        if (done) return;
+        done = true;
+        cleanup();
+        document.getElementById("dateList").innerHTML =
+          `<div class="hint">설정 불러오기 실패(웹앱 URL/권한/네트워크)</div>`;
       };
-      document.body.appendChild(s);
+
+      document.body.appendChild(scriptEl);
     }
 
-    function uniq(arr) { return Array.from(new Set(arr.filter(Boolean))); }
-
     function buildUI() {
-      // 부서 드롭다운
       const deptList = uniq(ROWS.map(r => (r.dept || "").trim()));
       const deptSel = document.getElementById("dept");
       deptSel.innerHTML = `<option value="">부서를 선택하세요</option>` + deptList
         .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
         .join("");
 
-      // 날짜 목록은 rows에서만 뽑음
       const dates = uniqDates(ROWS);
       const box = document.getElementById("dateList");
 
@@ -169,7 +196,7 @@
     function formatKoreanDate(ymd) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "";
       const [y, m, d] = ymd.split("-").map(Number);
-      const dt = new Date(`${ymd}T00:00:00+09:00`); // KST
+      const dt = new Date(`${ymd}T00:00:00+09:00`);
       const w = ["일","월","화","수","목","금","토"][dt.getDay()];
       return `${y}년 ${m}월 ${d}일(${w})`;
     }
@@ -196,14 +223,27 @@
       }
     }
 
-    // ✅ 1건 제출(JSONP) - 모바일 URL 길이 제한 회피용
+    // ✅ 1건 제출(JSONP) - 모바일 안정용
     function submitOneViaJsonp(params) {
       return new Promise((resolve, reject) => {
         const cbName = "cb_one_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
+        let done = false;
+        let timer = null;
+        let scriptEl = null;
+
+        function cleanup() {
+          if (timer) { clearTimeout(timer); timer = null; }
+          if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+          scriptEl = null;
+          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+        }
+
         window[cbName] = function(res) {
-          try { resolve(res); }
-          finally { delete window[cbName]; }
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve(res);
         };
 
         const qs = new URLSearchParams({
@@ -218,10 +258,27 @@
           shift: params.shift || ""
         });
 
-        const s = document.createElement("script");
-        s.src = `${GAS_EXEC_URL}?${qs.toString()}`;
-        s.onerror = () => { delete window[cbName]; reject(new Error("제출 실패(JSONP 로드 실패)")); };
-        document.body.appendChild(s);
+        const url = `${GAS_EXEC_URL}?${qs.toString()}`;
+
+        timer = setTimeout(() => {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("제출 타임아웃(콜백 없음)"));
+        }, 12000);
+
+        scriptEl = document.createElement("script");
+        scriptEl.src = url;
+        scriptEl.async = true;
+
+        scriptEl.onerror = () => {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("제출 실패(JSONP script 로드 실패)"));
+        };
+
+        document.body.appendChild(scriptEl);
       });
     }
 
@@ -254,14 +311,13 @@
       status.textContent = "저장 중…";
 
       try {
-        // ✅ 모바일 안정: 날짜/구분 1건씩 순차 제출
         const jobs = [];
         for (const sel of selections) {
           for (const sh of sel.shifts) jobs.push({ date: sel.date, shift: sh });
         }
 
         for (let i = 0; i < jobs.length; i++) {
-          status.textContent = `저장 중… (${i+1}/${jobs.length})`;
+          status.textContent = `저장 중… (${i + 1}/${jobs.length})`;
 
           const res = await submitOneViaJsonp({
             site, name, dept, work,
@@ -270,11 +326,12 @@
           });
 
           if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
+
+          await new Promise(r => setTimeout(r, 120));
         }
 
         alert("제출되었습니다!");
 
-        // 초기화
         document.querySelectorAll('#dateList .dateTop input[type="checkbox"]').forEach(x => x.checked = false);
         document.querySelectorAll('#dateList .chips input[type="checkbox"]').forEach(x => x.checked = false);
         document.querySelectorAll('#dateList .chips').forEach(box => { box.style.opacity = ".5"; box.style.pointerEvents = "none"; });
