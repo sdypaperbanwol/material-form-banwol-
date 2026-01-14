@@ -8,7 +8,8 @@
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f7f9; margin:0; }
     .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
     .card { background:#fff; border:1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
-    h1 { font-size: 18px; margin: 0 0 10px; }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    .desc { font-size: 12px; color:#4b5563; white-space: pre-wrap; line-height: 1.5; }
     label { display:block; font-size: 13px; margin-top: 10px; color:#111827; }
 
     input, select, textarea, button {
@@ -23,19 +24,13 @@
     .hr { height:1px; background:#eef2f7; margin: 12px 0; }
 
     .dateList { margin-top: 10px; display:flex; flex-direction: column; gap: 10px; }
-    .dateCard {
-      border:1px solid #e5e7eb; border-radius: 12px; padding: 12px; background:#fff;
-    }
+    .dateCard { border:1px solid #e5e7eb; border-radius: 12px; padding: 12px; background:#fff; }
     .dateTop { display:flex; align-items:center; gap:10px; }
     .dateTop input[type="checkbox"] { width: 18px; height: 18px; margin:0; }
     .dateTitle { font-weight: 700; font-size: 14px; }
 
     .chips { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .chip {
-      display:flex; align-items:center; gap:8px;
-      padding: 8px 10px; border:1px solid #e5e7eb; border-radius: 10px;
-      background:#fff;
-    }
+    .chip { display:flex; align-items:center; gap:8px; padding: 8px 10px; border:1px solid #e5e7eb; border-radius: 10px; background:#fff; }
     .chip input { width: 18px; height: 18px; margin:0; padding:0; }
     .chip span { font-size: 13px; }
 
@@ -46,9 +41,10 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>연휴 출근 취합</h1>
+      <h1 id="pageTitle">불러오는 중…</h1>
+      <div class="desc" id="pageDesc"></div>
 
-      <div class="row">
+      <div class="row" style="margin-top:10px;">
         <div>
           <label>구분(사업장)</label>
           <select id="site">
@@ -71,10 +67,9 @@
       <div class="hr"></div>
 
       <label>날짜별 구분 선택</label>
-      <div class="hint">※ 날짜를 체크하고, 그 날짜의 오전/오후/야간을 선택하세요.</div>
-
+      <div class="hint">※ 날짜를 체크하고, 그 날짜의 구분을 선택하세요.</div>
       <div class="dateList" id="dateList">
-        <div class="hint">연휴 날짜 설정을 불러오는 중…</div>
+        <div class="hint">데이터를 불러오는 중…</div>
       </div>
 
       <label style="margin-top:14px;">업무내용(자유기입)</label>
@@ -86,70 +81,80 @@
   </div>
 
   <script>
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbx635lG4UZs18N8INnUdki6r_J8wZLZkWJL04lcrMGf4Q9XUT-9Xj--SQewo1Q2jLCP/exec";
-    let SETTINGS = []; // rows: [{dept,date,shift,work}]
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxRNyzcgh0QSD0dtCXWNb-GiOWVbq5Mirxu7_jX-sbgiMXMaSL-hQO18lgWhhwkK-P7/exec";
+    let ROWS = []; // [{dept,date,shift,work}]
+    let TITLE = "";
+    let DESC = "";
 
     function loadSettings() {
       const cbName = "cb_" + Date.now();
 
-      window[cbName] = function (res) {
+      window[cbName] = function(res) {
         try {
-          SETTINGS = (res && res.data) ? res.data : [];
-          buildUIFromSettings();
+          if (!res || !res.ok) throw new Error(res && res.error ? res.error : "settings 응답 오류");
+
+          TITLE = String(res.title || "").trim();
+          DESC  = String(res.desc  || "").trim();
+          ROWS  = Array.isArray(res.rows) ? res.rows : [];
+
+          document.getElementById("pageTitle").textContent = TITLE || "연휴 출근 조사";
+          document.getElementById("pageDesc").textContent  = DESC || "";
+
+          buildUI();
+        } catch (e) {
+          document.getElementById("dateList").innerHTML = `<div class="hint">불러오기 실패: ${escapeHtml(e.message || e)}</div>`;
         } finally {
           delete window[cbName];
         }
       };
 
       const s = document.createElement("script");
-      // 캐시 회피용 ts 추가
       s.src = `${GAS_EXEC_URL}?action=settings&callback=${cbName}&ts=${Date.now()}`;
       s.onerror = () => {
-        document.getElementById("dateList").innerHTML =
-          `<div class="hint">설정 불러오기 실패. (웹앱 URL/배포 권한 확인)</div>`;
-        document.getElementById("dept").innerHTML =
-          `<option value="">불러오기 실패</option>`;
+        document.getElementById("dateList").innerHTML = `<div class="hint">설정 불러오기 실패(웹앱 URL/권한 확인)</div>`;
       };
       document.body.appendChild(s);
     }
 
-    function toYMD(v) {
-      if (!v) return "";
-      const s = String(v).trim();
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-      const d = new Date(s);
-      if (!isNaN(d.getTime())) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth()+1).padStart(2,"0");
-        const day = String(d.getDate()).padStart(2,"0");
-        return `${y}-${m}-${day}`;
-      }
-      return s;
-    }
-
     function uniq(arr) { return Array.from(new Set(arr.filter(Boolean))); }
 
-    function buildUIFromSettings() {
-      // 부서 목록
-      const deptList = uniq(SETTINGS.map(r => (r.dept || "").trim()));
+    function buildUI() {
+      // 부서 드롭다운
+      const deptList = uniq(ROWS.map(r => (r.dept || "").trim()));
       const deptSel = document.getElementById("dept");
       deptSel.innerHTML = `<option value="">부서를 선택하세요</option>` + deptList
         .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
         .join("");
 
-      // 날짜 목록 (유효 날짜만)
-      const dateList = uniq(
-        SETTINGS.map(r => toYMD(r.date)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
-      );
+      // 날짜별 가능한 shift 집계
+      // dateMap[date] = Set(shifts)
+      const dateMap = new Map();
+      ROWS.forEach(r => {
+        const date = String(r.date || "").trim();
+        const shift = String(r.shift || "").trim();
+        if (!date) return;
+        if (!dateMap.has(date)) dateMap.set(date, new Set());
+        if (shift) dateMap.get(date).add(shift);
+      });
 
+      const dates = Array.from(dateMap.keys()).sort();
       const box = document.getElementById("dateList");
-      if (!dateList.length) {
-        box.innerHTML = `<div class="hint">설정 시트에 유효한 날짜가 없습니다. (B열 날짜 확인)</div>`;
+
+      if (!dates.length) {
+        box.innerHTML = `<div class="hint">표 데이터(rows)가 없습니다. (C6:F 아래 데이터 확인)</div>`;
         return;
       }
 
-      box.innerHTML = dateList.map((d, idx) => {
+      box.innerHTML = dates.map((d, idx) => {
         const idBase = `d_${idx}`;
+        const shifts = Array.from(dateMap.get(d) || []).sort();
+        const shiftHtml = shifts.map(sh => `
+          <label class="chip">
+            <input type="checkbox" value="${escapeHtml(sh)}" data-date="${escapeHtml(d)}">
+            <span>${escapeHtml(sh)}</span>
+          </label>
+        `).join("");
+
         return `
           <div class="dateCard">
             <div class="dateTop">
@@ -158,28 +163,11 @@
             </div>
 
             <div class="chips" id="${idBase}_shifts" style="opacity:.5; pointer-events:none;">
-              <label class="chip">
-                <input type="checkbox" value="오전" data-date="${escapeHtml(d)}">
-                <span>오전</span>
-              </label>
-              <label class="chip">
-                <input type="checkbox" value="오후" data-date="${escapeHtml(d)}">
-                <span>오후</span>
-              </label>
-              <label class="chip">
-                <input type="checkbox" value="야간" data-date="${escapeHtml(d)}">
-                <span>야간</span>
-              </label>
-            </div>
-
-            <div class="hint" style="margin-top:8px;">
-              ※ 이 날짜를 선택하면 아래 구분을 체크할 수 있습니다.
+              ${shiftHtml || `<div class="hint">가능한 구분이 없습니다(시트 구분값 확인).</div>`}
             </div>
           </div>
         `;
       }).join("");
-
-      document.getElementById("status").textContent = "";
     }
 
     function toggleDate(idBase) {
@@ -189,7 +177,6 @@
         box.style.opacity = "1";
         box.style.pointerEvents = "auto";
       } else {
-        // 날짜 해제하면 그 날짜 구분도 해제
         box.querySelectorAll('input[type="checkbox"]').forEach(x => x.checked = false);
         box.style.opacity = ".5";
         box.style.pointerEvents = "none";
@@ -209,12 +196,7 @@
         const s = document.createElement("script");
         const payloadParam = encodeURIComponent(JSON.stringify(payload));
         s.src = `${GAS_EXEC_URL}?action=submit&callback=${cbName}&payload=${payloadParam}&ts=${Date.now()}`;
-
-        s.onerror = () => {
-          delete window[cbName];
-          reject(new Error("제출 요청 실패(JSONP 로드 실패)"));
-        };
-
+        s.onerror = () => { delete window[cbName]; reject(new Error("제출 실패(JSONP 로드 실패)")); };
         document.body.appendChild(s);
       });
     }
@@ -231,24 +213,16 @@
       if (!site || !name) { alert("사업장/성명을 입력하세요."); return; }
       if (!dept) { alert("부서를 선택하세요."); return; }
 
-      // ✅ 날짜별 shift 수집
-      // selections = [{date, shifts:[...]}]
       const dateOn = Array.from(document.querySelectorAll('#dateList .dateTop input[type="checkbox"]:checked'));
-
       if (dateOn.length === 0) { alert("날짜를 최소 1개 선택하세요."); return; }
 
       const selections = [];
       for (const chk of dateOn) {
         const date = chk.dataset.date;
-        // 같은 카드 안의 shift 체크들만 찾기
         const card = chk.closest(".dateCard");
-        const shifts = Array.from(card.querySelectorAll('.chips input[type="checkbox"]:checked'))
-          .map(x => x.value);
+        const shifts = Array.from(card.querySelectorAll('.chips input[type="checkbox"]:checked')).map(x => x.value);
 
-        if (shifts.length === 0) {
-          alert(`${date}의 구분(오전/오후/야간)을 최소 1개 선택하세요.`);
-          return;
-        }
+        if (shifts.length === 0) { alert(`${date}의 구분을 최소 1개 선택하세요.`); return; }
         selections.push({ date, shifts });
       }
 
@@ -256,26 +230,19 @@
       status.textContent = "저장 중…";
 
       try {
-        // ✅ payload 형식 변경
         const payload = { site, name, dept, work, selections };
-
         const res = await submitViaJsonp(payload);
         if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
 
         alert("제출되었습니다!");
-
         // 초기화
         document.querySelectorAll('#dateList .dateTop input[type="checkbox"]').forEach(x => x.checked = false);
         document.querySelectorAll('#dateList .chips input[type="checkbox"]').forEach(x => x.checked = false);
-        document.querySelectorAll('#dateList .chips').forEach(box => {
-          box.style.opacity = ".5";
-          box.style.pointerEvents = "none";
-        });
-
+        document.querySelectorAll('#dateList .chips').forEach(box => { box.style.opacity = ".5"; box.style.pointerEvents = "none"; });
         document.getElementById("work").value = "";
         status.textContent = "저장 완료";
       } catch (e) {
-        alert("오류: " + (e && e.message ? e.message : e));
+        alert("오류: " + (e.message || e));
         status.textContent = "오류 발생";
       } finally {
         btn.disabled = false;
