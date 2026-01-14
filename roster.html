@@ -27,15 +27,9 @@
     .hr { height:1px; background:#eef2f7; margin: 12px 0; }
 
     .summaryBox {
-      margin-top: 10px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #374151;
-      line-height: 1.5;
-      white-space: pre-wrap;
+      margin-top: 10px; border: 1px solid #e5e7eb; background: #f9fafb;
+      border-radius: 12px; padding: 10px 12px; font-size: 12px; color: #374151;
+      line-height: 1.5; white-space: pre-wrap;
     }
     .summaryBox b { color:#111827; }
     .summaryEmpty { color:#6b7280; }
@@ -45,7 +39,7 @@
     .dateCard.active { border-color: #2563eb; background: #eff6ff; }
 
     .dateTop { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
-    .dateTop input[type="checkbox"] { width: 18px; height: 18px; margin:0; }
+    .dateTop input { width: 18px; height: 18px; margin:0; }
     .dateTitle { font-weight: 700; font-size: 14px; }
 
     .chips { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -59,41 +53,24 @@
     .btn { margin-top: 12px; background:#2563eb; color:#fff; border:none; cursor:pointer; }
     .btn:disabled { opacity:0.6; cursor:not-allowed; }
 
-    /* ✅ 센터 오버레이(로딩/제출중) */
-    .overlay {
-      position: fixed; inset: 0;
-      display: none;
-      align-items: center; justify-content: center;
-      background: rgba(17,24,39,0.35);
-      z-index: 9999;
-      padding: 24px;
-    }
+    .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(17,24,39,0.35); z-index: 9999; padding: 24px; }
     .overlay.show { display: flex; }
     .overlayCard {
-      width: min(360px, 92vw);
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.18);
-      padding: 16px 16px 14px;
-      text-align: center;
+      width: min(360px, 92vw); background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.18); padding: 16px 16px 14px; text-align: center;
     }
-    .spinner {
-      width: 28px; height: 28px;
-      border: 3px solid #e5e7eb;
-      border-top-color: #2563eb;
-      border-radius: 999px;
-      margin: 0 auto 10px;
-      animation: spin 1s linear infinite;
-    }
+    .spinner { width: 28px; height: 28px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 999px; margin: 0 auto 10px; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .overlayTitle { font-weight: 800; font-size: 15px; color:#111827; }
     .overlayDesc { margin-top: 6px; font-size: 12px; color:#4b5563; line-height: 1.4; white-space: pre-wrap; }
+
+    .radioGrid { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .radioItem { width:auto; display:flex; align-items:center; gap:8px; padding: 8px 10px; border:1px solid #e5e7eb; border-radius: 10px; background:#fff; cursor:pointer; user-select:none; }
+    .radioItem input { width: 18px; height: 18px; margin:0; padding:0; }
   </style>
 </head>
 <body>
 
-  <!-- ✅ 오버레이 -->
   <div class="overlay" id="overlay">
     <div class="overlayCard">
       <div class="spinner"></div>
@@ -109,12 +86,8 @@
 
       <div class="row" style="margin-top:10px;">
         <div>
-          <label>구분(사업장)</label>
-          <select id="site">
-            <option value="시화">시화</option>
-            <option value="반월">반월</option>
-            <option value="대양">대양</option>
-          </select>
+          <label id="siteLabel">구분(사업장)</label>
+          <select id="site"><option value="">불러오는 중…</option></select>
         </div>
         <div>
           <label>성명</label>
@@ -122,15 +95,13 @@
         </div>
       </div>
 
-      <label>부서</label>
-      <select id="dept">
-        <option value="">불러오는 중…</option>
-      </select>
+      <label id="deptLabel">부서</label>
+      <div id="deptContainer"><div class="hint">불러오는 중…</div></div>
 
       <div class="hr"></div>
 
-      <label>날짜별 구분 선택</label>
-      <div class="hint">※ 날짜별로 근무 구분을 선택하세요. (구분을 누르면 날짜가 자동 체크됩니다)</div>
+      <label id="dateShiftLabel">날짜별 구분 선택</label>
+      <div class="hint" id="dateShiftHint">※ 날짜/구분을 선택하세요.</div>
 
       <div class="summaryBox" id="selectionSummary">
         <span class="summaryEmpty">아직 선택된 항목이 없습니다.</span>
@@ -149,11 +120,12 @@
   </div>
 
   <script>
-  var GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbyVk-ZNJKiDbHWLYrO79GhxUQ7hDmDAsstTbVPaHyPA-AvthtxfaQYosbyk4B6ujrS5/exec";
+  var GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbyF3RKhqEuWCljwWKgjLNyeWPM7mfUuveqtZ34faP-2XXzn9LnbCHNIZc8DuQBBQpNk/exec";
 
-  // ✅ 상태 분리: 날짜 ON/OFF + 날짜별 shift 선택
-  var dateOnMap = {};   // { "YYYY-MM-DD": true }
-  var selectedMap = {}; // { "YYYY-MM-DD|shift": true }
+  // 상태: dateOnMap[date]=true/false, selectedMap["date|shift"]=true/false
+  var dateOnMap = {};
+  var selectedMap = {};
+  var SETTINGS = {};
 
   function showOverlay(title, desc) {
     document.getElementById("overlayTitle").textContent = title || "로딩중…";
@@ -230,16 +202,12 @@
     return y + "년 " + m + "월 " + d + "일(" + w + ")";
   }
 
-  function keyOf(date, shift) {
-    return String(date || "") + "|" + String(shift || "");
-  }
+  function keyOf(date, shift) { return String(date||"") + "|" + String(shift||""); }
 
   function clearSelectionsForDate(date) {
     var prefix = String(date || "") + "|";
     for (var k in selectedMap) {
-      if (Object.prototype.hasOwnProperty.call(selectedMap, k) && k.indexOf(prefix) === 0) {
-        delete selectedMap[k];
-      }
+      if (Object.prototype.hasOwnProperty.call(selectedMap, k) && k.indexOf(prefix) === 0) delete selectedMap[k];
     }
   }
 
@@ -274,11 +242,10 @@
       chips.style.opacity = "1";
       chips.style.pointerEvents = "auto";
     } else {
-      // OFF면 shift도 전부 해제
       var date = card.getAttribute("data-date") || "";
       clearSelectionsForDate(date);
 
-      var inputs = chips.querySelectorAll('input[type="checkbox"]');
+      var inputs = chips.querySelectorAll('input');
       for (var i = 0; i < inputs.length; i++) {
         inputs[i].checked = false;
         applyChipCheckedClass(inputs[i]);
@@ -290,8 +257,6 @@
 
   function updateSelectionSummary() {
     var box = document.getElementById("selectionSummary");
-
-    // ✅ "날짜 ON" 중에서 shift 선택된 것만 요약
     var lines = [];
     var dates = Object.keys(dateOnMap).filter(function(d){ return !!dateOnMap[d]; }).sort();
 
@@ -305,36 +270,27 @@
           shifts.push(k.split("|")[1] || "");
         }
       }
-
-      if (shifts.length > 0) {
-        lines.push("- " + formatKoreanDate(date) + " : " + shifts.join(", "));
-      } else {
-        lines.push("- " + formatKoreanDate(date) + " : (구분 미선택)");
-      }
+      if (shifts.length > 0) lines.push("- " + formatKoreanDate(date) + " : " + shifts.join(", "));
+      else lines.push("- " + formatKoreanDate(date) + " : (구분 미선택)");
     }
 
-    if (lines.length === 0) {
-      box.innerHTML = '<span class="summaryEmpty">아직 선택된 항목이 없습니다.</span>';
-    } else {
-      box.innerHTML = "<b>선택됨</b>\n" + lines.join("\n");
-    }
+    if (lines.length === 0) box.innerHTML = '<span class="summaryEmpty">아직 선택된 항목이 없습니다.</span>';
+    else box.innerHTML = "<b>선택됨</b>\n" + lines.join("\n");
   }
 
   function applyDomFromState_() {
-    // 1) 날짜 on/off 반영 + chips 활성화
     var cards = document.querySelectorAll("#dateList .dateCard");
     for (var c = 0; c < cards.length; c++) {
       var card = cards[c];
       var date = card.getAttribute("data-date") || "";
-      var topChk = card.querySelector('.dateTop input[type="checkbox"]');
+      var topInput = card.querySelector('.dateTop input');
 
-      if (topChk) topChk.checked = !!dateOnMap[date];
+      if (topInput) topInput.checked = !!dateOnMap[date];
       enableChipsByDate(card, !!dateOnMap[date]);
       setCardActiveState(card);
     }
 
-    // 2) shift 체크는 state 기준으로만
-    var inputs = document.querySelectorAll('#dateList .chips input[type="checkbox"]');
+    var inputs = document.querySelectorAll('#dateList .chips input');
     for (var i = 0; i < inputs.length; i++) {
       var el = inputs[i];
       var date2 = el.getAttribute("data-date") || "";
@@ -348,17 +304,90 @@
     updateSelectionSummary();
   }
 
-  function buildUI(s) {
-    var deptList = Array.isArray(s.depts) ? s.depts : [];
-    var dates    = Array.isArray(s.dates) ? s.dates : [];
-    var shifts   = Array.isArray(s.shifts) ? s.shifts : ["오전","오후","야간"];
+  // ---------- 동적 렌더: site / dept ----------
+  function renderSite_(s) {
+    var fields = s.fields || {};
+    var label = (fields.siteLabel && fields.siteLabel.value) ? String(fields.siteLabel.value) : "구분(사업장)";
+    document.getElementById("siteLabel").textContent = label;
 
-    var deptSel = document.getElementById("dept");
-    deptSel.innerHTML = deptList.length
-      ? ('<option value="">부서를 선택하세요</option>' + deptList.map(function(d){
-          return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + '</option>';
-        }).join(""))
-      : '<option value="">(설정에 부서가 없습니다)</option>';
+    var sites = Array.isArray(s.sites) ? s.sites : [];
+    var siteSel = document.getElementById("site");
+    siteSel.innerHTML = sites.length
+      ? sites.map(function(x){ return '<option value="' + escapeHtml(x) + '">' + escapeHtml(x) + '</option>'; }).join("")
+      : '<option value="">(사업장 설정 없음)</option>';
+  }
+
+  function renderDeptUI(settings) {
+    var wrap = document.getElementById("deptContainer");
+    if (!wrap) return;
+
+    var fields = settings.fields || {};
+    var deptField = fields.depts || { type:"dropdown", options:[] };
+    var type = (deptField.type || "dropdown").toLowerCase();
+    var options = Array.isArray(settings.depts) ? settings.depts : [];
+
+    if (!options.length) {
+      wrap.innerHTML = '<div class="hint">(설정에 부서가 없습니다)</div>';
+      return;
+    }
+
+    if (type === "radio") {
+      wrap.innerHTML =
+        '<div class="radioGrid">' +
+          options.map(function(opt, i){
+            var id = "dept_r_" + i;
+            return (
+              '<label class="radioItem" for="' + escapeHtml(id) + '">' +
+                '<input type="radio" name="dept" id="' + escapeHtml(id) + '" value="' + escapeHtml(opt) + '">' +
+                '<span>' + escapeHtml(opt) + '</span>' +
+              '</label>'
+            );
+          }).join("") +
+        '</div>';
+    } else {
+      wrap.innerHTML =
+        '<select id="deptSelect">' +
+          '<option value="">부서를 선택하세요</option>' +
+          options.map(function(opt){
+            return '<option value="' + escapeHtml(opt) + '">' + escapeHtml(opt) + '</option>';
+          }).join("") +
+        '</select>';
+    }
+  }
+
+  function getSelectedDept(settings) {
+    var fields = settings.fields || {};
+    var deptField = fields.depts || { type:"dropdown" };
+    var type = (deptField.type || "dropdown").toLowerCase();
+
+    if (type === "radio") {
+      var checked = document.querySelector('input[name="dept"]:checked');
+      return checked ? checked.value : "";
+    } else {
+      var sel = document.getElementById("deptSelect");
+      return sel ? sel.value : "";
+    }
+  }
+
+  // ---------- 핵심: dates.type × shifts.type 동적 ----------
+  function buildUI(s) {
+    var fields = s.fields || {};
+    var datesField  = fields.dates  || { type:"checklist" };
+    var shiftsField = fields.shifts || { type:"checklist" };
+
+    var datesType  = String(datesField.type  || "checklist").toLowerCase(); // radio | checklist
+    var shiftsType = String(shiftsField.type || "checklist").toLowerCase(); // radio | checklist
+
+    var dates  = Array.isArray(s.dates)  ? s.dates  : [];
+    var shifts = Array.isArray(s.shifts) ? s.shifts : ["오전","오후","야간"];
+
+    renderSite_(s);
+    renderDeptUI(s);
+
+    document.getElementById("dateShiftHint").textContent =
+      "※ 날짜는 " + (datesType === "radio" ? "1개만" : "여러 개") +
+      " 선택 가능 / 구분은 " + (shiftsType === "radio" ? "1개만" : "여러 개") +
+      " 선택 가능합니다.";
 
     var box = document.getElementById("dateList");
     if (!dates.length) {
@@ -370,10 +399,16 @@
       var idBase = "d_" + idx;
       var title = formatKoreanDate(ymd);
 
+      var dateInputType = (datesType === "radio") ? "radio" : "checkbox";
+      var dateNameAttr  = (datesType === "radio") ? ' name="datePick" ' : "";
+
       var shiftHtml = shifts.map(function (sh) {
+        var inputType = (shiftsType === "radio") ? "radio" : "checkbox";
+        var nameAttr  = (shiftsType === "radio") ? (' name="shift_' + escapeHtml(ymd) + '" ') : "";
         return (
           '<label class="chip">' +
-            '<input type="checkbox" value="' + escapeHtml(sh) + '" data-date="' + escapeHtml(ymd) + '">' +
+            '<input type="' + inputType + '" ' + nameAttr +
+                   'value="' + escapeHtml(sh) + '" data-date="' + escapeHtml(ymd) + '">' +
             '<span>' + escapeHtml(sh) + '</span>' +
           '</label>'
         );
@@ -382,7 +417,8 @@
       return (
         '<div class="dateCard" data-date="' + escapeHtml(ymd) + '">' +
           '<div class="dateTop">' +
-            '<input type="checkbox" id="' + idBase + '_on" data-date="' + escapeHtml(ymd) + '">' +
+            '<input type="' + dateInputType + '" ' + dateNameAttr +
+                   'id="' + idBase + '_on" data-date="' + escapeHtml(ymd) + '">' +
             '<div class="dateTitle">' + escapeHtml(title) + '</div>' +
           '</div>' +
           '<div class="chips" id="' + idBase + '_shifts" style="opacity:.5; pointer-events:none;">' +
@@ -392,7 +428,6 @@
       );
     }).join("");
 
-    // ✅ 최초 진입 시 완전 초기화
     dateOnMap = {};
     selectedMap = {};
     applyDomFromState_();
@@ -413,71 +448,42 @@
 
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-  // ✅ 제출 규칙:
-  // - 날짜가 ON인 것 중 "shift 1개 이상 선택된 날짜"가 최소 1개 있어야 제출 가능
-  // - 제출 대상은 "shift 선택된 것만" (날짜만 ON인 것은 제출 안 함)
-  // ✅ 제출 규칙(강화):
-// - 날짜가 ON인 것 중 "shift 1개 이상 선택된 날짜"가 최소 1개 있어야 제출 가능
-// - ✅ 추가: ON된 모든 날짜는 shift가 최소 1개 이상 선택되어야 제출 가능
-// - 제출 대상은 "shift 선택된 것만" (날짜만 ON인 것은 제출 안 함)
-function collectJobsOrAlert_() {
-  var onDates = Object.keys(dateOnMap).filter(function(d){ return !!dateOnMap[d]; });
+  function collectJobsOrAlert_() {
+    var onDates = Object.keys(dateOnMap).filter(function(d){ return !!dateOnMap[d]; });
 
-  if (onDates.length === 0) {
-    alert("날짜를 먼저 선택하세요.");
-    return null;
+    if (onDates.length === 0) { alert("날짜를 먼저 선택하세요."); return null; }
+
+    // ON된 날짜 중 shift 미선택이면 막음(기존 규칙 유지)
+    var missing = [];
+    for (var i = 0; i < onDates.length; i++) {
+      if (!hasAnyShiftForDate(onDates[i])) missing.push(onDates[i]);
+    }
+    if (missing.length > 0) {
+      alert(
+        "아래 날짜는 '구분'이 선택되지 않았습니다.\n\n" +
+        missing.sort().map(function(d){ return "- " + formatKoreanDate(d); }).join("\n") +
+        "\n\n해당 날짜의 구분을 선택한 뒤 제출해 주세요."
+      );
+      return null;
+    }
+
+    var keys = Object.keys(selectedMap);
+    var jobs = [];
+    for (var k = 0; k < keys.length; k++) {
+      var p = keys[k].split("|");
+      var date2 = p[0], shift2 = p[1];
+      if (!dateOnMap[date2]) continue;
+      jobs.push({ date: date2, shift: shift2 });
+    }
+
+    if (jobs.length === 0) { alert("구분을 선택하세요."); return null; }
+    return jobs;
   }
-
-  // ✅ 1) ON된 날짜 중 shift 미선택 날짜 찾기
-  var missing = [];
-  for (var i = 0; i < onDates.length; i++) {
-    var date = onDates[i];
-    if (!hasAnyShiftForDate(date)) missing.push(date);
-  }
-
-  // ✅ 2) 하나라도 있으면 제출 중단 + 안내
-  if (missing.length > 0) {
-    var msg =
-      "아래 날짜는 '구분(오전/오후/야간)'이 선택되지 않았습니다.\n\n" +
-      missing
-        .sort()
-        .map(function(d){ return "- " + formatKoreanDate(d); })
-        .join("\n") +
-      "\n\n해당 날짜의 구분을 최소 1개 선택한 뒤 제출해 주세요.";
-    alert(msg);
-    return null;
-  }
-
-  // ✅ 3) 제출 대상(shift 선택된 것만) 만들기
-  var keys = Object.keys(selectedMap);
-  if (keys.length === 0) {
-    // 이 케이스는 위 missing 검사로 사실상 거의 안 나오지만 방어로 남김
-    alert("선택한 날짜에서 구분(오전/오후/야간)을 최소 1개 선택하세요.");
-    return null;
-  }
-
-  var jobs = [];
-  for (var k = 0; k < keys.length; k++) {
-    var p = keys[k].split("|");
-    var date2 = p[0], shift2 = p[1];
-
-    if (!dateOnMap[date2]) continue; // 날짜 OFF면 제출 제외
-    jobs.push({ date: date2, shift: shift2 });
-  }
-
-  if (jobs.length === 0) {
-    alert("선택한 날짜에서 구분(오전/오후/야간)을 최소 1개 선택하세요.");
-    return null;
-  }
-
-  return jobs;
-}
-
 
   async function submitData() {
     var site = document.getElementById("site").value.trim();
     var name = document.getElementById("name").value.trim();
-    var dept = document.getElementById("dept").value.trim();
+    var dept = getSelectedDept(SETTINGS);
     var work = document.getElementById("work").value.trim();
 
     var btn = document.getElementById("submitBtn");
@@ -491,18 +497,15 @@ function collectJobsOrAlert_() {
 
     btn.disabled = true;
     status.textContent = "";
-
     showOverlay("제출중…", "저장 중입니다.\n창을 닫지 말아 주세요.");
 
     try {
-      for (var k = 0; k < jobs.length; k++) {
-        document.getElementById("overlayDesc").textContent =
-          "저장 중입니다.\n(" + (k + 1) + "/" + jobs.length + ")";
+      for (var i = 0; i < jobs.length; i++) {
+        document.getElementById("overlayDesc").textContent = "저장 중입니다.\n(" + (i+1) + "/" + jobs.length + ")";
 
         var res = await submitOneViaJsonp({
           site: site, name: name, dept: dept, work: work,
-          date: jobs[k].date,
-          shift: jobs[k].shift
+          date: jobs[i].date, shift: jobs[i].shift
         });
 
         if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
@@ -510,9 +513,7 @@ function collectJobsOrAlert_() {
       }
 
       showOverlay("완료", "제출이 완료되었습니다.\n잠시 후 초기화됩니다…");
-      setTimeout(function () {
-        location.replace(location.pathname + "?ts=" + Date.now());
-      }, 350);
+      setTimeout(function(){ location.replace(location.pathname + "?ts=" + Date.now()); }, 350);
 
     } catch (e) {
       hideOverlay();
@@ -525,56 +526,34 @@ function collectJobsOrAlert_() {
 
   document.getElementById("submitBtn").addEventListener("click", submitData);
 
-  // ✅ 날짜 클릭: ON/OFF 가능 + ON일 때만 shift 활성
-  document.addEventListener("click", function (ev) {
-    var t = ev.target;
-    if (!t) return;
-
-    var top = t.closest && t.closest('#dateList .dateTop');
-    if (!top) return;
-
-    if (t.tagName && t.tagName.toLowerCase() === "input") return;
-
-    var card = top.closest(".dateCard");
-    if (!card) return;
-
-    var date = card.getAttribute("data-date") || "";
-    var topChk = top.querySelector('input[type="checkbox"]');
-    if (!topChk) return;
-
-    var next = !topChk.checked;
-    dateOnMap[date] = next;
-
-    if (!next) {
-      // 날짜 OFF면 shift도 전부 해제
-      clearSelectionsForDate(date);
-    }
-
-    applyDomFromState_();
-  });
-
-  // ✅ change 이벤트: 날짜 체크박스 직접 클릭/shift 클릭 처리
+  // 날짜/shift 선택 핸들러(완전 동적: checkbox/radio 모두 처리)
   document.addEventListener("change", function (ev) {
     var t = ev.target;
     if (!t) return;
 
-    // 날짜 체크박스 직접 클릭
-    if (t.matches && t.matches('#dateList .dateTop input[type="checkbox"]')) {
-      var card = t.closest(".dateCard");
-      var date = card ? (card.getAttribute("data-date") || "") : "";
+    // 날짜 ON/OFF (radio/checkbox 모두)
+    if (t.matches && t.matches('#dateList .dateTop input')) {
+      var date = t.getAttribute("data-date") || "";
+
+      // 날짜가 radio면: 다른 날짜 OFF 처리
+      if (t.type === "radio") {
+        dateOnMap = {}; // 싹 비우고
+        // 다른 날짜의 shift 선택도 전부 제거
+        selectedMap = {};
+      }
+
       dateOnMap[date] = !!t.checked;
       if (!t.checked) clearSelectionsForDate(date);
       applyDomFromState_();
       return;
     }
 
-    // shift 클릭
-    if (t.matches && t.matches('#dateList .chips input[type="checkbox"]')) {
+    // shift 선택(checkbox/radio 모두)
+    if (t.matches && t.matches('#dateList .chips input')) {
       var date2 = t.getAttribute("data-date") || "";
       var shift2 = t.value || "";
       var k2 = keyOf(date2, shift2);
 
-      // 방어: 날짜 ON이 아니면 shift 선택 불가
       if (!dateOnMap[date2]) {
         t.checked = false;
         applyChipCheckedClass(t);
@@ -582,29 +561,34 @@ function collectJobsOrAlert_() {
         return;
       }
 
-      if (t.checked) selectedMap[k2] = true;
-      else delete selectedMap[k2];
+      if (t.type === "radio") {
+        // 날짜당 1개만: 기존 선택 지우고 1개만
+        clearSelectionsForDate(date2);
+        if (t.checked) selectedMap[k2] = true;
+      } else {
+        if (t.checked) selectedMap[k2] = true;
+        else delete selectedMap[k2];
+      }
 
       applyDomFromState_();
       return;
     }
   });
 
-  // ✅ 로딩
+  // 로딩
   showOverlay("로딩중…", "설정을 불러오는 중입니다…");
-
   (function loadSettings(){
     var url = GAS_EXEC_URL + "?" + buildQuery({ action: "settings" });
     jsonpCall(url, "cb_set", 12000).then(function (res) {
       if (!res || !res.ok) throw new Error(res && res.error ? res.error : "settings 응답 오류");
 
-      var s = res.settings || {};
-      document.getElementById("pageTitle").textContent = (s.title || "연휴 출근 조사");
-      document.getElementById("pageDesc").textContent  = (s.desc  || "");
+      SETTINGS = res.settings || {};
 
-      buildUI(s);
+      document.getElementById("pageTitle").textContent = (SETTINGS.title || "연휴 출근 조사");
+      document.getElementById("pageDesc").textContent  = (SETTINGS.desc  || "");
+
+      buildUI(SETTINGS);
       hideOverlay();
-
     }).catch(function (e) {
       hideOverlay();
       document.getElementById("dateList").innerHTML =
@@ -612,7 +596,6 @@ function collectJobsOrAlert_() {
       document.getElementById("status").textContent = "설정 불러오기 실패";
     });
   })();
-</script>
-
+  </script>
 </body>
 </html>
