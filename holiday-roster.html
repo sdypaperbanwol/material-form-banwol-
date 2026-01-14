@@ -81,7 +81,7 @@
   </div>
 
   <script>
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxRNyzcgh0QSD0dtCXWNb-GiOWVbq5Mirxu7_jX-sbgiMXMaSL-hQO18lgWhhwkK-P7/exec";
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzkdhnZ75lcta-SZri82pnxdTN3M-X2YUl3gJrJD4czXYeula__Qh7HalUhS0hRv6dm/exec";
     let ROWS = []; // [{dept,date,shift,work}]
     let TITLE = "";
     let DESC = "";
@@ -119,56 +119,70 @@
     function uniq(arr) { return Array.from(new Set(arr.filter(Boolean))); }
 
     function buildUI() {
-      // 부서 드롭다운
-      const deptList = uniq(ROWS.map(r => (r.dept || "").trim()));
-      const deptSel = document.getElementById("dept");
-      deptSel.innerHTML = `<option value="">부서를 선택하세요</option>` + deptList
-        .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
-        .join("");
+  // 부서 드롭다운
+  const deptList = uniq(ROWS.map(r => (r.dept || "").trim()));
+  const deptSel = document.getElementById("dept");
+  deptSel.innerHTML = `<option value="">부서를 선택하세요</option>` + deptList
+    .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
+    .join("");
 
-      // 날짜별 가능한 shift 집계
-      // dateMap[date] = Set(shifts)
-      const dateMap = new Map();
-      ROWS.forEach(r => {
-        const date = String(r.date || "").trim();
-        const shift = String(r.shift || "").trim();
-        if (!date) return;
-        if (!dateMap.has(date)) dateMap.set(date, new Set());
-        if (shift) dateMap.get(date).add(shift);
-      });
+  // ✅ 날짜 목록은 rows에서만 뽑음
+  const dates = uniqDates(ROWS);
+  const box = document.getElementById("dateList");
 
-      const dates = Array.from(dateMap.keys()).sort();
-      const box = document.getElementById("dateList");
+  if (!dates.length) {
+    box.innerHTML = `<div class="hint">날짜 데이터가 없습니다. (설정 시트 날짜 값 확인)</div>`;
+    return;
+  }
 
-      if (!dates.length) {
-        box.innerHTML = `<div class="hint">표 데이터(rows)가 없습니다. (C6:F 아래 데이터 확인)</div>`;
-        return;
-      }
+  const FIXED_SHIFTS = ["오전", "오후", "야간"];
 
-      box.innerHTML = dates.map((d, idx) => {
-        const idBase = `d_${idx}`;
-        const shifts = Array.from(dateMap.get(d) || []).sort();
-        const shiftHtml = shifts.map(sh => `
-          <label class="chip">
-            <input type="checkbox" value="${escapeHtml(sh)}" data-date="${escapeHtml(d)}">
-            <span>${escapeHtml(sh)}</span>
-          </label>
-        `).join("");
+  box.innerHTML = dates.map((ymd, idx) => {
+    const idBase = `d_${idx}`;
+    const title = formatKoreanDate(ymd);
 
-        return `
-          <div class="dateCard">
-            <div class="dateTop">
-              <input type="checkbox" id="${idBase}_on" data-date="${escapeHtml(d)}" onchange="toggleDate('${idBase}')">
-              <div class="dateTitle">${escapeHtml(d)}</div>
-            </div>
+    const shiftHtml = FIXED_SHIFTS.map(sh => `
+      <label class="chip">
+        <input type="checkbox" value="${escapeHtml(sh)}" data-date="${escapeHtml(ymd)}">
+        <span>${escapeHtml(sh)}</span>
+      </label>
+    `).join("");
 
-            <div class="chips" id="${idBase}_shifts" style="opacity:.5; pointer-events:none;">
-              ${shiftHtml || `<div class="hint">가능한 구분이 없습니다(시트 구분값 확인).</div>`}
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
+    return `
+      <div class="dateCard">
+        <div class="dateTop">
+          <input type="checkbox" id="${idBase}_on" data-date="${escapeHtml(ymd)}" onchange="toggleDate('${idBase}')">
+          <div class="dateTitle">${escapeHtml(title)}</div>
+        </div>
+
+        <div class="chips" id="${idBase}_shifts" style="opacity:.5; pointer-events:none;">
+          ${shiftHtml}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function formatKoreanDate(ymd) {
+  // ymd: "2026-02-16"
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "";
+  const [y, m, d] = ymd.split("-").map(Number);
+
+  // KST 기준으로 요일 계산(UTC 꼬임 방지)
+  const dt = new Date(`${ymd}T00:00:00+09:00`);
+  const w = ["일","월","화","수","목","금","토"][dt.getDay()];
+
+  return `${y}년 ${m}월 ${d}일(${w})`;
+}
+
+function uniqDates(rows) {
+  const set = new Set();
+  rows.forEach(r => {
+    const d = String(r.date || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) set.add(d);
+  });
+  return Array.from(set).sort();
+}
 
     function toggleDate(idBase) {
       const on = document.getElementById(`${idBase}_on`).checked;
