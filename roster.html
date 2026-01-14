@@ -12,7 +12,12 @@
 <style>
 :root { --primary:#2563eb; --bg:#f3f4f6; --text:#111827; --card:#fff; --muted:#6b7280; }
 body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); }
-.wrap { max-width:760px; margin:0 auto; padding:18px 14px 40px; }
+.wrap {
+  max-width: 600px;   /* PC 기준 안정 폭 */
+  margin: 0 auto;
+  padding: 18px 14px 40px;
+}
+
 .card { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 4px 18px rgba(0,0,0,.08); }
 h1 { font-size:20px; margin:0 0 8px; }
 .desc { white-space:pre-wrap; color:var(--muted); line-height:1.4; margin-bottom:14px; }
@@ -34,6 +39,36 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 .ok { color:#047857; font-weight:800; }
 .err { color:#b91c1c; font-weight:800; }
 #submitFrame { width:0; height:0; border:0; position:absolute; left:-9999px; top:-9999px; }
+
+  .dateLine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap; /* 모바일 대응 */
+}
+
+.dateCheck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  min-width: 130px; /* 날짜 줄 정렬용 */
+}
+
+.shiftBox {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.shiftBox label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+  
 </style>
 </head>
 
@@ -123,28 +158,36 @@ function loadConfigJSONP(){
 
 /* 날짜 UI */
 function createDateRow(date){
-  const w=document.createElement("div"); w.className="dateRow"; w.dataset.date=date;
-  const top=document.createElement("div"); top.className="dateTop";
-  const dchk=document.createElement("input"); dchk.type="checkbox";
-  const txt=document.createElement("div"); txt.className="dateText"; txt.textContent=date;
-  top.appendChild(dchk); top.appendChild(txt);
+  const row = document.createElement("div");
+  row.className = "dateRow";
 
-  const box=document.createElement("div"); box.className="shiftBox";
-  ["오전","오후","야간"].forEach(s=>{
-    const l=document.createElement("label"); l.className="shiftItem";
-    const c=document.createElement("input"); c.type="checkbox"; c.value=s; c.disabled=true;
-    l.appendChild(c); l.appendChild(document.createTextNode(s));
-    box.appendChild(l);
+  row.innerHTML = `
+    <div class="dateLine">
+      <label class="dateCheck">
+        <input type="checkbox" class="dateChk">
+        <span class="dateText">${date}</span>
+      </label>
+      <div class="shiftBox">
+        <label><input type="checkbox" value="오전" disabled> 오전</label>
+        <label><input type="checkbox" value="오후" disabled> 오후</label>
+        <label><input type="checkbox" value="야간" disabled> 야간</label>
+      </div>
+    </div>
+  `;
+
+  const dateChk = row.querySelector(".dateChk");
+  const shifts = row.querySelectorAll(".shiftBox input");
+
+  dateChk.addEventListener("change", () => {
+    shifts.forEach(c => {
+      c.disabled = !dateChk.checked;
+      if (!dateChk.checked) c.checked = false;
+    });
   });
 
-  dchk.onchange=()=>{
-    box.querySelectorAll("input").forEach(c=>{ c.disabled=!dchk.checked; if(!dchk.checked) c.checked=false; });
-    box.querySelectorAll(".shiftItem").forEach(i=>i.classList.toggle("enabled",dchk.checked));
-  };
-
-  w.appendChild(top); w.appendChild(box);
-  return w;
+  return row;
 }
+
 
 /* 제출 */
 function submit(){
