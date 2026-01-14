@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>연휴 출근 계획</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#f3f4f6}
+    .wrap{max-width:760px;margin:0 auto;padding:16px}
+    .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+    h1{margin:0 0 6px;font-size:20px}
+    p{margin:0 0 10px;color:#555;white-space:pre-line}
+    .q{margin:12px 0}
+    label{display:block;font-weight:700;margin-bottom:6px}
+    select,input,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:14px;background:#fff}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .chk{display:flex;gap:10px;flex-wrap:wrap}
+    .chk label{font-weight:500;display:flex;gap:6px;align-items:center;margin:0}
+    button{width:100%;padding:12px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-size:16px;font-weight:700}
+    .msg{margin-top:10px;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1 id="title">로딩중…</h1>
+    <p id="desc"></p>
+
+    <form id="form"></form>
+    <button id="submitBtn" type="button">제출</button>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzVj-DLGHJ94YKglwTvl7qAJRovDEv1DVJPANCyUE8YSY7nEQhdpS_p_6ac-F2wXVzg/exec";
+
+let MODEL = null;
+
+function el(tag, attrs={}, children=[]) {
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v]) => k==="class" ? e.className=v : e.setAttribute(k,v));
+  children.forEach(c => e.appendChild(typeof c==="string" ? document.createTextNode(c) : c));
+  return e;
+}
+
+function isDependentDisabled(label) {
+  // 규칙: "구분=날짜" 형태면, 날짜 미선택 시 구분 disable
+  const dep = (MODEL.rules||[]).find(r => r.kind==="의존조건" && r.expr.startsWith(label + "="));
+  if (!dep) return false;
+  const prereq = dep.expr.split("=")[1];
+  const v = getValue(prereq);
+  return !v || (Array.isArray(v) && v.length===0);
+}
+
+function getValue(label){
+  const nodes = document.querySelectorAll(`[data-label="${CSS.escape(label)}"]`);
+  if (!nodes.length) return "";
+  const n = nodes[0];
+
+  if (n.dataset.type === "체크박스") {
+    return [...document.querySelectorAll(`input[type="checkbox"][data-label="${CSS.escape(label)}"]:checked`)].map(x=>x.value);
+  }
+  return n.value;
+}
+
+function applyDependencies(){
+  (MODEL.questions||[]).forEach(q=>{
+    const nodes = document.querySelectorAll(`[data-label="${CSS.escape(q.label)}"]`);
+    if(!nodes.length) return;
+    const disabled = isDependentDisabled(q.label);
+    nodes.forEach(n=> n.disabled = disabled);
+  });
+}
+
+function render(model){
+  MODEL = model;
+  document.getElementById("title").textContent = model.title || "제목 없음";
+  document.getElementById("desc").textContent = (model.descLines||[]).join("\n");
+
+  const form = document.getElementById("form");
+  form.innerHTML = "";
+
+  (model.questions||[]).forEach(q=>{
+    const wrap = el("div",{class:"q"});
+    wrap.appendChild(el("label",{},[q.label]));
+
+    if (q.type === "드롭다운") {
+      const sel = el("select", {"data-label":q.label,"data-type":q.type});
+      sel.appendChild(el("option",{value:""},["-- 선택 --"]));
+      (q.options||[]).forEach(op=> sel.appendChild(el("option",{value:op},[op])));
+      sel.addEventListener("change", applyDependencies);
+      wrap.appendChild(sel);
+    } else if (q.type === "체크박스") {
+      const box = el("div",{class:"chk"});
+      (q.options||[]).forEach(op=>{
+        const id = `${q.label}__${op}`.replace(/\s+/g,"_");
+        const cb = el("input",{type:"checkbox",value:op,id, "data-label":q.label,"data-type":q.type});
+        cb.addEventListener("change", applyDependencies);
+        box.appendChild(el("label",{for:id},[cb, op]));
+      });
+      wrap.appendChild(box);
+    } else { // 텍스트
+      const ta = el("textarea",{"data-label":q.label,"data-type":q.type, rows:"3"});
+      wrap.appendChild(ta);
+    }
+
+    form.appendChild(wrap);
+  });
+
+  applyDependencies();
+}
+
+async function load(){
+  const res = await fetch(`${API_URL}?mode=form`);
+  if(!res.ok) throw new Error("폼 로드 실패");
+  const model = await res.json();
+  render(model);
+}
+
+async function submit(){
+  const msg = document.getElementById("msg");
+  msg.textContent = "";
+  msg.style.color = "#111";
+
+  const payload = {};
+  (MODEL.questions||[]).forEach(q => payload[q.label] = getValue(q.label));
+
+  // 최소 검증(원하면 필수 검증도 여기서)
+  // 예: 날짜 선택 안 했으면 막기
+  // if((payload["날짜"]||[]).length===0) { msg.textContent="날짜 선택"; msg.style.color="red"; return; }
+
+  const body = new URLSearchParams();
+  Object.entries(payload).forEach(([k,v])=>{
+    body.append(k, Array.isArray(v) ? v.join(",") : String(v||""));
+  });
+
+  const res = await fetch(API_URL, { method:"POST", body });
+  const data = await res.json();
+  if(data.result==="success"){
+    msg.textContent="저장 완료";
+    msg.style.color="green";
+  } else {
+    msg.textContent="저장 실패";
+    msg.style.color="red";
+  }
+}
+
+document.getElementById("submitBtn").addEventListener("click", submit);
+
+load().catch(e=>{
+  const msg=document.getElementById("msg");
+  msg.textContent="로드 실패: " + e.message;
+  msg.style.color="red";
+});
+</script>
+</body>
+</html>
