@@ -2,157 +2,388 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>연휴 출근 계획</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>연휴 출근 취합</title>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#f3f4f6}
-    .wrap{max-width:760px;margin:0 auto;padding:16px}
-    .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
-    h1{margin:0 0 6px;font-size:20px}
-    p{margin:0 0 10px;color:#555;white-space:pre-line}
-    .q{margin:12px 0}
-    label{display:block;font-weight:700;margin-bottom:6px}
-    select,input,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:14px;background:#fff}
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .chk{display:flex;gap:10px;flex-wrap:wrap}
-    .chk label{font-weight:500;display:flex;gap:6px;align-items:center;margin:0}
-    button{width:100%;padding:12px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-size:16px;font-weight:700}
-    .msg{margin-top:10px;font-weight:700}
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f7f9; margin:0; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    .desc { font-size: 12px; color:#4b5563; white-space: pre-wrap; line-height: 1.5; }
+    label { display:block; font-size: 13px; margin-top: 10px; color:#111827; }
+    input, select, textarea, button {
+      width: 100%; box-sizing: border-box;
+      padding: 10px; border:1px solid #d1d5db; border-radius: 10px;
+      font-size: 14px; background:#fff;
+    }
+    textarea { resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hint { font-size:12px; color:#6b7280; margin-top:8px; white-space: pre-wrap; }
+    .hr { height:1px; background:#eef2f7; margin: 12px 0; }
+    .dateList { margin-top: 10px; display:flex; flex-direction: column; gap: 10px; }
+    .dateCard { border:1px solid #e5e7eb; border-radius: 12px; padding: 12px; background:#fff; }
+    .dateTop { display:flex; align-items:center; gap:10px; }
+    .dateTop input[type="checkbox"] { width: 18px; height: 18px; margin:0; }
+    .dateTitle { font-weight: 700; font-size: 14px; }
+    .chips { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chip { display:flex; align-items:center; gap:8px; padding: 8px 10px; border:1px solid #e5e7eb; border-radius: 10px; background:#fff; }
+    .chip input { width: 18px; height: 18px; margin:0; padding:0; }
+    .chip span { font-size: 13px; }
+    .btn { margin-top: 12px; background:#2563eb; color:#fff; border:none; cursor:pointer; }
+    .btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .smallbtn { margin-top: 10px; background:#111827; color:#fff; border:none; cursor:pointer; }
+    .foot { margin-top:10px; font-size:11px; color:#9ca3af; }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <h1 id="title">로딩중…</h1>
-    <p id="desc"></p>
+  <div class="wrap">
+    <div class="card">
+      <h1 id="pageTitle">불러오는 중…</h1>
+      <div class="desc" id="pageDesc"></div>
 
-    <form id="form"></form>
-    <button id="submitBtn" type="button">제출</button>
-    <div class="msg" id="msg"></div>
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>구분(사업장)</label>
+          <select id="site">
+            <option value="시화">시화</option>
+            <option value="반월">반월</option>
+            <option value="대양">대양</option>
+          </select>
+        </div>
+        <div>
+          <label>성명</label>
+          <input id="name" type="text" placeholder="이름" autocomplete="name" />
+        </div>
+      </div>
+
+      <label>부서</label>
+      <select id="dept">
+        <option value="">불러오는 중…</option>
+      </select>
+
+      <div class="hr"></div>
+
+      <label>날짜별 구분 선택</label>
+      <div class="hint">※ 날짜를 체크하고, 그 날짜의 구분을 선택하세요.</div>
+      <div class="dateList" id="dateList">
+        <div class="hint">데이터를 불러오는 중…</div>
+      </div>
+
+      <label style="margin-top:14px;">업무내용(자유기입)</label>
+      <textarea id="work" rows="3" placeholder="예: 공정점검, 안전 점검 등"></textarea>
+
+      <button class="btn" id="submitBtn">제출</button>
+      <div class="hint" id="status"></div>
+      <div class="foot" id="ver"></div>
+    </div>
   </div>
-</div>
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzVj-DLGHJ94YKglwTvl7qAJRovDEv1DVJPANCyUE8YSY7nEQhdpS_p_6ac-F2wXVzg/exec";
+  <script>
+    // ✅ 네 GAS 웹앱 exec URL로 교체 (반드시 /exec)
+    var GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxJLZZHgCCUuB1FaHZ6SDKBgx9RkGfwMFG00GUQMIBCQdtMSeR2DfbbEA-USDRJCZ0H/exec";
 
-let MODEL = null;
+    // ====== (인앱/구형 브라우저 대비) matches/closest 폴리필 ======
+    (function () {
+      if (!Element.prototype.matches) {
+        Element.prototype.matches =
+          Element.prototype.msMatchesSelector ||
+          Element.prototype.webkitMatchesSelector ||
+          function (s) {
+            var matches = (this.document || this.ownerDocument).querySelectorAll(s);
+            var i = matches.length;
+            while (--i >= 0 && matches.item(i) !== this) {}
+            return i > -1;
+          };
+      }
+      if (!Element.prototype.closest) {
+        Element.prototype.closest = function (s) {
+          var el = this;
+          while (el && el.nodeType === 1) {
+            if (el.matches(s)) return el;
+            el = el.parentElement || el.parentNode;
+          }
+          return null;
+        };
+      }
+    })();
 
-function el(tag, attrs={}, children=[]) {
-  const e = document.createElement(tag);
-  Object.entries(attrs).forEach(([k,v]) => k==="class" ? e.className=v : e.setAttribute(k,v));
-  children.forEach(c => e.appendChild(typeof c==="string" ? document.createTextNode(c) : c));
-  return e;
-}
+    // settings (GAS에서 내려오는 구조)
+    var SETTINGS = null;
 
-function isDependentDisabled(label) {
-  // 규칙: "구분=날짜" 형태면, 날짜 미선택 시 구분 disable
-  const dep = (MODEL.rules||[]).find(r => r.kind==="의존조건" && r.expr.startsWith(label + "="));
-  if (!dep) return false;
-  const prereq = dep.expr.split("=")[1];
-  const v = getValue(prereq);
-  return !v || (Array.isArray(v) && v.length===0);
-}
-
-function getValue(label){
-  const nodes = document.querySelectorAll(`[data-label="${CSS.escape(label)}"]`);
-  if (!nodes.length) return "";
-  const n = nodes[0];
-
-  if (n.dataset.type === "체크박스") {
-    return [...document.querySelectorAll(`input[type="checkbox"][data-label="${CSS.escape(label)}"]:checked`)].map(x=>x.value);
-  }
-  return n.value;
-}
-
-function applyDependencies(){
-  (MODEL.questions||[]).forEach(q=>{
-    const nodes = document.querySelectorAll(`[data-label="${CSS.escape(q.label)}"]`);
-    if(!nodes.length) return;
-    const disabled = isDependentDisabled(q.label);
-    nodes.forEach(n=> n.disabled = disabled);
-  });
-}
-
-function render(model){
-  MODEL = model;
-  document.getElementById("title").textContent = model.title || "제목 없음";
-  document.getElementById("desc").textContent = (model.descLines||[]).join("\n");
-
-  const form = document.getElementById("form");
-  form.innerHTML = "";
-
-  (model.questions||[]).forEach(q=>{
-    const wrap = el("div",{class:"q"});
-    wrap.appendChild(el("label",{},[q.label]));
-
-    if (q.type === "드롭다운") {
-      const sel = el("select", {"data-label":q.label,"data-type":q.type});
-      sel.appendChild(el("option",{value:""},["-- 선택 --"]));
-      (q.options||[]).forEach(op=> sel.appendChild(el("option",{value:op},[op])));
-      sel.addEventListener("change", applyDependencies);
-      wrap.appendChild(sel);
-    } else if (q.type === "체크박스") {
-      const box = el("div",{class:"chk"});
-      (q.options||[]).forEach(op=>{
-        const id = `${q.label}__${op}`.replace(/\s+/g,"_");
-        const cb = el("input",{type:"checkbox",value:op,id, "data-label":q.label,"data-type":q.type});
-        cb.addEventListener("change", applyDependencies);
-        box.appendChild(el("label",{for:id},[cb, op]));
+    function escapeHtml(s) {
+      return String(s || "").replace(/[&<>"']/g, function (m) {
+        return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]);
       });
-      wrap.appendChild(box);
-    } else { // 텍스트
-      const ta = el("textarea",{"data-label":q.label,"data-type":q.type, rows:"3"});
-      wrap.appendChild(ta);
     }
 
-    form.appendChild(wrap);
-  });
+    // ✅ URLSearchParams 대신 수동 빌드(구형/인앱 대비)
+    function buildQuery(obj) {
+      var parts = [];
+      for (var k in obj) {
+        if (!obj.hasOwnProperty(k)) continue;
+        parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(obj[k] == null ? "" : obj[k])));
+      }
+      return parts.join("&");
+    }
 
-  applyDependencies();
-}
+    // ✅ JSONP 공통 호출
+    function jsonpCall(url, cbPrefix, timeoutMs) {
+      return new Promise(function (resolve, reject) {
+        var cbName = (cbPrefix || "cb") + "_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+        var done = false;
+        var timer = null;
+        var scriptEl = null;
 
-async function load(){
-  const res = await fetch(`${API_URL}?mode=form`);
-  if(!res.ok) throw new Error("폼 로드 실패");
-  const model = await res.json();
-  render(model);
-}
+        function cleanup() {
+          if (timer) { clearTimeout(timer); timer = null; }
+          if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+          scriptEl = null;
+          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+        }
 
-async function submit(){
-  const msg = document.getElementById("msg");
-  msg.textContent = "";
-  msg.style.color = "#111";
+        window[cbName] = function (res) {
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve(res);
+        };
 
-  const payload = {};
-  (MODEL.questions||[]).forEach(q => payload[q.label] = getValue(q.label));
+        timer = setTimeout(function () {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("타임아웃(콜백 없음)"));
+        }, timeoutMs || 12000);
 
-  // 최소 검증(원하면 필수 검증도 여기서)
-  // 예: 날짜 선택 안 했으면 막기
-  // if((payload["날짜"]||[]).length===0) { msg.textContent="날짜 선택"; msg.style.color="red"; return; }
+        scriptEl = document.createElement("script");
+        scriptEl.async = true;
+        scriptEl.src = url + (url.indexOf("?") >= 0 ? "&" : "?") +
+          "callback=" + encodeURIComponent(cbName) +
+          "&ts=" + Date.now(); // 캐시 방지
 
-  const body = new URLSearchParams();
-  Object.entries(payload).forEach(([k,v])=>{
-    body.append(k, Array.isArray(v) ? v.join(",") : String(v||""));
-  });
+        scriptEl.onerror = function () {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("JSONP script 로드 실패"));
+        };
 
-  const res = await fetch(API_URL, { method:"POST", body });
-  const data = await res.json();
-  if(data.result==="success"){
-    msg.textContent="저장 완료";
-    msg.style.color="green";
-  } else {
-    msg.textContent="저장 실패";
-    msg.style.color="red";
-  }
-}
+        document.body.appendChild(scriptEl);
+      });
+    }
 
-document.getElementById("submitBtn").addEventListener("click", submit);
+    // iOS/사내브라우저 안전 요일 계산: new Date(y,m-1,d)
+    function formatKoreanDate(ymd) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "";
+      var parts = ymd.split("-");
+      var y = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10);
+      var d = parseInt(parts[2], 10);
+      var dt = new Date(y, m - 1, d);
+      var w = ["일","월","화","수","목","금","토"][dt.getDay()];
+      return y + "년 " + m + "월 " + d + "일(" + w + ")";
+    }
 
-load().catch(e=>{
-  const msg=document.getElementById("msg");
-  msg.textContent="로드 실패: " + e.message;
-  msg.style.color="red";
-});
-</script>
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg || "";
+    }
+
+    function loadSettings() {
+      var url = GAS_EXEC_URL + "?" + buildQuery({ action: "settings" });
+      jsonpCall(url, "cb_set", 12000).then(function (res) {
+        if (!res || !res.ok) throw new Error(res && res.error ? res.error : "settings 응답 오류");
+        var s = res.settings || {};
+        SETTINGS = s;
+
+        document.getElementById("pageTitle").textContent = (s.title || "연휴 출근 조사");
+        document.getElementById("pageDesc").textContent  = (s.desc  || "");
+
+        buildUI(s);
+
+        document.getElementById("ver").textContent = "loaded: " + new Date().toLocaleString();
+      }).catch(function (e) {
+        document.getElementById("dateList").innerHTML =
+          '<div class="hint">불러오기 실패: ' + escapeHtml(e.message || e) + '</div>';
+        setStatus("설정 불러오기 실패");
+      });
+    }
+
+    function buildUI(s) {
+      var deptList = Array.isArray(s.depts) ? s.depts : [];
+      var dates    = Array.isArray(s.dates) ? s.dates : [];
+      var shifts   = Array.isArray(s.shifts) ? s.shifts : ["오전","오후","야간"];
+
+      // 부서 드롭다운
+      var deptSel = document.getElementById("dept");
+      if (!deptList.length) {
+        deptSel.innerHTML = '<option value="">(설정에 부서가 없습니다)</option>';
+      } else {
+        deptSel.innerHTML =
+          '<option value="">부서를 선택하세요</option>' +
+          deptList.map(function (d) {
+            return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + '</option>';
+          }).join("");
+      }
+
+      // 날짜 카드
+      var box = document.getElementById("dateList");
+      if (!dates.length) {
+        box.innerHTML = '<div class="hint">날짜 데이터가 없습니다. (설정 시트 dates 확인)</div>';
+        return;
+      }
+
+      box.innerHTML = dates.map(function (ymd, idx) {
+        var idBase = "d_" + idx;
+        var title = formatKoreanDate(ymd);
+
+        var shiftHtml = shifts.map(function (sh) {
+          return (
+            '<label class="chip">' +
+              '<input type="checkbox" value="' + escapeHtml(sh) + '" data-date="' + escapeHtml(ymd) + '">' +
+              '<span>' + escapeHtml(sh) + '</span>' +
+            '</label>'
+          );
+        }).join("");
+
+        return (
+          '<div class="dateCard">' +
+            '<div class="dateTop">' +
+              '<input type="checkbox" id="' + idBase + '_on" data-date="' + escapeHtml(ymd) + '">' +
+              '<div class="dateTitle">' + escapeHtml(title) + '</div>' +
+            '</div>' +
+            '<div class="chips" id="' + idBase + '_shifts" style="opacity:.5; pointer-events:none;">' +
+              shiftHtml +
+            '</div>' +
+          '</div>'
+        );
+      }).join("");
+    }
+
+    function toggleDateByEl(chkEl) {
+      var card = chkEl.closest(".dateCard");
+      var chips = card ? card.querySelector(".chips") : null;
+      if (!chips) return;
+
+      if (chkEl.checked) {
+        chips.style.opacity = "1";
+        chips.style.pointerEvents = "auto";
+      } else {
+        var inputs = chips.querySelectorAll('input[type="checkbox"]');
+        for (var i = 0; i < inputs.length; i++) inputs[i].checked = false;
+        chips.style.opacity = ".5";
+        chips.style.pointerEvents = "none";
+      }
+    }
+
+    function submitOneViaJsonp(params) {
+      var url = GAS_EXEC_URL + "?" + buildQuery({
+        action: "submitOne",
+        site:  params.site  || "",
+        name:  params.name  || "",
+        dept:  params.dept  || "",
+        work:  params.work  || "",
+        date:  params.date  || "",
+        shift: params.shift || "",
+        ua: (navigator.userAgent || "")
+      });
+      return jsonpCall(url, "cb_one", 12000);
+    }
+
+    function sleep(ms) {
+      return new Promise(function (r) { setTimeout(r, ms); });
+    }
+
+    async function submitData() {
+      var site = document.getElementById("site").value.trim();
+      var name = document.getElementById("name").value.trim();
+      var dept = document.getElementById("dept").value.trim();
+      var work = document.getElementById("work").value.trim();
+
+      var status = document.getElementById("status");
+      var btn = document.getElementById("submitBtn");
+
+      if (!site || !name) { alert("사업장/성명을 입력하세요."); return; }
+      if (!dept) { alert("부서를 선택하세요."); return; }
+
+      var dateOn = Array.prototype.slice.call(
+        document.querySelectorAll('#dateList .dateTop input[type="checkbox"]:checked')
+      );
+      if (dateOn.length === 0) { alert("날짜를 최소 1개 선택하세요."); return; }
+
+      var jobs = [];
+      for (var i = 0; i < dateOn.length; i++) {
+        var chk = dateOn[i];
+        var date = chk.getAttribute("data-date");
+        var card = chk.closest(".dateCard");
+        var checkedShifts = Array.prototype.slice.call(card.querySelectorAll('.chips input[type="checkbox"]:checked'))
+          .map(function (x) { return x.value; });
+
+        if (checkedShifts.length === 0) { alert(date + "의 구분을 최소 1개 선택하세요."); return; }
+
+        for (var j = 0; j < checkedShifts.length; j++) {
+          jobs.push({ date: date, shift: checkedShifts[j] });
+        }
+      }
+
+      btn.disabled = true;
+      status.textContent = "저장 중…";
+
+      try {
+        for (var k = 0; k < jobs.length; k++) {
+          status.textContent = "저장 중… (" + (k + 1) + "/" + jobs.length + ")";
+          var res = await submitOneViaJsonp({
+            site: site, name: name, dept: dept, work: work,
+            date: jobs[k].date,
+            shift: jobs[k].shift
+          });
+
+          if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
+          await sleep(120);
+        }
+
+        alert("제출되었습니다!");
+
+        // 초기화
+        var tops = document.querySelectorAll('#dateList .dateTop input[type="checkbox"]');
+        for (var a = 0; a < tops.length; a++) tops[a].checked = false;
+
+        var chipsAll = document.querySelectorAll('#dateList .chips');
+        for (var b = 0; b < chipsAll.length; b++) {
+          chipsAll[b].style.opacity = ".5";
+          chipsAll[b].style.pointerEvents = "none";
+        }
+
+        var allShiftChecks = document.querySelectorAll('#dateList .chips input[type="checkbox"]');
+        for (var c = 0; c < allShiftChecks.length; c++) allShiftChecks[c].checked = false;
+
+        document.getElementById("work").value = "";
+        setStatus("저장 완료");
+      } catch (e) {
+        alert("오류: " + (e.message || e));
+        setStatus("오류 발생");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // 이벤트 바인딩
+    document.getElementById("submitBtn").addEventListener("click", function () {
+      submitData();
+    });
+
+    // 날짜 토글: 이벤트 위임
+    document.addEventListener("change", function (ev) {
+      var t = ev.target;
+      if (!t) return;
+      if (t.matches && t.matches('#dateList .dateTop input[type="checkbox"]')) {
+        toggleDateByEl(t);
+      }
+    });
+
+    loadSettings();
+  </script>
 </body>
 </html>
