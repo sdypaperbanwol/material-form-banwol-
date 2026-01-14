@@ -7,12 +7,14 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f7f9; margin:0; }
     .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
     .card { background:#fff; border:1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
     h1 { font-size: 18px; margin: 0 0 6px; }
     .desc { font-size: 12px; color:#4b5563; white-space: pre-wrap; line-height: 1.5; }
+
     label { display:block; font-size: 13px; margin-top: 10px; color:#111827; }
     input, select, textarea, button {
       width: 100%; box-sizing: border-box;
@@ -21,24 +23,85 @@
     }
     textarea { resize: vertical; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .hint { font-size:12px; color:#6b7280; margin-top:8px; white-space: pre-wrap; }
+    .hint { font-size:12px; color:#6b7280; margin-top:8px; white-space: pre-wrap; line-height: 1.5; }
     .hr { height:1px; background:#eef2f7; margin: 12px 0; }
+
+    .summaryBox {
+      margin-top: 10px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #374151;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .summaryBox b { color:#111827; }
+    .summaryEmpty { color:#6b7280; }
+
     .dateList { margin-top: 10px; display:flex; flex-direction: column; gap: 10px; }
-    .dateCard { border:1px solid #e5e7eb; border-radius: 12px; padding: 12px; background:#fff; }
-    .dateTop { display:flex; align-items:center; gap:10px; }
+    .dateCard { border:1px solid #e5e7eb; border-radius: 12px; padding: 12px; background:#fff; transition: background .15s ease, border-color .15s ease; }
+    .dateCard.active { border-color: #2563eb; background: #eff6ff; }
+
+    .dateTop { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
     .dateTop input[type="checkbox"] { width: 18px; height: 18px; margin:0; }
     .dateTitle { font-weight: 700; font-size: 14px; }
+
     .chips { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .chip { display:flex; align-items:center; gap:8px; padding: 8px 10px; border:1px solid #e5e7eb; border-radius: 10px; background:#fff; }
+    .chip { display:flex; align-items:center; gap:8px; padding: 8px 10px; border:1px solid #e5e7eb; border-radius: 10px; background:#fff; cursor:pointer; transition: border-color .15s ease, background .15s ease; }
     .chip input { width: 18px; height: 18px; margin:0; padding:0; }
     .chip span { font-size: 13px; }
+
+    .chip.checked { border-color:#2563eb; background:#dbeafe; }
+    .chip.checked span { font-weight: 700; color:#111827; }
+
     .btn { margin-top: 12px; background:#2563eb; color:#fff; border:none; cursor:pointer; }
     .btn:disabled { opacity:0.6; cursor:not-allowed; }
-    .smallbtn { margin-top: 10px; background:#111827; color:#fff; border:none; cursor:pointer; }
-    .foot { margin-top:10px; font-size:11px; color:#9ca3af; }
+
+    /* ✅ 센터 오버레이(로딩/제출중) */
+    .overlay {
+      position: fixed; inset: 0;
+      display: none;
+      align-items: center; justify-content: center;
+      background: rgba(17,24,39,0.35);
+      z-index: 9999;
+      padding: 24px;
+    }
+    .overlay.show { display: flex; }
+    .overlayCard {
+      width: min(360px, 92vw);
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+      padding: 16px 16px 14px;
+      text-align: center;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 999px;
+      margin: 0 auto 10px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .overlayTitle { font-weight: 800; font-size: 15px; color:#111827; }
+    .overlayDesc { margin-top: 6px; font-size: 12px; color:#4b5563; line-height: 1.4; white-space: pre-wrap; }
   </style>
 </head>
 <body>
+
+  <!-- ✅ 오버레이 -->
+  <div class="overlay" id="overlay">
+    <div class="overlayCard">
+      <div class="spinner"></div>
+      <div class="overlayTitle" id="overlayTitle">로딩중…</div>
+      <div class="overlayDesc" id="overlayDesc">잠시만 기다려 주세요.</div>
+    </div>
+  </div>
+
   <div class="wrap">
     <div class="card">
       <h1 id="pageTitle">불러오는 중…</h1>
@@ -67,7 +130,12 @@
       <div class="hr"></div>
 
       <label>날짜별 구분 선택</label>
-      <div class="hint">※ 날짜를 체크하고, 그 날짜의 구분을 선택하세요.</div>
+      <div class="hint">※ 날짜별로 근무 구분을 선택하세요. (구분을 누르면 날짜가 자동 체크됩니다)</div>
+
+      <div class="summaryBox" id="selectionSummary">
+        <span class="summaryEmpty">아직 선택된 항목이 없습니다.</span>
+      </div>
+
       <div class="dateList" id="dateList">
         <div class="hint">데이터를 불러오는 중…</div>
       </div>
@@ -77,313 +145,474 @@
 
       <button class="btn" id="submitBtn">제출</button>
       <div class="hint" id="status"></div>
-      <div class="foot" id="ver"></div>
     </div>
   </div>
 
   <script>
-    // ✅ 네 GAS 웹앱 exec URL로 교체 (반드시 /exec)
-    var GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbyVk-ZNJKiDbHWLYrO79GhxUQ7hDmDAsstTbVPaHyPA-AvthtxfaQYosbyk4B6ujrS5/exec";
+  var GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbyVk-ZNJKiDbHWLYrO79GhxUQ7hDmDAsstTbVPaHyPA-AvthtxfaQYosbyk4B6ujrS5/exec";
 
-    // ====== (인앱/구형 브라우저 대비) matches/closest 폴리필 ======
-    (function () {
-      if (!Element.prototype.matches) {
-        Element.prototype.matches =
-          Element.prototype.msMatchesSelector ||
-          Element.prototype.webkitMatchesSelector ||
-          function (s) {
-            var matches = (this.document || this.ownerDocument).querySelectorAll(s);
-            var i = matches.length;
-            while (--i >= 0 && matches.item(i) !== this) {}
-            return i > -1;
-          };
-      }
-      if (!Element.prototype.closest) {
-        Element.prototype.closest = function (s) {
-          var el = this;
-          while (el && el.nodeType === 1) {
-            if (el.matches(s)) return el;
-            el = el.parentElement || el.parentNode;
-          }
-          return null;
-        };
-      }
-    })();
+  // ✅ 상태 분리: 날짜 ON/OFF + 날짜별 shift 선택
+  var dateOnMap = {};   // { "YYYY-MM-DD": true }
+  var selectedMap = {}; // { "YYYY-MM-DD|shift": true }
 
-    // settings (GAS에서 내려오는 구조)
-    var SETTINGS = null;
+  function showOverlay(title, desc) {
+    document.getElementById("overlayTitle").textContent = title || "로딩중…";
+    document.getElementById("overlayDesc").textContent  = desc  || "잠시만 기다려 주세요.";
+    document.getElementById("overlay").classList.add("show");
+  }
+  function hideOverlay() {
+    document.getElementById("overlay").classList.remove("show");
+  }
 
-    function escapeHtml(s) {
-      return String(s || "").replace(/[&<>"']/g, function (m) {
-        return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]);
-      });
+  function escapeHtml(s) {
+    return String(s || "").replace(/[&<>"']/g, function (m) {
+      return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]);
+    });
+  }
+
+  function buildQuery(obj) {
+    var parts = [];
+    for (var k in obj) {
+      if (!obj.hasOwnProperty(k)) continue;
+      parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(obj[k] == null ? "" : obj[k])));
     }
+    return parts.join("&");
+  }
 
-    // ✅ URLSearchParams 대신 수동 빌드(구형/인앱 대비)
-    function buildQuery(obj) {
-      var parts = [];
-      for (var k in obj) {
-        if (!obj.hasOwnProperty(k)) continue;
-        parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(obj[k] == null ? "" : obj[k])));
+  function jsonpCall(url, cbPrefix, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var cbName = (cbPrefix || "cb") + "_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+      var done = false, timer = null, scriptEl = null;
+
+      function cleanup() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+        scriptEl = null;
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
       }
-      return parts.join("&");
+
+      window[cbName] = function (res) {
+        if (done) return;
+        done = true; cleanup();
+        resolve(res);
+      };
+
+      timer = setTimeout(function () {
+        if (done) return;
+        done = true; cleanup();
+        reject(new Error("타임아웃(콜백 없음)"));
+      }, timeoutMs || 12000);
+
+      scriptEl = document.createElement("script");
+      scriptEl.async = true;
+      scriptEl.src = url + (url.indexOf("?") >= 0 ? "&" : "?") +
+        "callback=" + encodeURIComponent(cbName) +
+        "&ts=" + Date.now();
+
+      scriptEl.onerror = function () {
+        if (done) return;
+        done = true; cleanup();
+        reject(new Error("JSONP script 로드 실패"));
+      };
+
+      document.body.appendChild(scriptEl);
+    });
+  }
+
+  function formatKoreanDate(ymd) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "";
+    var parts = ymd.split("-");
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    var dt = new Date(y, m - 1, d);
+    var w = ["일","월","화","수","목","금","토"][dt.getDay()];
+    return y + "년 " + m + "월 " + d + "일(" + w + ")";
+  }
+
+  function keyOf(date, shift) {
+    return String(date || "") + "|" + String(shift || "");
+  }
+
+  function clearSelectionsForDate(date) {
+    var prefix = String(date || "") + "|";
+    for (var k in selectedMap) {
+      if (Object.prototype.hasOwnProperty.call(selectedMap, k) && k.indexOf(prefix) === 0) {
+        delete selectedMap[k];
+      }
     }
+  }
 
-    // ✅ JSONP 공통 호출
-    function jsonpCall(url, cbPrefix, timeoutMs) {
-      return new Promise(function (resolve, reject) {
-        var cbName = (cbPrefix || "cb") + "_" + Date.now() + "_" + Math.random().toString(16).slice(2);
-        var done = false;
-        var timer = null;
-        var scriptEl = null;
+  function hasAnyShiftForDate(date) {
+    var prefix = String(date || "") + "|";
+    for (var k in selectedMap) {
+      if (Object.prototype.hasOwnProperty.call(selectedMap, k) && k.indexOf(prefix) === 0) return true;
+    }
+    return false;
+  }
 
-        function cleanup() {
-          if (timer) { clearTimeout(timer); timer = null; }
-          if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
-          scriptEl = null;
-          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+  function applyChipCheckedClass(inputEl) {
+    var chip = inputEl ? inputEl.closest(".chip") : null;
+    if (!chip) return;
+    if (inputEl.checked) chip.classList.add("checked");
+    else chip.classList.remove("checked");
+  }
+
+  function setCardActiveState(card) {
+    if (!card) return;
+    var date = card.getAttribute("data-date") || "";
+    var on = !!dateOnMap[date] || hasAnyShiftForDate(date);
+    if (on) card.classList.add("active");
+    else card.classList.remove("active");
+  }
+
+  function enableChipsByDate(card, enabled) {
+    var chips = card ? card.querySelector(".chips") : null;
+    if (!chips) return;
+
+    if (enabled) {
+      chips.style.opacity = "1";
+      chips.style.pointerEvents = "auto";
+    } else {
+      // OFF면 shift도 전부 해제
+      var date = card.getAttribute("data-date") || "";
+      clearSelectionsForDate(date);
+
+      var inputs = chips.querySelectorAll('input[type="checkbox"]');
+      for (var i = 0; i < inputs.length; i++) {
+        inputs[i].checked = false;
+        applyChipCheckedClass(inputs[i]);
+      }
+      chips.style.opacity = ".5";
+      chips.style.pointerEvents = "none";
+    }
+  }
+
+  function updateSelectionSummary() {
+    var box = document.getElementById("selectionSummary");
+
+    // ✅ "날짜 ON" 중에서 shift 선택된 것만 요약
+    var lines = [];
+    var dates = Object.keys(dateOnMap).filter(function(d){ return !!dateOnMap[d]; }).sort();
+
+    for (var i = 0; i < dates.length; i++) {
+      var date = dates[i];
+      var prefix = date + "|";
+      var shifts = [];
+
+      for (var k in selectedMap) {
+        if (Object.prototype.hasOwnProperty.call(selectedMap, k) && k.indexOf(prefix) === 0) {
+          shifts.push(k.split("|")[1] || "");
         }
-
-        window[cbName] = function (res) {
-          if (done) return;
-          done = true;
-          cleanup();
-          resolve(res);
-        };
-
-        timer = setTimeout(function () {
-          if (done) return;
-          done = true;
-          cleanup();
-          reject(new Error("타임아웃(콜백 없음)"));
-        }, timeoutMs || 12000);
-
-        scriptEl = document.createElement("script");
-        scriptEl.async = true;
-        scriptEl.src = url + (url.indexOf("?") >= 0 ? "&" : "?") +
-          "callback=" + encodeURIComponent(cbName) +
-          "&ts=" + Date.now(); // 캐시 방지
-
-        scriptEl.onerror = function () {
-          if (done) return;
-          done = true;
-          cleanup();
-          reject(new Error("JSONP script 로드 실패"));
-        };
-
-        document.body.appendChild(scriptEl);
-      });
-    }
-
-    // iOS/사내브라우저 안전 요일 계산: new Date(y,m-1,d)
-    function formatKoreanDate(ymd) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "";
-      var parts = ymd.split("-");
-      var y = parseInt(parts[0], 10);
-      var m = parseInt(parts[1], 10);
-      var d = parseInt(parts[2], 10);
-      var dt = new Date(y, m - 1, d);
-      var w = ["일","월","화","수","목","금","토"][dt.getDay()];
-      return y + "년 " + m + "월 " + d + "일(" + w + ")";
-    }
-
-    function setStatus(msg) {
-      document.getElementById("status").textContent = msg || "";
-    }
-
-    function loadSettings() {
-      var url = GAS_EXEC_URL + "?" + buildQuery({ action: "settings" });
-      jsonpCall(url, "cb_set", 12000).then(function (res) {
-        if (!res || !res.ok) throw new Error(res && res.error ? res.error : "settings 응답 오류");
-        var s = res.settings || {};
-        SETTINGS = s;
-
-        document.getElementById("pageTitle").textContent = (s.title || "연휴 출근 조사");
-        document.getElementById("pageDesc").textContent  = (s.desc  || "");
-
-        buildUI(s);
-
-        document.getElementById("ver").textContent = "loaded: " + new Date().toLocaleString();
-      }).catch(function (e) {
-        document.getElementById("dateList").innerHTML =
-          '<div class="hint">불러오기 실패: ' + escapeHtml(e.message || e) + '</div>';
-        setStatus("설정 불러오기 실패");
-      });
-    }
-
-    function buildUI(s) {
-      var deptList = Array.isArray(s.depts) ? s.depts : [];
-      var dates    = Array.isArray(s.dates) ? s.dates : [];
-      var shifts   = Array.isArray(s.shifts) ? s.shifts : ["오전","오후","야간"];
-
-      // 부서 드롭다운
-      var deptSel = document.getElementById("dept");
-      if (!deptList.length) {
-        deptSel.innerHTML = '<option value="">(설정에 부서가 없습니다)</option>';
-      } else {
-        deptSel.innerHTML =
-          '<option value="">부서를 선택하세요</option>' +
-          deptList.map(function (d) {
-            return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + '</option>';
-          }).join("");
       }
 
-      // 날짜 카드
-      var box = document.getElementById("dateList");
-      if (!dates.length) {
-        box.innerHTML = '<div class="hint">날짜 데이터가 없습니다. (설정 시트 dates 확인)</div>';
+      if (shifts.length > 0) {
+        lines.push("- " + formatKoreanDate(date) + " : " + shifts.join(", "));
+      } else {
+        lines.push("- " + formatKoreanDate(date) + " : (구분 미선택)");
+      }
+    }
+
+    if (lines.length === 0) {
+      box.innerHTML = '<span class="summaryEmpty">아직 선택된 항목이 없습니다.</span>';
+    } else {
+      box.innerHTML = "<b>선택됨</b>\n" + lines.join("\n");
+    }
+  }
+
+  function applyDomFromState_() {
+    // 1) 날짜 on/off 반영 + chips 활성화
+    var cards = document.querySelectorAll("#dateList .dateCard");
+    for (var c = 0; c < cards.length; c++) {
+      var card = cards[c];
+      var date = card.getAttribute("data-date") || "";
+      var topChk = card.querySelector('.dateTop input[type="checkbox"]');
+
+      if (topChk) topChk.checked = !!dateOnMap[date];
+      enableChipsByDate(card, !!dateOnMap[date]);
+      setCardActiveState(card);
+    }
+
+    // 2) shift 체크는 state 기준으로만
+    var inputs = document.querySelectorAll('#dateList .chips input[type="checkbox"]');
+    for (var i = 0; i < inputs.length; i++) {
+      var el = inputs[i];
+      var date2 = el.getAttribute("data-date") || "";
+      var shift2 = el.value || "";
+      var k2 = keyOf(date2, shift2);
+
+      el.checked = !!selectedMap[k2];
+      applyChipCheckedClass(el);
+    }
+
+    updateSelectionSummary();
+  }
+
+  function buildUI(s) {
+    var deptList = Array.isArray(s.depts) ? s.depts : [];
+    var dates    = Array.isArray(s.dates) ? s.dates : [];
+    var shifts   = Array.isArray(s.shifts) ? s.shifts : ["오전","오후","야간"];
+
+    var deptSel = document.getElementById("dept");
+    deptSel.innerHTML = deptList.length
+      ? ('<option value="">부서를 선택하세요</option>' + deptList.map(function(d){
+          return '<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + '</option>';
+        }).join(""))
+      : '<option value="">(설정에 부서가 없습니다)</option>';
+
+    var box = document.getElementById("dateList");
+    if (!dates.length) {
+      box.innerHTML = '<div class="hint">날짜 데이터가 없습니다. (설정 시트 dates 확인)</div>';
+      return;
+    }
+
+    box.innerHTML = dates.map(function (ymd, idx) {
+      var idBase = "d_" + idx;
+      var title = formatKoreanDate(ymd);
+
+      var shiftHtml = shifts.map(function (sh) {
+        return (
+          '<label class="chip">' +
+            '<input type="checkbox" value="' + escapeHtml(sh) + '" data-date="' + escapeHtml(ymd) + '">' +
+            '<span>' + escapeHtml(sh) + '</span>' +
+          '</label>'
+        );
+      }).join("");
+
+      return (
+        '<div class="dateCard" data-date="' + escapeHtml(ymd) + '">' +
+          '<div class="dateTop">' +
+            '<input type="checkbox" id="' + idBase + '_on" data-date="' + escapeHtml(ymd) + '">' +
+            '<div class="dateTitle">' + escapeHtml(title) + '</div>' +
+          '</div>' +
+          '<div class="chips" id="' + idBase + '_shifts" style="opacity:.5; pointer-events:none;">' +
+            shiftHtml +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+
+    // ✅ 최초 진입 시 완전 초기화
+    dateOnMap = {};
+    selectedMap = {};
+    applyDomFromState_();
+  }
+
+  function submitOneViaJsonp(params) {
+    var url = GAS_EXEC_URL + "?" + buildQuery({
+      action: "submitOne",
+      site:  params.site  || "",
+      name:  params.name  || "",
+      dept:  params.dept  || "",
+      work:  params.work  || "",
+      date:  params.date  || "",
+      shift: params.shift || ""
+    });
+    return jsonpCall(url, "cb_one", 12000);
+  }
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // ✅ 제출 규칙:
+  // - 날짜가 ON인 것 중 "shift 1개 이상 선택된 날짜"가 최소 1개 있어야 제출 가능
+  // - 제출 대상은 "shift 선택된 것만" (날짜만 ON인 것은 제출 안 함)
+  // ✅ 제출 규칙(강화):
+// - 날짜가 ON인 것 중 "shift 1개 이상 선택된 날짜"가 최소 1개 있어야 제출 가능
+// - ✅ 추가: ON된 모든 날짜는 shift가 최소 1개 이상 선택되어야 제출 가능
+// - 제출 대상은 "shift 선택된 것만" (날짜만 ON인 것은 제출 안 함)
+function collectJobsOrAlert_() {
+  var onDates = Object.keys(dateOnMap).filter(function(d){ return !!dateOnMap[d]; });
+
+  if (onDates.length === 0) {
+    alert("날짜를 먼저 선택하세요.");
+    return null;
+  }
+
+  // ✅ 1) ON된 날짜 중 shift 미선택 날짜 찾기
+  var missing = [];
+  for (var i = 0; i < onDates.length; i++) {
+    var date = onDates[i];
+    if (!hasAnyShiftForDate(date)) missing.push(date);
+  }
+
+  // ✅ 2) 하나라도 있으면 제출 중단 + 안내
+  if (missing.length > 0) {
+    var msg =
+      "아래 날짜는 '구분(오전/오후/야간)'이 선택되지 않았습니다.\n\n" +
+      missing
+        .sort()
+        .map(function(d){ return "- " + formatKoreanDate(d); })
+        .join("\n") +
+      "\n\n해당 날짜의 구분을 최소 1개 선택한 뒤 제출해 주세요.";
+    alert(msg);
+    return null;
+  }
+
+  // ✅ 3) 제출 대상(shift 선택된 것만) 만들기
+  var keys = Object.keys(selectedMap);
+  if (keys.length === 0) {
+    // 이 케이스는 위 missing 검사로 사실상 거의 안 나오지만 방어로 남김
+    alert("선택한 날짜에서 구분(오전/오후/야간)을 최소 1개 선택하세요.");
+    return null;
+  }
+
+  var jobs = [];
+  for (var k = 0; k < keys.length; k++) {
+    var p = keys[k].split("|");
+    var date2 = p[0], shift2 = p[1];
+
+    if (!dateOnMap[date2]) continue; // 날짜 OFF면 제출 제외
+    jobs.push({ date: date2, shift: shift2 });
+  }
+
+  if (jobs.length === 0) {
+    alert("선택한 날짜에서 구분(오전/오후/야간)을 최소 1개 선택하세요.");
+    return null;
+  }
+
+  return jobs;
+}
+
+
+  async function submitData() {
+    var site = document.getElementById("site").value.trim();
+    var name = document.getElementById("name").value.trim();
+    var dept = document.getElementById("dept").value.trim();
+    var work = document.getElementById("work").value.trim();
+
+    var btn = document.getElementById("submitBtn");
+    var status = document.getElementById("status");
+
+    if (!site || !name) { alert("사업장/성명을 입력하세요."); return; }
+    if (!dept) { alert("부서를 선택하세요."); return; }
+
+    var jobs = collectJobsOrAlert_();
+    if (!jobs) return;
+
+    btn.disabled = true;
+    status.textContent = "";
+
+    showOverlay("제출중…", "저장 중입니다.\n창을 닫지 말아 주세요.");
+
+    try {
+      for (var k = 0; k < jobs.length; k++) {
+        document.getElementById("overlayDesc").textContent =
+          "저장 중입니다.\n(" + (k + 1) + "/" + jobs.length + ")";
+
+        var res = await submitOneViaJsonp({
+          site: site, name: name, dept: dept, work: work,
+          date: jobs[k].date,
+          shift: jobs[k].shift
+        });
+
+        if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
+        await sleep(120);
+      }
+
+      showOverlay("완료", "제출이 완료되었습니다.\n잠시 후 초기화됩니다…");
+      setTimeout(function () {
+        location.replace(location.pathname + "?ts=" + Date.now());
+      }, 350);
+
+    } catch (e) {
+      hideOverlay();
+      alert("오류: " + (e.message || e));
+      status.textContent = "오류 발생";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", submitData);
+
+  // ✅ 날짜 클릭: ON/OFF 가능 + ON일 때만 shift 활성
+  document.addEventListener("click", function (ev) {
+    var t = ev.target;
+    if (!t) return;
+
+    var top = t.closest && t.closest('#dateList .dateTop');
+    if (!top) return;
+
+    if (t.tagName && t.tagName.toLowerCase() === "input") return;
+
+    var card = top.closest(".dateCard");
+    if (!card) return;
+
+    var date = card.getAttribute("data-date") || "";
+    var topChk = top.querySelector('input[type="checkbox"]');
+    if (!topChk) return;
+
+    var next = !topChk.checked;
+    dateOnMap[date] = next;
+
+    if (!next) {
+      // 날짜 OFF면 shift도 전부 해제
+      clearSelectionsForDate(date);
+    }
+
+    applyDomFromState_();
+  });
+
+  // ✅ change 이벤트: 날짜 체크박스 직접 클릭/shift 클릭 처리
+  document.addEventListener("change", function (ev) {
+    var t = ev.target;
+    if (!t) return;
+
+    // 날짜 체크박스 직접 클릭
+    if (t.matches && t.matches('#dateList .dateTop input[type="checkbox"]')) {
+      var card = t.closest(".dateCard");
+      var date = card ? (card.getAttribute("data-date") || "") : "";
+      dateOnMap[date] = !!t.checked;
+      if (!t.checked) clearSelectionsForDate(date);
+      applyDomFromState_();
+      return;
+    }
+
+    // shift 클릭
+    if (t.matches && t.matches('#dateList .chips input[type="checkbox"]')) {
+      var date2 = t.getAttribute("data-date") || "";
+      var shift2 = t.value || "";
+      var k2 = keyOf(date2, shift2);
+
+      // 방어: 날짜 ON이 아니면 shift 선택 불가
+      if (!dateOnMap[date2]) {
+        t.checked = false;
+        applyChipCheckedClass(t);
+        alert("날짜를 먼저 선택하세요.");
         return;
       }
 
-      box.innerHTML = dates.map(function (ymd, idx) {
-        var idBase = "d_" + idx;
-        var title = formatKoreanDate(ymd);
+      if (t.checked) selectedMap[k2] = true;
+      else delete selectedMap[k2];
 
-        var shiftHtml = shifts.map(function (sh) {
-          return (
-            '<label class="chip">' +
-              '<input type="checkbox" value="' + escapeHtml(sh) + '" data-date="' + escapeHtml(ymd) + '">' +
-              '<span>' + escapeHtml(sh) + '</span>' +
-            '</label>'
-          );
-        }).join("");
-
-        return (
-          '<div class="dateCard">' +
-            '<div class="dateTop">' +
-              '<input type="checkbox" id="' + idBase + '_on" data-date="' + escapeHtml(ymd) + '">' +
-              '<div class="dateTitle">' + escapeHtml(title) + '</div>' +
-            '</div>' +
-            '<div class="chips" id="' + idBase + '_shifts" style="opacity:.5; pointer-events:none;">' +
-              shiftHtml +
-            '</div>' +
-          '</div>'
-        );
-      }).join("");
+      applyDomFromState_();
+      return;
     }
+  });
 
-    function toggleDateByEl(chkEl) {
-      var card = chkEl.closest(".dateCard");
-      var chips = card ? card.querySelector(".chips") : null;
-      if (!chips) return;
+  // ✅ 로딩
+  showOverlay("로딩중…", "설정을 불러오는 중입니다…");
 
-      if (chkEl.checked) {
-        chips.style.opacity = "1";
-        chips.style.pointerEvents = "auto";
-      } else {
-        var inputs = chips.querySelectorAll('input[type="checkbox"]');
-        for (var i = 0; i < inputs.length; i++) inputs[i].checked = false;
-        chips.style.opacity = ".5";
-        chips.style.pointerEvents = "none";
-      }
-    }
+  (function loadSettings(){
+    var url = GAS_EXEC_URL + "?" + buildQuery({ action: "settings" });
+    jsonpCall(url, "cb_set", 12000).then(function (res) {
+      if (!res || !res.ok) throw new Error(res && res.error ? res.error : "settings 응답 오류");
 
-    function submitOneViaJsonp(params) {
-      var url = GAS_EXEC_URL + "?" + buildQuery({
-        action: "submitOne",
-        site:  params.site  || "",
-        name:  params.name  || "",
-        dept:  params.dept  || "",
-        work:  params.work  || "",
-        date:  params.date  || "",
-        shift: params.shift || "",
-        ua: (navigator.userAgent || "")
-      });
-      return jsonpCall(url, "cb_one", 12000);
-    }
+      var s = res.settings || {};
+      document.getElementById("pageTitle").textContent = (s.title || "연휴 출근 조사");
+      document.getElementById("pageDesc").textContent  = (s.desc  || "");
 
-    function sleep(ms) {
-      return new Promise(function (r) { setTimeout(r, ms); });
-    }
+      buildUI(s);
+      hideOverlay();
 
-    async function submitData() {
-      var site = document.getElementById("site").value.trim();
-      var name = document.getElementById("name").value.trim();
-      var dept = document.getElementById("dept").value.trim();
-      var work = document.getElementById("work").value.trim();
-
-      var status = document.getElementById("status");
-      var btn = document.getElementById("submitBtn");
-
-      if (!site || !name) { alert("사업장/성명을 입력하세요."); return; }
-      if (!dept) { alert("부서를 선택하세요."); return; }
-
-      var dateOn = Array.prototype.slice.call(
-        document.querySelectorAll('#dateList .dateTop input[type="checkbox"]:checked')
-      );
-      if (dateOn.length === 0) { alert("날짜를 최소 1개 선택하세요."); return; }
-
-      var jobs = [];
-      for (var i = 0; i < dateOn.length; i++) {
-        var chk = dateOn[i];
-        var date = chk.getAttribute("data-date");
-        var card = chk.closest(".dateCard");
-        var checkedShifts = Array.prototype.slice.call(card.querySelectorAll('.chips input[type="checkbox"]:checked'))
-          .map(function (x) { return x.value; });
-
-        if (checkedShifts.length === 0) { alert(date + "의 구분을 최소 1개 선택하세요."); return; }
-
-        for (var j = 0; j < checkedShifts.length; j++) {
-          jobs.push({ date: date, shift: checkedShifts[j] });
-        }
-      }
-
-      btn.disabled = true;
-      status.textContent = "저장 중…";
-
-      try {
-        for (var k = 0; k < jobs.length; k++) {
-          status.textContent = "저장 중… (" + (k + 1) + "/" + jobs.length + ")";
-          var res = await submitOneViaJsonp({
-            site: site, name: name, dept: dept, work: work,
-            date: jobs[k].date,
-            shift: jobs[k].shift
-          });
-
-          if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
-          await sleep(120);
-        }
-
-        alert("제출되었습니다!");
-
-        // 초기화
-        var tops = document.querySelectorAll('#dateList .dateTop input[type="checkbox"]');
-        for (var a = 0; a < tops.length; a++) tops[a].checked = false;
-
-        var chipsAll = document.querySelectorAll('#dateList .chips');
-        for (var b = 0; b < chipsAll.length; b++) {
-          chipsAll[b].style.opacity = ".5";
-          chipsAll[b].style.pointerEvents = "none";
-        }
-
-        var allShiftChecks = document.querySelectorAll('#dateList .chips input[type="checkbox"]');
-        for (var c = 0; c < allShiftChecks.length; c++) allShiftChecks[c].checked = false;
-
-        document.getElementById("work").value = "";
-        setStatus("저장 완료");
-      } catch (e) {
-        alert("오류: " + (e.message || e));
-        setStatus("오류 발생");
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    // 이벤트 바인딩
-    document.getElementById("submitBtn").addEventListener("click", function () {
-      submitData();
+    }).catch(function (e) {
+      hideOverlay();
+      document.getElementById("dateList").innerHTML =
+        '<div class="hint">불러오기 실패: ' + escapeHtml(e.message || e) + '</div>';
+      document.getElementById("status").textContent = "설정 불러오기 실패";
     });
+  })();
+</script>
 
-    // 날짜 토글: 이벤트 위임
-    document.addEventListener("change", function (ev) {
-      var t = ev.target;
-      if (!t) return;
-      if (t.matches && t.matches('#dateList .dateTop input[type="checkbox"]')) {
-        toggleDateByEl(t);
-      }
-    });
-
-    loadSettings();
-  </script>
 </body>
 </html>
