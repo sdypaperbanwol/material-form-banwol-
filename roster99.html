@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>연휴 출근 취합 - 관리자</title>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f7f9; margin:0; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    .desc { font-size: 12px; color:#4b5563; white-space: pre-wrap; line-height: 1.5; }
+    label { display:block; font-size: 13px; margin-top: 10px; color:#111827; }
+    input, textarea, button {
+      width: 100%; box-sizing: border-box;
+      padding: 10px; border:1px solid #d1d5db; border-radius: 10px;
+      font-size: 14px; background:#fff;
+    }
+    textarea { resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hint { font-size:12px; color:#6b7280; margin-top:8px; white-space: pre-wrap; }
+    .hr { height:1px; background:#eef2f7; margin: 12px 0; }
+    .btn { margin-top: 12px; background:#2563eb; color:#fff; border:none; cursor:pointer; }
+    .btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .btn2 { margin-top: 10px; background:#111827; color:#fff; border:none; cursor:pointer; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .pill { display:inline-block; font-size:11px; padding:2px 8px; border:1px solid #e5e7eb; border-radius:999px; color:#6b7280; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>관리자 설정</h1>
+      <div class="desc">여기서 저장한 설정은 제출용 페이지에 바로 반영됩니다. (제출용은 매 로드 시 settings 재호출)</div>
+
+      <div class="hr"></div>
+
+      <label>GAS_EXEC_URL <span class="pill">/exec</span></label>
+      <input id="gasUrl" class="mono" placeholder="https://script.google.com/macros/s/AKfycbxJLZZHgCCUuB1FaHZ6SDKBgx9RkGfwMFG00GUQMIBCQdtMSeR2DfbbEA-USDRJCZ0H/exec" />
+
+      <label>관리자 키(adminKey)</label>
+      <input id="adminKey" class="mono" type="password" placeholder="GAS의 ADMIN_KEY와 동일" />
+
+      <div class="hr"></div>
+
+      <label>페이지 제목 (title)</label>
+      <input id="title" placeholder="예: 연휴 출근 조사" />
+
+      <label>설명/안내 문구 (desc)</label>
+      <textarea id="desc" rows="4" placeholder="예: 날짜를 체크하고, 해당 날짜의 구분을 선택하세요."></textarea>
+
+      <div class="row">
+        <div>
+          <label>부서 목록 (depts)</label>
+          <div class="hint">한 줄에 1개씩 입력해도 되고, 쉼표로 나열해도 됩니다.</div>
+          <textarea id="depts" rows="8" placeholder="예)&#10;생산1팀&#10;생산2팀&#10;공무팀"></textarea>
+        </div>
+        <div>
+          <label>날짜 목록 (dates)</label>
+          <div class="hint">YYYY-MM-DD 형식만 인정됩니다. 한 줄에 1개씩 추천.</div>
+          <textarea id="dates" rows="8" class="mono" placeholder="예)&#10;2026-01-27&#10;2026-01-28"></textarea>
+        </div>
+      </div>
+
+      <label>구분 목록 (shifts)</label>
+      <div class="hint">기본값: 오전,오후,야간 (원하면 변경 가능)</div>
+      <textarea id="shifts" rows="2" placeholder="예: 오전,오후,야간"></textarea>
+
+      <button class="btn" id="loadBtn">설정 불러오기</button>
+      <button class="btn2" id="saveBtn">저장</button>
+      <div class="hint" id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    function escapeHtml(s) {
+      return String(s || "").replace(/[&<>"']/g, function (m) {
+        return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]);
+      });
+    }
+
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg || "";
+    }
+
+    function buildQuery(obj) {
+      var parts = [];
+      for (var k in obj) {
+        if (!obj.hasOwnProperty(k)) continue;
+        parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(obj[k] == null ? "" : obj[k])));
+      }
+      return parts.join("&");
+    }
+
+    function jsonpCall(url, cbPrefix, timeoutMs) {
+      return new Promise(function (resolve, reject) {
+        var cbName = (cbPrefix || "cb") + "_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+        var done = false;
+        var timer = null;
+        var scriptEl = null;
+
+        function cleanup() {
+          if (timer) { clearTimeout(timer); timer = null; }
+          if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+          scriptEl = null;
+          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+        }
+
+        window[cbName] = function (res) {
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve(res);
+        };
+
+        timer = setTimeout(function () {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("타임아웃(콜백 없음)"));
+        }, timeoutMs || 12000);
+
+        scriptEl = document.createElement("script");
+        scriptEl.async = true;
+        scriptEl.src = url + (url.indexOf("?") >= 0 ? "&" : "?") +
+          "callback=" + encodeURIComponent(cbName) +
+          "&ts=" + Date.now();
+
+        scriptEl.onerror = function () {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(new Error("JSONP script 로드 실패"));
+        };
+
+        document.body.appendChild(scriptEl);
+      });
+    }
+
+    function normLinesToCsv(text) {
+      // textarea 입력: 줄바꿈/쉼표 혼용 허용 → CSV(쉼표 구분)로 정리
+      var s = String(text || "").replace(/\r\n/g, "\n").trim();
+      if (!s) return "";
+      // 줄바꿈 -> 쉼표
+      s = s.split("\n").join(",");
+      // 쉼표 기준 분해 후 trim, 빈값 제거
+      var arr = s.split(",").map(function(x){ return String(x||"").trim(); }).filter(Boolean);
+      // 중복 제거
+      var out = [];
+      var seen = {};
+      for (var i=0;i<arr.length;i++){
+        var v = arr[i];
+        if (!seen[v]) { seen[v]=true; out.push(v); }
+      }
+      return out.join(",");
+    }
+
+    function csvToLines(csv) {
+      var s = String(csv || "").trim();
+      if (!s) return "";
+      return s.split(",").map(function(x){ return String(x||"").trim(); }).filter(Boolean).join("\n");
+    }
+
+    async function loadSettings() {
+      var gasUrl = document.getElementById("gasUrl").value.trim();
+      if (!gasUrl) { alert("GAS_EXEC_URL을 입력하세요."); return; }
+
+      setStatus("불러오는 중…");
+      try {
+        var url = gasUrl + "?" + buildQuery({ action: "settings" });
+        var res = await jsonpCall(url, "cb_set", 12000);
+        if (!res || !res.ok) throw new Error(res && res.error ? res.error : "settings 응답 오류");
+
+        var s = res.settings || {};
+        document.getElementById("title").value = (s.title || "");
+        document.getElementById("desc").value = (s.desc || "");
+        document.getElementById("depts").value = Array.isArray(s.depts) ? s.depts.join("\n") : csvToLines(s.depts);
+        document.getElementById("dates").value = Array.isArray(s.dates) ? s.dates.join("\n") : csvToLines(s.dates);
+        document.getElementById("shifts").value = Array.isArray(s.shifts) ? s.shifts.join(",") : (s.shifts || "");
+
+        setStatus("불러오기 완료: " + new Date().toLocaleString());
+      } catch (e) {
+        setStatus("불러오기 실패: " + (e.message || e));
+        alert("불러오기 실패: " + (e.message || e));
+      }
+    }
+
+    async function saveSettings() {
+      var gasUrl = document.getElementById("gasUrl").value.trim();
+      var adminKey = document.getElementById("adminKey").value.trim();
+      if (!gasUrl) { alert("GAS_EXEC_URL을 입력하세요."); return; }
+      if (!adminKey) { alert("관리자 키(adminKey)를 입력하세요."); return; }
+
+      var title = document.getElementById("title").value;
+      var desc = document.getElementById("desc").value;
+      var depts = normLinesToCsv(document.getElementById("depts").value);
+      var dates = normLinesToCsv(document.getElementById("dates").value);
+      var shifts = normLinesToCsv(document.getElementById("shifts").value);
+
+      var btn = document.getElementById("saveBtn");
+      btn.disabled = true;
+      setStatus("저장 중…");
+
+      try {
+        var url = gasUrl + "?" + buildQuery({
+          action: "saveSettings",
+          adminKey: adminKey,
+          title: title,
+          desc: desc,
+          depts: depts,
+          dates: dates,
+          shifts: shifts
+        });
+
+        var res = await jsonpCall(url, "cb_save", 12000);
+        if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
+
+        setStatus("저장 완료: " + new Date().toLocaleString());
+        alert("저장 완료! 제출용 페이지에서 새로고침하면 바로 반영됩니다.");
+      } catch (e) {
+        setStatus("저장 실패: " + (e.message || e));
+        alert("저장 실패: " + (e.message || e));
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById("loadBtn").addEventListener("click", loadSettings);
+    document.getElementById("saveBtn").addEventListener("click", saveSettings);
+  </script>
+</body>
+</html>
