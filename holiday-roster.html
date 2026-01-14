@@ -6,27 +6,32 @@
   <title>연휴 출근 취합</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f7f9; margin:0; }
-    .wrap { max-width: 460px; margin: 0 auto; padding: 16px; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 16px; }
     .card { background:#fff; border:1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
     h1 { font-size: 18px; margin: 0 0 10px; }
     label { display:block; font-size: 13px; margin-top: 10px; color:#111827; }
+
     input, select, textarea, button {
       width: 100%; box-sizing: border-box;
       padding: 10px; border:1px solid #d1d5db; border-radius: 10px;
       font-size: 14px; background:#fff;
     }
     textarea { resize: vertical; }
+
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .list { margin-top: 12px; }
-    .item { display:flex; gap:10px; align-items:flex-start; padding:10px; border:1px solid #e5e7eb; border-radius: 10px; margin-top: 8px; }
-    .item input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; }
-    .meta { flex:1; }
-    .meta .title { font-size: 14px; font-weight: 600; }
-    .meta .sub { font-size: 12px; color:#6b7280; margin-top: 2px; }
-    .meta .work { font-size: 12px; color:#374151; margin-top: 6px; white-space: pre-wrap; }
+    .chips { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .chip {
+      display:flex; align-items:center; gap:8px;
+      padding: 10px 12px; border:1px solid #e5e7eb; border-radius: 10px;
+      background:#fff;
+    }
+    .chip input { width: 18px; height: 18px; margin:0; padding:0; }
+    .chip span { font-size: 13px; }
+
     .btn { margin-top: 12px; background:#2563eb; color:#fff; border:none; cursor:pointer; }
     .btn:disabled { opacity:0.6; cursor:not-allowed; }
     .hint { font-size:12px; color:#6b7280; margin-top:8px; }
+    .hr { height:1px; background:#eef2f7; margin: 12px 0; }
   </style>
 </head>
 <body>
@@ -49,12 +54,27 @@
         </div>
       </div>
 
-      <label>부서(선택/수정 가능)</label>
-      <input id="dept" type="text" placeholder="예: 생산팀 (비우면 체크한 항목의 부서가 자동 사용됨)" />
+      <label>부서</label>
+      <select id="dept">
+        <option value="">불러오는 중…</option>
+      </select>
 
-      <div class="list" id="settingsList">
+      <div class="hr"></div>
+
+      <label>날짜(복수 선택 가능)</label>
+      <div class="chips" id="dateBox">
         <div class="hint">연휴 날짜 설정을 불러오는 중…</div>
       </div>
+
+      <label>구분(복수 선택 가능)</label>
+      <div class="chips" id="shiftBox">
+        <label class="chip"><input type="checkbox" value="오전"><span>오전</span></label>
+        <label class="chip"><input type="checkbox" value="오후"><span>오후</span></label>
+        <label class="chip"><input type="checkbox" value="야간"><span>야간</span></label>
+      </div>
+
+      <label>업무내용(자유기입)</label>
+      <textarea id="work" rows="3" placeholder="예: 공정점검, 안전 점검 등"></textarea>
 
       <button class="btn" id="submitBtn" onclick="submitData()">제출</button>
       <div class="hint" id="status"></div>
@@ -62,18 +82,18 @@
   </div>
 
   <script>
-    // ✅ 여기에 GAS 웹앱 exec URL 넣기
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxgV4UilC79o91qFX7_Fk5mVC0Te9cCVIAHnkq_v3KluqFpUEsEmLlqRii-a-VlXS5S/exec";
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzTvyLYWOismj5xswLZT3oG3-Blt3cUYds-UzasOz0euy_OKoNKXBiN_pjdTaO_709R/exec";
 
-    let SETTINGS = []; // [{dept,date,shift,work}]
+    let SETTINGS = []; // rows: [{dept,date,shift,work}]
 
     // ===== JSONP 로딩 (CORS 회피) =====
     function loadSettings() {
       const cbName = "cb_" + Date.now();
+
       window[cbName] = function (res) {
         try {
           SETTINGS = (res && res.data) ? res.data : [];
-          renderSettings();
+          buildUIFromSettings();
         } finally {
           delete window[cbName];
         }
@@ -82,69 +102,89 @@
       const s = document.createElement("script");
       s.src = `${GAS_EXEC_URL}?action=settings&callback=${cbName}`;
       s.onerror = () => {
-        document.getElementById("settingsList").innerHTML =
+        document.getElementById("dateBox").innerHTML =
           `<div class="hint">설정 불러오기 실패. (웹앱 URL/배포 권한 확인)</div>`;
+        document.getElementById("dept").innerHTML =
+          `<option value="">불러오기 실패</option>`;
       };
       document.body.appendChild(s);
     }
 
-    function renderSettings() {
-      const box = document.getElementById("settingsList");
-      if (!SETTINGS.length) {
-        box.innerHTML = `<div class="hint">설정 데이터가 없습니다. (연휴 날짜 설정 B2:E13 확인)</div>`;
-        return;
+    // yyyy-mm-dd로 강제 변환(날짜가 이상하게 보이는 문제 해결)
+    function toYMD(v) {
+      if (!v) return "";
+      // 이미 yyyy-mm-dd면 그대로
+      const s = String(v).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+      // Date 문자열/ISO면 Date로 파싱 후 yyyy-mm-dd로
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,"0");
+        const day = String(d.getDate()).padStart(2,"0");
+        return `${y}-${m}-${day}`;
+      }
+      return s; // 파싱 실패 시 원문
+    }
+
+    function uniq(arr) {
+      return Array.from(new Set(arr.filter(Boolean)));
+    }
+
+    function buildUIFromSettings() {
+      // 부서 목록
+      const deptList = uniq(SETTINGS.map(r => (r.dept || "").trim()));
+      const deptSel = document.getElementById("dept");
+      deptSel.innerHTML = `<option value="">부서를 선택하세요</option>` + deptList
+        .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
+        .join("");
+
+      // 날짜 목록 (유효 날짜만)
+      const dateList = uniq(SETTINGS.map(r => toYMD(r.date)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)));
+
+      const dateBox = document.getElementById("dateBox");
+      if (!dateList.length) {
+        dateBox.innerHTML = `<div class="hint">설정 시트에 유효한 날짜가 없습니다. (B열 날짜 확인)</div>`;
+      } else {
+        dateBox.innerHTML = dateList.map((d, i) => `
+          <label class="chip">
+            <input type="checkbox" value="${escapeHtml(d)}">
+            <span>${escapeHtml(d)}</span>
+          </label>
+        `).join("");
       }
 
-      const html = SETTINGS.map((r, idx) => {
-        const title = `${r.date || "(날짜없음)"} · ${r.shift || "(구분없음)"}`
-        const sub = `부서: ${r.dept || "-"}`;
-        const work = r.work ? r.work : "";
-
-        return `
-          <div class="item">
-            <input type="checkbox" id="chk_${idx}" data-idx="${idx}">
-            <div class="meta">
-              <div class="title">${escapeHtml(title)}</div>
-              <div class="sub">${escapeHtml(sub)}</div>
-              ${work ? `<div class="work">${escapeHtml(work)}</div>` : ``}
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      box.innerHTML = html + `<div class="hint">※ 체크된 항목만 저장됩니다.</div>`;
+      document.getElementById("status").textContent = "";
     }
 
     async function submitData() {
       const site = document.getElementById("site").value.trim();
       const name = document.getElementById("name").value.trim();
       const dept = document.getElementById("dept").value.trim();
+      const work = document.getElementById("work").value.trim();
 
       const status = document.getElementById("status");
       const btn = document.getElementById("submitBtn");
 
-      if (!site || !name) {
-        alert("사업장/성명을 입력하세요.");
-        return;
-      }
+      if (!site || !name) { alert("사업장/성명을 입력하세요."); return; }
+      if (!dept) { alert("부서를 선택하세요."); return; }
 
-      const checked = Array.from(document.querySelectorAll('#settingsList input[type="checkbox"]:checked'));
-      if (checked.length === 0) {
-        alert("최소 1개 이상 체크하세요.");
-        return;
-      }
+      const dates = Array.from(document.querySelectorAll('#dateBox input[type="checkbox"]:checked'))
+        .map(x => x.value);
 
-      const selected = checked.map(chk => {
-        const i = Number(chk.dataset.idx);
-        const r = SETTINGS[i] || {};
-        return { dept: r.dept, date: r.date, shift: r.shift, work: r.work };
-      });
+      const shifts = Array.from(document.querySelectorAll('#shiftBox input[type="checkbox"]:checked'))
+        .map(x => x.value);
+
+      if (dates.length === 0) { alert("날짜를 최소 1개 선택하세요."); return; }
+      if (shifts.length === 0) { alert("구분(오전/오후/야간)을 최소 1개 선택하세요."); return; }
 
       btn.disabled = true;
       status.textContent = "저장 중…";
 
       try {
-        const payload = { site, name, dept, selected };
+        // ✅ 새 payload 형식: dates[], shifts[]
+        const payload = { site, name, dept, dates, shifts, work };
 
         const resp = await fetch(GAS_EXEC_URL, {
           method: "POST",
@@ -157,7 +197,9 @@
 
         alert("제출되었습니다!");
         // 체크 해제
-        checked.forEach(c => c.checked = false);
+        document.querySelectorAll('#dateBox input[type="checkbox"]').forEach(x => x.checked = false);
+        document.querySelectorAll('#shiftBox input[type="checkbox"]').forEach(x => x.checked = false);
+        document.getElementById("work").value = "";
         status.textContent = "저장 완료";
       } catch (e) {
         alert("오류: " + (e && e.message ? e.message : e));
