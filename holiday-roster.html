@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>연휴 출근 취합</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f7f9; margin:0; }
+    .wrap { max-width: 460px; margin: 0 auto; padding: 16px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
+    h1 { font-size: 18px; margin: 0 0 10px; }
+    label { display:block; font-size: 13px; margin-top: 10px; color:#111827; }
+    input, select, textarea, button {
+      width: 100%; box-sizing: border-box;
+      padding: 10px; border:1px solid #d1d5db; border-radius: 10px;
+      font-size: 14px; background:#fff;
+    }
+    textarea { resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .list { margin-top: 12px; }
+    .item { display:flex; gap:10px; align-items:flex-start; padding:10px; border:1px solid #e5e7eb; border-radius: 10px; margin-top: 8px; }
+    .item input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; }
+    .meta { flex:1; }
+    .meta .title { font-size: 14px; font-weight: 600; }
+    .meta .sub { font-size: 12px; color:#6b7280; margin-top: 2px; }
+    .meta .work { font-size: 12px; color:#374151; margin-top: 6px; white-space: pre-wrap; }
+    .btn { margin-top: 12px; background:#2563eb; color:#fff; border:none; cursor:pointer; }
+    .btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .hint { font-size:12px; color:#6b7280; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>연휴 출근 취합</h1>
+
+      <div class="row">
+        <div>
+          <label>구분(사업장)</label>
+          <select id="site">
+            <option value="시화">시화</option>
+            <option value="반월">반월</option>
+            <option value="대양">대양</option>
+          </select>
+        </div>
+        <div>
+          <label>성명</label>
+          <input id="name" type="text" placeholder="이름" />
+        </div>
+      </div>
+
+      <label>부서(선택/수정 가능)</label>
+      <input id="dept" type="text" placeholder="예: 생산팀 (비우면 체크한 항목의 부서가 자동 사용됨)" />
+
+      <div class="list" id="settingsList">
+        <div class="hint">연휴 날짜 설정을 불러오는 중…</div>
+      </div>
+
+      <button class="btn" id="submitBtn" onclick="submitData()">제출</button>
+      <div class="hint" id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ 여기에 GAS 웹앱 exec URL 넣기
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbyez_CYIVx4Cb4WqipgXbNDVA9QX9GrKzYZwemIf7-OBpmDFujUGJSqTFhNWC-cDFdt/exec";
+
+    let SETTINGS = []; // [{dept,date,shift,work}]
+
+    // ===== JSONP 로딩 (CORS 회피) =====
+    function loadSettings() {
+      const cbName = "cb_" + Date.now();
+      window[cbName] = function (res) {
+        try {
+          SETTINGS = (res && res.data) ? res.data : [];
+          renderSettings();
+        } finally {
+          delete window[cbName];
+        }
+      };
+
+      const s = document.createElement("script");
+      s.src = `${GAS_EXEC_URL}?action=settings&callback=${cbName}`;
+      s.onerror = () => {
+        document.getElementById("settingsList").innerHTML =
+          `<div class="hint">설정 불러오기 실패. (웹앱 URL/배포 권한 확인)</div>`;
+      };
+      document.body.appendChild(s);
+    }
+
+    function renderSettings() {
+      const box = document.getElementById("settingsList");
+      if (!SETTINGS.length) {
+        box.innerHTML = `<div class="hint">설정 데이터가 없습니다. (연휴 날짜 설정 B2:E13 확인)</div>`;
+        return;
+      }
+
+      const html = SETTINGS.map((r, idx) => {
+        const title = `${r.date || "(날짜없음)"} · ${r.shift || "(구분없음)"}`
+        const sub = `부서: ${r.dept || "-"}`;
+        const work = r.work ? r.work : "";
+
+        return `
+          <div class="item">
+            <input type="checkbox" id="chk_${idx}" data-idx="${idx}">
+            <div class="meta">
+              <div class="title">${escapeHtml(title)}</div>
+              <div class="sub">${escapeHtml(sub)}</div>
+              ${work ? `<div class="work">${escapeHtml(work)}</div>` : ``}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      box.innerHTML = html + `<div class="hint">※ 체크된 항목만 저장됩니다.</div>`;
+    }
+
+    async function submitData() {
+      const site = document.getElementById("site").value.trim();
+      const name = document.getElementById("name").value.trim();
+      const dept = document.getElementById("dept").value.trim();
+
+      const status = document.getElementById("status");
+      const btn = document.getElementById("submitBtn");
+
+      if (!site || !name) {
+        alert("사업장/성명을 입력하세요.");
+        return;
+      }
+
+      const checked = Array.from(document.querySelectorAll('#settingsList input[type="checkbox"]:checked'));
+      if (checked.length === 0) {
+        alert("최소 1개 이상 체크하세요.");
+        return;
+      }
+
+      const selected = checked.map(chk => {
+        const i = Number(chk.dataset.idx);
+        const r = SETTINGS[i] || {};
+        return { dept: r.dept, date: r.date, shift: r.shift, work: r.work };
+      });
+
+      btn.disabled = true;
+      status.textContent = "저장 중…";
+
+      try {
+        const payload = { site, name, dept, selected };
+
+        const resp = await fetch(GAS_EXEC_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await resp.json();
+        if (!json || !json.ok) throw new Error((json && json.error) ? json.error : "저장 실패");
+
+        alert("제출되었습니다!");
+        // 체크 해제
+        checked.forEach(c => c.checked = false);
+        status.textContent = "저장 완료";
+      } catch (e) {
+        alert("오류: " + (e && e.message ? e.message : e));
+        status.textContent = "오류 발생";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || "").replace(/[&<>"']/g, (m) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[m]));
+    }
+
+    loadSettings();
+  </script>
+</body>
+</html>
