@@ -81,7 +81,8 @@
   </div>
 
   <script>
-    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzVIFmeW1McgMKMHfiQ30QNgrOJvFHKm1Bz7XZ3h5YGDF0dng4HXSzrcDmI5-oXasM/exec";
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycby7Alw1Nni6etJBVHgI_A5oyewFAs29_WE7MW1nhKfX-_ERdQIkC8s2Ocw-S4mxSt-1/exec";
+
     let ROWS = []; // [{dept,date,shift,work}]
     let TITLE = "";
     let DESC = "";
@@ -102,7 +103,8 @@
 
           buildUI();
         } catch (e) {
-          document.getElementById("dateList").innerHTML = `<div class="hint">불러오기 실패: ${escapeHtml(e.message || e)}</div>`;
+          document.getElementById("dateList").innerHTML =
+            `<div class="hint">불러오기 실패: ${escapeHtml(e.message || e)}</div>`;
         } finally {
           delete window[cbName];
         }
@@ -111,7 +113,8 @@
       const s = document.createElement("script");
       s.src = `${GAS_EXEC_URL}?action=settings&callback=${cbName}&ts=${Date.now()}`;
       s.onerror = () => {
-        document.getElementById("dateList").innerHTML = `<div class="hint">설정 불러오기 실패(웹앱 URL/권한 확인)</div>`;
+        document.getElementById("dateList").innerHTML =
+          `<div class="hint">설정 불러오기 실패(웹앱 URL/권한 확인)</div>`;
       };
       document.body.appendChild(s);
     }
@@ -119,70 +122,66 @@
     function uniq(arr) { return Array.from(new Set(arr.filter(Boolean))); }
 
     function buildUI() {
-  // 부서 드롭다운
-  const deptList = uniq(ROWS.map(r => (r.dept || "").trim()));
-  const deptSel = document.getElementById("dept");
-  deptSel.innerHTML = `<option value="">부서를 선택하세요</option>` + deptList
-    .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
-    .join("");
+      // 부서 드롭다운
+      const deptList = uniq(ROWS.map(r => (r.dept || "").trim()));
+      const deptSel = document.getElementById("dept");
+      deptSel.innerHTML = `<option value="">부서를 선택하세요</option>` + deptList
+        .map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)
+        .join("");
 
-  // ✅ 날짜 목록은 rows에서만 뽑음
-  const dates = uniqDates(ROWS);
-  const box = document.getElementById("dateList");
+      // 날짜 목록은 rows에서만 뽑음
+      const dates = uniqDates(ROWS);
+      const box = document.getElementById("dateList");
 
-  if (!dates.length) {
-    box.innerHTML = `<div class="hint">날짜 데이터가 없습니다. (설정 시트 날짜 값 확인)</div>`;
-    return;
-  }
+      if (!dates.length) {
+        box.innerHTML = `<div class="hint">날짜 데이터가 없습니다. (설정 시트 날짜 값 확인)</div>`;
+        return;
+      }
 
-  const FIXED_SHIFTS = ["오전", "오후", "야간"];
+      const FIXED_SHIFTS = ["오전", "오후", "야간"];
 
-  box.innerHTML = dates.map((ymd, idx) => {
-    const idBase = `d_${idx}`;
-    const title = formatKoreanDate(ymd);
+      box.innerHTML = dates.map((ymd, idx) => {
+        const idBase = `d_${idx}`;
+        const title = formatKoreanDate(ymd);
 
-    const shiftHtml = FIXED_SHIFTS.map(sh => `
-      <label class="chip">
-        <input type="checkbox" value="${escapeHtml(sh)}" data-date="${escapeHtml(ymd)}">
-        <span>${escapeHtml(sh)}</span>
-      </label>
-    `).join("");
+        const shiftHtml = FIXED_SHIFTS.map(sh => `
+          <label class="chip">
+            <input type="checkbox" value="${escapeHtml(sh)}" data-date="${escapeHtml(ymd)}">
+            <span>${escapeHtml(sh)}</span>
+          </label>
+        `).join("");
 
-    return `
-      <div class="dateCard">
-        <div class="dateTop">
-          <input type="checkbox" id="${idBase}_on" data-date="${escapeHtml(ymd)}" onchange="toggleDate('${idBase}')">
-          <div class="dateTitle">${escapeHtml(title)}</div>
-        </div>
+        return `
+          <div class="dateCard">
+            <div class="dateTop">
+              <input type="checkbox" id="${idBase}_on" data-date="${escapeHtml(ymd)}" onchange="toggleDate('${idBase}')">
+              <div class="dateTitle">${escapeHtml(title)}</div>
+            </div>
 
-        <div class="chips" id="${idBase}_shifts" style="opacity:.5; pointer-events:none;">
-          ${shiftHtml}
-        </div>
-      </div>
-    `;
-  }).join("");
-}
+            <div class="chips" id="${idBase}_shifts" style="opacity:.5; pointer-events:none;">
+              ${shiftHtml}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
 
-function formatKoreanDate(ymd) {
-  // ymd: "2026-02-16"
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "";
-  const [y, m, d] = ymd.split("-").map(Number);
+    function formatKoreanDate(ymd) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "";
+      const [y, m, d] = ymd.split("-").map(Number);
+      const dt = new Date(`${ymd}T00:00:00+09:00`); // KST
+      const w = ["일","월","화","수","목","금","토"][dt.getDay()];
+      return `${y}년 ${m}월 ${d}일(${w})`;
+    }
 
-  // KST 기준으로 요일 계산(UTC 꼬임 방지)
-  const dt = new Date(`${ymd}T00:00:00+09:00`);
-  const w = ["일","월","화","수","목","금","토"][dt.getDay()];
-
-  return `${y}년 ${m}월 ${d}일(${w})`;
-}
-
-function uniqDates(rows) {
-  const set = new Set();
-  rows.forEach(r => {
-    const d = String(r.date || "").trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) set.add(d);
-  });
-  return Array.from(set).sort();
-}
+    function uniqDates(rows) {
+      const set = new Set();
+      rows.forEach(r => {
+        const d = String(r.date || "").trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) set.add(d);
+      });
+      return Array.from(set).sort();
+    }
 
     function toggleDate(idBase) {
       const on = document.getElementById(`${idBase}_on`).checked;
@@ -197,19 +196,30 @@ function uniqDates(rows) {
       }
     }
 
-    // 제출(JSONP)
-    function submitViaJsonp(payload) {
+    // ✅ 1건 제출(JSONP) - 모바일 URL 길이 제한 회피용
+    function submitOneViaJsonp(params) {
       return new Promise((resolve, reject) => {
-        const cbName = "cb_submit_" + Date.now();
+        const cbName = "cb_one_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 
         window[cbName] = function(res) {
           try { resolve(res); }
           finally { delete window[cbName]; }
         };
 
+        const qs = new URLSearchParams({
+          action: "submitOne",
+          callback: cbName,
+          ts: String(Date.now()),
+          site:  params.site  || "",
+          name:  params.name  || "",
+          dept:  params.dept  || "",
+          work:  params.work  || "",
+          date:  params.date  || "",
+          shift: params.shift || ""
+        });
+
         const s = document.createElement("script");
-        const payloadParam = encodeURIComponent(JSON.stringify(payload));
-        s.src = `${GAS_EXEC_URL}?action=submit&callback=${cbName}&payload=${payloadParam}&ts=${Date.now()}`;
+        s.src = `${GAS_EXEC_URL}?${qs.toString()}`;
         s.onerror = () => { delete window[cbName]; reject(new Error("제출 실패(JSONP 로드 실패)")); };
         document.body.appendChild(s);
       });
@@ -244,11 +254,26 @@ function uniqDates(rows) {
       status.textContent = "저장 중…";
 
       try {
-        const payload = { site, name, dept, work, selections };
-        const res = await submitViaJsonp(payload);
-        if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
+        // ✅ 모바일 안정: 날짜/구분 1건씩 순차 제출
+        const jobs = [];
+        for (const sel of selections) {
+          for (const sh of sel.shifts) jobs.push({ date: sel.date, shift: sh });
+        }
+
+        for (let i = 0; i < jobs.length; i++) {
+          status.textContent = `저장 중… (${i+1}/${jobs.length})`;
+
+          const res = await submitOneViaJsonp({
+            site, name, dept, work,
+            date: jobs[i].date,
+            shift: jobs[i].shift
+          });
+
+          if (!res || !res.ok) throw new Error(res && res.error ? res.error : "저장 실패");
+        }
 
         alert("제출되었습니다!");
+
         // 초기화
         document.querySelectorAll('#dateList .dateTop input[type="checkbox"]').forEach(x => x.checked = false);
         document.querySelectorAll('#dateList .chips input[type="checkbox"]').forEach(x => x.checked = false);
