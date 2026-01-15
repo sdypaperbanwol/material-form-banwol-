@@ -122,9 +122,7 @@
 
     <!-- ✅ 2) 설문 화면(기존 화면) -->
     <div class="card hidden" id="screenForm">
-      <div class="topActions" style="margin-top:0; margin-bottom:8px;">
-        <button class="btnGhost btnSmall" id="btnBackToList" type="button">← 목록으로</button>
-      </div>
+      
 
       <h1 id="pageTitle">불러오는 중…</h1>
       <div class="desc" id="pageDesc"></div>
@@ -167,7 +165,7 @@
 
   <script>
   // ✅ 멀티 설문: list → settings(no) → submitOne(no)
-  var GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbyg9zlOAq2Sljsy9laTQwv4Bi_W2BvvbV2pU1T9sCuxHwSDa_nXcWM80Jwek5dbBIX1/exec";
+  var GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbzuNhwpxKY46UoJXi0fI5qRtXRvfLcXAcKJrIkMlRIw9oZjWPA6fAhz75lE6O63u4_V/exec";
 
   // 선택된 설문 no
   var CURRENT_NO = "";
@@ -758,15 +756,7 @@
   });
 
   // 목록으로
-  document.getElementById("btnBackToList").addEventListener("click", function(){
-    showListScreen_();
-    loadList_();
-    try {
-      var q = new URLSearchParams(location.search);
-      q.delete("no");
-      history.replaceState(null, "", location.pathname + (q.toString() ? ("?" + q.toString()) : ""));
-    } catch (e) {}
-  });
+  
 
   // ✅ 초기 진입: URL ?no= 가 있으면 바로 설문 로딩, 없으면 목록
   (function init(){
