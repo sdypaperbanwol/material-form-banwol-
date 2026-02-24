@@ -243,6 +243,8 @@
       const rowsHTML = merged.length ? merged.map((r, i) => {
         // 공장 구분선(빨간선) 로직
         const isSep = (plantSel==='all' && i>0 && merged[i-1].plant !== r.plant);
+        // 추가: 공장 구분선이 생기면(즉, 다른 공장 데이터가 시작되면) 번호를 1로 초기화
+        if (isSep) seq = 1;
         return `
           <tr class="${isSep ? 'plant-sep' : ''}">
             <td>${seq++}</td>
