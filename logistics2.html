@@ -4,756 +4,726 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>공장 내 차량 현황</title>
-  <meta name="description" content="공장 내 차량 현황 – GitHub Pages용 logistics.html">
   <link rel="icon" href="data:,">
   <style>
   :root{
     --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
-    --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff; --chip:#f0f3f7;
+    --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff;
     --brand:#0f62fe; --radius:16px; --shadow:0 6px 18px rgba(0,0,0,.05);
   }
   *{ box-sizing:border-box }
   html,body{ height:100% }
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
-  }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif; }
   .wrap{ max-width:980px; margin:24px auto; padding:0 16px }
 
   .header{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-            box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
+    box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
   .title{ margin:0; font-size:20px; letter-spacing:-.2px }
   .subtitle{ margin:4px 0 0 0; color:var(--muted); font-size:12.5px; display:flex; align-items:center; gap:6px }
-  .mini-spinner{ display:inline-block; width:12px; height:12px; border:2px solid #cfd8ff; border-top-color:var(--brand);
-                  border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px }
+  .mini-spinner{ display:inline-block; width:12px; height:12px; border:2px solid #cfd8ff;
+    border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px }
   @keyframes spin{ to{ transform:rotate(360deg) } }
   .badges{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px }
   .badge{ background:var(--badge); border:1px solid #d9e2ff; border-radius:999px; padding:3px 8px; font-size:12px }
 
   .toolbar{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap }
-  .btn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer; }
+  .btn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:8px 12px; font-size:13px; cursor:pointer; }
   .btn[disabled]{ opacity:.55; cursor:not-allowed }
   .btn:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) }
   .input,.select{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; font-size:13px }
 
   .view-toggle{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden }
   .view-toggle .tbtn{ border:0; background:#fff; padding:8px 12px; font-size:13px; cursor:pointer }
-  .view-toggle .tbtn + .tbtn{ border-left:1px solid var(--line) }
+  .view-toggle .tbtn+.tbtn{ border-left:1px solid var(--line) }
   .view-toggle .tbtn.active{ background:var(--brand); color:#fff }
 
   .grid{ display:grid; grid-template-columns:1fr; gap:14px }
   .col{ display:grid; gap:14px }
-  @media (min-width:900px){ .grid{ grid-template-columns:1fr 1fr } }
-  @media (max-width:899px){
-    .grid > .col:last-child > .card:last-child{ margin-bottom:24px }
-    .wrap{ padding-bottom:16px }
-  }
+  @media(min-width:900px){ .grid{ grid-template-columns:1fr 1fr } }
 
-  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden; }
   .stripe{ height:4px }
   .stripe.cyan{ background:var(--cyan) }
   .stripe.green{ background:var(--green) }
-  .card .head{ padding:16px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:8px }
+  .card .head{ padding:16px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:8px }
   .card .head h3{ margin:0; font-size:15px }
   .head-right{ display:flex; align-items:center; gap:8px }
   .summary{ padding:8px 14px; color:var(--muted); border-bottom:1px solid var(--line); font-size:12.5px }
 
   table{ width:100%; border-collapse:separate; border-spacing:0 }
-  thead th{ position:sticky; top:0; background:#fafbfd; border-bottom:1px solid var(--line); color:#333; font-weight:600; z-index:10; }
+  thead th{ position:sticky; top:0; background:#fafbfd; border-bottom:1px solid var(--line);
+    color:#333; font-weight:600; z-index:10; }
   th,td{ padding:8px 10px; text-align:center }
   tbody tr:nth-child(odd){ background:#fcfcfe }
   tbody td{ border-bottom:1px solid #f1f1f4 }
   .empty{ padding:18px 14px; color:var(--muted) }
-
   tbody tr.plant-sep td{ border-top:2px solid #ff6b6b }
   td.cell-hit{ background:#fff2cc !important }
   .badge.search-pill{ background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px }
 
-  /* ===== 감시 차량 강조 ===== */
-  tbody tr.watch-hit td{
-    background:#d4edda !important;
-    font-weight:600;
-  }
+  tbody tr.watch-hit td{ background:#d4edda !important; font-weight:600; }
   tbody tr.watch-hit:nth-child(odd) td{ background:#c3e6cb !important; }
 
-  /* 감시 패널 */
-  .watch-panel{
-    background:var(--card); border:1px solid #d9e2ff; border-radius:var(--radius);
-    box-shadow:var(--shadow); padding:14px 16px; margin-bottom:14px;
-    border-left:4px solid var(--brand);
-  }
-  .watch-panel-title{
-    font-size:13px; font-weight:600; color:#333; margin:0 0 10px 0;
-    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
-  }
-  .watch-panel-title .hint{
-    font-size:11.5px; color:var(--muted); font-weight:normal;
-    background:#f0f3f7; border-radius:6px; padding:2px 7px;
-  }
-  .watch-input-row{
-    display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center;
-  }
-  .watch-input{
-    border:1px solid var(--line); background:#fff; border-radius:10px;
-    padding:7px 10px; font-size:14px; width:110px; letter-spacing:2px;
-    text-align:center; font-weight:600;
-  }
+  .watch-panel{ background:var(--card); border:1px solid #d9e2ff; border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:14px 16px; margin-bottom:14px; border-left:4px solid var(--brand); }
+  .watch-panel-title{ font-size:13px; font-weight:600; color:#333; margin:0 0 10px 0;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .watch-panel-title .hint{ font-size:11.5px; color:var(--muted); font-weight:normal;
+    background:#f0f3f7; border-radius:6px; padding:2px 7px; }
+  .watch-input-row{ display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .watch-input{ border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:7px 10px; font-size:14px; width:110px; letter-spacing:2px; text-align:center; font-weight:600; }
   .watch-input:focus{ outline:none; border-color:var(--brand); box-shadow:0 0 0 2px rgba(15,98,254,.12) }
-  .watch-add-btn{
-    appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff;
-    border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600;
-  }
+  .watch-add-btn{ appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff;
+    border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600; }
   .watch-add-btn:hover{ background:#0353e9 }
-  .watch-clear-btn{
-    appearance:none; border:1px solid #ddd; background:#fff; color:#888;
-    border-radius:10px; padding:7px 10px; font-size:12px; cursor:pointer;
-  }
-  .watch-tags-row{
-    display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:28px;
-  }
+  .watch-clear-btn{ appearance:none; border:1px solid #ddd; background:#fff; color:#888;
+    border-radius:10px; padding:7px 10px; font-size:12px; cursor:pointer; }
+  .watch-tags-row{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:28px; }
   .watch-empty-hint{ color:var(--muted); font-size:12.5px }
 
-  /* 태그 배지 */
-  .watch-tag{
-    display:inline-flex; align-items:center; gap:5px;
-    padding:4px 10px 4px 8px; border-radius:999px; font-size:13px;
-    border:1.5px solid; font-weight:600; transition:transform .1s;
-  }
+  .watch-tag{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px 4px 8px;
+    border-radius:999px; font-size:13px; border:1.5px solid; font-weight:600; transition:transform .1s; }
   .watch-tag.found{ background:#d4edda; border-color:#82c89a; color:#155724; }
   .watch-tag.not-found{ background:#f8d7da; border-color:#f1a8ae; color:#721c24; }
   .watch-tag.pending{ background:#fff3cd; border-color:#ffc107; color:#856404; }
   .watch-tag .tag-status{ font-size:11px; font-weight:normal; opacity:.8 }
-  .watch-tag .remove-btn{
-    background:none; border:none; padding:0; cursor:pointer;
-    font-size:14px; line-height:1; opacity:.5; margin-left:2px;
-  }
+  .watch-tag .remove-btn{ background:none; border:none; padding:0; cursor:pointer;
+    font-size:14px; line-height:1; opacity:.5; margin-left:2px; }
   .watch-tag .remove-btn:hover{ opacity:1 }
-
   @keyframes watchPulse{
     0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(40,167,69,.6) }
     50%{ transform:scale(1.08); box-shadow:0 0 0 6px rgba(40,167,69,0) }
-    100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(40,167,69,0) }
+    100%{ transform:scale(1); }
   }
   .watch-tag.pulse{ animation:watchPulse .5s ease-out }
 
   .toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111; color:#fff;
-            padding:8px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10000; font-size:13px; }
+    padding:8px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10000; font-size:13px; }
   .toast.show{ opacity:1 }
-  .overlay{ position:fixed; inset:0; background:rgba(17,24,39,.35); display:flex; align-items:center; justify-content:center; z-index:9999;
-             opacity:0; pointer-events:none; transition:opacity .2s; }
+  .overlay{ position:fixed; inset:0; background:rgba(17,24,39,.35); display:flex; align-items:center;
+    justify-content:center; z-index:9999; opacity:0; pointer-events:none; transition:opacity .2s; }
   .overlay.show{ opacity:1; pointer-events:auto }
   .overlay .panel{ background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow);
-                     padding:18px 20px; display:flex; align-items:center; gap:10px; min-width:220px; justify-content:center; }
-  .overlay .spinner{ width:28px; height:28px; border:3px solid #e5e7eb; border-top-color:var(--brand); border-radius:50%;
-                       animation:spin 1s linear infinite; }
-
+    padding:18px 20px; display:flex; align-items:center; gap:10px; min-width:220px; justify-content:center; }
+  .overlay .spinner{ width:28px; height:28px; border:3px solid #e5e7eb; border-top-color:var(--brand);
+    border-radius:50%; animation:spin 1s linear infinite; }
   #weighingPanel{ max-height:70vh; overflow:auto }
 
   @media print{
     body{ background:#fff }
     .btn,.toast,.overlay,.toolbar,.watch-panel{ display:none }
     .wrap{ max-width:1000px; margin:0; padding:0 }
-    .header{ box-shadow:none; border:none }
     .grid{ grid-template-columns:1fr 1fr }
     .card{ box-shadow:none; border:1px solid #eee }
   }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="header">
-      <h1 class="title">공장 내 차량 현황</h1>
-      <p class="subtitle" id="updated">업데이트 준비 중…</p>
-      <div class="badges">
-        <span class="badge">신대양제지 반월/시화</span>
-        <span class="badge">계근 기준</span>
-      </div>
-      <div class="toolbar">
-        <select id="plantFilter" class="select" title="공장 필터">
-          <option value="all">전체</option>
-          <option value="banwol">반월만</option>
-          <option value="sihwa">시화만</option>
-        </select>
-        <button class="btn" id="btnRefresh">새로고침</button>
-        <button class="btn" id="btnTgToggle" title="텔레그램 알림 켜기/끄기">📲 알림 ON</button>
-        <div class="view-toggle" role="tablist">
-          <button class="tbtn active" id="btnViewLive" role="tab" aria-selected="true">입차 조회</button>
-          <button class="tbtn" id="btnViewWeigh" role="tab" aria-selected="false">계근 조회(제품)</button>
-        </div>
-        <input id="searchInput" class="input" placeholder="차량번호 검색" />
-        <span id="searchSummary" class="badge search-pill" style="display:none"></span>
-      </div>
-    </section>
-
-    <section class="watch-panel" id="watchPanel">
-      <div class="watch-panel-title">
-        🔍 감시 차량 등록
-        <span class="hint">F5 또는 재접속 시 자동 삭제됩니다</span>
-      </div>
-      <div class="watch-input-row">
-        <input
-          type="text" id="watchInput" class="watch-input"
-          placeholder="0000" maxlength="4"
-          pattern="\d{4}" inputmode="numeric"
-        />
-        <button class="watch-add-btn" id="watchAddBtn">+ 등록</button>
-        <button class="watch-clear-btn" id="watchClearBtn">전체 삭제</button>
-      </div>
-      <div class="watch-tags-row" id="watchTagsRow">
-        <span class="watch-empty-hint">4자리 입력 후 등록하면 새로고침 시 음영으로 표시됩니다</span>
-      </div>
-    </section>
-
-    <section class="grid" id="weighingPanel" style="display:none"></section>
-    <section class="grid" id="sections"></section>
-  </div>
-
-  <div class="overlay" id="loadingOverlay" aria-hidden="true">
-    <div class="panel" role="status" aria-live="polite">
-      <div class="spinner"></div>
-      <div><strong>새로고침 중…</strong><br><span style="color:#666;font-size:12px">잠시만 기다려주세요</span></div>
+<div class="wrap">
+  <section class="header">
+    <h1 class="title">공장 내 차량 현황</h1>
+    <p class="subtitle" id="updated">업데이트 준비 중…</p>
+    <div class="badges">
+      <span class="badge">신대양제지 반월/시화</span>
+      <span class="badge">계근 기준</span>
     </div>
-  </div>
-  <div class="toast" id="toast">업데이트됨</div>
-
-  <script>
-  // =========================================
-  //  설정
-  // =========================================
-  const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxdBZrktJQPeQ-0j6bY5b_MGxDeyy0IagJyUWdU9F6tvtxmkZ38H66BjbilLd_2G_9M/exec';
-  const API_TOKEN = 'DY_SCALE';
-  const LS_KEYS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.search', cache:'snapshot.cache' };
-
-  // =========================================
-  //  텔레그램 설정
-  // =========================================
-  const TG = {
-    token:  '8794146245:AAFpUcVGvl10H21Rjll8KvXIehN55BhM2rc',
-    chatId: '7717030762',
-    enabled: true,
-    intervalMin: 5,
-  };
-  let __prevSummaryHash = null;      // 변동 감지용
-  let __prevWatchFound = new Set();  // 이전 감시 입차 목록
-
-  async function tgSend(text){
-    if(!TG.enabled) return;
-    try{
-      await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ chat_id: TG.chatId, text, parse_mode:'HTML' })
-      });
-    }catch(e){ console.warn('텔레그램 전송 실패:',e); }
-  }
-
-  // 섹션명 → 이모지+단축명 매핑
-  const SEC_LABEL = {
-    '제품 상차중':     { icon:'📦', short:'제품 상차' },
-    '부자재 입차중':   { icon:'🗂', short:'부자재 입차' },
-    '컨테이너 입차중': { icon:'🚢', short:'컨테이너 입차' },
-    '원료 하차중':     { icon:'🚚', short:'원료 하차' },
-    '원료 대기':       { icon:'⏸', short:'원료 대기' },
-  };
-
-  // 입차 시간 → 경과 분 계산
-  function elapsedMinutes(timeStr){
-    if(!timeStr) return null;
-    const t = fmtTimeDisplay(timeStr);
-    if(!t) return null;
-    const [h,m] = t.split(':').map(Number);
-    if(isNaN(h)||isNaN(m)) return null;
-    const now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-    let diff = (now.getHours()*60+now.getMinutes()) - (h*60+m);
-    if(diff < 0) diff += 24*60;
-    return diff;
-  }
-
-  // 차량 데이터만으로 해시 생성 (시간 제외 → 변동 감지용)
-  function buildDataHash(data){
-    if(!data||!data.sections) return '';
-    return data.sections.map(sec =>
-      sec.title + ':' + sec.groups.map(g =>
-        g.plant + '|' + g.rows.filter(r=>!isMonoDigitPlate(r.car)).map(r=>r.car).sort().join(',')
-      ).join(';')
-    ).join('//');
-  }
-
-  function buildTgSummary(data){
-    if(!data||!data.sections) return null;
-    const now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-    const nowStr = `${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-    const lines = [`🏭 <b>공장 차량 현황</b> (${nowStr})`, ``];
-    let totalAll = 0;
-
-    data.sections.forEach(sec => {
-      let rows = [];
-      sec.groups.forEach(g => {
-        rows.push(...g.rows.filter(r=>!isMonoDigitPlate(r.car)).map(r=>({...r,plant:g.plant})));
-      });
-      if(!rows.length) return;
-      totalAll += rows.length;
-
-      const banwol = rows.filter(r=>r.plant==='반월');
-      const sihwa  = rows.filter(r=>r.plant==='시화');
-      const lbl = SEC_LABEL[sec.title] || { icon:'📌', short: sec.title };
-
-      // 헤더: 있는 공장만 표시
-      const plantInfo = [
-        banwol.length ? `반월 ${banwol.length}` : '',
-        sihwa.length  ? `시화 ${sihwa.length}`  : '',
-      ].filter(Boolean).join(', ');
-      lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대, ${plantInfo})`);
-      lines.push(`━━━━━━━━━━━━━━`);
-
-      const fmtCar = (r) => {
-        const t   = fmtTimeDisplay(r.time);
-        const el  = elapsedMinutes(r.time);
-        const lng = (el !== null && el >= 120) ? ' (장기)' : '';
-        const w   = (last4(r.car) && watchList[last4(r.car)] !== undefined) ? ' 👁' : '';
-        return `- ${r.car} | ${t||'-'}${lng}${w}`;
-      };
-
-      if(banwol.length){
-        lines.push(`[반월]`);
-        banwol.forEach(r => lines.push(fmtCar(r)));
-      }
-      if(banwol.length && sihwa.length) lines.push(` ───────`);
-      if(sihwa.length){
-        lines.push(`[시화]`);
-        sihwa.forEach(r => lines.push(fmtCar(r)));
-      }
-      lines.push('');
-    });
-
-    if(totalAll===0) return null;
-    lines.push(`✅ 합계: <b>${totalAll}대</b>`);
-    return lines.join('\n');
-  }
-
-  // 변동 감지 후 즉시 전송 — 해시는 차량 데이터만으로 비교 (시간 제외)
-  async function tgSendIfChanged(data){
-    if(!TG.enabled || !data) return;
-    const hash = buildDataHash(data);
-    if(hash === __prevSummaryHash) return;  // 변동 없으면 스킵
-    __prevSummaryHash = hash;
-    const msg = buildTgSummary(data);
-    if(msg) await tgSend(msg);
-  }
-
-  async function tgWatchAlert(newlyFound){
-    if(!TG.enabled || !newlyFound.length) return;
-    const alertLines = [`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`, ``];
-    newlyFound.forEach(num => alertLines.push(`  🚗 <b>${num}</b> 입차됨`));
-    await tgSend(alertLines.join('\n'));
-    // 이어서 현황 전송 (해시 갱신도 같이)
-    const cache = localStorage.getItem(LS_KEYS.cache);
-    if(!cache) return;
-    let data; try{ data=JSON.parse(cache); }catch(e){ return; }
-    __prevSummaryHash = buildDataHash(data);
-    const summaryMsg = buildTgSummary(data);
-    if(summaryMsg) await tgSend(summaryMsg);
-  }
-
-  let __loading = false;
-  let __searchCount = 0;
-  let __lastWeigh = null;
-  const collapseMap = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse)||'{}'); }catch(_){return{};} })();
-
-  // =========================================
-  //  감시 차량 – 메모리 전용 (휘발성)
-  //  구조: watchList['1234'] = { status: 'pending'|'found'|'not-found' }
-  // =========================================
-  const watchList = {};
-
-  function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4 ? d.slice(-4) : ''; }
-  function isMonoDigitPlate(s){ const d=String(s||'').replace(/\D+/g,''); if(d.length<4) return false; return d.split('').every(ch=>ch===d[0]); }
-
-  // 감시 태그 UI 렌더
-  function renderWatchTags(){
-    const row = document.getElementById('watchTagsRow');
-    const keys = Object.keys(watchList);
-    if(keys.length === 0){
-      row.innerHTML = '<span class="watch-empty-hint" id="watchEmptyHint">4자리 입력 후 등록하면 새로고침 시 음영으로 표시됩니다</span>';
-      return;
-    }
-    row.innerHTML = keys.map(k => {
-      const st = watchList[k];
-      let cls = 'pending', icon = '⏳', label = '대기';
-      if(st === 'found')     { cls='found';     icon='✅'; label='입차됨'; }
-      if(st === 'not-found') { cls='not-found'; icon='❌'; label='미확인'; }
-      return `<span class="watch-tag ${cls}" id="wtag-${k}">
-        ${icon} <strong>${k}</strong>
-        <span class="tag-status">${label}</span>
-        <button class="remove-btn" onclick="removeWatch('${k}')" title="삭제">✕</button>
-      </span>`;
-    }).join('');
-  }
-
-  // 등록
-  function addWatch(num){
-    const clean = String(num).replace(/\D/g,'').slice(-4);
-    if(clean.length !== 4){ showToast('4자리 숫자를 입력하세요'); return false; }
-    if(watchList[clean] !== undefined){ showToast(`${clean} 은 이미 등록됨`); return false; }
-    watchList[clean] = 'pending';
-    renderWatchTags();
-    showToast(`${clean} 등록 완료`);
-    return true;
-  }
-
-  // 삭제
-  window.removeWatch = function(num){
-    delete watchList[num];
-    renderWatchTags();
-    // 화면에서도 강조 제거 (재렌더 없이 즉시 반영)
-    document.querySelectorAll(`tr.watch-hit`).forEach(tr => {
-      const carCell = tr.querySelector('td:nth-child(2)');
-      if(carCell && last4(carCell.textContent) === num) tr.classList.remove('watch-hit');
-    });
-  };
-
-  // 새로고침 후 전체 차량 번호와 감시 목록 비교 → 상태 업데이트
-  function syncWatchStatuses(allCarNums){
-    if(Object.keys(watchList).length === 0) return;
-    const found = new Set(allCarNums.map(c => last4(c)).filter(Boolean));
-    let anyChange = false;
-
-    // 이번에 새로 입차된 감시 차량 감지
-    const newlyFound = [];
-
-    Object.keys(watchList).forEach(k => {
-      const ns = found.has(k) ? 'found' : 'not-found';
-      if(watchList[k] !== ns){
-        if(ns === 'found' && !__prevWatchFound.has(k)) newlyFound.push(k);
-        watchList[k] = ns; anyChange = true;
-      }
-    });
-
-    // 현재 found 목록 저장
-    __prevWatchFound = new Set(Object.keys(watchList).filter(k=>watchList[k]==='found'));
-
-    if(anyChange){
-      renderWatchTags();
-      Object.keys(watchList).filter(k=>watchList[k]==='found').forEach(k=>{
-        const el=document.getElementById(`wtag-${k}`);
-        if(el){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
-      });
-    }
-
-    // 즉시 텔레그램 알림 (새로 입차된 감시 차량)
-    if(newlyFound.length) tgWatchAlert(newlyFound);
-  }
-
-  // DOM
-  const elUpdated  = document.getElementById('updated');
-  const elSections = document.getElementById('sections');
-  const elWeighPanel = document.getElementById('weighingPanel');
-  const btnRefresh = document.getElementById('btnRefresh');
-  const toast      = document.getElementById('toast');
-  const overlay    = document.getElementById('loadingOverlay');
-
-  // 감시 입력 이벤트
-  document.getElementById('watchAddBtn').addEventListener('click', ()=>{
-    const inp = document.getElementById('watchInput');
-    if(addWatch(inp.value)) inp.value = '';
-    inp.focus();
-  });
-  document.getElementById('watchInput').addEventListener('keydown', e=>{
-    if(e.key==='Enter') document.getElementById('watchAddBtn').click();
-  });
-  document.getElementById('watchClearBtn').addEventListener('click', ()=>{
-    if(!Object.keys(watchList).length) return;
-    if(!confirm('감시 목록을 전부 삭제할까요?')) return;
-    Object.keys(watchList).forEach(k=>delete watchList[k]);
-    renderWatchTags();
-    rerenderFromCache();
-    showToast('감시 목록 삭제됨');
-  });
-
-  // =========================================
-  //  유틸
-  // =========================================
-  function fmtTimeDisplay(raw){
-    if(raw==null) return '';
-    const s0=String(raw).trim(); if(!s0) return '';
-    const mHM=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
-    if(mHM) return `${mHM[1].padStart(2,'0')}:${mHM[2]}`;
-    const digits=s0.replace(/\D/g,'');
-    if(digits.length>=4) return `${digits.slice(0,2)}:${digits.slice(2,4)}`;
-    return s0;
-  }
-  function fmtKST(ts){
-    const d=(ts instanceof Date)?ts:new Date(ts||Date.now());
-    const k=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-    const Y=k.getFullYear(),M=String(k.getMonth()+1).padStart(2,'0'),D=String(k.getDate()).padStart(2,'0');
-    const h=String(k.getHours()).padStart(2,'0'),m=String(k.getMinutes()).padStart(2,'0'),s=String(k.getSeconds()).padStart(2,'0');
-    return `${Y}-${M}-${D} ${h}:${m}:${s}`;
-  }
-  function showToast(msg){ toast.textContent=msg||'완료'; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
-  function stripeClass(c){ c=String(c||'').toLowerCase(); return c.includes('00ff00')?'green':'cyan'; }
-  function setLoading(on,src){
-    __loading=!!on;
-    if(btnRefresh) btnRefresh.disabled=on;
-    if(on){
-      if(src==='manual') overlay.classList.add('show');
-      elUpdated.innerHTML='<span class="mini-spinner"></span>업데이트 중…';
-    } else { overlay.classList.remove('show'); }
-  }
-
-  // =========================================
-  //  입차 조회 렌더
-  // =========================================
-  function render(data){
-    if(!data||!data.sections) return;
-    __searchCount=0;
-    elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
-
-    const plantSel=document.getElementById('plantFilter').value;
-    const q=(document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
-    const dqq=q.replace(/\D/g,'');
-    const isFour=/^\d{4}$/.test(dqq);
-    const ctx={plantSel,qq:q,dqq,isFour};
-
-    const LEFT_TITLES  = ['제품 상차중','부자재 입차중','컨테이너 입차중'];
-    const RIGHT_TITLES = ['원료 하차중','원료 대기'];
-    const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
-    const leftArr =LEFT_TITLES.map(t=>byTitle[t]).filter(Boolean);
-    const rightArr=RIGHT_TITLES.map(t=>byTitle[t]).filter(Boolean);
-
-    // 전체 차량 번호 수집용
-    const allCarNums=[];
-
-    const buildSectionHTML=(sec)=>{
-      const title=sec.title;
-      let merged=[];
-      sec.groups.forEach(g=>{
-        if(plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화')){
-          merged.push(...g.rows.filter(r=>!isMonoDigitPlate(r.car)).map(r=>({...r,plant:g.plant})));
-        }
-      });
-      // 전체 차량 수집 (필터 전)
-      merged.forEach(r=>allCarNums.push(r.car));
-
-      if(ctx.qq){
-        merged=merged.filter(r=>{
-          const match=ctx.isFour?last4(r.car)===ctx.dqq:String(r.car).includes(ctx.qq);
-          if(match) __searchCount++;
-          return match;
-        });
-      }
-
-      const isCollapsed=collapseMap[title];
-      let seq=1;
-      const rowsHTML=merged.length ? merged.map((r,i)=>{
-        const isSep=(plantSel==='all'&&i>0&&merged[i-1].plant!==r.plant);
-        if(isSep) seq=1;
-        const wNum=last4(r.car);
-        const isWatched=wNum&&watchList[wNum]!==undefined;
-        return `<tr class="${[isSep?'plant-sep':'', isWatched?'watch-hit':''].filter(Boolean).join(' ')}">
-          <td>${seq++}</td>
-          <td class="${ctx.isFour&&last4(r.car)===ctx.dqq?'cell-hit':''}">${r.car}</td>
-          <td>${fmtTimeDisplay(r.time)}</td>
-          <td>${r.plant}</td>
-        </tr>`;
-      }).join('') : '<tr><td colspan="4" class="empty">(데이터 없음)</td></tr>';
-
-      const bcnt=merged.filter(r=>r.plant==='반월').length;
-      const scnt=merged.filter(r=>r.plant==='시화').length;
-      return `<article class="card">
-        <div class="stripe ${stripeClass(sec.color)}"></div>
-        <div class="head">
-          <h3>${title}</h3>
-          <div class="head-right">
-            <div class="summary">총 ${merged.length} (반월 ${bcnt}, 시화 ${scnt})</div>
-            <button class="btn" onclick="toggleCard('${encodeURIComponent(title)}',this)">${isCollapsed?'펼치기':'접기'}</button>
-          </div>
-        </div>
-        <div class="body" style="${isCollapsed?'display:none':''}">
-          <table>
-            <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">시간</th><th style="width:56px">공장</th></tr></thead>
-            <tbody>${rowsHTML}</tbody>
-          </table>
-        </div>
-      </article>`;
-    };
-
-    elSections.innerHTML=`
-      <div class="col">${leftArr.map(buildSectionHTML).join('')}</div>
-      <div class="col">${rightArr.map(buildSectionHTML).join('')}</div>
-    `;
-
-    // 감시 상태 동기화
-    syncWatchStatuses(allCarNums);
-
-    const badge=document.getElementById('searchSummary');
-    if(ctx.qq){ badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
-    else{ badge.style.display='none'; }
-  }
-
-  window.toggleCard=(titleEnc,btn)=>{
-    const title=decodeURIComponent(titleEnc);
-    const body=btn.closest('.card').querySelector('.body');
-    const isNowOpen=body.style.display!=='none';
-    body.style.display=isNowOpen?'none':'';
-    btn.textContent=isNowOpen?'펼치기':'접기';
-    collapseMap[title]=isNowOpen;
-    localStorage.setItem(LS_KEYS.collapse,JSON.stringify(collapseMap));
-  };
-
-  // =========================================
-  //  계근 조회 렌더
-  // =========================================
-  function buildWeighTable(title,list,query){
-    const q=String(query||'').trim().replace(/\s+/g,'');
-    const dqq=q.replace(/\D/g,'');
-    const isFour=/^\d{4}$/.test(dqq);
-    const filtered=(list||[]).filter(r=>{
-      if(!q) return true;
-      const car=String(r.CARNUM||'');
-      return isFour?last4(car)===dqq:car.includes(q);
-    });
-    const rowsHTML=filtered.length?filtered.map((r,i)=>{
-      const car=r.CARNUM||'';
-      const isHit=q&&(isFour?last4(car)===dqq:car.includes(q));
-      const wNum=last4(car);
-      const isWatched=wNum&&watchList[wNum]!==undefined;
-      return `<tr class="${isWatched?'watch-hit':''}">
-        <td>${i+1}</td>
-        <td class="${isHit?'cell-hit':''}">${car}</td>
-        <td>${fmtTimeDisplay(r.INTIME)}</td>
-        <td>${fmtTimeDisplay(r.OUTIME)}</td>
-        <td>${r.TOTWEI||''}</td>
-        <td>${r.SILWEI||''}</td>
-      </tr>`;
-    }).join(''):'<tr><td colspan="6" class="empty">(결과 없음)</td></tr>';
-    return `<article class="card">
-      <div class="stripe cyan"></div>
-      <div class="head">
-        <h3>${title}</h3>
-        <div class="head-right"><div class="summary">총 ${filtered.length}건</div></div>
+    <div class="toolbar">
+      <select id="plantFilter" class="select">
+        <option value="all">전체</option>
+        <option value="banwol">반월만</option>
+        <option value="sihwa">시화만</option>
+      </select>
+      <button class="btn" id="btnRefresh">새로고침</button>
+      <button class="btn" id="btnTgToggle">📲 알림 ON</button>
+      <div class="view-toggle" role="tablist">
+        <button class="tbtn active" id="btnViewLive" role="tab">입차 조회</button>
+        <button class="tbtn" id="btnViewWeigh" role="tab">계근 조회(제품)</button>
       </div>
-      <div class="body">
-        <table>
-          <thead><tr><th style="width:44px">No</th><th style="width:120px">차량번호</th><th style="width:74px">입차</th><th style="width:74px">출차</th><th style="width:84px">총중량</th><th style="width:84px">실중량</th></tr></thead>
-          <tbody>${rowsHTML}</tbody>
-        </table>
+      <input id="searchInput" class="input" placeholder="차량번호 검색" />
+      <span id="searchSummary" class="badge search-pill" style="display:none"></span>
+    </div>
+  </section>
+
+  <section class="watch-panel">
+    <div class="watch-panel-title">
+      🔍 감시 차량 등록
+      <span class="hint">영구 저장 · 텔레그램에서 /watch 1234 로도 등록 가능</span>
+    </div>
+    <div class="watch-input-row">
+      <input type="text" id="watchInput" class="watch-input" placeholder="0000" maxlength="4" inputmode="numeric" />
+      <button class="watch-add-btn" id="watchAddBtn">+ 등록</button>
+      <button class="watch-clear-btn" id="watchClearBtn">전체 삭제</button>
+    </div>
+    <div class="watch-tags-row" id="watchTagsRow">
+      <span class="watch-empty-hint">4자리 입력 후 등록 · 텔레그램 /watch 1234</span>
+    </div>
+  </section>
+
+  <section class="grid" id="weighingPanel" style="display:none"></section>
+  <section class="grid" id="sections"></section>
+</div>
+
+<div class="overlay" id="loadingOverlay">
+  <div class="panel">
+    <div class="spinner"></div>
+    <div><strong>새로고침 중…</strong><br><span style="color:#666;font-size:12px">잠시만 기다려주세요</span></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  [A] 설정
+// ═══════════════════════════════════════════
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxdBZrktJQPeQ-0j6bY5b_MGxDeyy0IagJyUWdU9F6tvtxmkZ38H66BjbilLd_2G_9M/exec';
+const API_TOKEN    = 'DY_SCALE';
+
+const TG = {
+  token : '8794146245:AAFpUcVGvl10H21Rjll8KvXIehN55BhM2rc',
+  chatId: '7717030762',
+  enabled: true,
+};
+
+const LS = {
+  collapse : 'ui.collapse.map',
+  plant    : 'ui.plant',
+  q        : 'ui.search',
+  cache    : 'snapshot.cache',
+  watch    : 'watch.list',
+  tgHash   : 'tg.last.hash',   // ★ 마지막 전송 해시 (멀티탭 공유)
+  tgTime   : 'tg.last.time',   // ★ 마지막 전송 시각 (멀티탭 공유)
+  tgOffset : 'tg.poll.offset', // ★ 폴링 offset (멀티탭 공유)
+};
+
+// ═══════════════════════════════════════════
+//  [B] 유틸
+// ═══════════════════════════════════════════
+function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):''; }
+function isMonoDigit(s){ const d=String(s||'').replace(/\D+/g,''); if(d.length<4)return false; return d.split('').every(c=>c===d[0]); }
+function p2(n){ return String(n).padStart(2,'0'); }
+function nowKST(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
+
+function fmtTime(raw){
+  if(raw==null) return '';
+  const s0=String(raw).trim(); if(!s0) return '';
+  const m=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+  const d=s0.replace(/\D/g,'');
+  if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+  return s0;
+}
+function fmtKST(ts){
+  const d=(ts instanceof Date)?ts:new Date(ts||Date.now());
+  const k=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  return `${k.getFullYear()}-${p2(k.getMonth()+1)}-${p2(k.getDate())} ${p2(k.getHours())}:${p2(k.getMinutes())}:${p2(k.getSeconds())}`;
+}
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function stripeClass(c){ return String(c||'').toLowerCase().includes('00ff00')?'green':'cyan'; }
+const collapseMap=(()=>{ try{ return JSON.parse(localStorage.getItem(LS.collapse)||'{}'); }catch(_){return{};} })();
+
+// ═══════════════════════════════════════════
+//  [C] 감시 차량 (localStorage 영구)
+// ═══════════════════════════════════════════
+const watchList=(()=>{ try{ return JSON.parse(localStorage.getItem(LS.watch)||'{}'); }catch(_){return{};} })();
+function saveWatch(){ localStorage.setItem(LS.watch, JSON.stringify(watchList)); }
+
+function renderWatchTags(){
+  const row=document.getElementById('watchTagsRow');
+  const keys=Object.keys(watchList);
+  if(!keys.length){
+    row.innerHTML='<span class="watch-empty-hint">4자리 입력 후 등록 · 텔레그램 /watch 1234</span>';
+    return;
+  }
+  row.innerHTML=keys.map(k=>{
+    const st=watchList[k];
+    const cls=st==='found'?'found':st==='not-found'?'not-found':'pending';
+    const icon=st==='found'?'✅':st==='not-found'?'❌':'⏳';
+    const label=st==='found'?'입차됨':st==='not-found'?'미확인':'대기';
+    return `<span class="watch-tag ${cls}" id="wtag-${k}">${icon} <strong>${k}</strong><span class="tag-status">${label}</span><button class="remove-btn" onclick="removeWatch('${k}')">✕</button></span>`;
+  }).join('');
+}
+
+function addWatch(num, silent=false){
+  const c=String(num).replace(/\D/g,'').slice(-4);
+  if(c.length!==4){ if(!silent) showToast('4자리 숫자를 입력하세요'); return false; }
+  if(watchList[c]!==undefined){ if(!silent) showToast(`${c} 이미 등록됨`); return false; }
+  watchList[c]='pending';
+  saveWatch();
+  renderWatchTags();
+  if(!silent) showToast(`${c} 등록 완료`);
+  return true;
+}
+
+window.removeWatch=function(num, silent=false){
+  delete watchList[num];
+  saveWatch();
+  renderWatchTags();
+  document.querySelectorAll('tr.watch-hit').forEach(tr=>{
+    const c=tr.querySelector('td:nth-child(2)');
+    if(c&&last4(c.textContent)===num) tr.classList.remove('watch-hit');
+  });
+  if(!silent) showToast(`${num} 삭제됨`);
+};
+
+// ═══════════════════════════════════════════
+//  [D] 텔레그램 전송
+// ═══════════════════════════════════════════
+async function tgSend(text){
+  if(!TG.enabled) return;
+  try{
+    await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id:TG.chatId, text, parse_mode:'HTML' })
+    });
+  }catch(e){ console.warn('TG send fail:',e); }
+}
+
+const SEC_LABEL={
+  '제품 상차중':     {icon:'📦', short:'제품 상차'},
+  '부자재 입차중':   {icon:'🗂',  short:'부자재 입차'},
+  '컨테이너 입차중': {icon:'🚢', short:'컨테이너 입차'},
+  '원료 하차중':     {icon:'🚚', short:'원료 하차'},
+  '원료 대기':       {icon:'⏸',  short:'원료 대기'},
+};
+
+function elapsedMin(timeStr){
+  const t=fmtTime(timeStr); if(!t) return null;
+  const [h,m]=t.split(':').map(Number); if(isNaN(h)) return null;
+  const now=nowKST();
+  let d=(now.getHours()*60+now.getMinutes())-(h*60+m);
+  if(d<0) d+=1440;
+  return d;
+}
+
+// ★ 핵심: 차량번호+섹션 구조만으로 해시 (시간 포함 안 함)
+//   → 실제 차량 변동이 있을 때만 다른 해시가 나옴
+function buildHash(data){
+  if(!data||!data.sections) return '';
+  return data.sections.map(sec=>
+    sec.title+':'+sec.groups.map(g=>
+      g.plant+'|'+g.rows.filter(r=>!isMonoDigit(r.car)).map(r=>r.car).sort().join(',')
+    ).join(';')
+  ).join('//');
+}
+
+function buildSummaryMsg(data){
+  if(!data||!data.sections) return null;
+  const n=nowKST();
+  const ts=`${p2(n.getMonth()+1)}-${p2(n.getDate())} ${p2(n.getHours())}:${p2(n.getMinutes())}`;
+  const lines=[`🏭 <b>공장 차량 현황</b> (${ts})`,``];
+  let total=0;
+  data.sections.forEach(sec=>{
+    let rows=[];
+    sec.groups.forEach(g=>rows.push(...g.rows.filter(r=>!isMonoDigit(r.car)).map(r=>({...r,plant:g.plant}))));
+    if(!rows.length) return;
+    total+=rows.length;
+    const bw=rows.filter(r=>r.plant==='반월');
+    const sh=rows.filter(r=>r.plant==='시화');
+    const lbl=SEC_LABEL[sec.title]||{icon:'📌',short:sec.title};
+    const info=[bw.length?`반월 ${bw.length}`:'', sh.length?`시화 ${sh.length}`:''].filter(Boolean).join(', ');
+    lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대, ${info})`);
+    lines.push(`━━━━━━━━━━━━━━`);
+    const fmt=r=>{
+      const t=fmtTime(r.time);
+      const lng=(elapsedMin(r.time)||0)>=120?' (장기)':'';
+      const w=watchList[last4(r.car)]!==undefined?' 👁':'';
+      return `- ${r.car} | ${t||'-'}${lng}${w}`;
+    };
+    if(bw.length){ lines.push(`[반월]`); bw.forEach(r=>lines.push(fmt(r))); }
+    if(bw.length&&sh.length) lines.push(` ───────`);
+    if(sh.length){ lines.push(`[시화]`); sh.forEach(r=>lines.push(fmt(r))); }
+    lines.push('');
+  });
+  if(!total) return null;
+  lines.push(`✅ 합계: <b>${total}대</b>`);
+  return lines.join('\n');
+}
+
+// ★ 멀티탭 중복 방지 핵심 로직
+//   - localStorage의 tgHash/tgTime을 공유
+//   - 해시 같으면 → 변동 없음, 스킵
+//   - 해시 다르더라도 다른 탭이 3초 이내 전송했으면 → 스킵
+async function tgSendIfChanged(data){
+  if(!TG.enabled||!data) return;
+  const hash=buildHash(data);
+  if(!hash) return;
+
+  const lastHash=localStorage.getItem(LS.tgHash)||'';
+  if(hash===lastHash) return; // 변동 없음 → 스킵
+
+  const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
+  if(Date.now()-lastTime < 4000) return; // 다른 탭이 방금 전송 → 스킵
+
+  // 전송권 획득: 먼저 기록 후 전송 (다른 탭이 동시에 들어오면 4초 내 재진입 차단)
+  localStorage.setItem(LS.tgHash, hash);
+  localStorage.setItem(LS.tgTime, String(Date.now()));
+
+  const msg=buildSummaryMsg(data);
+  if(msg) await tgSend(msg);
+}
+
+// ═══════════════════════════════════════════
+//  [E] 감시 상태 동기화
+// ═══════════════════════════════════════════
+let __prevWatchFound=new Set(Object.keys(watchList).filter(k=>watchList[k]==='found'));
+
+function syncWatch(allCars){
+  if(!Object.keys(watchList).length) return;
+  const found=new Set(allCars.map(c=>last4(c)).filter(Boolean));
+  const newlyFound=[];
+  let changed=false;
+  Object.keys(watchList).forEach(k=>{
+    const ns=found.has(k)?'found':'not-found';
+    if(watchList[k]!==ns){
+      if(ns==='found'&&!__prevWatchFound.has(k)) newlyFound.push(k);
+      watchList[k]=ns; changed=true;
+    }
+  });
+  __prevWatchFound=new Set(Object.keys(watchList).filter(k=>watchList[k]==='found'));
+  if(changed){
+    saveWatch();
+    renderWatchTags();
+    Object.keys(watchList).filter(k=>watchList[k]==='found').forEach(k=>{
+      const el=document.getElementById(`wtag-${k}`);
+      if(el){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
+    });
+  }
+  if(newlyFound.length) tgWatchAlert(newlyFound);
+}
+
+async function tgWatchAlert(nums){
+  if(!TG.enabled||!nums.length) return;
+  const lines=[`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
+  nums.forEach(n=>lines.push(`  🚗 <b>${n}</b> 입차됨`));
+  await tgSend(lines.join('\n'));
+  // 현황도 이어서 전송, 해시/시각 갱신
+  const cache=localStorage.getItem(LS.cache);
+  if(!cache) return;
+  let data; try{ data=JSON.parse(cache); }catch(e){ return; }
+  localStorage.setItem(LS.tgHash, buildHash(data));
+  localStorage.setItem(LS.tgTime, String(Date.now()));
+  const sm=buildSummaryMsg(data);
+  if(sm) await tgSend(sm);
+}
+
+// ═══════════════════════════════════════════
+//  [F] 텔레그램 명령어 폴링 (30초마다)
+//  ★ offset을 localStorage로 공유 → 탭 여러 개여도 같은 메시지 한 번만 처리
+// ═══════════════════════════════════════════
+let __pollBusy=false;
+
+async function tgPoll(){
+  if(__pollBusy) return;
+  __pollBusy=true;
+  try{
+    const offset=Number(localStorage.getItem(LS.tgOffset)||0);
+    const res=await fetch(`https://api.telegram.org/bot${TG.token}/getUpdates?offset=${offset+1}&timeout=0`);
+    const json=await res.json();
+    if(!json.ok||!json.result.length){ __pollBusy=false; return; }
+
+    // offset 즉시 갱신 (다른 탭 중복 처리 방지)
+    localStorage.setItem(LS.tgOffset, String(json.result[json.result.length-1].update_id));
+
+    for(const upd of json.result){
+      const msg=upd.message;
+      if(!msg||!msg.text||String(msg.chat.id)!==String(TG.chatId)) continue;
+      const parts=msg.text.trim().split(/\s+/);
+      const cmd=parts[0].toLowerCase().replace(/^\//,'');
+
+      if(cmd==='watch'||cmd==='w'){
+        const nums=parts.slice(1).filter(p=>/^\d{4}$/.test(p));
+        if(!nums.length){ await tgSend('사용법: /watch 1234 5678'); continue; }
+        const added=[], skipped=[];
+        nums.forEach(n=>{ if(addWatch(n,true)) added.push(n); else skipped.push(n); });
+        let r=added.length?`✅ 등록: ${added.join(', ')}`:'';
+        if(skipped.length) r+=(r?'\n':'')+`⚠️ 이미 등록: ${skipped.join(', ')}`;
+        await tgSend(r||'등록 실패');
+        await tgSendWatchList();
+
+      } else if(cmd==='unwatch'||cmd==='uw'||cmd==='del'){
+        const nums=parts.slice(1).filter(p=>/^\d{4}$/.test(p));
+        if(!nums.length){ await tgSend('사용법: /unwatch 1234 5678'); continue; }
+        const removed=[], notFound=[];
+        nums.forEach(n=>{ if(watchList[n]!==undefined){ removeWatch(n,true); removed.push(n); } else notFound.push(n); });
+        let r=removed.length?`🗑 삭제: ${removed.join(', ')}`:'';
+        if(notFound.length) r+=(r?'\n':'')+`⚠️ 없는 번호: ${notFound.join(', ')}`;
+        await tgSend(r||'삭제할 번호 없음');
+        await tgSendWatchList();
+
+      } else if(cmd==='list'||cmd==='l'){
+        await tgSendWatchList();
+
+      } else if(cmd==='status'||cmd==='s'){
+        const cache=localStorage.getItem(LS.cache);
+        if(!cache){ await tgSend('데이터 없음'); continue; }
+        let d; try{ d=JSON.parse(cache); }catch(e){ continue; }
+        await tgSend(buildSummaryMsg(d)||'현재 입차 차량 없음');
+
+      } else if(cmd==='help'||cmd==='h'){
+        await tgSend(
+          `📋 <b>명령어</b>\n\n`+
+          `/watch 1234 5678  — 감시 등록\n`+
+          `/unwatch 1234     — 감시 삭제\n`+
+          `/list             — 감시 목록\n`+
+          `/status           — 차량 현황\n`+
+          `/help             — 도움말`
+        );
+      }
+    }
+  }catch(e){ console.warn('TG poll error:',e); }
+  __pollBusy=false;
+}
+
+async function tgSendWatchList(){
+  const keys=Object.keys(watchList);
+  if(!keys.length){ await tgSend('📋 감시 목록이 비어있습니다'); return; }
+  const lines=[`📋 <b>감시 차량 목록</b> (${keys.length}대)`,``];
+  keys.forEach(k=>{
+    const st=watchList[k];
+    const icon=st==='found'?'✅':st==='not-found'?'❌':'⏳';
+    lines.push(`${icon} ${k} — ${st==='found'?'입차됨':st==='not-found'?'미확인':'대기'}`);
+  });
+  await tgSend(lines.join('\n'));
+}
+
+// ═══════════════════════════════════════════
+//  [G] 화면 렌더링
+// ═══════════════════════════════════════════
+let __loading=false, __searchCount=0, __lastWeigh=null;
+const elUpdated=document.getElementById('updated');
+const elSections=document.getElementById('sections');
+const elWeighPanel=document.getElementById('weighingPanel');
+const btnRefresh=document.getElementById('btnRefresh');
+const overlay=document.getElementById('loadingOverlay');
+
+function setLoading(on,src){
+  __loading=!!on; if(btnRefresh) btnRefresh.disabled=on;
+  if(on){ if(src==='manual') overlay.classList.add('show'); elUpdated.innerHTML='<span class="mini-spinner"></span>업데이트 중…'; }
+  else overlay.classList.remove('show');
+}
+
+function render(data){
+  if(!data||!data.sections) return;
+  __searchCount=0;
+  elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
+  const plantSel=document.getElementById('plantFilter').value;
+  const q=(document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
+  const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
+  const LEFT=['제품 상차중','부자재 입차중','컨테이너 입차중'];
+  const RIGHT=['원료 하차중','원료 대기'];
+  const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
+  const allCars=[];
+
+  const buildSec=sec=>{
+    let rows=[];
+    sec.groups.forEach(g=>{
+      if(plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화'))
+        rows.push(...g.rows.filter(r=>!isMonoDigit(r.car)).map(r=>({...r,plant:g.plant})));
+    });
+    rows.forEach(r=>allCars.push(r.car));
+    if(q) rows=rows.filter(r=>{ const m=isFour?last4(r.car)===dqq:String(r.car).includes(q); if(m)__searchCount++; return m; });
+    const collapsed=collapseMap[sec.title];
+    let seq=1;
+    const rowsHTML=rows.length?rows.map((r,i)=>{
+      const sep=(plantSel==='all'&&i>0&&rows[i-1].plant!==r.plant);
+      if(sep) seq=1;
+      const watched=last4(r.car)&&watchList[last4(r.car)]!==undefined;
+      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}">
+        <td>${seq++}</td>
+        <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
+        <td>${fmtTime(r.time)}</td><td>${r.plant}</td>
+      </tr>`;
+    }).join(''):'<tr><td colspan="4" class="empty">(데이터 없음)</td></tr>';
+    const bc=rows.filter(r=>r.plant==='반월').length, sc=rows.filter(r=>r.plant==='시화').length;
+    return `<article class="card">
+      <div class="stripe ${stripeClass(sec.color)}"></div>
+      <div class="head"><h3>${sec.title}</h3>
+        <div class="head-right">
+          <div class="summary">총 ${rows.length} (반월 ${bc}, 시화 ${sc})</div>
+          <button class="btn" onclick="toggleCard('${encodeURIComponent(sec.title)}',this)">${collapsed?'펼치기':'접기'}</button>
+        </div>
+      </div>
+      <div class="body" style="${collapsed?'display:none':''}">
+        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">시간</th><th style="width:56px">공장</th></tr></thead>
+        <tbody>${rowsHTML}</tbody></table>
       </div>
     </article>`;
+  };
+
+  elSections.innerHTML=`
+    <div class="col">${LEFT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>
+    <div class="col">${RIGHT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>`;
+  syncWatch(allCars);
+
+  const badge=document.getElementById('searchSummary');
+  if(q){ badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
+  else badge.style.display='none';
+}
+
+window.toggleCard=(enc,btn)=>{
+  const t=decodeURIComponent(enc);
+  const body=btn.closest('.card').querySelector('.body');
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'';
+  btn.textContent=open?'펼치기':'접기';
+  collapseMap[t]=open; localStorage.setItem(LS.collapse,JSON.stringify(collapseMap));
+};
+
+function buildWeighTable(title,list,q){
+  const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
+  const filtered=(list||[]).filter(r=>!q||(isFour?last4(r.CARNUM||'')===dqq:(r.CARNUM||'').includes(q)));
+  const rowsHTML=filtered.length?filtered.map((r,i)=>{
+    const car=r.CARNUM||'';
+    const hit=q&&(isFour?last4(car)===dqq:car.includes(q));
+    const watched=last4(car)&&watchList[last4(car)]!==undefined;
+    return `<tr class="${watched?'watch-hit':''}">
+      <td>${i+1}</td><td class="${hit?'cell-hit':''}">${car}</td>
+      <td>${fmtTime(r.INTIME)}</td><td>${fmtTime(r.OUTIME)}</td>
+      <td>${r.TOTWEI||''}</td><td>${r.SILWEI||''}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" class="empty">(결과 없음)</td></tr>';
+  return `<article class="card">
+    <div class="stripe cyan"></div>
+    <div class="head"><h3>${title}</h3><div class="head-right"><div class="summary">총 ${filtered.length}건</div></div></div>
+    <div class="body"><table>
+      <thead><tr><th style="width:44px">No</th><th style="width:120px">차량번호</th><th style="width:74px">입차</th><th style="width:74px">출차</th><th style="width:84px">총중량</th><th style="width:84px">실중량</th></tr></thead>
+      <tbody>${rowsHTML}</tbody>
+    </table></div>
+  </article>`;
+}
+
+function renderWeigh(payload){
+  __lastWeigh=payload;
+  elUpdated.textContent=`업데이트: ${payload.updatedAt||fmtKST()}`;
+  const q=document.getElementById('searchInput').value||'';
+  elWeighPanel.innerHTML=`
+    <div class="col">${buildWeighTable('계근 조회(제품) – 반월',payload.banwol,q)}</div>
+    <div class="col">${buildWeighTable('계근 조회(제품) – 시화',payload.sihwa,q)}</div>`;
+  syncWatch([...(payload.banwol||[]),...(payload.sihwa||[])].map(r=>r.CARNUM||''));
+}
+
+// ═══════════════════════════════════════════
+//  [H] 데이터 로딩
+// ═══════════════════════════════════════════
+async function loadSnapshot(opts={source:'auto'}){
+  const src=opts.source||'auto';
+  if(__loading) return;
+  setLoading(true,src);
+  try{
+    const action=src==='manual'?'refresh_live':'snapshot_live';
+    const res=await fetch(`${SNAPSHOT_URL}?action=${action}&token=${API_TOKEN}&_ts=${Date.now()}`);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data&&data.sections){
+      localStorage.setItem(LS.cache,JSON.stringify(data));
+      if(document.getElementById('btnViewLive').classList.contains('active')) render(data);
+      if(src==='manual') showToast('업데이트됨');
+      await tgSendIfChanged(data); // ★ 변동 있을 때만 전송 (멀티탭 안전)
+    }
+  }catch(e){
+    console.error('로드 실패:',e);
+    if(opts.source==='manual') alert('데이터를 불러오지 못했습니다.');
+  }finally{ setLoading(false); }
+}
+
+async function loadWeigh(){
+  setLoading(true,'manual');
+  try{
+    const res=await fetch(`${SNAPSHOT_URL}?action=weighing_today&token=${API_TOKEN}&_ts=${Date.now()}`);
+    const data=await res.json();
+    renderWeigh(data); showToast('계근 데이터를 불러왔습니다');
+  }catch(e){ alert('계근 데이터를 불러올 수 없었습니다.'); }
+  finally{ setLoading(false); }
+}
+
+function rerenderCache(){
+  const c=localStorage.getItem(LS.cache);
+  if(c) try{ render(JSON.parse(c)); }catch(_){}
+}
+
+// ═══════════════════════════════════════════
+//  [I] 이벤트
+// ═══════════════════════════════════════════
+btnRefresh.addEventListener('click',()=>{
+  document.getElementById('btnViewLive').classList.contains('active')?loadSnapshot({source:'manual'}):loadWeigh();
+});
+document.getElementById('btnTgToggle').addEventListener('click',()=>{
+  TG.enabled=!TG.enabled;
+  const btn=document.getElementById('btnTgToggle');
+  btn.textContent=TG.enabled?'📲 알림 ON':'🔕 알림 OFF';
+  btn.style.background=TG.enabled?'':'#fee2e2';
+  btn.style.borderColor=TG.enabled?'':'#fca5a5';
+  showToast(TG.enabled?'텔레그램 알림 켜짐':'텔레그램 알림 꺼짐');
+});
+document.getElementById('plantFilter').addEventListener('change',e=>{
+  localStorage.setItem(LS.plant,e.target.value);
+  if(document.getElementById('btnViewLive').classList.contains('active')) rerenderCache();
+});
+document.getElementById('searchInput').addEventListener('input',e=>{
+  localStorage.setItem(LS.q,e.target.value);
+  if(document.getElementById('btnViewLive').classList.contains('active')) rerenderCache();
+  else if(__lastWeigh) renderWeigh(__lastWeigh);
+});
+document.getElementById('watchAddBtn').addEventListener('click',()=>{
+  const inp=document.getElementById('watchInput');
+  if(addWatch(inp.value)) inp.value='';
+  inp.focus();
+});
+document.getElementById('watchInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter') document.getElementById('watchAddBtn').click();
+});
+document.getElementById('watchClearBtn').addEventListener('click',()=>{
+  if(!Object.keys(watchList).length) return;
+  if(!confirm('감시 목록을 전부 삭제할까요?')) return;
+  Object.keys(watchList).forEach(k=>delete watchList[k]);
+  saveWatch(); renderWatchTags(); rerenderCache(); showToast('감시 목록 삭제됨');
+});
+document.getElementById('btnViewLive').addEventListener('click',()=>{
+  elWeighPanel.style.display='none'; elSections.style.display='grid';
+  document.getElementById('btnViewLive').classList.add('active');
+  document.getElementById('btnViewWeigh').classList.remove('active');
+  rerenderCache();
+});
+document.getElementById('btnViewWeigh').addEventListener('click',()=>{
+  elSections.style.display='none'; elWeighPanel.style.display='grid';
+  document.getElementById('btnViewLive').classList.remove('active');
+  document.getElementById('btnViewWeigh').classList.add('active');
+  if(!__lastWeigh) loadWeigh(); else renderWeigh(__lastWeigh);
+});
+
+// ═══════════════════════════════════════════
+//  [J] 초기화
+// ═══════════════════════════════════════════
+(function init(){
+  const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
+  const sq=localStorage.getItem(LS.q);    if(sq) document.getElementById('searchInput').value=sq;
+  renderWatchTags();
+  rerenderCache();
+  loadSnapshot({source:'auto'});
+
+  // 1분마다 갱신 → 변동 있을 때만 텔레그램 전송
+  setInterval(()=>{
+    if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
+  }, 60000);
+
+  // 텔레그램 폴링 초기화:
+  // offset이 localStorage에 없을 때만 현재 최신 ID로 초기화 (기존 메시지 재처리 방지)
+  // 이미 있으면 그대로 사용 (다른 탭이 이미 설정한 값 유지)
+  if(!localStorage.getItem(LS.tgOffset)){
+    fetch(`https://api.telegram.org/bot${TG.token}/getUpdates?offset=-1`)
+      .then(r=>r.json())
+      .then(j=>{ if(j.ok&&j.result.length) localStorage.setItem(LS.tgOffset, String(j.result[j.result.length-1].update_id)); })
+      .catch(()=>{})
+      .finally(()=>setInterval(tgPoll, 30000));
+  } else {
+    setInterval(tgPoll, 30000);
   }
-
-  function renderWeighingPanel(payload){
-    __lastWeigh=payload;
-    elUpdated.textContent=`업데이트: ${payload.updatedAt||fmtKST()}`;
-    const q=document.getElementById('searchInput').value||'';
-    elWeighPanel.innerHTML=`
-      <div class="col">${buildWeighTable('계근 조회(제품) – 반월',payload.banwol,q)}</div>
-      <div class="col">${buildWeighTable('계근 조회(제품) – 시화',payload.sihwa,q)}</div>
-    `;
-    const allNums=[...(payload.banwol||[]),...(payload.sihwa||[])].map(r=>r.CARNUM||'');
-    syncWatchStatuses(allNums);
-  }
-
-  // =========================================
-  //  데이터 로딩
-  // =========================================
-  async function loadSnapshot(opts={source:'auto'}){
-    const source=opts.source||'auto';
-    if(__loading) return;
-    setLoading(true,source);
-    try{
-      const action=(source==='manual')?'refresh_live':'snapshot_live';
-      const url=`${SNAPSHOT_URL}?action=${action}&token=${API_TOKEN}&_ts=${Date.now()}`;
-      const res=await fetch(url);
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const data=await res.json();
-      if(data&&data.sections){
-        localStorage.setItem(LS_KEYS.cache,JSON.stringify(data));
-        if(document.getElementById('btnViewLive').classList.contains('active')) render(data);
-        if(source==='manual') showToast('업데이트됨');
-        // 변동 있으면 즉시 텔레그램 전송
-        tgSendIfChanged(data);
-      }
-    }catch(e){
-      console.error('데이터 로드 실패:',e);
-      if(source==='manual') alert('데이터를 불러오지 못했습니다.');
-    }finally{ setLoading(false); }
-  }
-
-  async function loadWeighingToday(){
-    setLoading(true,'manual');
-    try{
-      const url=`${SNAPSHOT_URL}?action=weighing_today&token=${API_TOKEN}&_ts=${Date.now()}`;
-      const res=await fetch(url);
-      const data=await res.json();
-      renderWeighingPanel(data);
-      showToast('계근 데이터를 불러왔습니다');
-    }catch(e){ alert('계근 데이터를 불러올 수 없었습니다.'); }
-    finally{ setLoading(false); }
-  }
-
-  function rerenderFromCache(){
-    const cache=localStorage.getItem(LS_KEYS.cache);
-    if(cache) try{ render(JSON.parse(cache)); }catch(e){}
-  }
-
-  // =========================================
-  //  이벤트
-  // =========================================
-  btnRefresh.addEventListener('click',()=>{
-    if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'manual'});
-    else loadWeighingToday();
-  });
-
-  document.getElementById('btnTgToggle').addEventListener('click', ()=>{
-    TG.enabled = !TG.enabled;
-    const btn = document.getElementById('btnTgToggle');
-    btn.textContent = TG.enabled ? '📲 알림 ON' : '🔕 알림 OFF';
-    btn.style.background = TG.enabled ? '' : '#fee2e2';
-    btn.style.borderColor = TG.enabled ? '' : '#fca5a5';
-    showToast(TG.enabled ? '텔레그램 알림 켜짐' : '텔레그램 알림 꺼짐');
-  });
-  document.getElementById('plantFilter').addEventListener('change',e=>{
-    localStorage.setItem(LS_KEYS.plant,e.target.value);
-    if(document.getElementById('btnViewLive').classList.contains('active')) rerenderFromCache();
-  });
-  document.getElementById('searchInput').addEventListener('input',e=>{
-    localStorage.setItem(LS_KEYS.q,e.target.value);
-    if(document.getElementById('btnViewLive').classList.contains('active')) rerenderFromCache();
-    else if(__lastWeigh) renderWeighingPanel(__lastWeigh);
-  });
-  document.getElementById('btnViewLive').addEventListener('click',()=>{
-    elWeighPanel.style.display='none'; elSections.style.display='grid';
-    document.getElementById('btnViewLive').classList.add('active');
-    document.getElementById('btnViewWeigh').classList.remove('active');
-    rerenderFromCache();
-  });
-  document.getElementById('btnViewWeigh').addEventListener('click',()=>{
-    elSections.style.display='none'; elWeighPanel.style.display='grid';
-    document.getElementById('btnViewLive').classList.remove('active');
-    document.getElementById('btnViewWeigh').classList.add('active');
-    if(!__lastWeigh) loadWeighingToday(); else renderWeighingPanel(__lastWeigh);
-  });
-
-  // =========================================
-  //  초기화
-  // =========================================
-  (function init(){
-    const savedPlant=localStorage.getItem(LS_KEYS.plant);
-    if(savedPlant) document.getElementById('plantFilter').value=savedPlant;
-    const savedQ=localStorage.getItem(LS_KEYS.q);
-    if(savedQ) document.getElementById('searchInput').value=savedQ;
-    rerenderFromCache();
-    loadSnapshot({source:'auto'});
-
-    // 1분마다 자동 데이터 갱신 → 변동 시 텔레그램 즉시 전송
-    setInterval(()=>{
-      if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
-    },60000);
-
-    // 시작 3초 후 첫 전송
-    setTimeout(()=>{ tgSendIfChanged(JSON.parse(localStorage.getItem(LS_KEYS.cache)||'null')); }, 3000);
-  })();
-  </script>
+})();
+</script>
 </body>
 </html>
