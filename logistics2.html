@@ -20,7 +20,6 @@
   }
   .wrap{ max-width:980px; margin:24px auto; padding:0 16px }
 
-  /* 헤더 스타일 */
   .header{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
             box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
   .title{ margin:0; font-size:20px; letter-spacing:-.2px }
@@ -31,20 +30,17 @@
   .badges{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px }
   .badge{ background:var(--badge); border:1px solid #d9e2ff; border-radius:999px; padding:3px 8px; font-size:12px }
 
-  /* 툴바 */
   .toolbar{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap }
   .btn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 12px; font-size:13px; cursor:pointer; }
   .btn[disabled]{ opacity:.55; cursor:not-allowed }
   .btn:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) }
   .input,.select{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; font-size:13px }
 
-  /* 뷰 전환 탭 */
   .view-toggle{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden }
   .view-toggle .tbtn{ border:0; background:#fff; padding:8px 12px; font-size:13px; cursor:pointer }
   .view-toggle .tbtn + .tbtn{ border-left:1px solid var(--line) }
   .view-toggle .tbtn.active{ background:var(--brand); color:#fff }
 
-  /* 그리드 레이아웃 */
   .grid{ display:grid; grid-template-columns:1fr; gap:14px }
   .col{ display:grid; gap:14px }
   @media (min-width:900px){ .grid{ grid-template-columns:1fr 1fr } }
@@ -53,7 +49,6 @@
     .wrap{ padding-bottom:16px }
   }
 
-  /* 카드 디자인 */
   .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
   .stripe{ height:4px }
   .stripe.cyan{ background:var(--cyan) }
@@ -63,22 +58,86 @@
   .head-right{ display:flex; align-items:center; gap:8px }
   .summary{ padding:8px 14px; color:var(--muted); border-bottom:1px solid var(--line); font-size:12.5px }
 
-  /* 테이블 디자인 */
   table{ width:100%; border-collapse:separate; border-spacing:0 }
   thead th{ position:sticky; top:0; background:#fafbfd; border-bottom:1px solid var(--line); color:#333; font-weight:600; z-index:10; }
   th,td{ padding:8px 10px; text-align:center }
   tbody tr:nth-child(odd){ background:#fcfcfe }
   tbody td{ border-bottom:1px solid #f1f1f4 }
   .empty{ padding:18px 14px; color:var(--muted) }
-  
-  /* 공장 구분선 (기존 로직 유지) */
+
   tbody tr.plant-sep td{ border-top:2px solid #ff6b6b }
   td.cell-hit{ background:#fff2cc !important }
   .badge.search-pill{ background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px }
 
-  /* 알림 및 로딩 오버레이 */
+  /* ===== 감시 차량 강조 ===== */
+  tbody tr.watch-hit td{
+    background:#d4edda !important;
+    font-weight:600;
+  }
+  tbody tr.watch-hit:nth-child(odd) td{ background:#c3e6cb !important; }
+
+  /* 감시 패널 */
+  .watch-panel{
+    background:var(--card); border:1px solid #d9e2ff; border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:14px 16px; margin-bottom:14px;
+    border-left:4px solid var(--brand);
+  }
+  .watch-panel-title{
+    font-size:13px; font-weight:600; color:#333; margin:0 0 10px 0;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  }
+  .watch-panel-title .hint{
+    font-size:11.5px; color:var(--muted); font-weight:normal;
+    background:#f0f3f7; border-radius:6px; padding:2px 7px;
+  }
+  .watch-input-row{
+    display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center;
+  }
+  .watch-input{
+    border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:7px 10px; font-size:14px; width:110px; letter-spacing:2px;
+    text-align:center; font-weight:600;
+  }
+  .watch-input:focus{ outline:none; border-color:var(--brand); box-shadow:0 0 0 2px rgba(15,98,254,.12) }
+  .watch-add-btn{
+    appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff;
+    border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600;
+  }
+  .watch-add-btn:hover{ background:#0353e9 }
+  .watch-clear-btn{
+    appearance:none; border:1px solid #ddd; background:#fff; color:#888;
+    border-radius:10px; padding:7px 10px; font-size:12px; cursor:pointer;
+  }
+  .watch-tags-row{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:28px;
+  }
+  .watch-empty-hint{ color:var(--muted); font-size:12.5px }
+
+  /* 태그 배지 */
+  .watch-tag{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:4px 10px 4px 8px; border-radius:999px; font-size:13px;
+    border:1.5px solid; font-weight:600; transition:transform .1s;
+  }
+  .watch-tag.found{ background:#d4edda; border-color:#82c89a; color:#155724; }
+  .watch-tag.not-found{ background:#f8d7da; border-color:#f1a8ae; color:#721c24; }
+  .watch-tag.pending{ background:#fff3cd; border-color:#ffc107; color:#856404; }
+  .watch-tag .tag-status{ font-size:11px; font-weight:normal; opacity:.8 }
+  .watch-tag .remove-btn{
+    background:none; border:none; padding:0; cursor:pointer;
+    font-size:14px; line-height:1; opacity:.5; margin-left:2px;
+  }
+  .watch-tag .remove-btn:hover{ opacity:1 }
+
+  @keyframes watchPulse{
+    0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(40,167,69,.6) }
+    50%{ transform:scale(1.08); box-shadow:0 0 0 6px rgba(40,167,69,0) }
+    100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(40,167,69,0) }
+  }
+  .watch-tag.pulse{ animation:watchPulse .5s ease-out }
+
   .toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111; color:#fff;
-            padding:8px 12px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10000; }
+            padding:8px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10000; font-size:13px; }
   .toast.show{ opacity:1 }
   .overlay{ position:fixed; inset:0; background:rgba(17,24,39,.35); display:flex; align-items:center; justify-content:center; z-index:9999;
              opacity:0; pointer-events:none; transition:opacity .2s; }
@@ -90,10 +149,9 @@
 
   #weighingPanel{ max-height:70vh; overflow:auto }
 
-  /* 인쇄 설정 */
   @media print{
     body{ background:#fff }
-    .btn,.toast,.overlay,.toolbar{ display:none }
+    .btn,.toast,.overlay,.toolbar,.watch-panel{ display:none }
     .wrap{ max-width:1000px; margin:0; padding:0 }
     .header{ box-shadow:none; border:none }
     .grid{ grid-template-columns:1fr 1fr }
@@ -106,33 +164,47 @@
     <section class="header">
       <h1 class="title">공장 내 차량 현황</h1>
       <p class="subtitle" id="updated">업데이트 준비 중…</p>
-
       <div class="badges">
         <span class="badge">신대양제지 반월/시화</span>
         <span class="badge">계근 기준</span>
       </div>
-
       <div class="toolbar">
         <select id="plantFilter" class="select" title="공장 필터">
           <option value="all">전체</option>
           <option value="banwol">반월만</option>
           <option value="sihwa">시화만</option>
         </select>
-
         <button class="btn" id="btnRefresh">새로고침</button>
-
         <div class="view-toggle" role="tablist">
           <button class="tbtn active" id="btnViewLive" role="tab" aria-selected="true">입차 조회</button>
           <button class="tbtn" id="btnViewWeigh" role="tab" aria-selected="false">계근 조회(제품)</button>
         </div>
-
         <input id="searchInput" class="input" placeholder="차량번호 검색" />
         <span id="searchSummary" class="badge search-pill" style="display:none"></span>
       </div>
     </section>
 
-    <section class="grid" id="weighingPanel" style="display:none"></section>
+    <!-- 감시 차량 패널 (휘발성 – 메모리만 사용) -->
+    <section class="watch-panel" id="watchPanel">
+      <div class="watch-panel-title">
+        🔍 감시 차량 등록
+        <span class="hint">F5 또는 재접속 시 자동 삭제됩니다</span>
+      </div>
+      <div class="watch-input-row">
+        <input
+          type="text" id="watchInput" class="watch-input"
+          placeholder="0000" maxlength="4"
+          pattern="\d{4}" inputmode="numeric"
+        />
+        <button class="watch-add-btn" id="watchAddBtn">+ 등록</button>
+        <button class="watch-clear-btn" id="watchClearBtn">전체 삭제</button>
+      </div>
+      <div class="watch-tags-row" id="watchTagsRow">
+        <span class="watch-empty-hint" id="watchEmptyHint">4자리 입력 후 등록하면 새로고침 시 음영으로 표시됩니다</span>
+      </div>
+    </section>
 
+    <section class="grid" id="weighingPanel" style="display:none"></section>
     <section class="grid" id="sections"></section>
   </div>
 
@@ -145,171 +217,267 @@
   <div class="toast" id="toast">업데이트됨</div>
 
   <script>
-  // ========= [1. 설정 및 변수] =========
+  // =========================================
+  //  설정
+  // =========================================
   const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxdBZrktJQPeQ-0j6bY5b_MGxDeyy0IagJyUWdU9F6tvtxmkZ38H66BjbilLd_2G_9M/exec';
   const API_TOKEN = 'DY_SCALE';
-  const LS_KEYS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.search', cache: 'snapshot.cache' };
+  const LS_KEYS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.search', cache:'snapshot.cache' };
 
   let __loading = false;
   let __searchCount = 0;
   let __lastWeigh = null;
-  const collapseMap = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse)||'{}'); }catch(_){return{};}})();
+  const collapseMap = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_KEYS.collapse)||'{}'); }catch(_){return{};} })();
 
-  // DOM 참조
-  const elUpdated = document.getElementById('updated');
-  const elSections = document.getElementById('sections');
-  const elWeighPanel = document.getElementById('weighingPanel');
-  const btnRefresh = document.getElementById('btnRefresh');
-  const toast = document.getElementById('toast');
-  const overlay = document.getElementById('loadingOverlay');
+  // =========================================
+  //  감시 차량 – 메모리 전용 (휘발성)
+  //  구조: watchList['1234'] = { status: 'pending'|'found'|'not-found' }
+  // =========================================
+  const watchList = {};
 
-  // ========= [2. 유틸리티 함수] =========
-  function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4? d.slice(-4):''; }
+  function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4 ? d.slice(-4) : ''; }
   function isMonoDigitPlate(s){ const d=String(s||'').replace(/\D+/g,''); if(d.length<4) return false; return d.split('').every(ch=>ch===d[0]); }
-  
-  function fmtTimeDisplay(raw){
-    if (raw == null) return '';
-    const s0 = String(raw).trim(); if(!s0) return '';
-    const mHM = s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
-    if (mHM) return `${mHM[1].padStart(2,'0')}:${mHM[2]}`;
-    const digits = s0.replace(/\D/g,'');
-    if (digits.length >= 4) return `${digits.slice(0,2)}:${digits.slice(2,4)}`;
-    return s0;
+
+  // 감시 태그 UI 렌더
+  function renderWatchTags(){
+    const row = document.getElementById('watchTagsRow');
+    const hint = document.getElementById('watchEmptyHint');
+    const keys = Object.keys(watchList);
+    if(keys.length === 0){
+      row.innerHTML = '';
+      row.appendChild(hint);
+      hint.style.display = '';
+      return;
+    }
+    hint.style.display = 'none';
+    row.innerHTML = keys.map(k => {
+      const st = watchList[k];
+      let cls = 'pending', icon = '⏳', label = '대기';
+      if(st === 'found')     { cls='found';     icon='✅'; label='입차됨'; }
+      if(st === 'not-found') { cls='not-found'; icon='❌'; label='미확인'; }
+      return `<span class="watch-tag ${cls}" id="wtag-${k}">
+        ${icon} <strong>${k}</strong>
+        <span class="tag-status">${label}</span>
+        <button class="remove-btn" onclick="removeWatch('${k}')" title="삭제">✕</button>
+      </span>`;
+    }).join('');
   }
 
-  function fmtKST(ts){
-    const d = (ts instanceof Date) ? ts : new Date(ts||Date.now());
-    const k = new Date(d.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-    const Y=k.getFullYear(), M=String(k.getMonth()+1).padStart(2,'0'), D=String(k.getDate()).padStart(2,'0');
-    const h=String(k.getHours()).padStart(2,'0'), m=String(k.getMinutes()).padStart(2,'0'), s=String(k.getSeconds()).padStart(2,'0');
-    return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  // 등록
+  function addWatch(num){
+    const clean = String(num).replace(/\D/g,'').slice(-4);
+    if(clean.length !== 4){ showToast('4자리 숫자를 입력하세요'); return false; }
+    if(watchList[clean] !== undefined){ showToast(`${clean} 은 이미 등록됨`); return false; }
+    watchList[clean] = 'pending';
+    renderWatchTags();
+    showToast(`${clean} 등록 완료`);
+    return true;
   }
 
-  function showToast(msg){ toast.textContent = msg || '완료'; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1200); }
-  function stripeClass(c){ c=String(c||'').toLowerCase(); return c.includes('00ff00')?'green':'cyan'; }
-  
-  function setLoading(on, src){ 
-    __loading = !!on; 
-    if(btnRefresh) btnRefresh.disabled = on;
-    if(on){ 
-      if(src==='manual') overlay.classList.add('show');
-      elUpdated.innerHTML='<span class="mini-spinner"></span>업데이트 중…';
-    } else { 
-      overlay.classList.remove('show'); 
+  // 삭제
+  window.removeWatch = function(num){
+    delete watchList[num];
+    renderWatchTags();
+    // 화면에서도 강조 제거 (재렌더 없이 즉시 반영)
+    document.querySelectorAll(`tr.watch-hit`).forEach(tr => {
+      const carCell = tr.querySelector('td:nth-child(2)');
+      if(carCell && last4(carCell.textContent) === num) tr.classList.remove('watch-hit');
+    });
+  };
+
+  // 새로고침 후 전체 차량 번호와 감시 목록 비교 → 상태 업데이트
+  function syncWatchStatuses(allCarNums){
+    if(Object.keys(watchList).length === 0) return;
+    const found = new Set(allCarNums.map(c => last4(c)).filter(Boolean));
+    let anyChange = false;
+    Object.keys(watchList).forEach(k => {
+      const ns = found.has(k) ? 'found' : 'not-found';
+      if(watchList[k] !== ns){ watchList[k] = ns; anyChange = true; }
+    });
+    if(anyChange){
+      renderWatchTags();
+      // 발견된 태그 펄스
+      Object.keys(watchList).filter(k=>watchList[k]==='found').forEach(k=>{
+        const el=document.getElementById(`wtag-${k}`);
+        if(el){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
+      });
     }
   }
 
-  // ========= [3. 입차 조회(라이브) 렌더링 로직] =========
+  // DOM
+  const elUpdated  = document.getElementById('updated');
+  const elSections = document.getElementById('sections');
+  const elWeighPanel = document.getElementById('weighingPanel');
+  const btnRefresh = document.getElementById('btnRefresh');
+  const toast      = document.getElementById('toast');
+  const overlay    = document.getElementById('loadingOverlay');
+
+  // 감시 입력 이벤트
+  document.getElementById('watchAddBtn').addEventListener('click', ()=>{
+    const inp = document.getElementById('watchInput');
+    if(addWatch(inp.value)) inp.value = '';
+    inp.focus();
+  });
+  document.getElementById('watchInput').addEventListener('keydown', e=>{
+    if(e.key==='Enter') document.getElementById('watchAddBtn').click();
+  });
+  document.getElementById('watchClearBtn').addEventListener('click', ()=>{
+    if(!Object.keys(watchList).length) return;
+    if(!confirm('감시 목록을 전부 삭제할까요?')) return;
+    Object.keys(watchList).forEach(k=>delete watchList[k]);
+    renderWatchTags();
+    rerenderFromCache();
+    showToast('감시 목록 삭제됨');
+  });
+
+  // =========================================
+  //  유틸
+  // =========================================
+  function fmtTimeDisplay(raw){
+    if(raw==null) return '';
+    const s0=String(raw).trim(); if(!s0) return '';
+    const mHM=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+    if(mHM) return `${mHM[1].padStart(2,'0')}:${mHM[2]}`;
+    const digits=s0.replace(/\D/g,'');
+    if(digits.length>=4) return `${digits.slice(0,2)}:${digits.slice(2,4)}`;
+    return s0;
+  }
+  function fmtKST(ts){
+    const d=(ts instanceof Date)?ts:new Date(ts||Date.now());
+    const k=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const Y=k.getFullYear(),M=String(k.getMonth()+1).padStart(2,'0'),D=String(k.getDate()).padStart(2,'0');
+    const h=String(k.getHours()).padStart(2,'0'),m=String(k.getMinutes()).padStart(2,'0'),s=String(k.getSeconds()).padStart(2,'0');
+    return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  }
+  function showToast(msg){ toast.textContent=msg||'완료'; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
+  function stripeClass(c){ c=String(c||'').toLowerCase(); return c.includes('00ff00')?'green':'cyan'; }
+  function setLoading(on,src){
+    __loading=!!on;
+    if(btnRefresh) btnRefresh.disabled=on;
+    if(on){
+      if(src==='manual') overlay.classList.add('show');
+      elUpdated.innerHTML='<span class="mini-spinner"></span>업데이트 중…';
+    } else { overlay.classList.remove('show'); }
+  }
+
+  // =========================================
+  //  입차 조회 렌더
+  // =========================================
   function render(data){
-    if(!data || !data.sections) return;
-    __searchCount = 0;
-    elUpdated.textContent = `업데이트: ${data.updatedAt || '-'}`;
+    if(!data||!data.sections) return;
+    __searchCount=0;
+    elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
 
-    const plantSel = document.getElementById('plantFilter').value;
-    const q = (document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
-    const dqq = q.replace(/\D/g,'');
-    const isFour = /^\d{4}$/.test(dqq);
-    const ctx = { plantSel, qq: q, dqq, isFour };
+    const plantSel=document.getElementById('plantFilter').value;
+    const q=(document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
+    const dqq=q.replace(/\D/g,'');
+    const isFour=/^\d{4}$/.test(dqq);
+    const ctx={plantSel,qq:q,dqq,isFour};
 
-    const LEFT_TITLES  = ['제품 상차중', '부자재 입차중', '컨테이너 입차중'];
-    const RIGHT_TITLES = ['원료 하차중', '원료 대기'];
-    
-    const byTitle = Object.fromEntries(data.sections.map(s => [s.title, s]));
-    const leftArr  = LEFT_TITLES.map(t => byTitle[t]).filter(Boolean);
-    const rightArr = RIGHT_TITLES.map(t => byTitle[t]).filter(Boolean);
+    const LEFT_TITLES  = ['제품 상차중','부자재 입차중','컨테이너 입차중'];
+    const RIGHT_TITLES = ['원료 하차중','원료 대기'];
+    const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
+    const leftArr =LEFT_TITLES.map(t=>byTitle[t]).filter(Boolean);
+    const rightArr=RIGHT_TITLES.map(t=>byTitle[t]).filter(Boolean);
 
-    const buildSectionHTML = (sec) => {
-      const title = sec.title;
-      let merged = [];
-      // 공장 필터링 및 데이터 통합
-      sec.groups.forEach(g => {
-        if(plantSel === 'all' || (plantSel === 'banwol' && g.plant === '반월') || (plantSel === 'sihwa' && g.plant === '시화')){
-          // 모노디지트(가짜번호) 제외 로직 포함
-          merged.push(...g.rows.filter(r => !isMonoDigitPlate(r.car)).map(r => ({...r, plant: g.plant})));
+    // 전체 차량 번호 수집용
+    const allCarNums=[];
+
+    const buildSectionHTML=(sec)=>{
+      const title=sec.title;
+      let merged=[];
+      sec.groups.forEach(g=>{
+        if(plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화')){
+          merged.push(...g.rows.filter(r=>!isMonoDigitPlate(r.car)).map(r=>({...r,plant:g.plant})));
         }
       });
+      // 전체 차량 수집 (필터 전)
+      merged.forEach(r=>allCarNums.push(r.car));
 
-      // 검색어 필터링
-      if(ctx.qq) {
-        merged = merged.filter(r => {
-          const match = ctx.isFour ? last4(r.car) === ctx.dqq : String(r.car).includes(ctx.qq);
+      if(ctx.qq){
+        merged=merged.filter(r=>{
+          const match=ctx.isFour?last4(r.car)===ctx.dqq:String(r.car).includes(ctx.qq);
           if(match) __searchCount++;
           return match;
         });
       }
 
-      const isCollapsed = collapseMap[title];
-      let seq = 1;
-      const rowsHTML = merged.length ? merged.map((r, i) => {
-        // 공장 구분선(빨간선) 로직
-        const isSep = (plantSel==='all' && i>0 && merged[i-1].plant !== r.plant);
-        return `
-          <tr class="${isSep ? 'plant-sep' : ''}">
-            <td>${seq++}</td>
-            <td class="${ctx.isFour && last4(r.car)===ctx.dqq ? 'cell-hit':''}">${r.car}</td>
-            <td>${fmtTimeDisplay(r.time)}</td>
-            <td>${r.plant}</td>
-          </tr>`;
+      const isCollapsed=collapseMap[title];
+      let seq=1;
+      const rowsHTML=merged.length ? merged.map((r,i)=>{
+        const isSep=(plantSel==='all'&&i>0&&merged[i-1].plant!==r.plant);
+        if(isSep) seq=1;
+        const wNum=last4(r.car);
+        const isWatched=wNum&&watchList[wNum]!==undefined;
+        return `<tr class="${[isSep?'plant-sep':'', isWatched?'watch-hit':''].filter(Boolean).join(' ')}">
+          <td>${seq++}</td>
+          <td class="${ctx.isFour&&last4(r.car)===ctx.dqq?'cell-hit':''}">${r.car}</td>
+          <td>${fmtTimeDisplay(r.time)}</td>
+          <td>${r.plant}</td>
+        </tr>`;
       }).join('') : '<tr><td colspan="4" class="empty">(데이터 없음)</td></tr>';
 
-      const bcnt = merged.filter(r=>r.plant==='반월').length;
-      const scnt = merged.filter(r=>r.plant==='시화').length;
-
-      return `
-        <article class="card">
-          <div class="stripe ${stripeClass(sec.color)}"></div>
-          <div class="head">
-            <h3>${title}</h3>
-            <div class="head-right">
-              <div class="summary">총 ${merged.length} (반월 ${bcnt}, 시화 ${scnt})</div>
-              <button class="btn" onclick="toggleCard('${encodeURIComponent(title)}', this)">${isCollapsed?'펼치기':'접기'}</button>
-            </div>
+      const bcnt=merged.filter(r=>r.plant==='반월').length;
+      const scnt=merged.filter(r=>r.plant==='시화').length;
+      return `<article class="card">
+        <div class="stripe ${stripeClass(sec.color)}"></div>
+        <div class="head">
+          <h3>${title}</h3>
+          <div class="head-right">
+            <div class="summary">총 ${merged.length} (반월 ${bcnt}, 시화 ${scnt})</div>
+            <button class="btn" onclick="toggleCard('${encodeURIComponent(title)}',this)">${isCollapsed?'펼치기':'접기'}</button>
           </div>
-          <div class="body" style="${isCollapsed?'display:none':''}">
-            <table>
-              <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">시간</th><th style="width:56px">공장</th></tr></thead>
-              <tbody>${rowsHTML}</tbody>
-            </table>
-          </div>
-        </article>`;
+        </div>
+        <div class="body" style="${isCollapsed?'display:none':''}">
+          <table>
+            <thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">시간</th><th style="width:56px">공장</th></tr></thead>
+            <tbody>${rowsHTML}</tbody>
+          </table>
+        </div>
+      </article>`;
     };
 
-    elSections.innerHTML = `
+    elSections.innerHTML=`
       <div class="col">${leftArr.map(buildSectionHTML).join('')}</div>
       <div class="col">${rightArr.map(buildSectionHTML).join('')}</div>
     `;
 
-    const badge = document.getElementById('searchSummary');
-    if (ctx.qq) { badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
-    else { badge.style.display='none'; }
+    // 감시 상태 동기화
+    syncWatchStatuses(allCarNums);
+
+    const badge=document.getElementById('searchSummary');
+    if(ctx.qq){ badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
+    else{ badge.style.display='none'; }
   }
 
-  window.toggleCard = (titleEnc, btn) => {
-    const title = decodeURIComponent(titleEnc);
-    const body = btn.closest('.card').querySelector('.body');
-    const isNowOpen = body.style.display !== 'none';
-    body.style.display = isNowOpen ? 'none' : '';
-    btn.textContent = isNowOpen ? '펼치기' : '접기';
-    collapseMap[title] = isNowOpen;
-    localStorage.setItem(LS_KEYS.collapse, JSON.stringify(collapseMap));
+  window.toggleCard=(titleEnc,btn)=>{
+    const title=decodeURIComponent(titleEnc);
+    const body=btn.closest('.card').querySelector('.body');
+    const isNowOpen=body.style.display!=='none';
+    body.style.display=isNowOpen?'none':'';
+    btn.textContent=isNowOpen?'펼치기':'접기';
+    collapseMap[title]=isNowOpen;
+    localStorage.setItem(LS_KEYS.collapse,JSON.stringify(collapseMap));
   };
 
-  // ========= [4. 계근 조회(제품) 렌더링 로직] =========
-  function buildWeighTable(title, list, query){
-    const q = String(query||'').trim().replace(/\s+/g,'');
-    const dqq = q.replace(/\D/g,'');
-    const isFour = /^\d{4}$/.test(dqq);
-
-    const filtered = (list || []).filter(r => {
+  // =========================================
+  //  계근 조회 렌더
+  // =========================================
+  function buildWeighTable(title,list,query){
+    const q=String(query||'').trim().replace(/\s+/g,'');
+    const dqq=q.replace(/\D/g,'');
+    const isFour=/^\d{4}$/.test(dqq);
+    const filtered=(list||[]).filter(r=>{
       if(!q) return true;
-      const car = String(r.CARNUM||'');
-      return isFour ? last4(car) === dqq : car.includes(q);
+      const car=String(r.CARNUM||'');
+      return isFour?last4(car)===dqq:car.includes(q);
     });
-
-    const rowsHTML = filtered.length ? filtered.map((r, i) => {
-      const car = r.CARNUM || '';
-      const isHit = q && (isFour ? last4(car)===dqq : car.includes(q));
-      return `<tr>
+    const rowsHTML=filtered.length?filtered.map((r,i)=>{
+      const car=r.CARNUM||'';
+      const isHit=q&&(isFour?last4(car)===dqq:car.includes(q));
+      const wNum=last4(car);
+      const isWatched=wNum&&watchList[wNum]!==undefined;
+      return `<tr class="${isWatched?'watch-hit':''}">
         <td>${i+1}</td>
         <td class="${isHit?'cell-hit':''}">${car}</td>
         <td>${fmtTimeDisplay(r.INTIME)}</td>
@@ -317,150 +485,117 @@
         <td>${r.TOTWEI||''}</td>
         <td>${r.SILWEI||''}</td>
       </tr>`;
-    }).join('') : '<tr><td colspan="6" class="empty">(결과 없음)</td></tr>';
-
-    return `
-      <article class="card">
-        <div class="stripe cyan"></div>
-        <div class="head">
-          <h3>${title}</h3>
-          <div class="head-right"><div class="summary">총 ${filtered.length}건</div></div>
-        </div>
-        <div class="body">
-          <table>
-            <thead>
-              <tr><th style="width:44px">No</th><th style="width:120px">차량번호</th><th style="width:74px">입차</th><th style="width:74px">출차</th><th style="width:84px">총중량</th><th style="width:84px">실중량</th></tr>
-            </thead>
-            <tbody>${rowsHTML}</tbody>
-          </table>
-        </div>
-      </article>`;
+    }).join(''):'<tr><td colspan="6" class="empty">(결과 없음)</td></tr>';
+    return `<article class="card">
+      <div class="stripe cyan"></div>
+      <div class="head">
+        <h3>${title}</h3>
+        <div class="head-right"><div class="summary">총 ${filtered.length}건</div></div>
+      </div>
+      <div class="body">
+        <table>
+          <thead><tr><th style="width:44px">No</th><th style="width:120px">차량번호</th><th style="width:74px">입차</th><th style="width:74px">출차</th><th style="width:84px">총중량</th><th style="width:84px">실중량</th></tr></thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      </div>
+    </article>`;
   }
 
   function renderWeighingPanel(payload){
-    __lastWeigh = payload;
-    elUpdated.textContent = `업데이트: ${payload.updatedAt || fmtKST()}`;
-    const q = (document.getElementById('searchInput').value || '');
-    elWeighPanel.innerHTML = `
-      <div class="col">${buildWeighTable('계근 조회(제품) – 반월', payload.banwol, q)}</div>
-      <div class="col">${buildWeighTable('계근 조회(제품) – 시화', payload.sihwa, q)}</div>
+    __lastWeigh=payload;
+    elUpdated.textContent=`업데이트: ${payload.updatedAt||fmtKST()}`;
+    const q=document.getElementById('searchInput').value||'';
+    elWeighPanel.innerHTML=`
+      <div class="col">${buildWeighTable('계근 조회(제품) – 반월',payload.banwol,q)}</div>
+      <div class="col">${buildWeighTable('계근 조회(제품) – 시화',payload.sihwa,q)}</div>
     `;
+    const allNums=[...(payload.banwol||[]),...(payload.sihwa||[])].map(r=>r.CARNUM||'');
+    syncWatchStatuses(allNums);
   }
 
-  // ========= [5. 데이터 로딩 통신 로직] =========
-// loadSnapshot 함수 전체 교체
-async function loadSnapshot(opts = { source: 'auto' }) {
-  const source = opts.source || 'auto';
-  if (__loading) return;
-  
-  // 수동 갱신일 때만 전체 화면 오버레이 표시
-  setLoading(true, source);
-
-  try {
-    const action = (source === 'manual') ? 'refresh_live' : 'snapshot_live';
-    const url = `${SNAPSHOT_URL}?action=${action}&token=${API_TOKEN}&_ts=${Date.now()}`;
-    
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    
-    if (data && data.sections) {
-      localStorage.setItem(LS_KEYS.cache, JSON.stringify(data));
-      // 현재 '입차 조회' 탭일 때만 렌더링 수행
-      if (document.getElementById('btnViewLive').classList.contains('active')) {
-        render(data);
+  // =========================================
+  //  데이터 로딩
+  // =========================================
+  async function loadSnapshot(opts={source:'auto'}){
+    const source=opts.source||'auto';
+    if(__loading) return;
+    setLoading(true,source);
+    try{
+      const action=(source==='manual')?'refresh_live':'snapshot_live';
+      const url=`${SNAPSHOT_URL}?action=${action}&token=${API_TOKEN}&_ts=${Date.now()}`;
+      const res=await fetch(url);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(data&&data.sections){
+        localStorage.setItem(LS_KEYS.cache,JSON.stringify(data));
+        if(document.getElementById('btnViewLive').classList.contains('active')) render(data);
+        if(source==='manual') showToast('업데이트됨');
       }
-      if(source === 'manual') showToast('업데이트됨');
-    }
-  } catch (e) {
-    console.error('데이터 로드 실패:', e);
-    // 자동 갱신 실패 시에는 에러 메시지를 띄우지 않음 (사용자 방해 금지)
-    if(source === 'manual') alert('데이터를 불러오지 못했습니다.');
-  } finally {
-    setLoading(false);
+    }catch(e){
+      console.error('데이터 로드 실패:',e);
+      if(source==='manual') alert('데이터를 불러오지 못했습니다.');
+    }finally{ setLoading(false); }
   }
-}
 
-  async function loadWeighingToday() {
-    setLoading(true, 'manual');
-    try {
-      const url = `${SNAPSHOT_URL}?action=weighing_today&token=${API_TOKEN}&_ts=${Date.now()}`;
-      const res = await fetch(url);
-      const data = await res.json();
+  async function loadWeighingToday(){
+    setLoading(true,'manual');
+    try{
+      const url=`${SNAPSHOT_URL}?action=weighing_today&token=${API_TOKEN}&_ts=${Date.now()}`;
+      const res=await fetch(url);
+      const data=await res.json();
       renderWeighingPanel(data);
       showToast('계근 데이터를 불러왔습니다');
-    } catch(e) { 
-      alert('계근 데이터를 불러올 수 없었습니다.'); 
-    } finally { 
-      setLoading(false); 
-    }
+    }catch(e){ alert('계근 데이터를 불러올 수 없었습니다.'); }
+    finally{ setLoading(false); }
   }
 
-  function rerenderFromCache() {
-    const cache = localStorage.getItem(LS_KEYS.cache);
-    if (cache) try { render(JSON.parse(cache)); } catch(e) {}
+  function rerenderFromCache(){
+    const cache=localStorage.getItem(LS_KEYS.cache);
+    if(cache) try{ render(JSON.parse(cache)); }catch(e){}
   }
 
-  // ========= [6. 이벤트 제어 로직] =========
-  btnRefresh.addEventListener('click', () => {
-    if (document.getElementById('btnViewLive').classList.contains('active')) {
-      loadSnapshot({ source: 'manual' });
-    } else {
-      loadWeighingToday();
-    }
+  // =========================================
+  //  이벤트
+  // =========================================
+  btnRefresh.addEventListener('click',()=>{
+    if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'manual'});
+    else loadWeighingToday();
   });
-
-  document.getElementById('plantFilter').addEventListener('change', (e) => {
-    localStorage.setItem(LS_KEYS.plant, e.target.value);
-    if (document.getElementById('btnViewLive').classList.contains('active')) rerenderFromCache();
+  document.getElementById('plantFilter').addEventListener('change',e=>{
+    localStorage.setItem(LS_KEYS.plant,e.target.value);
+    if(document.getElementById('btnViewLive').classList.contains('active')) rerenderFromCache();
   });
-
-  document.getElementById('searchInput').addEventListener('input', (e) => {
-    const val = e.target.value;
-    localStorage.setItem(LS_KEYS.q, val);
-    if (document.getElementById('btnViewLive').classList.contains('active')) {
-      rerenderFromCache();
-    } else if (__lastWeigh) {
-      renderWeighingPanel(__lastWeigh);
-    }
+  document.getElementById('searchInput').addEventListener('input',e=>{
+    localStorage.setItem(LS_KEYS.q,e.target.value);
+    if(document.getElementById('btnViewLive').classList.contains('active')) rerenderFromCache();
+    else if(__lastWeigh) renderWeighingPanel(__lastWeigh);
   });
-
-  document.getElementById('btnViewLive').addEventListener('click', () => {
-    elWeighPanel.style.display = 'none';
-    elSections.style.display = 'grid';
+  document.getElementById('btnViewLive').addEventListener('click',()=>{
+    elWeighPanel.style.display='none'; elSections.style.display='grid';
     document.getElementById('btnViewLive').classList.add('active');
     document.getElementById('btnViewWeigh').classList.remove('active');
     rerenderFromCache();
   });
-
-  document.getElementById('btnViewWeigh').addEventListener('click', () => {
-    elSections.style.display = 'none';
-    elWeighPanel.style.display = 'grid';
+  document.getElementById('btnViewWeigh').addEventListener('click',()=>{
+    elSections.style.display='none'; elWeighPanel.style.display='grid';
     document.getElementById('btnViewLive').classList.remove('active');
     document.getElementById('btnViewWeigh').classList.add('active');
     if(!__lastWeigh) loadWeighingToday(); else renderWeighingPanel(__lastWeigh);
   });
 
-  // ========= [7. 초기화 실행] =========
-  (function init() {
-    // 저장된 설정 복구
-    const savedPlant = localStorage.getItem(LS_KEYS.plant);
-    if(savedPlant) document.getElementById('plantFilter').value = savedPlant;
-    const savedQ = localStorage.getItem(LS_KEYS.q);
-    if(savedQ) document.getElementById('searchInput').value = savedQ;
-
-    // 1단계: 캐시 우선 렌더링 (즉시 화면 표시)
+  // =========================================
+  //  초기화
+  // =========================================
+  (function init(){
+    const savedPlant=localStorage.getItem(LS_KEYS.plant);
+    if(savedPlant) document.getElementById('plantFilter').value=savedPlant;
+    const savedQ=localStorage.getItem(LS_KEYS.q);
+    if(savedQ) document.getElementById('searchInput').value=savedQ;
     rerenderFromCache();
-    
-    // 2단계: 최신 데이터 백그라운드 로드
-    loadSnapshot({ source: 'auto' });
-
-    // 3단계: 2분마다 자동 갱신
-    setInterval(() => {
-      if(document.getElementById('btnViewLive').classList.contains('active')) {
-        loadSnapshot({ source: 'auto' });
-      }
-    }, 120000);
+    loadSnapshot({source:'auto'});
+    setInterval(()=>{
+      if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
+    },120000);
   })();
   </script>
 </body>
