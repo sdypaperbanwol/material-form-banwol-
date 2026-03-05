@@ -260,14 +260,25 @@
       });
       if(!rows.length) return;
       totalAll += rows.length;
-      const bcnt = rows.filter(r=>r.plant==='반월').length;
-      const scnt = rows.filter(r=>r.plant==='시화').length;
-      lines.push(`📌 <b>${sec.title}</b>  ${rows.length}대 (반월 ${bcnt} / 시화 ${scnt})`);
-      rows.forEach(r=>{
-        const t = fmtTimeDisplay(r.time);
-        const w = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
-        lines.push(`  • ${r.car}${t?' '+t:''} [${r.plant}]${w}`);
-      });
+      const banwol = rows.filter(r=>r.plant==='반월');
+      const sihwa  = rows.filter(r=>r.plant==='시화');
+      lines.push(`📌 <b>${sec.title}</b>  ${rows.length}대 (반월 ${banwol.length} / 시화 ${sihwa.length})`);
+      if(banwol.length){
+        lines.push(`  [반월]`);
+        banwol.forEach(r=>{
+          const t = fmtTimeDisplay(r.time);
+          const w = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
+          lines.push(`  • ${r.car}${t?' - '+t:''}${w}`);
+        });
+      }
+      if(sihwa.length){
+        lines.push(`  [시화]`);
+        sihwa.forEach(r=>{
+          const t = fmtTimeDisplay(r.time);
+          const w = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
+          lines.push(`  • ${r.car}${t?' - '+t:''}${w}`);
+        });
+      }
       lines.push('');
     });
     if(totalAll===0) return null;
@@ -290,9 +301,21 @@
 
   async function tgWatchAlert(newlyFound){
     if(!TG.enabled || !newlyFound.length) return;
-    const lines = [`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
-    newlyFound.forEach(num => lines.push(`  🚗 <b>${num}</b> 입차됨`));
-    await tgSend(lines.join('\n'));
+    // 감시 차량 감지 알림
+    const alertLines = [`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
+    newlyFound.forEach(num => alertLines.push(`  🚗 <b>${num}</b> 입차됨`));
+    await tgSend(alertLines.join('\n'));
+
+    // 이어서 전체 현황도 바로 전송
+    const cache = localStorage.getItem(LS_KEYS.cache);
+    if(!cache) return;
+    let data; try{ data=JSON.parse(cache); }catch(e){ return; }
+    const summaryMsg = buildTgSummary(data);
+    if(summaryMsg){
+      // 정기 전송 해시도 갱신해서 5분 타이머와 중복 방지
+      __prevSummaryHash = summaryMsg.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+      await tgSend(summaryMsg);
+    }
   }
 
   let __loading = false;
