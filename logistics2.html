@@ -248,11 +248,42 @@
     }catch(e){ console.warn('텔레그램 전송 실패:',e); }
   }
 
+  // 섹션명 → 이모지+단축명 매핑
+  const SEC_LABEL = {
+    '제품 상차중':     { icon:'📦', short:'제품 상차' },
+    '부자재 입차중':   { icon:'🗂', short:'부자재 입차' },
+    '컨테이너 입차중': { icon:'🚢', short:'컨테이너 입차' },
+    '원료 하차중':     { icon:'🚚', short:'원료 하차' },
+    '원료 대기':       { icon:'⏸', short:'원료 대기' },
+  };
+
+  // 입차 시간 → 분 단위 경과 계산
+  function elapsedMinutes(timeStr){
+    if(!timeStr) return null;
+    const t = fmtTimeDisplay(timeStr);
+    if(!t) return null;
+    const [h,m] = t.split(':').map(Number);
+    if(isNaN(h)||isNaN(m)) return null;
+    const now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const entryMin = h*60+m;
+    const nowMin   = now.getHours()*60+now.getMinutes();
+    let diff = nowMin - entryMin;
+    if(diff < 0) diff += 24*60; // 자정 넘김 보정
+    return diff;
+  }
+
   function buildTgSummary(data){
     if(!data||!data.sections) return null;
-    const now = fmtKST();
-    const lines = [`🏭 <b>공장 차량 현황</b>  ${now}`,``];
+    const now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const dd = String(now.getDate()).padStart(2,'0');
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mi = String(now.getMinutes()).padStart(2,'0');
+    const nowStr = `${mm}-${dd} ${hh}:${mi}`;
+
+    const lines = [`🏭 <b>공장 차량 현황</b> (${nowStr})`, ``];
     let totalAll = 0;
+
     data.sections.forEach(sec => {
       let rows = [];
       sec.groups.forEach(g => {
@@ -260,37 +291,43 @@
       });
       if(!rows.length) return;
       totalAll += rows.length;
+
+      const lbl = SEC_LABEL[sec.title] || { icon:'📌', short: sec.title };
+      lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대)`);
+      lines.push(`━━━━━━━━━━━━━━`);
+
       const banwol = rows.filter(r=>r.plant==='반월');
       const sihwa  = rows.filter(r=>r.plant==='시화');
-      lines.push(`📌 <b>${sec.title}</b>  ${rows.length}대 (반월 ${banwol.length} / 시화 ${sihwa.length})`);
-      if(banwol.length){
-        lines.push(`  [반월]`);
-        banwol.forEach(r=>{
-          const t = fmtTimeDisplay(r.time);
-          const w = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
-          lines.push(`  • ${r.car}${t?' - '+t:''}${w}`);
-        });
-      }
-      if(sihwa.length){
-        lines.push(`  [시화]`);
-        sihwa.forEach(r=>{
-          const t = fmtTimeDisplay(r.time);
-          const w = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
-          lines.push(`  • ${r.car}${t?' - '+t:''}${w}`);
-        });
-      }
+
+      const fmtRow = r => {
+        const t   = fmtTimeDisplay(r.time);
+        const el  = elapsedMinutes(r.time);
+        const lng = (el !== null && el >= 120) ? ' (장기)' : '';
+        const w   = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
+        return `반월 | ${r.car} | ${t||'-'}${lng}${w}`;
+      };
+      const fmtRowS = r => {
+        const t   = fmtTimeDisplay(r.time);
+        const el  = elapsedMinutes(r.time);
+        const lng = (el !== null && el >= 120) ? ' (장기)' : '';
+        const w   = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
+        return `시화 | ${r.car} | ${t||'-'}${lng}${w}`;
+      };
+
+      banwol.forEach(r => lines.push(fmtRow(r)));
+      if(banwol.length && sihwa.length) lines.push(` ───────`);
+      sihwa.forEach(r => lines.push(fmtRowS(r)));
       lines.push('');
     });
+
     if(totalAll===0) return null;
     lines.push(`✅ 합계: <b>${totalAll}대</b>`);
     return lines.join('\n');
   }
 
-  async function tgPeriodicSend(){
+  // 변동 감지 후 즉시 전송 (2분 갱신 흐름에서 호출)
+  async function tgSendIfChanged(data){
     if(!TG.enabled) return;
-    const cache = localStorage.getItem(LS_KEYS.cache);
-    if(!cache) return;
-    let data; try{ data=JSON.parse(cache); }catch(e){ return; }
     const msg = buildTgSummary(data);
     if(!msg) return;
     const hash = msg.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
@@ -301,18 +338,16 @@
 
   async function tgWatchAlert(newlyFound){
     if(!TG.enabled || !newlyFound.length) return;
-    // 감시 차량 감지 알림
-    const alertLines = [`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
+    // ① 감시 차량 알림
+    const alertLines = [`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`, ``];
     newlyFound.forEach(num => alertLines.push(`  🚗 <b>${num}</b> 입차됨`));
     await tgSend(alertLines.join('\n'));
-
-    // 이어서 전체 현황도 바로 전송
+    // ② 이어서 전체 현황 전송
     const cache = localStorage.getItem(LS_KEYS.cache);
     if(!cache) return;
     let data; try{ data=JSON.parse(cache); }catch(e){ return; }
     const summaryMsg = buildTgSummary(data);
     if(summaryMsg){
-      // 정기 전송 해시도 갱신해서 5분 타이머와 중복 방지
       __prevSummaryHash = summaryMsg.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
       await tgSend(summaryMsg);
     }
@@ -633,6 +668,8 @@
         localStorage.setItem(LS_KEYS.cache,JSON.stringify(data));
         if(document.getElementById('btnViewLive').classList.contains('active')) render(data);
         if(source==='manual') showToast('업데이트됨');
+        // 변동 있으면 즉시 텔레그램 전송
+        tgSendIfChanged(data);
       }
     }catch(e){
       console.error('데이터 로드 실패:',e);
@@ -706,15 +743,13 @@
     rerenderFromCache();
     loadSnapshot({source:'auto'});
 
-    // 2분마다 자동 데이터 갱신
+    // 2분마다 자동 데이터 갱신 → 변동 시 텔레그램 즉시 전송
     setInterval(()=>{
       if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
     },120000);
 
-    // 5분마다 텔레그램 정기 전송 (변동 있을 때만)
-    setInterval(tgPeriodicSend, TG.intervalMin * 60 * 1000);
-    // 시작 직후 1회 전송
-    setTimeout(tgPeriodicSend, 3000);
+    // 시작 3초 후 첫 전송
+    setTimeout(()=>{ tgSendIfChanged(JSON.parse(localStorage.getItem(LS_KEYS.cache)||'null')); }, 3000);
   })();
   </script>
 </body>
