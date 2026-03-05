@@ -293,7 +293,7 @@
       totalAll += rows.length;
 
       const lbl = SEC_LABEL[sec.title] || { icon:'📌', short: sec.title };
-      lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대)`);
+      lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대 | 반월 ${banwol.length} / 시화 ${sihwa.length})`);
       lines.push(`━━━━━━━━━━━━━━`);
 
       const banwol = rows.filter(r=>r.plant==='반월');
