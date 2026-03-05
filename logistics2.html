@@ -175,6 +175,7 @@
           <option value="sihwa">시화만</option>
         </select>
         <button class="btn" id="btnRefresh">새로고침</button>
+        <button class="btn" id="btnTgToggle" title="텔레그램 알림 켜기/끄기">📲 알림 ON</button>
         <div class="view-toggle" role="tablist">
           <button class="tbtn active" id="btnViewLive" role="tab" aria-selected="true">입차 조회</button>
           <button class="tbtn" id="btnViewWeigh" role="tab" aria-selected="false">계근 조회(제품)</button>
@@ -223,6 +224,76 @@
   const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxdBZrktJQPeQ-0j6bY5b_MGxDeyy0IagJyUWdU9F6tvtxmkZ38H66BjbilLd_2G_9M/exec';
   const API_TOKEN = 'DY_SCALE';
   const LS_KEYS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.search', cache:'snapshot.cache' };
+
+  // =========================================
+  //  텔레그램 설정
+  // =========================================
+  const TG = {
+    token:  '8794146245:AAFpUcVGvl10H21Rjll8KvXIehN55BhM2rc',
+    chatId: '7717030762',
+    enabled: true,
+    intervalMin: 5,
+  };
+  let __prevSummaryHash = null;      // 변동 감지용
+  let __prevWatchFound = new Set();  // 이전 감시 입차 목록
+
+  async function tgSend(text){
+    if(!TG.enabled) return;
+    try{
+      await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id: TG.chatId, text, parse_mode:'HTML' })
+      });
+    }catch(e){ console.warn('텔레그램 전송 실패:',e); }
+  }
+
+  function buildTgSummary(data){
+    if(!data||!data.sections) return null;
+    const now = fmtKST();
+    const lines = [`🏭 <b>공장 차량 현황</b>  ${now}`,``];
+    let totalAll = 0;
+    data.sections.forEach(sec => {
+      let rows = [];
+      sec.groups.forEach(g => {
+        rows.push(...g.rows.filter(r=>!isMonoDigitPlate(r.car)).map(r=>({...r,plant:g.plant})));
+      });
+      if(!rows.length) return;
+      totalAll += rows.length;
+      const bcnt = rows.filter(r=>r.plant==='반월').length;
+      const scnt = rows.filter(r=>r.plant==='시화').length;
+      lines.push(`📌 <b>${sec.title}</b>  ${rows.length}대 (반월 ${bcnt} / 시화 ${scnt})`);
+      rows.forEach(r=>{
+        const t = fmtTimeDisplay(r.time);
+        const w = (last4(r.car) && watchList[last4(r.car)]!==undefined) ? ' 👁' : '';
+        lines.push(`  • ${r.car}${t?' '+t:''} [${r.plant}]${w}`);
+      });
+      lines.push('');
+    });
+    if(totalAll===0) return null;
+    lines.push(`✅ 합계: <b>${totalAll}대</b>`);
+    return lines.join('\n');
+  }
+
+  async function tgPeriodicSend(){
+    if(!TG.enabled) return;
+    const cache = localStorage.getItem(LS_KEYS.cache);
+    if(!cache) return;
+    let data; try{ data=JSON.parse(cache); }catch(e){ return; }
+    const msg = buildTgSummary(data);
+    if(!msg) return;
+    const hash = msg.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+    if(hash === __prevSummaryHash) return;
+    __prevSummaryHash = hash;
+    await tgSend(msg);
+  }
+
+  async function tgWatchAlert(newlyFound){
+    if(!TG.enabled || !newlyFound.length) return;
+    const lines = [`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
+    newlyFound.forEach(num => lines.push(`  🚗 <b>${num}</b> 입차됨`));
+    await tgSend(lines.join('\n'));
+  }
 
   let __loading = false;
   let __searchCount = 0;
@@ -286,18 +357,31 @@
     if(Object.keys(watchList).length === 0) return;
     const found = new Set(allCarNums.map(c => last4(c)).filter(Boolean));
     let anyChange = false;
+
+    // 이번에 새로 입차된 감시 차량 감지
+    const newlyFound = [];
+
     Object.keys(watchList).forEach(k => {
       const ns = found.has(k) ? 'found' : 'not-found';
-      if(watchList[k] !== ns){ watchList[k] = ns; anyChange = true; }
+      if(watchList[k] !== ns){
+        if(ns === 'found' && !__prevWatchFound.has(k)) newlyFound.push(k);
+        watchList[k] = ns; anyChange = true;
+      }
     });
+
+    // 현재 found 목록 저장
+    __prevWatchFound = new Set(Object.keys(watchList).filter(k=>watchList[k]==='found'));
+
     if(anyChange){
       renderWatchTags();
-      // 발견된 태그 펄스
       Object.keys(watchList).filter(k=>watchList[k]==='found').forEach(k=>{
         const el=document.getElementById(`wtag-${k}`);
         if(el){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
       });
     }
+
+    // 즉시 텔레그램 알림 (새로 입차된 감시 차량)
+    if(newlyFound.length) tgWatchAlert(newlyFound);
   }
 
   // DOM
@@ -557,6 +641,15 @@
     if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'manual'});
     else loadWeighingToday();
   });
+
+  document.getElementById('btnTgToggle').addEventListener('click', ()=>{
+    TG.enabled = !TG.enabled;
+    const btn = document.getElementById('btnTgToggle');
+    btn.textContent = TG.enabled ? '📲 알림 ON' : '🔕 알림 OFF';
+    btn.style.background = TG.enabled ? '' : '#fee2e2';
+    btn.style.borderColor = TG.enabled ? '' : '#fca5a5';
+    showToast(TG.enabled ? '텔레그램 알림 켜짐' : '텔레그램 알림 꺼짐');
+  });
   document.getElementById('plantFilter').addEventListener('change',e=>{
     localStorage.setItem(LS_KEYS.plant,e.target.value);
     if(document.getElementById('btnViewLive').classList.contains('active')) rerenderFromCache();
@@ -589,9 +682,16 @@
     if(savedQ) document.getElementById('searchInput').value=savedQ;
     rerenderFromCache();
     loadSnapshot({source:'auto'});
+
+    // 2분마다 자동 데이터 갱신
     setInterval(()=>{
       if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
     },120000);
+
+    // 5분마다 텔레그램 정기 전송 (변동 있을 때만)
+    setInterval(tgPeriodicSend, TG.intervalMin * 60 * 1000);
+    // 시작 직후 1회 전송
+    setTimeout(tgPeriodicSend, 3000);
   })();
   </script>
 </body>
