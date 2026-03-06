@@ -474,15 +474,8 @@ data.sections.forEach(sec=>sec.groups.forEach(g=>
   const lastHash=localStorage.getItem(LS.tgHash)||'';
   const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
 
-  // hash 같으면 prevCarMap만 갱신하고 return
-  if(hash===lastHash){
-    __prevCarMap = curMap;  // ← 여기서도 갱신!
-    return;
-  }
-  if(Date.now()-lastTime < 4000){
-    __prevCarMap = curMap;  // ← 여기서도 갱신!
-    return;
-  }
+if(hash===lastHash) return;
+if(Date.now()-lastTime < 4000) return;
 
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
