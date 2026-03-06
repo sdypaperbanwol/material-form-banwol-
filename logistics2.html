@@ -557,12 +557,16 @@ async function tgWatchAlert(nums){
   let data; try{ data=JSON.parse(cache); }catch(e){ return; }
   localStorage.setItem(LS.tgHash, buildHash(data));
   localStorage.setItem(LS.tgTime, String(Date.now()));
-  // prevAllCars 갱신
-  const curSet=new Set();
+
+  // ★ __prevAllCars 대신 __prevCarMap 갱신
+  const curMap=new Map();
   data.sections.forEach(sec=>sec.groups.forEach(g=>
-    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curSet.add(last4(r.car)))
+    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>
+      curMap.set(last4(r.car), {sec: sec.title, plant: g.plant})
+    )
   ));
-  __prevAllCars=curSet;
+  __prevCarMap = curMap;  // ← 이게 핵심
+
   const sm=buildSummaryMsg(data);
   if(sm) await tgSend(sm);
 }
