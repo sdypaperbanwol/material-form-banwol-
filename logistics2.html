@@ -184,9 +184,15 @@ const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxdBZrktJQPeQ-0j6b
 const API_TOKEN    = 'DY_SCALE';
 
 const TG = {
-  token : '8794146245:AAFpUcVGvl10H21Rjll8KvXIehN55BhM2rc',
+  token : '8794146245:AAFpUcVGvl10H21Rjll8KvXIehN55BhM2rc',  // 풀리포트 봇
   chatId: '7717030762',
   enabled: true,
+};
+
+// 간단 요약 전용 봇 (두 번째 방)
+const TG2 = {
+  token : '8754736334:AAFkgH-OOIU7CClZDrMNQBmdsZcrkFhwwtc',
+  chatId: '7717030762',  // 같은 chat ID, 다른 봇
 };
 
 const LS = {
@@ -283,6 +289,62 @@ async function tgSend(text){
   }catch(e){ console.warn('TG send fail:',e); }
 }
 
+async function tgSend2(text){
+  if(!TG.enabled) return;
+  try{
+    await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id:TG2.chatId, text, parse_mode:'HTML' })
+    });
+  }catch(e){ console.warn('TG2 send fail:',e); }
+}
+
+// 간단 요약 메시지 빌더
+// 입차/출차 감지를 위해 이전 차량 Set 보관
+let __prevAllCars = null; // Set or null (최초엔 null)
+
+function buildShortMsg(data, newCars, gонеCars){
+  if(!data||!data.sections) return null;
+  const n=nowKST();
+  const ts=`${p2(n.getMonth()+1)}-${p2(n.getDate())} ${p2(n.getHours())}:${p2(n.getMinutes())}`;
+
+  // 공장별 합산
+  let bwTotal=0, shTotal=0;
+  data.sections.forEach(sec=>{
+    sec.groups.forEach(g=>{
+      const cnt=g.rows.filter(r=>!isMonoDigit(r.car)).length;
+      if(g.plant==='반월') bwTotal+=cnt;
+      else if(g.plant==='시화') shTotal+=cnt;
+    });
+  });
+
+  const lines=[`🏭 <b>반월 ${bwTotal}대 / 시화 ${shTotal}대</b>  (${ts})`];
+
+  if(newCars.length){
+    lines.push(`🟢 입차: ${newCars.join('  ')}`);
+  }
+  if(gонеCars.length){
+    lines.push(`🔴 출차: ${gонеCars.join('  ')}`);
+  }
+
+  // 최근 5분 입차도 추가
+  const recent=[];
+  const nowMin=n.getHours()*60+n.getMinutes();
+  data.sections.forEach(sec=>{
+    sec.groups.forEach(g=>{
+      g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+        const t=fmtTime(r.time); if(!t) return;
+        const [h,m]=t.split(':').map(Number); if(isNaN(h)) return;
+        let diff=nowMin-(h*60+m); if(diff<0) diff+=1440;
+        if(diff<=5) recent.push(`${r.car}(${t})`);
+      });
+    });
+  });
+  if(recent.length) lines.push(`🕐 5분내: ${recent.join('  ')}`);
+
+  return lines.join('\n');
+}
+
 const SEC_LABEL={
   '제품 상차중':     {icon:'📦', short:'제품 상차'},
   '부자재 입차중':   {icon:'🗂',  short:'부자재 입차'},
@@ -374,7 +436,7 @@ function extractCarData(data){
 }
 
 // 현재 시각 기준 최근 N분 이내 입차한 차량 추출
-function buildRecentArrivals(data, withinMin=10){
+function buildRecentArrivals(data, withinMin=5){
   const lines=[];
   if(!data||!data.sections) return lines;
   const now=nowKST();
@@ -398,16 +460,13 @@ function buildRecentArrivals(data, withinMin=10){
 }
 
 // ★ 멀티탭 중복 방지 핵심 로직
-//   - localStorage의 tgHash/tgTime을 공유
-//   - 해시 같으면 → 변동 없음, 스킵
-//   - 해시 다르더라도 다른 탭이 4초 이내 전송했으면 → 스킵
 async function tgSendIfChanged(data){
   if(!TG.enabled||!data) return;
   const hash=buildHash(data);
   if(!hash) return;
 
   const lastHash=localStorage.getItem(LS.tgHash)||'';
-  if(hash===lastHash){ __prevCarData=extractCarData(data); return; } // 변동 없음 → 스킵
+  if(hash===lastHash) return; // 변동 없음 → 스킵
 
   const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
   if(Date.now()-lastTime < 4000) return; // 다른 탭이 방금 전송 → 스킵
@@ -416,21 +475,29 @@ async function tgSendIfChanged(data){
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  // 현재 시각 기준 최근 5분 입차 차량
+  // 현재 전체 차량번호 Set
+  const curSet=new Set();
+  data.sections.forEach(sec=>sec.groups.forEach(g=>
+    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curSet.add(last4(r.car)))
+  ));
+
+  // 입차/출차 감지 (이전 데이터 있을 때만)
+  const newCars  = __prevAllCars ? [...curSet].filter(c=>!__prevAllCars.has(c)) : [];
+  const goneCars = __prevAllCars ? [...__prevAllCars].filter(c=>!curSet.has(c))  : [];
+  __prevAllCars = curSet;
+
+  // ① 풀 리포트 (기존 봇 → 기존 방)
   const recentArrivals = buildRecentArrivals(data, 5);
-
-  // 이전 데이터 갱신
-  __prevCarData = extractCarData(data);
-
   let msg = buildSummaryMsg(data);
   if(!msg) return;
-
-  // 최근 5분 입차 섹션 추가
   if(recentArrivals.length){
     msg += `\n\n🕐 <b>최근 5분 입차</b>\n` + recentArrivals.join('\n');
   }
-
   await tgSend(msg);
+
+  // ② 간단 요약 (새 봇 → 두 번째 방)
+  const shortMsg = buildShortMsg(data, newCars, goneCars);
+  if(shortMsg) await tgSend2(shortMsg);
 }
 
 // ═══════════════════════════════════════════
@@ -467,13 +534,17 @@ async function tgWatchAlert(nums){
   const lines=[`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
   nums.forEach(n=>lines.push(`  🚗 <b>${n}</b> 입차됨`));
   await tgSend(lines.join('\n'));
-  // 현황도 이어서 전송, 해시/시각/prevCarData 갱신
   const cache=localStorage.getItem(LS.cache);
   if(!cache) return;
   let data; try{ data=JSON.parse(cache); }catch(e){ return; }
   localStorage.setItem(LS.tgHash, buildHash(data));
   localStorage.setItem(LS.tgTime, String(Date.now()));
-  __prevCarData=extractCarData(data);
+  // prevAllCars 갱신
+  const curSet=new Set();
+  data.sections.forEach(sec=>sec.groups.forEach(g=>
+    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curSet.add(last4(r.car)))
+  ));
+  __prevAllCars=curSet;
   const sm=buildSummaryMsg(data);
   if(sm) await tgSend(sm);
 }
