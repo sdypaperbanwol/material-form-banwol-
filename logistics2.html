@@ -328,29 +328,23 @@ function buildSummaryMsg(data){
     const info=[bw.length?`반월 ${bw.length}`:'', sh.length?`시화 ${sh.length}`:''].filter(Boolean).join(', ');
     lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대, ${info})`);
     lines.push(`━━━━━━━━━━━━━━`);
-    // 차량 목록을 2열로 출력하는 헬퍼
-    // 장기/감시 표시가 있는 차량은 혼자 한 줄 차지
+    // 차량 목록: 왼쪽=앞절반, 오른쪽=뒷절반 (각 열을 시간순으로 쭉 읽을 수 있게)
     const fmtCell=r=>{
       const t=fmtTime(r.time);
       const lng=(elapsedMin(r.time)||0)>=120?'⚠':'';
       const w=watchList[last4(r.car)]!==undefined?'👁':'';
-      const flag=lng||w ? ` ${lng}${w}` : '';
-      return { text:`▸${r.car}-${t||'-'}${flag}`, hasFlag:!!(lng||w) };
+      const flag=lng||w?` ${lng}${w}`:'';
+      return `▸${r.car}(${t||'-'})${flag}`;
     };
-    const push2col=(arr)=>{
-      // 플래그 있는 항목은 단독 줄, 나머지는 2열
-      let i=0;
-      while(i<arr.length){
-        const a=fmtCell(arr[i]);
-        if(a.hasFlag){ lines.push(`  ${a.text}`); i++; continue; }
-        if(i+1<arr.length){
-          const b=fmtCell(arr[i+1]);
-          if(b.hasFlag){ lines.push(`  ${a.text}`); i++; continue; }
-          lines.push(`  ${a.text.padEnd(16)}${b.text}`);
-          i+=2;
-        } else {
-          lines.push(`  ${a.text}`); i++;
-        }
+    const push2col=arr=>{
+      const half=Math.ceil(arr.length/2);
+      const left=arr.slice(0,half);
+      const right=arr.slice(half);
+      const rows=Math.max(left.length,right.length);
+      for(let i=0;i<rows;i++){
+        const l=left[i]?fmtCell(left[i]):'';
+        const r=right[i]?fmtCell(right[i]):'';
+        lines.push(`  ${l.padEnd(17)}${r}`.trimEnd());
       }
     };
     if(bw.length){ lines.push(`[반월]`); push2col(bw); }
