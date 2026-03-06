@@ -462,45 +462,40 @@ async function tgSendIfChanged(data){
   const hash=buildHash(data);
   if(!hash) return;
 
-  // curMap은 항상 만들어서 prevCarMap 업데이트
-// curMap: 차번 → {sec, plant} 로 변경
-const curMap=new Map();
-data.sections.forEach(sec=>sec.groups.forEach(g=>
-  g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>
-    curMap.set(last4(r.car), {sec: sec.title, plant: g.plant})
-  )
-));
-
   const lastHash=localStorage.getItem(LS.tgHash)||'';
-  const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
+  if(hash===lastHash) return;
 
-if(hash===lastHash) return;
-if(Date.now()-lastTime < 4000) return;
+  const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
+  if(Date.now()-lastTime < 4000) return;
 
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
+  const curMap=new Map();
+  data.sections.forEach(sec=>sec.groups.forEach(g=>
+    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>
+      curMap.set(last4(r.car), {sec: sec.title, plant: g.plant})
+    )
+  ));
+
   const eventLogs=[];
- if(__prevCarMap){
-  for(const [car, info] of curMap){
-    const prev=__prevCarMap.get(car);
-   if(!prev){
-  if(sec==='원료 대기') eventLogs.push(`⏸ 대기: ${car}`);
-  else eventLogs.push(`🟢 입차: ${car} ${TAG_MAP[sec]||''}`);
-} else if(prev==='원료 대기' && sec!=='원료 대기'){
-  eventLogs.push(`🟢 입차: ${car} `);
-} else if(prev !== sec){
-  eventLogs.push(`🔄 원료->제품: ${car} ${TAG_MAP[prev]||''}→${TAG_MAP[sec]||''}`);
-}
-  for(const [car, info] of __prevCarMap){
-    if(!curMap.has(car)){
-      if(info.sec==='원료 대기') eventLogs.push(`🔴 삭제: ${car} ${fmtTag(info.sec, info.plant)}`);
-      else eventLogs.push(`🔴 출차: ${car} ${fmtTag(info.sec, info.plant)}`);
+  if(__prevCarMap){
+    for(const [car, info] of curMap){
+      const prev=__prevCarMap.get(car);
+      if(!prev){
+        if(info.sec==='원료 대기') eventLogs.push(`⏸ 대기: ${car}`);
+        else eventLogs.push(`🟢 입차: ${car} ${fmtTag(info.sec, info.plant)}`);
+      } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
+        eventLogs.push(`🟢 입차: ${car} )`);
+      } else if(prev.sec !== info.sec){
+        eventLogs.push(`🔄 이동: ${car} ${fmtTag(prev.sec, prev.plant)}→${fmtTag(info.sec, info.plant)}`);
+      }
+    }
+    for(const [car, info] of __prevCarMap){
+      if(!curMap.has(car)) eventLogs.push(`🔴 출차: ${car} ${fmtTag(info.sec, info.plant)}`);
     }
   }
-}
-
-  __prevCarMap = curMap;
+  __prevCarMap=curMap;
 
   const recentArrivals=buildRecentArrivals(data, 5);
   let msg=buildSummaryMsg(data);
