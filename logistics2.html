@@ -484,13 +484,14 @@ if(Date.now()-lastTime < 4000) return;
  if(__prevCarMap){
   for(const [car, info] of curMap){
     const prev=__prevCarMap.get(car);
-    if(!prev){
-      if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car} ${fmtTag(info.sec, info.plant)}`);
-      else eventLogs.push(`🟢 입차: ${car} ${fmtTag(info.sec, info.plant)}`);
-    } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
-      eventLogs.push(`🟢 입차: ${car}  ${fmtTag(info.sec, info.plant)}`);
-    }
-  }
+   if(!prev){
+  if(sec==='원료 대기') eventLogs.push(`⏸ 대기: ${car}`);
+  else eventLogs.push(`🟢 입차: ${car} ${TAG_MAP[sec]||''}`);
+} else if(prev==='원료 대기' && sec!=='원료 대기'){
+  eventLogs.push(`🟢 입차: ${car} `);
+} else if(prev !== sec){
+  eventLogs.push(`🔄 원료->제품: ${car} ${TAG_MAP[prev]||''}→${TAG_MAP[sec]||''}`);
+}
   for(const [car, info] of __prevCarMap){
     if(!curMap.has(car)){
       if(info.sec==='원료 대기') eventLogs.push(`🔴 삭제: ${car} ${fmtTag(info.sec, info.plant)}`);
