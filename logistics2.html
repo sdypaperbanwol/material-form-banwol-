@@ -457,18 +457,27 @@ async function tgSendIfChanged(data){
   const hash=buildHash(data);
   if(!hash) return;
 
-  const lastHash=localStorage.getItem(LS.tgHash)||'';
-  if(hash===lastHash) return;
-  const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
-  if(Date.now()-lastTime < 4000) return;
-
-  localStorage.setItem(LS.tgHash, hash);
-  localStorage.setItem(LS.tgTime, String(Date.now()));
-
+  // curMap은 항상 만들어서 prevCarMap 업데이트
   const curMap=new Map();
   data.sections.forEach(sec=>sec.groups.forEach(g=>
     g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curMap.set(last4(r.car), sec.title))
   ));
+
+  const lastHash=localStorage.getItem(LS.tgHash)||'';
+  const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
+
+  // hash 같으면 prevCarMap만 갱신하고 return
+  if(hash===lastHash){
+    __prevCarMap = curMap;  // ← 여기서도 갱신!
+    return;
+  }
+  if(Date.now()-lastTime < 4000){
+    __prevCarMap = curMap;  // ← 여기서도 갱신!
+    return;
+  }
+
+  localStorage.setItem(LS.tgHash, hash);
+  localStorage.setItem(LS.tgTime, String(Date.now()));
 
   const eventLogs=[];
   if(__prevCarMap){
@@ -489,7 +498,6 @@ async function tgSendIfChanged(data){
     }
   }
 
-  // ← if 블록 밖으로 꺼냄
   __prevCarMap = curMap;
 
   const recentArrivals=buildRecentArrivals(data, 5);
