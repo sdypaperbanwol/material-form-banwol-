@@ -495,7 +495,7 @@ data.sections.forEach(sec=>sec.groups.forEach(g=>
       if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car} ${fmtTag(info.sec, info.plant)}`);
       else eventLogs.push(`🟢 입차: ${car} ${fmtTag(info.sec, info.plant)}`);
     } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
-      eventLogs.push(`🟢 입차: ${car} (대기→입차) ${fmtTag(info.sec, info.plant)}`);
+      eventLogs.push(`🟢 입차: ${car}  ${fmtTag(info.sec, info.plant)}`);
     }
   }
   for(const [car, info] of __prevCarMap){
