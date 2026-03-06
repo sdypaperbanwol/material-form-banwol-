@@ -299,51 +299,7 @@ async function tgSend2(text){
   }catch(e){ console.warn('TG2 send fail:',e); }
 }
 
-// 간단 요약 메시지 빌더
-// 입차/출차 감지를 위해 이전 차량 Set 보관
-let __prevAllCars = null; // Set or null (최초엔 null)
 
-function buildShortMsg(data, newCars, gонеCars){
-  if(!data||!data.sections) return null;
-  const n=nowKST();
-  const ts=`${p2(n.getMonth()+1)}-${p2(n.getDate())} ${p2(n.getHours())}:${p2(n.getMinutes())}`;
-
-  // 공장별 합산
-  let bwTotal=0, shTotal=0;
-  data.sections.forEach(sec=>{
-    sec.groups.forEach(g=>{
-      const cnt=g.rows.filter(r=>!isMonoDigit(r.car)).length;
-      if(g.plant==='반월') bwTotal+=cnt;
-      else if(g.plant==='시화') shTotal+=cnt;
-    });
-  });
-
-  const lines=[`🏭 <b>반월 ${bwTotal}대 / 시화 ${shTotal}대</b>  (${ts})`];
-
-  if(newCars.length){
-    lines.push(`🟢 입차: ${newCars.join('  ')}`);
-  }
-  if(gонеCars.length){
-    lines.push(`🔴 출차: ${gонеCars.join('  ')}`);
-  }
-
-  // 최근 5분 입차도 추가
-  const recent=[];
-  const nowMin=n.getHours()*60+n.getMinutes();
-  data.sections.forEach(sec=>{
-    sec.groups.forEach(g=>{
-      g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
-        const t=fmtTime(r.time); if(!t) return;
-        const [h,m]=t.split(':').map(Number); if(isNaN(h)) return;
-        let diff=nowMin-(h*60+m); if(diff<0) diff+=1440;
-        if(diff<=5) recent.push(`${r.car}(${t})`);
-      });
-    });
-  });
-  if(recent.length) lines.push(`🕐 5분내: ${recent.join('  ')}`);
-
-  return lines.join('\n');
-}
 
 const SEC_LABEL={
   '제품 상차중':     {icon:'📦', short:'제품 상차'},
@@ -362,8 +318,6 @@ function elapsedMin(timeStr){
   return d;
 }
 
-// ★ 핵심: 차량번호+섹션 구조만으로 해시 (시간 포함 안 함)
-//   → 실제 차량 변동이 있을 때만 다른 해시가 나옴
 function buildHash(data){
   if(!data||!data.sections) return '';
   return data.sections.map(sec=>
@@ -390,7 +344,6 @@ function buildSummaryMsg(data){
     const info=[bw.length?`반월 ${bw.length}`:'', sh.length?`시화 ${sh.length}`:''].filter(Boolean).join(', ');
     lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대, ${info})`);
     lines.push(`━━━━━━━━━━━━━━`);
-    // 차량 목록: 왼쪽=앞절반, 오른쪽=뒷절반 (각 열을 시간순으로 쭉 읽을 수 있게)
     const fmtCell=r=>{
       const t=fmtTime(r.time);
       const lng=(elapsedMin(r.time)||0)>=120?'⚠':'';
@@ -402,8 +355,8 @@ function buildSummaryMsg(data){
       const half=Math.ceil(arr.length/2);
       const left=arr.slice(0,half);
       const right=arr.slice(half);
-      const rows=Math.max(left.length,right.length);
-      for(let i=0;i<rows;i++){
+      const rowCount=Math.max(left.length,right.length);
+      for(let i=0;i<rowCount;i++){
         const l=left[i]?fmtCell(left[i]):'';
         const r=right[i]?fmtCell(right[i]):'';
         lines.push(`  ${l.padEnd(17)}${r}`.trimEnd());
@@ -419,29 +372,11 @@ function buildSummaryMsg(data){
   return lines.join('\n');
 }
 
-// 이전 전송 당시의 차량 데이터 보관 (더 이상 신규 감지에 안 씀, 호환용으로만 유지)
-let __prevCarData = {};
-
-function extractCarData(data){
-  const result={};
-  if(!data||!data.sections) return result;
-  data.sections.forEach(sec=>{
-    result[sec.title]={};
-    sec.groups.forEach(g=>{
-      if(!result[sec.title][g.plant]) result[sec.title][g.plant]=new Set();
-      g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>result[sec.title][g.plant].add(r.car));
-    });
-  });
-  return result;
-}
-
-// 현재 시각 기준 최근 N분 이내 입차한 차량 추출
 function buildRecentArrivals(data, withinMin=5){
   const lines=[];
   if(!data||!data.sections) return lines;
   const now=nowKST();
   const nowMin=now.getHours()*60+now.getMinutes();
-
   data.sections.forEach(sec=>{
     const lbl=SEC_LABEL[sec.title]||{icon:'📌',short:sec.title};
     const items=[];
@@ -459,6 +394,63 @@ function buildRecentArrivals(data, withinMin=5){
   return lines;
 }
 
+// 간단 요약 메시지 빌더 (두 번째 방 전용)
+let __prevCarMap = null; // Map<차번4자리, 섹션명>
+
+const TAG_MAP = {
+  '제품 상차중':'[제품]', '원료 하차중':'[원료]',
+  '원료 대기':'[대기]',  '부자재 입차중':'[부자재]', '컨테이너 입차중':'[컨테이너]'
+};
+const SHORT_LABELS = {
+  '제품 상차중':'제 품 상 차', '원료 하차중':'원 료 하 차',
+  '원료 대기':'원 료 대 기', '부자재 입차중':'부 자 재', '컨테이너 입차중':'컨 테 이 너'
+};
+
+function buildShortMsg(data, eventLogs){
+  if(!data||!data.sections) return null;
+  const n=nowKST();
+  const ts=`${p2(n.getMonth()+1)}-${p2(n.getDate())} ${p2(n.getHours())}:${p2(n.getMinutes())}`;
+
+  const lines=[`🏭 <b>현황 요약</b> (${ts})`];
+
+  // 이벤트 로그 (변동사항)
+  if(eventLogs.length){
+    lines.push('');
+    lines.push(...eventLogs);
+  }
+
+  // 섹션별 현황 (차량 있는 섹션만)
+  // 차량 포맷: 2시간 이상 체류 시 ⚠ 표시
+  const fmtCar=r=>{
+    const flag=(elapsedMin(r.time)||0)>=120?'⚠':'';
+    return flag ? `${r.car}${flag}` : r.car;
+  };
+  // 4대씩 줄바꿈, 2번째 줄부터는 prefix 공백으로 정렬
+  const fmtCarList=(prefix, rows)=>{
+    const items=rows.map(fmtCar);
+    const indent=' '.repeat(prefix.length+8);
+    const chunks=[];
+    for(let i=0;i<items.length;i+=4) chunks.push(items.slice(i,i+4).join(', '));
+    return prefix + chunks.join(',\n'+indent);
+  };
+  lines.push('');
+  data.sections.forEach(sec=>{
+    const bwRows=[], shRows=[];
+    sec.groups.forEach(g=>{
+      const rows=g.rows.filter(r=>!isMonoDigit(r.car));
+      if(g.plant==='반월') bwRows.push(...rows);
+      else if(g.plant==='시화') shRows.push(...rows);
+    });
+    if(!bwRows.length&&!shRows.length) return;
+    const label=SHORT_LABELS[sec.title]||sec.title;
+    lines.push(`<b>[${label}]</b> - 반월 ${bwRows.length} 시화 ${shRows.length}`);
+    if(bwRows.length) lines.push(fmtCarList('└ 반월: ', bwRows));
+    if(shRows.length) lines.push(fmtCarList('└ 시화: ', shRows));
+  });
+
+  return lines.join('\n');
+}
+
 // ★ 멀티탭 중복 방지 핵심 로직
 async function tgSendIfChanged(data){
   if(!TG.enabled||!data) return;
@@ -466,37 +458,47 @@ async function tgSendIfChanged(data){
   if(!hash) return;
 
   const lastHash=localStorage.getItem(LS.tgHash)||'';
-  if(hash===lastHash) return; // 변동 없음 → 스킵
-
+  if(hash===lastHash) return;
   const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
-  if(Date.now()-lastTime < 4000) return; // 다른 탭이 방금 전송 → 스킵
+  if(Date.now()-lastTime < 4000) return;
 
-  // 전송권 획득
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  // 현재 전체 차량번호 Set
-  const curSet=new Set();
+  const curMap=new Map();
   data.sections.forEach(sec=>sec.groups.forEach(g=>
-    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curSet.add(last4(r.car)))
+    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curMap.set(last4(r.car), sec.title))
   ));
 
-  // 입차/출차 감지 (이전 데이터 있을 때만)
-  const newCars  = __prevAllCars ? [...curSet].filter(c=>!__prevAllCars.has(c)) : [];
-  const goneCars = __prevAllCars ? [...__prevAllCars].filter(c=>!curSet.has(c))  : [];
-  __prevAllCars = curSet;
-
-  // ① 풀 리포트 (기존 봇 → 기존 방)
-  const recentArrivals = buildRecentArrivals(data, 5);
-  let msg = buildSummaryMsg(data);
-  if(!msg) return;
-  if(recentArrivals.length){
-    msg += `\n\n🕐 <b>최근 5분 입차</b>\n` + recentArrivals.join('\n');
+  const eventLogs=[];
+  if(__prevCarMap){
+    for(const [car, sec] of curMap){
+      const prev=__prevCarMap.get(car);
+      if(!prev){
+        if(sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car}`);
+        else eventLogs.push(`🟢 입차: ${car} ${TAG_MAP[sec]||''}`);
+      } else if(prev==='원료 대기' && sec!=='원료 대기'){
+        eventLogs.push(`🟢 입차: ${car} (대기→입차)`);
+      }
+    }
+    for(const [car, sec] of __prevCarMap){
+      if(!curMap.has(car)){
+        if(sec==='원료 대기') eventLogs.push(`🔴 삭제: ${car} [대기]`);
+        else eventLogs.push(`🔴 출차: ${car} ${TAG_MAP[sec]||''}`);
+      }
+    }
   }
+
+  // ← if 블록 밖으로 꺼냄
+  __prevCarMap = curMap;
+
+  const recentArrivals=buildRecentArrivals(data, 5);
+  let msg=buildSummaryMsg(data);
+  if(!msg) return;
+  if(recentArrivals.length) msg+=`\n\n🕐 <b>최근 5분 입차</b>\n`+recentArrivals.join('\n');
   await tgSend(msg);
 
-  // ② 간단 요약 (새 봇 → 두 번째 방)
-  const shortMsg = buildShortMsg(data, newCars, goneCars);
+  const shortMsg=buildShortMsg(data, eventLogs);
   if(shortMsg) await tgSend2(shortMsg);
 }
 
