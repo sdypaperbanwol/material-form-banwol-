@@ -485,8 +485,8 @@ async function tgSendIfChanged(data){
       if(!prev){
         if(info.sec==='원료 대기') eventLogs.push(`⏸ 대기: ${car}`);
         else eventLogs.push(`🟢 입차: ${car} ${fmtTag(info.sec, info.plant)}`);
-      } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
-        eventLogs.push(`🟢 입차: ${car} )`);
+     } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
+  eventLogs.push(`🟢 입차: ${car} (대기→작업)`);
       } else if(prev.sec !== info.sec){
         eventLogs.push(`🔄 이동: ${car} ${fmtTag(prev.sec, prev.plant)}→${fmtTag(info.sec, info.plant)}`);
       }
