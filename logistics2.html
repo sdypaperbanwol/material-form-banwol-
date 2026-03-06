@@ -416,8 +416,8 @@ async function tgSendIfChanged(data){
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  // 현재 시각 기준 최근 10분 입차 차량
-  const recentArrivals = buildRecentArrivals(data, 10);
+  // 현재 시각 기준 최근 5분 입차 차량
+  const recentArrivals = buildRecentArrivals(data, 5);
 
   // 이전 데이터 갱신
   __prevCarData = extractCarData(data);
@@ -425,9 +425,9 @@ async function tgSendIfChanged(data){
   let msg = buildSummaryMsg(data);
   if(!msg) return;
 
-  // 최근 10분 입차 섹션 추가
+  // 최근 5분 입차 섹션 추가
   if(recentArrivals.length){
-    msg += `\n\n🕐 <b>최근 10분 입차</b>\n` + recentArrivals.join('\n');
+    msg += `\n\n🕐 <b>최근 5분 입차</b>\n` + recentArrivals.join('\n');
   }
 
   await tgSend(msg);
