@@ -357,8 +357,7 @@ function buildSummaryMsg(data){
   return lines.join('\n');
 }
 
-// 이전 전송 당시의 차량 데이터 보관 (신규 입차 감지용)
-// 구조: { '제품 상차중': { '반월': Set(['1234','5678',...]), '시화': Set([...]) }, ... }
+// 이전 전송 당시의 차량 데이터 보관 (더 이상 신규 감지에 안 씀, 호환용으로만 유지)
 let __prevCarData = {};
 
 function extractCarData(data){
@@ -374,23 +373,26 @@ function extractCarData(data){
   return result;
 }
 
-function buildNewArrivals(prevData, newData){
-  // 신규 입차: 이전에 없었는데 새 데이터에 있는 차량
+// 현재 시각 기준 최근 N분 이내 입차한 차량 추출
+function buildRecentArrivals(data, withinMin=10){
   const lines=[];
-  if(!newData||!newData.sections) return lines;
-  newData.sections.forEach(sec=>{
+  if(!data||!data.sections) return lines;
+  const now=nowKST();
+  const nowMin=now.getHours()*60+now.getMinutes();
+
+  data.sections.forEach(sec=>{
     const lbl=SEC_LABEL[sec.title]||{icon:'📌',short:sec.title};
-    const prevSec=prevData[sec.title]||{};
-    const newItems=[];
+    const items=[];
     sec.groups.forEach(g=>{
-      const prevSet=prevSec[g.plant]||new Set();
-      const arrived=g.rows.filter(r=>!isMonoDigit(r.car)&&!prevSet.has(r.car));
-      arrived.forEach(r=>{
-        const t=fmtTime(r.time);
-        newItems.push(`  ${lbl.icon} ${lbl.short} | ${g.plant} ▸${r.car}(${t||'-'})`);
+      g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+        const t=fmtTime(r.time); if(!t) return;
+        const [h,m]=t.split(':').map(Number); if(isNaN(h)) return;
+        let diff=nowMin-(h*60+m);
+        if(diff<0) diff+=1440;
+        if(diff<=withinMin) items.push(`  ${lbl.icon} ${lbl.short} | ${g.plant} ▸${r.car}(${t})`);
       });
     });
-    lines.push(...newItems);
+    lines.push(...items);
   });
   return lines;
 }
@@ -414,10 +416,8 @@ async function tgSendIfChanged(data){
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  // 신규 입차 계산 (이전 데이터가 있을 때만)
-  const newArrivals = Object.keys(__prevCarData).length
-    ? buildNewArrivals(__prevCarData, data)
-    : [];
+  // 현재 시각 기준 최근 10분 입차 차량
+  const recentArrivals = buildRecentArrivals(data, 10);
 
   // 이전 데이터 갱신
   __prevCarData = extractCarData(data);
@@ -425,9 +425,9 @@ async function tgSendIfChanged(data){
   let msg = buildSummaryMsg(data);
   if(!msg) return;
 
-  // 신규 입차 섹션 추가
-  if(newArrivals.length){
-    msg += `\n\n🆕 <b>신규 입차</b>\n` + newArrivals.join('\n');
+  // 최근 10분 입차 섹션 추가
+  if(recentArrivals.length){
+    msg += `\n\n🕐 <b>최근 10분 입차</b>\n` + recentArrivals.join('\n');
   }
 
   await tgSend(msg);
