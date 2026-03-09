@@ -463,49 +463,109 @@ function buildShortMsg(data, eventLogs){
 }
 
 // ★ 멀티탭 중복 방지 핵심 로직
+// ★ 변동사항 감지 및 텔레그램 전송 (최종 개선 버전)
 async function tgSendIfChanged(data){
   if(!TG.enabled||!data) return;
-  const hash=buildHash(data);
+  const hash = buildHash(data);
   if(!hash) return;
 
-  const lastHash=localStorage.getItem(LS.tgHash)||'';
-  if(hash===lastHash) return;
+  const lastHash = localStorage.getItem(LS.tgHash)||'';
+  if(hash === lastHash) return;
 
-  const lastTime=Number(localStorage.getItem(LS.tgTime)||0);
-  if(Date.now()-lastTime < 4000) return;
+  const lastTime = Number(localStorage.getItem(LS.tgTime)||0);
+  if(Date.now() - lastTime < 4000) return;
 
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  const curMap=new Map();
-  data.sections.forEach(sec=>sec.groups.forEach(g=>
-    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>
-      curMap.set(last4(r.car), {sec: sec.title, plant: g.plant})
+  const curMap = new Map();
+  data.sections.forEach(sec => sec.groups.forEach(g =>
+    g.rows.filter(r => !isMonoDigit(r.car)).forEach(r =>
+      curMap.set(last4(r.car), { sec: sec.title, plant: g.plant })
     )
   ));
 
-const eventLogs=[];
-const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
-const secIcon  = s => ({'제품 상차중':'📦','원료 하차중':'🚜','원료 대기':'🚜','부자재 입차중':'🗂','컨테이너 입차중':'🚢'}[s]||'📌');
+  const eventLogs = [];
+  const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
+  const secIcon  = s => ({'제품 상차중':'📦','원료 하차중':'🚜','원료 대기':'🚜','부자재 입차중':'🗂','컨테이너 입차중':'🚢'}[s]||'📌');
 
-if(__prevCarMap){
-  for(const [car, info] of __prevCarMap){
-    const current = curMap.get(car);
-    if(!current || current.sec !== info.sec){
-      if(info.sec === '원료 대기') eventLogs.push({type:'out', plant:info.plant, text:`⏸ \`${car}\` [${info.plant}] 대기 해제`});
-      else eventLogs.push({type:'out', plant:info.plant, text:`🔴 \`${car}\` [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} 출차`});
+  if(__prevCarMap){
+    // [1] 출차 또는 삭제 분석 (기존 맵에는 있었으나 현재 없거나 섹션이 바뀐 경우)
+    for(const [car, info] of __prevCarMap){
+      const current = curMap.get(car);
+      if(!current || current.sec !== info.sec){
+        const category = secShort(info.sec);
+        // '대기' 섹션에서 사라지면 '삭제', 그 외엔 '출차'
+        const action = info.sec.includes('대기') ? '삭제' : '출차';
+        eventLogs.push({
+          type: 'out', 
+          plant: info.plant, 
+          text: `🔴 ${category} ${action}: <code>${car}</code> [${info.plant}]`
+        });
+      }
+    }
+
+    // [2] 입차 또는 대기 분석 (현재 맵에 새로 나타났거나 섹션이 바뀐 경우)
+    for(const [car, info] of curMap){
+      const prev = __prevCarMap.get(car);
+      if(!prev || prev.sec !== info.sec){
+        const category = secShort(info.sec);
+        const icon = secIcon(info.sec);
+
+        if(info.sec.includes('대기')){
+          // 새로 대기열에 들어온 경우
+          eventLogs.push({
+            type: 'wait', 
+            plant: info.plant, 
+            text: `⏸ ${category} 대기: <code>${car}</code> [${info.plant}] ${icon}`
+          });
+        } else if(prev && prev.sec.includes('대기')){
+          // 대기하다가 작업 섹션으로 이동한 경우
+          eventLogs.push({
+            type: 'in', 
+            plant: info.plant, 
+            text: `🟢 ${category} 입차: <code>${car}</code> [${info.plant}] ${icon} (대기→작업)`
+          });
+        } else {
+          // 일반 신규 입차
+          eventLogs.push({
+            type: 'in', 
+            plant: info.plant, 
+            text: `🟢 ${category} 입차: <code>${car}</code> [${info.plant}] ${icon}`
+          });
+        }
+      }
     }
   }
-  for(const [car, info] of curMap){
-    const prev = __prevCarMap.get(car);
-    if(!prev || prev.sec !== info.sec){
-      if(info.sec === '원료 대기') eventLogs.push({type:'wait', plant:info.plant, text:`⏸ \`${car}\` [${info.plant}] 🚜 원료 대기`});
-      else if(prev && prev.sec === '원료 대기') eventLogs.push({type:'in', plant:info.plant, text:`🟢 \`${car}\` [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} 입차 (대기→작업)`});
-      else eventLogs.push({type:'in', plant:info.plant, text:`🟢 \`${car}\` [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} 입차`});
-    }
+  __prevCarMap = curMap;
+
+  // 공장별로 그룹핑하여 메시지 전송
+  if(eventLogs.length){
+    const n = nowKST();
+    const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
+    
+    const groups = {};
+    eventLogs.forEach(e => {
+      if(!groups[e.plant]) groups[e.plant]=[];
+      groups[e.plant].push(e.text);
+    });
+
+    const lines = [`📋 <b>변동사항</b> (${ts})`, ''];
+    Object.entries(groups).forEach(([plant, texts]) => {
+      lines.push(`<b>[${plant} 공장]</b>`);
+      texts.forEach(t => lines.push(`  ${t}`));
+      lines.push('');
+    });
+
+    await tgSend2Event(lines.join('\n').trimEnd());
   }
+
+  // 상단 고정 메시지 업데이트용
+  const msg = buildSummaryMsg(data);
+  if(msg) await tgSendOrEdit(msg);
+  const shortMsg = buildShortMsg(data, []);
+  if(shortMsg) await tgSend2OrEdit(shortMsg);
 }
-__prevCarMap = curMap;
 
 // 공장별로 그룹핑해서 메시지 구성
 if(eventLogs.length){
