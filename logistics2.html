@@ -484,41 +484,51 @@ async function tgSendIfChanged(data){
     )
   ));
 
-const eventLogs=[];
-const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
+  const eventLogs=[];
+  const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
 
-if(__prevCarMap){
-  for(const [car, info] of curMap){
-    const prev=__prevCarMap.get(car);
-    if(!prev){
-      if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car} [${info.plant}]`);
-      else eventLogs.push(`🟢 ${secShort(info.sec)} 입차: ${car} [${info.plant}]`);
-    } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
-      eventLogs.push(`🟢 원료 입차: ${car} [${info.plant}]`);
-    } else if(prev.sec !== info.sec){
-      const prevShort = secShort(prev.sec);
-const infoShort = secShort(info.sec);
-eventLogs.push(`🔁 품목 전환: ${car} [${prevShort}]→[${infoShort}] [${info.plant}]`);
+  if(__prevCarMap){
+    // [1] 출차 분석 (리스트에서 아예 사라졌거나, 다른 섹션으로 이동했거나)
+    for(const [car, info] of __prevCarMap){
+      const current = curMap.get(car);
+      // 현재 맵에 없거나(완전 출차), 현재 맵의 섹션이 이전과 다르다면(이동을 위한 기존 섹션 이탈)
+      if(!current || current.sec !== info.sec) {
+        if(info.sec === '원료 대기') {
+          eventLogs.push(`🔴 삭제: ${car} [대기] [${info.plant}]`);
+        } else {
+          eventLogs.push(`🔴 ${secShort(info.sec)} 출차: ${car} [${info.plant}]`);
+        }
+      }
+    }
+
+    // [2] 입차 분석 (리스트에 새로 나타났거나, 다른 섹션에서 이동해 왔거나)
+    for(const [car, info] of curMap){
+      const prev = __prevCarMap.get(car);
+      // 이전 맵에 없거나(신규 입차), 이전 맵의 섹션이 현재와 다르다면(이동하여 새로운 섹션 진입)
+      if(!prev || prev.sec !== info.sec) {
+        if(info.sec === '원료 대기') {
+          eventLogs.push(`⏸ 원료 대기: ${car} [${info.plant}]`);
+        } else {
+          eventLogs.push(`🟢 ${secShort(info.sec)} 입차: ${car} [${info.plant}]`);
+        }
+      }
     }
   }
-  for(const [car, info] of __prevCarMap){
-    if(!curMap.has(car)) eventLogs.push(`🔴 ${secShort(info.sec)} 출차: ${car} [${info.plant}]`);
-  }
-}
-__prevCarMap=curMap;
+  
+  __prevCarMap = curMap;
 
-  // 봇1: 전체 현황 → 고정 메시지 수정
-  const msg=buildSummaryMsg(data);
+  // 봇1: 전체 현황 고정 메시지 업데이트
+  const msg = buildSummaryMsg(data);
   if(msg) await tgSendOrEdit(msg);
 
-  // 봇2: 요약 현황 → 고정 메시지 수정
-  const shortMsg=buildShortMsg(data, []);  // 이벤트 로그는 별도 전송
+  // 봇2: 요약 현황 고정 메시지 업데이트
+  const shortMsg = buildShortMsg(data, []); 
   if(shortMsg) await tgSend2OrEdit(shortMsg);
 
-  // 봇2: 이벤트 로그 → 새 메시지 (변동 있을 때만)
+  // 봇2: 변동사항 로그 전송 (새 메시지)
   if(eventLogs.length){
-    const n=nowKST();
-    const ts=`${p2(n.getHours())}:${p2(n.getMinutes())}`;
+    const n = nowKST();
+    const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
     const eventMsg = `📋 <b>변동사항</b> (${ts})\n\n` + eventLogs.join('\n');
     await tgSend2Event(eventMsg);
   }
