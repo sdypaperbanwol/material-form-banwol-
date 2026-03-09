@@ -180,7 +180,7 @@
 // ═══════════════════════════════════════════
 //  [A] 설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwFXNh10e_S2ZuD-M5OHeQ4dfi1sSVNDw2nur22hE9ONVni3dqBg8I5bH0DynBVgjat/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxE10yHRu8HDP_nPz5gGacHHGMx3lwFFbneH-2cu1QPVsgJTr7TSYNvAuXTK80X4UKA/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const TG = {
@@ -541,26 +541,26 @@ function buildDailySummaryMsg(s){
   if(!s) return '';
   const lines = ['\n────────────────', '📊 <b>오늘 실적 요약</b>'];
 
-  // 원료 인수
-  lines.push('\n🚚 <b>원료 인수</b>');
-  lines.push(`  반월: ${s.rawMaterial.banwol.count}대 / ${s.rawMaterial.banwol.ton.toLocaleString()}톤`);
-  lines.push(`  시화: ${s.rawMaterial.sihwa.count}대 / ${s.rawMaterial.sihwa.ton.toLocaleString()}톤`);
+  // 원료 인수량
+  lines.push('\n🚚 <b>원료 인수량</b>');
+  lines.push(`  반월: ${s.rawMaterial.banwol.count}대 / ${s.rawMaterial.banwol.ton.toLocaleString()}kg`);
+  lines.push(`  시화: ${s.rawMaterial.sihwa.count}대 / ${s.rawMaterial.sihwa.ton.toLocaleString()}kg`);
 
   // 제품 출하
   lines.push('\n📦 <b>제품 출하</b>');
-  lines.push(`  반월: ${s.product.banwol.count}대 / ${s.product.banwol.ton.toLocaleString()}톤`);
-  lines.push(`  시화: ${s.product.sihwa.count}대 / ${s.product.sihwa.ton.toLocaleString()}톤`);
+  lines.push(`  반월: ${s.product.banwol.count}대 / ${s.product.banwol.ton.toLocaleString()}kg`);
+  lines.push(`  시화: ${s.product.sihwa.count}대 / ${s.product.sihwa.ton.toLocaleString()}kg`);
 
   // 부자재
   if(s.submat.banwol.length || s.submat.sihwa.length){
     lines.push('\n🗂 <b>부자재</b>');
     if(s.submat.banwol.length){
       lines.push('  [반월]');
-      s.submat.banwol.forEach(i => lines.push(`  ${i.name}: ${i.total.toLocaleString()}`));
+      s.submat.banwol.forEach(i => lines.push(`  ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
     }
     if(s.submat.sihwa.length){
       lines.push('  [시화]');
-      s.submat.sihwa.forEach(i => lines.push(`  ${i.name}: ${i.total.toLocaleString()}`));
+      s.submat.sihwa.forEach(i => lines.push(`  ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
     }
   }
 
