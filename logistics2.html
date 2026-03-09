@@ -486,43 +486,50 @@ async function tgSendIfChanged(data){
     )
   ));
 
-  const eventLogs = [];
-  const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
-  const secIcon  = s => ({'제품 상차중':'📦','원료 하차중':'🚜','원료 대기':'🚜','부자재 입차중':'🗂','컨테이너 입차중':'🚢'}[s]||'📌');
+ const eventLogs=[];
+const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
+const secIcon  = s => ({'제품 상차중':'📦','원료 하차중':'🚜','원료 대기':'🚜','부자재 입차중':'🗂','컨테이너 입차중':'🚢'}[s]||'📌');
 
-  if(__prevCarMap){
-    for(const [car, info] of __prevCarMap){
-      if(!curMap.has(car)){
-        const action = info.sec.includes('대기') ? '삭제' : '출차';
-        eventLogs.push({ plant: info.plant, text: `🔴 ${car} [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} ${action}` });
-      }
-    }
-    for(const [car, info] of curMap){
-      const prev = __prevCarMap.get(car);
-      if(!prev || prev.sec !== info.sec){
-        if(info.sec.includes('대기')){
-          eventLogs.push({ plant: info.plant, text: `⏸ ${car} [${info.plant}] ${secIcon(info.sec)} 원료 대기` });
-        } else {
-          eventLogs.push({ plant: info.plant, text: `🟢 ${car} [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} 입차` });
-        }
-      }
+if(__prevCarMap){
+  for(const [car, info] of __prevCarMap){
+    const current = curMap.get(car);
+    if(!current || current.sec !== info.sec){
+      if(info.sec === '원료 대기') eventLogs.push({type:'out', plant:info.plant, text:`⏸ \`${car}\` [${info.plant}] 대기 해제`});
+      else eventLogs.push({type:'out', plant:info.plant, text:`🔴 \`${car}\` [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} 출차`});
     }
   }
-  __prevCarMap = curMap;
-
-  if(eventLogs.length){
-    const n = nowKST();
-    const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
-    const groups = {};
-    eventLogs.forEach(e => { if(!groups[e.plant]) groups[e.plant]=[]; groups[e.plant].push(e.text); });
-    const lines = [`📋 <b>변동사항</b> (${ts})`, ''];
-    Object.entries(groups).forEach(([plant, texts]) => {
-      lines.push(`<b>[${plant}]</b>`);
-      texts.forEach(t => lines.push(t));
-      lines.push('');
-    });
-    await tgSend2Event(lines.join('\n').trimEnd());
+  for(const [car, info] of curMap){
+    const prev = __prevCarMap.get(car);
+    if(!prev || prev.sec !== info.sec){
+      if(info.sec === '원료 대기') eventLogs.push({type:'wait', plant:info.plant, text:`⏸ \`${car}\` [${info.plant}] 🚜 원료 대기`});
+      else if(prev && prev.sec === '원료 대기') eventLogs.push({type:'in', plant:info.plant, text:`🟢 \`${car}\` [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} 입차 (대기→작업)`});
+      else eventLogs.push({type:'in', plant:info.plant, text:`🟢 \`${car}\` [${info.plant}] ${secIcon(info.sec)} ${secShort(info.sec)} 입차`});
+    }
   }
+}
+__prevCarMap = curMap;
+
+// 공장별로 그룹핑해서 메시지 구성
+if(eventLogs.length){
+  const n = nowKST();
+  const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
+
+  // 공장별 그룹핑
+  const groups = {};
+  eventLogs.forEach(e=>{
+    if(!groups[e.plant]) groups[e.plant]=[];
+    groups[e.plant].push(e.text);
+  });
+
+  const lines = [`📋 <b>변동사항</b> (${ts})`,''];
+  Object.entries(groups).forEach(([plant, texts])=>{
+    lines.push(`[${plant}]`);
+    texts.forEach(t=>lines.push(t));
+    lines.push('');
+  });
+
+  await tgSend2Event(lines.join('\n').trimEnd());
+}
 
   const msg = buildSummaryMsg(data);
   if(msg) await tgSendOrEdit(msg);
