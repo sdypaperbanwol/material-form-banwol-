@@ -521,9 +521,10 @@ async function tgSendIfChanged(data){
   }
 
   const summary = buildSummaryMsg(data);
-  const daily = await loadDailySummary();
-  const msg = summary + buildDailySummaryMsg(daily);
-  if(msg) await tgSendOrEdit(msg);
+const daily = await loadDailySummary();
+const dailyPart = buildDailySummaryMsg(daily);
+const msg = summary ? summary + dailyPart : dailyPart;
+if(msg) await tgSendOrEdit(msg);
   const shortMsg = buildShortMsg(data, []);
   if(shortMsg) await tgSend2OrEdit(shortMsg);
 }
