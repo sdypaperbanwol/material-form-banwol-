@@ -204,6 +204,8 @@ const LS = {
   tgHash   : 'tg.last.hash',   // ★ 마지막 전송 해시 (멀티탭 공유)
   tgTime   : 'tg.last.time',   // ★ 마지막 전송 시각 (멀티탭 공유)
   tgOffset : 'tg.poll.offset', // ★ 폴링 offset (멀티탭 공유)
+  msgId1   : 'tg.msg.id1',   // ★ 봇1 고정 메시지 ID
+  msgId2   : 'tg.msg.id2',   // ★ 봇2 고정 메시지 ID
 };
 
 // ═══════════════════════════════════════════
@@ -487,10 +489,10 @@ async function tgSendIfChanged(data){
     for(const [car, info] of curMap){
       const prev=__prevCarMap.get(car);
       if(!prev){
-        if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car}`);
+        if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car} (${info.plant})`);
         else eventLogs.push(`🟢 입차: ${car} ${fmtTag(info.sec, info.plant)}`);
-     } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
-  eventLogs.push(`🟢 입차: ${car} [원료-${info.plant}]`);
+      } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
+        eventLogs.push(`🟢 입차: ${car} (원료-${info.plant})`);
       } else if(prev.sec !== info.sec){
         eventLogs.push(`🔁 전환: ${car} ${fmtTag(prev.sec, prev.plant)}→${fmtTag(info.sec, info.plant)}`);
       }
@@ -501,15 +503,83 @@ async function tgSendIfChanged(data){
   }
   __prevCarMap=curMap;
 
-  const recentArrivals=buildRecentArrivals(data, 5);
-  let msg=buildSummaryMsg(data);
-  if(!msg) return;
-  await tgSend(msg);
+  // 봇1: 전체 현황 → 고정 메시지 수정
+  const msg=buildSummaryMsg(data);
+  if(msg) await tgSendOrEdit(msg);
 
-  const shortMsg=buildShortMsg(data, eventLogs);
-  if(shortMsg) await tgSend2(shortMsg);
+  // 봇2: 요약 현황 → 고정 메시지 수정
+  const shortMsg=buildShortMsg(data, []);  // 이벤트 로그는 별도 전송
+  if(shortMsg) await tgSend2OrEdit(shortMsg);
+
+  // 봇2: 이벤트 로그 → 새 메시지 (변동 있을 때만)
+  if(eventLogs.length){
+    const n=nowKST();
+    const ts=`${p2(n.getHours())}:${p2(n.getMinutes())}`;
+    const eventMsg = `📋 <b>변동사항</b> (${ts})\n\n` + eventLogs.join('\n');
+    await tgSend2Event(eventMsg);
+  }
+}
+// 봇1: 고정 메시지 수정 (없으면 새로 생성)
+async function tgSendOrEdit(text){
+  if(!TG.enabled) return;
+  const msgId = localStorage.getItem(LS.msgId1);
+  try{
+    if(msgId){
+      const res = await fetch(`https://api.telegram.org/bot${TG.token}/editMessageText`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id:TG.chatId, message_id:Number(msgId), text, parse_mode:'HTML' })
+      });
+      const j = await res.json();
+      if(!j.ok) throw new Error(j.description); // 메시지 없으면 새로 생성
+    } else throw new Error('no msgId');
+  }catch(e){
+    try{
+      const res = await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id:TG.chatId, text, parse_mode:'HTML' })
+      });
+      const j = await res.json();
+      if(j.ok && j.result) localStorage.setItem(LS.msgId1, String(j.result.message_id));
+    }catch(e2){ console.warn('TG1 send fail:',e2); }
+  }
 }
 
+// 봇2: 고정 메시지 수정 (없으면 새로 생성)
+async function tgSend2OrEdit(text){
+  if(!TG.enabled) return;
+  const msgId = localStorage.getItem(LS.msgId2);
+  try{
+    if(msgId){
+      const res = await fetch(`https://api.telegram.org/bot${TG2.token}/editMessageText`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id:TG2.chatId, message_id:Number(msgId), text, parse_mode:'HTML' })
+      });
+      const j = await res.json();
+      if(!j.ok) throw new Error(j.description);
+    } else throw new Error('no msgId');
+  }catch(e){
+    try{
+      const res = await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id:TG2.chatId, text, parse_mode:'HTML' })
+      });
+      const j = await res.json();
+      if(j.ok && j.result) localStorage.setItem(LS.msgId2, String(j.result.message_id));
+    }catch(e2){ console.warn('TG2 send fail:',e2); }
+  }
+}
+
+// 봇2: 이벤트 로그 전용 (항상 새 메시지)
+async function tgSend2Event(text){
+  if(!TG.enabled) return;
+  try{
+    await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id:TG2.chatId, text, parse_mode:'HTML' })
+    });
+  }catch(e){ console.warn('TG2 event fail:',e); }
+}
+  
 // ═══════════════════════════════════════════
 //  [E] 감시 상태 동기화
 // ═══════════════════════════════════════════
@@ -543,24 +613,24 @@ async function tgWatchAlert(nums){
   if(!TG.enabled||!nums.length) return;
   const lines=[`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
   nums.forEach(n=>lines.push(`  🚗 <b>${n}</b> 입차됨`));
-  await tgSend(lines.join('\n'));
+  await tgSend2Event(lines.join('\n'));  // ← tgSend → tgSend2Event
+
   const cache=localStorage.getItem(LS.cache);
   if(!cache) return;
   let data; try{ data=JSON.parse(cache); }catch(e){ return; }
   localStorage.setItem(LS.tgHash, buildHash(data));
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  // ★ __prevAllCars 대신 __prevCarMap 갱신
   const curMap=new Map();
   data.sections.forEach(sec=>sec.groups.forEach(g=>
     g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>
       curMap.set(last4(r.car), {sec: sec.title, plant: g.plant})
     )
   ));
-  __prevCarMap = curMap;  // ← 이게 핵심
+  __prevCarMap = curMap;
 
   const sm=buildSummaryMsg(data);
-  if(sm) await tgSend(sm);
+  if(sm) await tgSendOrEdit(sm);  // ← tgSend → tgSendOrEdit
 }
 
 // ═══════════════════════════════════════════
