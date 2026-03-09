@@ -180,7 +180,7 @@
 // ═══════════════════════════════════════════
 //  [A] 설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbw7w_QBqSib1QMEUDA-8YM60yL8dVXzOpb34eCA2kdPT1f8wTb79DAdLut1E2q6T7Z3/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbycALBcyGlNZGaHqz-rGH5sAWlmtRMgEBmkM8whJxKJXEnbNsF4RvpM9HE2ZowR4FgR/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const TG = {
@@ -565,12 +565,14 @@ function buildDailySummaryMsg(s){
   }
 
   // 컨테이너
-lines.push('\n🚢 <b>컨테이너</b>');
+ lines.push('\n🚢 <b>컨테이너</b>');
 ['banwol','sihwa'].forEach(p => {
   const label = p==='banwol'?'반월':'시화';
   const items = s.container[p]||[];
+  const totalCount = items.reduce((a,i)=>a+i.count,0);
+  const totalKg = items.reduce((a,i)=>a+i.total,0);
   if(!items.length){ lines.push(`  ${label}: 0대`); return; }
-  lines.push(`  [${label}]`);
+  lines.push(`  [${label}] 총 ${totalCount}대 / ${totalKg.toLocaleString()}kg`);
   items.forEach(i => lines.push(`  ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
 });
 
