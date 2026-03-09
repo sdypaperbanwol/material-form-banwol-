@@ -206,6 +206,7 @@ const LS = {
   tgOffset : 'tg.poll.offset', // ★ 폴링 offset (멀티탭 공유)
   msgId1   : 'tg.msg.id1',   // ★ 봇1 고정 메시지 ID
   msgId2   : 'tg.msg.id2',   // ★ 봇2 고정 메시지 ID
+  eventMsgIds: 'tg.event.msg.ids',  // ★ 추가
 };
 
 // ═══════════════════════════════════════════
@@ -623,10 +624,17 @@ async function tgSend2OrEdit(text){
 async function tgSend2Event(text){
   if(!TG.enabled) return;
   try{
-    await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{
+    const res = await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ chat_id:TG2.chatId, text, parse_mode:'HTML' })
     });
+    const j = await res.json();
+    // ★ 메시지 ID 저장
+    if(j.ok && j.result){
+      const ids = JSON.parse(localStorage.getItem(LS.eventMsgIds)||'[]');
+      ids.push(j.result.message_id);
+      localStorage.setItem(LS.eventMsgIds, JSON.stringify(ids));
+    }
   }catch(e){ console.warn('TG2 event fail:',e); }
 }
   
@@ -983,9 +991,29 @@ document.getElementById('btnViewWeigh').addEventListener('click',()=>{
     if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
   }, 20000);
 
-  // 텔레그램 폴링 초기화:
-  // offset이 localStorage에 없을 때만 현재 최신 ID로 초기화 (기존 메시지 재처리 방지)
-  // 이미 있으면 그대로 사용 (다른 탭이 이미 설정한 값 유지)
+  // ★ 자정 감지 → 전날 알람 메시지 일괄 삭제
+  let __lastDate = nowKST().getDate();
+  setInterval(async ()=>{
+    const today = nowKST().getDate();
+    if(today === __lastDate) return;
+    __lastDate = today;
+    localStorage.removeItem(LS.msgId1);
+    localStorage.removeItem(LS.msgId2);
+    localStorage.removeItem(LS.tgHash);
+    const ids = JSON.parse(localStorage.getItem(LS.eventMsgIds)||'[]');
+    for(const msgId of ids){
+      try{
+        await fetch(`https://api.telegram.org/bot${TG2.token}/deleteMessage`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ chat_id:TG2.chatId, message_id:msgId })
+        });
+      }catch(e){}
+    }
+    localStorage.removeItem(LS.eventMsgIds);
+    showToast('날짜 변경 - 메시지 초기화됨');
+  }, 60000);
+
+  // 텔레그램 폴링 초기화
   if(!localStorage.getItem(LS.tgOffset)){
     fetch(`https://api.telegram.org/bot${TG.token}/getUpdates?offset=-1`)
       .then(r=>r.json())
