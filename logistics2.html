@@ -344,9 +344,11 @@ function buildSummaryMsg(data){
     const info=[bw.length?`반월 ${bw.length}`:'', sh.length?`시화 ${sh.length}`:''].filter(Boolean).join(', ');
     lines.push(`${lbl.icon} <b>${lbl.short}</b> (${rows.length}대, ${info})`);
     lines.push(`━━━━━━━━━━━━━━`);
+     const WARN_SECS=['원료 하차중','원료 대기'];
     const fmtCell=r=>{
       const t=fmtTime(r.time);
-      const lng=(elapsedMin(r.time)||0)>=120?'⚠':'';
+      const isWarnSec=WARN_SECS.includes(sec.title);
+      const lng=(!isWarnSec&&(elapsedMin(r.time)||0)>=120)?'⚠':'';
       const w=watchList[last4(r.car)]!==undefined?'👁':'';
       const flag=lng||w?` ${lng}${w}`:'';
       return `▸${r.car}(${t||'-'})${flag}`;
@@ -426,13 +428,14 @@ function buildShortMsg(data, eventLogs){
 
   // 섹션별 현황 (차량 있는 섹션만)
   // 차량 포맷: 2시간 이상 체류 시 ⚠ 표시
-  const fmtCar=r=>{
-    const flag=(elapsedMin(r.time)||0)>=120?'⚠':'';
+   const WARN_SECS2=['원료 하차중','원료 대기'];
+  const fmtCar=(r, secTitle)=>{
+    const flag=(!WARN_SECS2.includes(secTitle)&&(elapsedMin(r.time)||0)>=120)?'⚠':'';
     return flag ? `${r.car}${flag}` : r.car;
   };
   // 4대씩 줄바꿈, 2번째 줄부터는 prefix 공백으로 정렬
-  const fmtCarList=(prefix, rows)=>{
-    const items=rows.map(fmtCar);
+   const fmtCarList=(prefix, rows, secTitle)=>{
+      const items=rows.map(r=>fmtCar(r, secTitle));;
     const indent=' '.repeat(prefix.length+8);
     const chunks=[];
     for(let i=0;i<items.length;i+=4) chunks.push(items.slice(i,i+4).join(', '));
@@ -448,9 +451,10 @@ function buildShortMsg(data, eventLogs){
     });
     if(!bwRows.length&&!shRows.length) return;
     const label=SHORT_LABELS[sec.title]||sec.title;
+     lines.push(``);  // ← 이 줄 추가
     lines.push(`<b>[${label}]</b> - 반월 ${bwRows.length} 시화 ${shRows.length}`);
-    if(bwRows.length) lines.push(fmtCarList('└ 반월: ', bwRows));
-    if(shRows.length) lines.push(fmtCarList('└ 시화: ', shRows));
+    if(bwRows.length) lines.push(fmtCarList('└ 반월: ', bwRows, sec.title));
+    if(shRows.length) lines.push(fmtCarList('└ 시화: ', shRows, sec.title));
   });
 
   return lines.join('\n');
@@ -500,7 +504,6 @@ async function tgSendIfChanged(data){
   const recentArrivals=buildRecentArrivals(data, 5);
   let msg=buildSummaryMsg(data);
   if(!msg) return;
-  if(recentArrivals.length) msg+=`\n\n🕐 <b>최근 5분 입차</b>\n`+recentArrivals.join('\n');
   await tgSend(msg);
 
   const shortMsg=buildShortMsg(data, eventLogs);
