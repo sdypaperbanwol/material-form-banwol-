@@ -486,24 +486,23 @@ async function tgSendIfChanged(data){
 
 const eventLogs=[];
 const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
-const secIcon  = s => ({'제품 상차중':'📦','원료 하차중':'🚚','원료 대기':'🚚','부자재 입차중':'🗂','컨테이너 입차중':'🚢'}[s]||'📌');
 
 if(__prevCarMap){
   for(const [car, info] of curMap){
     const prev=__prevCarMap.get(car);
     if(!prev){
-      if(info.sec==='원료 대기') eventLogs.push(`⏸${secIcon(info.sec)} 원료 대기: ${car} [${info.plant}]`);
-      else eventLogs.push(`🟢${secIcon(info.sec)} ${secShort(info.sec)} 입차: ${car} [${info.plant}]`);
+      if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car} [${info.plant}]`);
+      else eventLogs.push(`🟢 ${secShort(info.sec)} 입차: ${car} [${info.plant}]`);
     } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
-      eventLogs.push(`🟢${secIcon(info.sec)} 원료 입차: ${car} [${info.plant}]`);
+      eventLogs.push(`🟢 원료 입차: ${car} [${info.plant}]`);
     } else if(prev.sec !== info.sec){
-      const prevShort=secShort(prev.sec), infoShort=secShort(info.sec);
-      const prevIcon=secIcon(prev.sec), infoIcon=secIcon(info.sec);
-      eventLogs.push(`🔁 품목 전환: ${car} ${prevIcon}[${prevShort}]→${infoIcon}[${infoShort}] [${info.plant}]`);
+      const prevShort = secShort(prev.sec);
+const infoShort = secShort(info.sec);
+eventLogs.push(`🔁 품목 전환: ${car} [${prevShort}]→[${infoShort}] [${info.plant}]`);
     }
   }
   for(const [car, info] of __prevCarMap){
-    if(!curMap.has(car)) eventLogs.push(`🔴${secIcon(info.sec)} ${secShort(info.sec)} 출차: ${car} [${info.plant}]`);
+    if(!curMap.has(car)) eventLogs.push(`🔴 ${secShort(info.sec)} 출차: ${car} [${info.plant}]`);
   }
 }
 __prevCarMap=curMap;
