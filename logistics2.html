@@ -462,13 +462,7 @@ function buildShortMsg(data, eventLogs){
   return lines.join('\n');
 }
 
-// ★ 멀티탭 중복 방지 핵심 로직
-// ★ 변동사항 감지 및 텔레그램 전송 (최종 개선 버전)
-// ★ 변동사항 감지 및 텔레그램 전송 (최종 사용자 맞춤 포맷)
-// ★ 변동사항 감지 및 텔레그램 전송 (백틱 및 품목 이모티콘 제거 버전)
-// ★ 변동사항 감지 및 텔레그램 전송 (공장 중복 표시 제거 버전)
-// ★ 변동사항 감지 및 텔레그램 전송 (업무 중심 + 공장 병합 버전)
-// ★ 변동사항 감지 및 텔레그램 전송 (최종 수정본)
+// ★ 변동사항 감지 및 텔레그램 전송 (최종 수정본 - 대괄호 제거 버전)
 async function tgSendIfChanged(data){
   if(!TG.enabled || !data || !data.sections) return;
 
@@ -493,7 +487,7 @@ async function tgSendIfChanged(data){
 
   // 3. 비교 로직 (__prevCarMap이 있을 때만 비교)
   if(__prevCarMap && __prevCarMap.size > 0){
-    // [출차 확인] 이전엔 있었는데 지금 없으면
+    // [출차 확인]
     for(const [car, info] of __prevCarMap){
       if(!curMap.has(car)){
         const category = secShort(info.sec);
@@ -501,7 +495,7 @@ async function tgSendIfChanged(data){
         rawEvents.push({ type: '🔴', category: `${category} ${action}`, plant: info.plant, car: info.fullCar });
       }
     }
-    // [입차/이동 확인] 지금 있는데 이전과 다르거나 없었으면
+    // [입차/이동 확인]
     for(const [car, info] of curMap){
       const prev = __prevCarMap.get(car);
       if(!prev || prev.sec !== info.sec){
@@ -512,29 +506,32 @@ async function tgSendIfChanged(data){
     }
   }
 
-  // 데이터 업데이트 (다음 비교를 위해)
+  // 데이터 업데이트
   __prevCarMap = new Map(curMap);
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  // 4. 메시지 생성 및 전송
+  // 4. 메시지 생성 및 전송 (이 부분의 포맷을 수정함)
   if(rawEvents.length > 0){
     const n = nowKST();
     const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
     
     const groups = {};
     rawEvents.forEach(e => {
-      const key = `${e.type} ${e.category}`;
+      const key = `${e.type} ${e.category}`; // 예: 🟢 원료 입차
       if(!groups[key]) groups[key] = { '반월': [], '시화': [] };
       groups[key][e.plant].push(e.car);
     });
 
+    // ────────────────────────────────────────────────────────
+    // [ ] 제거 및 소제목 굵게 처리
+    // ────────────────────────────────────────────────────────
     let lines = [`📋 <b>변동사항</b> (${ts})`, ''];
     for(const [category, plants] of Object.entries(groups)){
-      lines.push(`<b>[${category}]</b>`);
+      lines.push(`<b>${category}</b>`); // [ ] 없이 소제목 출력
       if(plants['반월'].length) lines.push(`└ 반월: ${plants['반월'].join(', ')}`);
       if(plants['시화'].length) lines.push(`└ 시화: ${plants['시화'].join(', ')}`);
-      lines.push('');
+      lines.push(''); // 항목 간 간격
     }
 
     // 봇2로 변동사항 전송
