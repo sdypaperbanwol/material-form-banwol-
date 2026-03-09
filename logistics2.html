@@ -487,13 +487,13 @@ async function tgSendIfChanged(data){
   if(__prevCarMap && __prevCarMap.size > 0){
     for(const [car, info] of __prevCarMap){
       if(!curMap.has(car)){
-        rawEvents.push(`🔴 ${info.fullCar}  ${pAbbr(info.plant)} ${secShort(info.sec)}`);
+        rawEvents.push(`🔴 ${info.fullCar} ${info.plant} ${secShort(info.sec)}`);
       }
     }
     for(const [car, info] of curMap){
       const prev = __prevCarMap.get(car);
       if(!prev || prev.sec !== info.sec){
-        rawEvents.push(`${getMark(info.sec)} ${info.fullCar}  ${pAbbr(info.plant)}`);
+        rawEvents.push(`${getMark(info.sec)} ${info.fullCar} ${info.plant}`);
       }
     }
   }
