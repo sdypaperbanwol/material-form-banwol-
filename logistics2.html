@@ -466,6 +466,7 @@ function buildShortMsg(data, eventLogs){
 // ★ 변동사항 감지 및 텔레그램 전송 (최종 개선 버전)
 // ★ 변동사항 감지 및 텔레그램 전송 (최종 사용자 맞춤 포맷)
 // ★ 변동사항 감지 및 텔레그램 전송 (백틱 및 품목 이모티콘 제거 버전)
+// ★ 변동사항 감지 및 텔레그램 전송 (공장 중복 표시 제거 버전)
 async function tgSendIfChanged(data){
   if(!TG.enabled||!data) return;
   const hash = buildHash(data);
@@ -491,7 +492,7 @@ async function tgSendIfChanged(data){
   const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
 
   if(__prevCarMap){
-    // [1] 삭제/출차 분석: 공장에서 아예 사라진 경우만 기록
+    // [1] 삭제/출차 분석
     for(const [car, info] of __prevCarMap){
       if(!curMap.has(car)){ 
         const category = secShort(info.sec);
@@ -499,12 +500,13 @@ async function tgSendIfChanged(data){
         eventLogs.push({
           type: 'out', 
           plant: info.plant, 
-          text: `🔴 ${car} [${info.plant}] ${category} ${action}`
+          // [info.plant] 부분을 삭제했습니다.
+          text: `🔴 ${car} ${category} ${action}`
         });
       }
     }
 
-    // [2] 입차/대기 분석: 새로 나타났거나 섹션이 이동된 경우 기록
+    // [2] 입차/대기 분석
     for(const [car, info] of curMap){
       const prev = __prevCarMap.get(car);
       if(!prev || prev.sec !== info.sec){
@@ -514,14 +516,15 @@ async function tgSendIfChanged(data){
           eventLogs.push({
             type: 'wait', 
             plant: info.plant, 
-            text: `⏸ ${car} [${info.plant}] ${category} 대기`
+            // [info.plant] 부분을 삭제했습니다.
+            text: `⏸ ${car} ${category} 대기`
           });
         } else {
-          // 대기에서 작업으로 넘어오거나 새로 입차한 경우 모두 '입차'로 표시
           eventLogs.push({
             type: 'in', 
             plant: info.plant, 
-            text: `🟢 ${car} [${info.plant}] ${category} 입차`
+            // [info.plant] 부분을 삭제했습니다.
+            text: `🟢 ${car} ${category} 입차`
           });
         }
       }
@@ -529,7 +532,6 @@ async function tgSendIfChanged(data){
   }
   __prevCarMap = curMap;
 
-  // 공장별로 그룹핑하여 메시지 구성
   if(eventLogs.length){
     const n = nowKST();
     const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
@@ -542,7 +544,7 @@ async function tgSendIfChanged(data){
 
     const lines = [`📋 <b>변동사항</b> (${ts})`, ''];
     Object.entries(groups).forEach(([plant, texts]) => {
-      lines.push(`<b>[${plant}]</b>`);
+      lines.push(`<b>[${plant}]</b>`); // 여기서 공장명이 한 번만 출력됩니다.
       texts.forEach(t => lines.push(t));
       lines.push('');
     });
@@ -550,7 +552,7 @@ async function tgSendIfChanged(data){
     await tgSend2Event(lines.join('\n').trimEnd());
   }
 
-  // 상단 고정 메시지 업데이트
+  // 상단 고정 메시지 업데이트 생략...
   const msg = buildSummaryMsg(data);
   if(msg) await tgSendOrEdit(msg);
   const shortMsg = buildShortMsg(data, []);
