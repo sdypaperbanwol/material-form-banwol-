@@ -496,7 +496,9 @@ if(__prevCarMap){
     } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
       eventLogs.push(`🟢 원료 입차: ${car} [${info.plant}]`);
     } else if(prev.sec !== info.sec){
-      eventLogs.push(`🔁 전환: ${car} ${fmtTag(prev.sec, prev.plant)}→${fmtTag(info.sec, info.plant)}`);
+      const prevShort = secShort(prev.sec);
+const infoShort = secShort(info.sec);
+eventLogs.push(`🔁 품목 전환: ${car} [${prevShort}]→[${infoShort}] [${info.plant}]`);
     }
   }
   for(const [car, info] of __prevCarMap){
