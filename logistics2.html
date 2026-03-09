@@ -526,8 +526,9 @@ const daily = await loadDailySummary();
 const dailyPart = buildDailySummaryMsg(daily);
 const msg = summary ? summary + dailyPart : dailyPart;
 if(msg) await tgSendOrEdit(msg);
-  const shortMsg = buildShortMsg(data, []);
-  if(shortMsg) await tgSend2OrEdit(shortMsg);
+ const shortMsg = buildShortMsg(data, []);
+const shortWithDaily = shortMsg ? shortMsg + (dailyPart || '') : dailyPart;
+if(shortWithDaily) await tgSend2OrEdit(shortWithDaily);
 }
 async function loadDailySummary(){
   try{
