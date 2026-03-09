@@ -484,24 +484,26 @@ async function tgSendIfChanged(data){
     )
   ));
 
-  const eventLogs=[];
-  if(__prevCarMap){
-    for(const [car, info] of curMap){
-      const prev=__prevCarMap.get(car);
-      if(!prev){
-        if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car} (${info.plant})`);
-        else eventLogs.push(`🟢 입차: ${car} ${fmtTag(info.sec, info.plant)}`);
-      } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
-        eventLogs.push(`🟢 입차: ${car} (원료-${info.plant})`);
-      } else if(prev.sec !== info.sec){
-        eventLogs.push(`🔁 전환: ${car} ${fmtTag(prev.sec, prev.plant)}→${fmtTag(info.sec, info.plant)}`);
-      }
-    }
-    for(const [car, info] of __prevCarMap){
-      if(!curMap.has(car)) eventLogs.push(`🔴 출차: ${car} ${fmtTag(info.sec, info.plant)}`);
+const eventLogs=[];
+const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
+
+if(__prevCarMap){
+  for(const [car, info] of curMap){
+    const prev=__prevCarMap.get(car);
+    if(!prev){
+      if(info.sec==='원료 대기') eventLogs.push(`⏸ 원료 대기: ${car} [${info.plant}]`);
+      else eventLogs.push(`🟢 ${secShort(info.sec)} 입차: ${car} [${info.plant}]`);
+    } else if(prev.sec==='원료 대기' && info.sec!=='원료 대기'){
+      eventLogs.push(`🟢 원료 입차: ${car} [${info.plant}]`);
+    } else if(prev.sec !== info.sec){
+      eventLogs.push(`🔁 전환: ${car} ${fmtTag(prev.sec, prev.plant)}→${fmtTag(info.sec, info.plant)}`);
     }
   }
-  __prevCarMap=curMap;
+  for(const [car, info] of __prevCarMap){
+    if(!curMap.has(car)) eventLogs.push(`🔴 ${secShort(info.sec)} 출차: ${car} [${info.plant}]`);
+  }
+}
+__prevCarMap=curMap;
 
   // 봇1: 전체 현황 → 고정 메시지 수정
   const msg=buildSummaryMsg(data);
