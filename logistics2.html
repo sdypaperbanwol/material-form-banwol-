@@ -204,7 +204,6 @@ const LS = {
   tgHash   : 'tg.last.hash',   // ★ 마지막 전송 해시 (멀티탭 공유)
   tgTime   : 'tg.last.time',   // ★ 마지막 전송 시각 (멀티탭 공유)
   tgOffset : 'tg.poll.offset', // ★ 폴링 offset (멀티탭 공유)
-  msgId1   : 'tg.msg.id1',   // ★ 봇1 고정 메시지 ID
   msgId2   : 'tg.msg.id2',   // ★ 봇2 고정 메시지 ID
   eventMsgIds: 'tg.event.msg.ids',  // ★ 추가
 };
@@ -574,6 +573,7 @@ lines.push('\n🚢 <b>컨테이너</b>');
 }
   
 // 봇1: 고정 메시지 수정 (없으면 새로 생성)
+// 봇1: 고정 메시지 수정 (없으면 새로 생성)
 async function tgSendOrEdit(text){
   if(!TG.enabled) return;
   const msgId = localStorage.getItem(LS.msgId1);
@@ -584,7 +584,7 @@ async function tgSendOrEdit(text){
         body: JSON.stringify({ chat_id:TG.chatId, message_id:Number(msgId), text, parse_mode:'HTML' })
       });
       const j = await res.json();
-      if(!j.ok) throw new Error(j.description); // 메시지 없으면 새로 생성
+      if(!j.ok) throw new Error(j.description);
     } else throw new Error('no msgId');
   }catch(e){
     try{
@@ -597,7 +597,6 @@ async function tgSendOrEdit(text){
     }catch(e2){ console.warn('TG1 send fail:',e2); }
   }
 }
-
 // 봇2: 고정 메시지 수정 (없으면 새로 생성)
 async function tgSend2OrEdit(text){
   if(!TG.enabled) return;
