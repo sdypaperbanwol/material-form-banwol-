@@ -955,10 +955,10 @@ document.getElementById('btnViewWeigh').addEventListener('click',()=>{
   rerenderCache();
   loadSnapshot({source:'auto'});
 
-  // 1분마다 갱신 → 변동 있을 때만 텔레그램 전송
+  // 20초마다 갱신 → 변동 있을 때만 텔레그램 전송
   setInterval(()=>{
     if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
-  }, 60000);
+  }, 20000);
 
   // 텔레그램 폴링 초기화:
   // offset이 localStorage에 없을 때만 현재 최신 ID로 초기화 (기존 메시지 재처리 방지)
