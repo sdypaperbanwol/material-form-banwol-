@@ -468,11 +468,8 @@ async function tgSendIfChanged(data){
 
   const hash = buildHash(data);
   const lastHash = localStorage.getItem(LS.tgHash) || '';
-  
-  // 1. 데이터가 아예 똑같으면 중단
   if(hash === lastHash) return;
 
-  // 2. 현재 차량 상태 Map 생성
   const curMap = new Map();
   data.sections.forEach(sec => {
     sec.groups.forEach(g => {
@@ -485,60 +482,31 @@ async function tgSendIfChanged(data){
   const rawEvents = [];
   const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
 
-  // 3. 비교 로직 (__prevCarMap이 있을 때만 비교)
   if(__prevCarMap && __prevCarMap.size > 0){
-    // [출차 확인]
     for(const [car, info] of __prevCarMap){
       if(!curMap.has(car)){
-        const category = secShort(info.sec);
-        const action = info.sec.includes('대기') ? '삭제' : '출차';
-        rawEvents.push({ type: '🔴', category: `${category} ${action}`, plant: info.plant, car: info.fullCar });
+        rawEvents.push({ type:'🔴', action: info.sec.includes('대기')?'삭제':'출차', sec: info.sec, plant: info.plant, car: info.fullCar });
       }
     }
-    // [입차/이동 확인]
     for(const [car, info] of curMap){
       const prev = __prevCarMap.get(car);
       if(!prev || prev.sec !== info.sec){
-        const category = secShort(info.sec);
-        const action = info.sec.includes('대기') ? '대기' : '입차';
-        rawEvents.push({ type: action === '대기' ? '⏸' : '🟢', category: `${category} ${action}`, plant: info.plant, car: info.fullCar });
+        rawEvents.push({ type: info.sec.includes('대기')?'⏸':'🟢', action: info.sec.includes('대기')?'대기':'입차', sec: info.sec, plant: info.plant, car: info.fullCar });
       }
     }
   }
 
-  // 데이터 업데이트
   __prevCarMap = new Map(curMap);
   localStorage.setItem(LS.tgHash, hash);
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
-  // 4. 메시지 생성 및 전송 (이 부분의 포맷을 수정함)
   if(rawEvents.length > 0){
-    const n = nowKST();
-    const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
-    
-    const groups = {};
-    rawEvents.forEach(e => {
-      const key = `${e.type} ${e.category}`; // 예: 🟢 원료 입차
-      if(!groups[key]) groups[key] = { '반월': [], '시화': [] };
-      groups[key][e.plant].push(e.car);
-    });
-
-    // ────────────────────────────────────────────────────────
-    // [ ] 제거 및 소제목 굵게 처리
-    // ────────────────────────────────────────────────────────
-    let lines = [`📋 <b>변동사항</b> (${ts})`, ''];
-    for(const [category, plants] of Object.entries(groups)){
-      lines.push(`<b>${category}</b>`); // [ ] 없이 소제목 출력
-      if(plants['반월'].length) lines.push(`└ 반월: ${plants['반월'].join(', ')}`);
-      if(plants['시화'].length) lines.push(`└ 시화: ${plants['시화'].join(', ')}`);
-      lines.push(''); // 항목 간 간격
-    }
-
-    // 봇2로 변동사항 전송
-    await tgSend2Event(lines.join('\n').trimEnd());
+    const lines = rawEvents.map(e =>
+      `${e.type} ${e.car}  [${e.plant}] ${secShort(e.sec)}`
+    );
+    await tgSend2Event(lines.join('\n'));
   }
 
-  // 5. 상단 고정 메시지 업데이트 (항상 수행)
   const msg = buildSummaryMsg(data);
   if(msg) await tgSendOrEdit(msg);
   const shortMsg = buildShortMsg(data, []);
