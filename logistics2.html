@@ -180,7 +180,7 @@
 // ═══════════════════════════════════════════
 //  [A] 설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxE10yHRu8HDP_nPz5gGacHHGMx3lwFFbneH-2cu1QPVsgJTr7TSYNvAuXTK80X4UKA/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbw2rEQvWLdVbgmWUrZPgRzOUejBkt-8XgHLc-eMgPB3tk_UNgcGBEU78O3QoIcdax5G/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const TG = {
@@ -566,7 +566,8 @@ function buildDailySummaryMsg(s){
 
   // 컨테이너
   lines.push('\n🚢 <b>컨테이너</b>');
-  lines.push(`  반월: ${s.container.banwol}대  시화: ${s.container.sihwa}대`);
+lines.push(`  반월: ${s.container.banwol.count}대 / ${s.container.banwol.kg.toLocaleString()}kg`);
+lines.push(`  시화: ${s.container.sihwa.count}대 / ${s.container.sihwa.kg.toLocaleString()}kg`);
 
   return lines.join('\n');
 }
