@@ -441,7 +441,7 @@ function buildShortMsg(data, eventLogs){
     for(let i=0;i<items.length;i+=4) chunks.push(items.slice(i,i+4).join(', '));
     return prefix + chunks.join(',\n'+indent);
   };
-  lines.push('');
+  
   data.sections.forEach(sec=>{
     const bwRows=[], shRows=[];
     sec.groups.forEach(g=>{
