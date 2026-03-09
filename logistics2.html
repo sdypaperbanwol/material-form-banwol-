@@ -700,8 +700,11 @@ async function tgWatchAlert(nums){
   ));
   __prevCarMap = curMap;
 
-  const sm=buildSummaryMsg(data);
- if(sm) await tgSend2OrEdit(sm);  // ← tgSend → tgSendOrEdit
+const daily = await loadDailySummary();
+const dailyPart = buildDailySummaryMsg(daily);
+const shortMsg = buildShortMsg(data, []);
+const shortWithDaily = shortMsg ? shortMsg + (dailyPart || '') : dailyPart;
+if(shortWithDaily) await tgSend2OrEdit(shortWithDaily);
 }
 
 // ═══════════════════════════════════════════
