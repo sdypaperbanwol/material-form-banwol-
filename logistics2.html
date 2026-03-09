@@ -180,7 +180,7 @@
 // ═══════════════════════════════════════════
 //  [A] 설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxdBZrktJQPeQ-0j6bY5b_MGxDeyy0IagJyUWdU9F6tvtxmkZ38H66BjbilLd_2G_9M/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwFXNh10e_S2ZuD-M5OHeQ4dfi1sSVNDw2nur22hE9ONVni3dqBg8I5bH0DynBVgjat/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const TG = {
@@ -520,12 +520,53 @@ async function tgSendIfChanged(data){
     await tgSend2Event(rawEvents.join('\n'));
   }
 
-  const msg = buildSummaryMsg(data);
+  const summary = buildSummaryMsg(data);
+  const daily = await loadDailySummary();
+  const msg = summary + buildDailySummaryMsg(daily);
   if(msg) await tgSendOrEdit(msg);
   const shortMsg = buildShortMsg(data, []);
   if(shortMsg) await tgSend2OrEdit(shortMsg);
 }
+async function loadDailySummary(){
+  try{
+    const res = await fetch(`${SNAPSHOT_URL}?action=daily_summary&token=${API_TOKEN}&_ts=${Date.now()}`);
+    return await res.json();
+  }catch(e){ return null; }
+}
 
+function buildDailySummaryMsg(s){
+  if(!s) return '';
+  const lines = ['\n────────────────', '📊 <b>오늘 실적 요약</b>'];
+
+  // 원료 인수
+  lines.push('\n🚚 <b>원료 인수</b>');
+  lines.push(`  반월: ${s.rawMaterial.banwol.count}대 / ${s.rawMaterial.banwol.ton.toLocaleString()}톤`);
+  lines.push(`  시화: ${s.rawMaterial.sihwa.count}대 / ${s.rawMaterial.sihwa.ton.toLocaleString()}톤`);
+
+  // 제품 출하
+  lines.push('\n📦 <b>제품 출하</b>');
+  lines.push(`  반월: ${s.product.banwol.count}대 / ${s.product.banwol.ton.toLocaleString()}톤`);
+  lines.push(`  시화: ${s.product.sihwa.count}대 / ${s.product.sihwa.ton.toLocaleString()}톤`);
+
+  // 부자재
+  if(s.submat.banwol.length || s.submat.sihwa.length){
+    lines.push('\n🗂 <b>부자재</b>');
+    if(s.submat.banwol.length){
+      lines.push('  [반월]');
+      s.submat.banwol.forEach(i => lines.push(`  ${i.name}: ${i.total.toLocaleString()}`));
+    }
+    if(s.submat.sihwa.length){
+      lines.push('  [시화]');
+      s.submat.sihwa.forEach(i => lines.push(`  ${i.name}: ${i.total.toLocaleString()}`));
+    }
+  }
+
+  // 컨테이너
+  lines.push('\n🚢 <b>컨테이너</b>');
+  lines.push(`  반월: ${s.container.banwol}대  시화: ${s.container.sihwa}대`);
+
+  return lines.join('\n');
+}
   
 // 봇1: 고정 메시지 수정 (없으면 새로 생성)
 async function tgSendOrEdit(text){
