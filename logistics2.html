@@ -464,6 +464,7 @@ function buildShortMsg(data, eventLogs){
 
 // ★ 멀티탭 중복 방지 핵심 로직
 // ★ 변동사항 감지 및 텔레그램 전송 (최종 개선 버전)
+// ★ 변동사항 감지 및 텔레그램 전송 (최종 사용자 맞춤 포맷)
 async function tgSendIfChanged(data){
   if(!TG.enabled||!data) return;
   const hash = buildHash(data);
@@ -490,48 +491,39 @@ async function tgSendIfChanged(data){
   const secIcon  = s => ({'제품 상차중':'📦','원료 하차중':'🚜','원료 대기':'🚜','부자재 입차중':'🗂','컨테이너 입차중':'🚢'}[s]||'📌');
 
   if(__prevCarMap){
-    // [1] 출차 또는 삭제 분석 (기존 맵에는 있었으나 현재 없거나 섹션이 바뀐 경우)
+    // [1] 삭제/출차 분석: 공장 데이터에서 '완전히 사라진' 경우만 기록
     for(const [car, info] of __prevCarMap){
-      const current = curMap.get(car);
-      if(!current || current.sec !== info.sec){
+      if(!curMap.has(car)){ 
         const category = secShort(info.sec);
-        // '대기' 섹션에서 사라지면 '삭제', 그 외엔 '출차'
+        const icon = secIcon(info.sec);
         const action = info.sec.includes('대기') ? '삭제' : '출차';
         eventLogs.push({
           type: 'out', 
           plant: info.plant, 
-          text: `🔴 ${category} ${action}: <code>${car}</code> [${info.plant}]`
+          text: `🔴 ${car} [${info.plant}] ${icon} ${category} ${action}`
         });
       }
     }
 
-    // [2] 입차 또는 대기 분석 (현재 맵에 새로 나타났거나 섹션이 바뀐 경우)
+    // [2] 입차/대기 분석: 새로 나타났거나 섹션이 이동된 경우 기록
     for(const [car, info] of curMap){
       const prev = __prevCarMap.get(car);
       if(!prev || prev.sec !== info.sec){
         const category = secShort(info.sec);
         const icon = secIcon(info.sec);
-
+        
         if(info.sec.includes('대기')){
-          // 새로 대기열에 들어온 경우
           eventLogs.push({
             type: 'wait', 
             plant: info.plant, 
-            text: `⏸ ${category} 대기: <code>${car}</code> [${info.plant}] ${icon}`
-          });
-        } else if(prev && prev.sec.includes('대기')){
-          // 대기하다가 작업 섹션으로 이동한 경우
-          eventLogs.push({
-            type: 'in', 
-            plant: info.plant, 
-            text: `🟢 ${category} 입차: <code>${car}</code> [${info.plant}] ${icon} (대기→작업)`
+            text: `⏸ ${car} [${info.plant}] ${icon} ${category} 대기`
           });
         } else {
-          // 일반 신규 입차
+          // 대기에서 작업으로 넘어오거나 새로 입차한 경우 모두 '입차'로 통일
           eventLogs.push({
             type: 'in', 
             plant: info.plant, 
-            text: `🟢 ${category} 입차: <code>${car}</code> [${info.plant}] ${icon}`
+            text: `🟢 ${car} [${info.plant}] ${icon} ${category} 입차`
           });
         }
       }
@@ -539,7 +531,7 @@ async function tgSendIfChanged(data){
   }
   __prevCarMap = curMap;
 
-  // 공장별로 그룹핑하여 메시지 전송
+  // 공장별로 그룹핑하여 메시지 구성
   if(eventLogs.length){
     const n = nowKST();
     const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
@@ -552,39 +544,20 @@ async function tgSendIfChanged(data){
 
     const lines = [`📋 <b>변동사항</b> (${ts})`, ''];
     Object.entries(groups).forEach(([plant, texts]) => {
-      lines.push(`<b>[${plant} 공장]</b>`);
-      texts.forEach(t => lines.push(`  ${t}`));
+      lines.push(`<b>[${plant}]</b>`);
+      texts.forEach(t => lines.push(t));
       lines.push('');
     });
 
     await tgSend2Event(lines.join('\n').trimEnd());
   }
 
-  // 상단 고정 메시지 업데이트용
+  // 상단 고정 메시지 업데이트
   const msg = buildSummaryMsg(data);
   if(msg) await tgSendOrEdit(msg);
   const shortMsg = buildShortMsg(data, []);
   if(shortMsg) await tgSend2OrEdit(shortMsg);
 }
-
-// 공장별로 그룹핑해서 메시지 구성
-if(eventLogs.length){
-  const n = nowKST();
-  const ts = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
-
-  // 공장별 그룹핑
-  const groups = {};
-  eventLogs.forEach(e=>{
-    if(!groups[e.plant]) groups[e.plant]=[];
-    groups[e.plant].push(e.text);
-  });
-
-  const lines = [`📋 <b>변동사항</b> (${ts})`,''];
-  Object.entries(groups).forEach(([plant, texts])=>{
-    lines.push(`[${plant}]`);
-    texts.forEach(t=>lines.push(t));
-    lines.push('');
-  });
 
   await tgSend2Event(lines.join('\n').trimEnd());
 }
