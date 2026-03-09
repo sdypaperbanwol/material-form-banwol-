@@ -422,41 +422,49 @@ function buildShortMsg(data, eventLogs){
 
   const lines=[`🏭 <b>현황 요약</b> (${ts})`];
 
-  // 이벤트 로그 (변동사항)
   if(eventLogs.length){
     lines.push('');
     lines.push(...eventLogs);
   }
 
-  // 섹션별 현황 (차량 있는 섹션만)
-  // 차량 포맷: 2시간 이상 체류 시 ⚠ 표시
-   const WARN_SECS2=['원료 하차중','원료 대기'];
+  const WARN_SECS2=['원료 하차중','원료 대기'];
   const fmtCar=(r, secTitle)=>{
     const flag=(!WARN_SECS2.includes(secTitle)&&(elapsedMin(r.time)||0)>=120)?'⚠':'';
     return flag ? `${r.car}${flag}` : r.car;
   };
-  // 4대씩 줄바꿈, 2번째 줄부터는 prefix 공백으로 정렬
-   const fmtCarList=(prefix, rows, secTitle)=>{
-      const items=rows.map(r=>fmtCar(r, secTitle));;
+  const fmtCarList=(prefix, rows, secTitle)=>{
+    const items=rows.map(r=>fmtCar(r, secTitle));
     const indent=' '.repeat(prefix.length+8);
     const chunks=[];
     for(let i=0;i<items.length;i+=4) chunks.push(items.slice(i,i+4).join(', '));
     return prefix + chunks.join(',\n'+indent);
   };
-  
-  data.sections.forEach(sec=>{
+
+  // 섹션 순서 고정 + 아이콘 매핑
+  const SEC_ORDER = [
+    { key:'제품 상차중',     icon:'🔵', label:'제 품 상 차' },
+    { key:'부자재 입차중',   icon:'🟡', label:'부 자 재' },
+    { key:'컨테이너 입차중', icon:'⚪', label:'컨 테 이 너' },
+    { key:'원료 하차중',     icon:'🟢', label:'원 료 입 차' },
+    { key:'원료 대기',       icon:'⏸',  label:'원 료 대 기' },
+  ];
+
+  const byTitle = Object.fromEntries((data.sections||[]).map(s=>[s.title,s]));
+
+  SEC_ORDER.forEach(({ key, icon, label })=>{
+    const sec = byTitle[key];
     const bwRows=[], shRows=[];
-    sec.groups.forEach(g=>{
-      const rows=g.rows.filter(r=>!isMonoDigit(r.car));
-      if(g.plant==='반월') bwRows.push(...rows);
-      else if(g.plant==='시화') shRows.push(...rows);
-    });
-    if(!bwRows.length&&!shRows.length) return;
-    const label=SHORT_LABELS[sec.title]||sec.title;
-     lines.push(``);  // ← 이 줄 추가
-    lines.push(`<b>[${label}]</b> - 반월 ${bwRows.length} 시화 ${shRows.length}`);
-    if(bwRows.length) lines.push(fmtCarList('└ 반월: ', bwRows, sec.title));
-    if(shRows.length) lines.push(fmtCarList('└ 시화: ', shRows, sec.title));
+    if(sec){
+      sec.groups.forEach(g=>{
+        const rows=g.rows.filter(r=>!isMonoDigit(r.car));
+        if(g.plant==='반월') bwRows.push(...rows);
+        else if(g.plant==='시화') shRows.push(...rows);
+      });
+    }
+    lines.push('');
+    lines.push(`${icon} <b>[${label}]</b> - 반월 ${bwRows.length} 시화 ${shRows.length}`);
+    if(bwRows.length) lines.push(fmtCarList('└ 반월: ', bwRows, key));
+    if(shRows.length) lines.push(fmtCarList('└ 시화: ', shRows, key));
   });
 
   return lines.join('\n');
