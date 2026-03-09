@@ -480,18 +480,20 @@ async function tgSendIfChanged(data){
   });
 
   const rawEvents = [];
+  const getMark = s => ({'제품 상차중':'🔵','원료 하차중':'🟢','원료 대기':'⏸','부자재 입차중':'🟡','컨테이너 입차중':'⚪'}[s]||'🟢');
   const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
+  const pAbbr = p => ({'반월':'B','시화':'S'}[p]||p);
 
   if(__prevCarMap && __prevCarMap.size > 0){
     for(const [car, info] of __prevCarMap){
       if(!curMap.has(car)){
-        rawEvents.push({ type:'🔴', action: info.sec.includes('대기')?'삭제':'출차', sec: info.sec, plant: info.plant, car: info.fullCar });
+        rawEvents.push(`🔴 ${info.fullCar}  ${pAbbr(info.plant)} ${secShort(info.sec)}`);
       }
     }
     for(const [car, info] of curMap){
       const prev = __prevCarMap.get(car);
       if(!prev || prev.sec !== info.sec){
-        rawEvents.push({ type: info.sec.includes('대기')?'⏸':'🟢', action: info.sec.includes('대기')?'대기':'입차', sec: info.sec, plant: info.plant, car: info.fullCar });
+        rawEvents.push(`${getMark(info.sec)} ${info.fullCar}  ${pAbbr(info.plant)}`);
       }
     }
   }
@@ -501,10 +503,7 @@ async function tgSendIfChanged(data){
   localStorage.setItem(LS.tgTime, String(Date.now()));
 
   if(rawEvents.length > 0){
-    const lines = rawEvents.map(e =>
-      `${e.type} ${e.car}  [${e.plant}] ${secShort(e.sec)}`
-    );
-    await tgSend2Event(lines.join('\n'));
+    await tgSend2Event(rawEvents.join('\n'));
   }
 
   const msg = buildSummaryMsg(data);
