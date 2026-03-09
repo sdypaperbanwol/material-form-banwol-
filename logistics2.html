@@ -442,12 +442,12 @@ function buildShortMsg(data, eventLogs){
 
   // 섹션 순서 고정 + 아이콘 매핑
   const SEC_ORDER = [
-    { key:'제품 상차중',     icon:'🔵', label:'제 품 상 차' },
-    { key:'부자재 입차중',   icon:'🟡', label:'부 자 재' },
-    { key:'컨테이너 입차중', icon:'⚪', label:'컨 테 이 너' },
-    { key:'원료 하차중',     icon:'🟢', label:'원 료 입 차' },
-    { key:'원료 대기',       icon:'⏸',  label:'원 료 대 기' },
-  ];
+  { key:'제품 상차중',     icon:'🔵', label:'제 품 상 차' },
+  { key:'원료 하차중',     icon:'🟢', label:'원 료 입 차' },
+  { key:'원료 대기',       icon:'⏸',  label:'원 료 대 기' },
+  { key:'부자재 입차중',   icon:'🟡', label:'부 자 재' },
+  { key:'컨테이너 입차중', icon:'⚪', label:'컨 테 이 너' },
+];
 
   const byTitle = Object.fromEntries((data.sections||[]).map(s=>[s.title,s]));
 
@@ -492,16 +492,22 @@ async function tgSendIfChanged(data){
   const secShort = s => ({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
   const pAbbr = p => ({'반월':'B','시화':'S'}[p]||p);
 
-  if(__prevCarMap && __prevCarMap.size > 0){
-    for(const [car, info] of __prevCarMap){
-      if(!curMap.has(car)){
-        rawEvents.push(`🔴 ${info.fullCar} ${info.plant} ${secShort(info.sec)}`);
-      }
-    }
+    if(__prevCarMap && __prevCarMap.size > 0){
+    // 입차/이동 먼저
+    const SEC_RANK = {'제품 상차중':0,'원료 하차중':1,'원료 대기':2,'부자재 입차중':3,'컨테이너 입차중':4};
+    const inEvents = [];
     for(const [car, info] of curMap){
       const prev = __prevCarMap.get(car);
       if(!prev || prev.sec !== info.sec){
-        rawEvents.push(`${getMark(info.sec)} ${info.fullCar} ${info.plant}`);
+        inEvents.push({ rank: SEC_RANK[info.sec]??9, line:`${getMark(info.sec)} ${info.fullCar} ${info.plant}` });
+      }
+    }
+    inEvents.sort((a,b)=>a.rank-b.rank).forEach(e=>rawEvents.push(e.line));
+
+    // 출차 나중
+    for(const [car, info] of __prevCarMap){
+      if(!curMap.has(car)){
+        rawEvents.push(`🔴 ${info.fullCar} ${info.plant} ${secShort(info.sec)}`);
       }
     }
   }
