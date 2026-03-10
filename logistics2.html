@@ -362,7 +362,7 @@ function buildShortMsg(data, eventLogs){
   // 4대씩 줄바꿈
   const fmtCarList = (prefix, cars) => {
     if(!cars.length) return null;
-    const indent = '                                  ';  //
+    const indent = '                                     ';  //
     const chunks = [];
     for(let i=0; i<cars.length; i+=4) chunks.push(cars.slice(i,i+4).join(', '));
     return prefix + chunks.join(',\n' + indent);
@@ -499,22 +499,41 @@ async function tgSendIfChanged(data){
     g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curMap.set(last4(r.car),{sec:sec.title,plant:g.plant,fullCar:r.car}))
   ));
 
-  const rawEvents=[];
   const getMark=s=>({'제품 상차중':'🔵','원료 하차중':'🟢','원료 대기':'⏸','부자재 입차중':'🟡','컨테이너 입차중':'⚪'}[s]||'🟢');
   const secShort=s=>({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
+  const SEC_RANK={'제품 상차중':0,'원료 하차중':1,'원료 대기':2,'부자재 입차중':3,'컨테이너 입차중':4};
+  const PLANT_ORDER=['반월','시화'];
+
+  // 공장별 이벤트 수집: { 반월: [{rank, mark, car, secShort}], 시화: [...] }
+  const eventsByPlant={반월:[],시화:[]};
 
   if(__prevCarMap&&__prevCarMap.size>0){
-    const SEC_RANK={'제품 상차중':0,'원료 하차중':1,'원료 대기':2,'부자재 입차중':3,'컨테이너 입차중':4};
-    const inEvents=[];
     for(const [car,info] of curMap){
       const prev=__prevCarMap.get(car);
-      if(!prev||prev.sec!==info.sec) inEvents.push({rank:SEC_RANK[info.sec]??9,line:`${getMark(info.sec)} ${info.fullCar} ${info.plant}`});
+      if(!prev||prev.sec!==info.sec){
+        const plant=info.plant;
+        if(eventsByPlant[plant]!==undefined)
+          eventsByPlant[plant].push({rank:SEC_RANK[info.sec]??9, line:`${getMark(info.sec)} ${info.fullCar}`});
+      }
     }
-    inEvents.sort((a,b)=>a.rank-b.rank).forEach(e=>rawEvents.push(e.line));
     for(const [car,info] of __prevCarMap){
-      if(!curMap.has(car)) rawEvents.push(`🔴 ${info.fullCar} ${info.plant} ${secShort(info.sec)}`);
+      if(!curMap.has(car)){
+        const plant=info.plant;
+        if(eventsByPlant[plant]!==undefined)
+          eventsByPlant[plant].push({rank:(SEC_RANK[info.sec]??9)+0.5, line:`🔴 ${info.fullCar} ${secShort(info.sec)}`});
+      }
     }
   }
+
+  // 공장별로 묶어서 섹션 순 정렬
+  const rawEvents=[];
+  PLANT_ORDER.forEach(plant=>{
+    const evts=eventsByPlant[plant];
+    if(!evts||!evts.length) return;
+    evts.sort((a,b)=>a.rank-b.rank);
+    rawEvents.push(`[${plant}]`);
+    evts.forEach(e=>rawEvents.push(e.line));
+  });
 
   __prevCarMap=new Map(curMap);
   localStorage.setItem(LS.tgHash,hash);
