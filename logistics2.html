@@ -484,22 +484,22 @@ function saveEventLog(log){ localStorage.setItem(LS.eventLog, JSON.stringify(log
 // 렌더 예:
 // 16:00 시화 🟢 3543  반월 🟢 2688
 //       시화 ⏸ 2888
+// HTML 특수문자 제거 (텔레그램 전송 에러 방지용)
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
 function buildEventLogMsg(log){
   const n=nowKST();
   const dateStr=`${p2(n.getMonth()+1)}-${p2(n.getDate())}`;
   const header=`📋 <b>오늘 이벤트</b> (${dateStr})\n`;
   if(!log||!log.length) return header+'(아직 이벤트 없음)';
 
-  // 셀: 이모지+차번만 (반월/시화는 헤더에 고정)
-  // '🔵▲ 1234' = 이모지2+기호1+공백1+숫자4 = 8칸
   const CELL_W = 10;
   const SEP = '  ';
   const charW = s => { let w=0; for(const c of String(s||'')) w+=(c.codePointAt(0)>0x2E7F)?2:1; return w; };
   const padR  = (s, w) => s + ' '.repeat(Math.max(0, w - charW(s)));
 
-  // 헤더: 시각(5) + 공백1 + 반월열 + SEP + 시화열
   const TIME_W = 5;
-  const header2 = ' '.repeat(TIME_W+6) + padR('반월', CELL_W) + SEP + '   ' + '시화';
+  const header2 = ' '.repeat(TIME_W+6) + padR('반월', CELL_W) + SEP + '    ' + '시화';
   const rows = [header2];
 
   log.forEach(entry => {
@@ -508,8 +508,9 @@ function buildEventLogMsg(log){
     const maxLen = Math.max(bw.length, sh.length, 1);
     for(let i=0; i<maxLen; i++){
       const timeCol = i===0 ? entry.time : ' '.repeat(TIME_W);
-      const bwCell  = bw[i] ? `${bw[i].mark} ${bw[i].car}` : '';
-      const shCell  = sh[i] ? `   ${sh[i].mark} ${sh[i].car}` : '';
+      // 차량번호에 esc() 적용하여 텔레그램 에러 방지
+      const bwCell  = bw[i] ? `${bw[i].mark} ${esc(bw[i].car)}` : '';
+      const shCell  = sh[i] ? `    ${sh[i].mark} ${esc(sh[i].car)}` : '';
       rows.push((`${timeCol} ${padR(bwCell, CELL_W)}${SEP}${shCell}`).trimEnd());
     }
   });
@@ -955,6 +956,8 @@ document.getElementById('btnViewWeigh').addEventListener('click',()=>{
 // ═══════════════════════════════════════════
 //  [J] 초기화
 // ═══════════════════════════════════════════
+  // 에러 방지를 위한 빈 함수 추가
+function syncWatch(cars) { /* 감시 로직 필요시 구현 */ }
 (function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
   const sq=localStorage.getItem(LS.q);    if(sq) document.getElementById('searchInput').value=sq;
