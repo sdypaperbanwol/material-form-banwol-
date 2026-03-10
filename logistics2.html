@@ -1001,26 +1001,31 @@ document.getElementById('btnViewWeigh').addEventListener('click',()=>{
   }, 20000);
 
   // ★ 자정 감지 → 전날 알람 메시지 일괄 삭제
-  let __lastDate = nowKST().getDate();
-  setInterval(async ()=>{
-    const today = nowKST().getDate();
-    if(today === __lastDate) return;
-    __lastDate = today;
-    localStorage.removeItem(LS.msgId1);
-    localStorage.removeItem(LS.msgId2);
-    localStorage.removeItem(LS.tgHash);
-    const ids = JSON.parse(localStorage.getItem(LS.eventMsgIds)||'[]');
-    for(const msgId of ids){
-      try{
-        await fetch(`https://api.telegram.org/bot${TG2.token}/deleteMessage`,{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ chat_id:TG2.chatId, message_id:msgId })
-        });
-      }catch(e){}
-    }
-    localStorage.removeItem(LS.eventMsgIds);
-    showToast('날짜 변경 - 메시지 초기화됨');
-  }, 60000);
+let __lastDate = nowKST().getDate();
+setInterval(async ()=>{
+  const today = nowKST().getDate();
+  if(today === __lastDate) return;
+  __lastDate = today;
+
+  // ❌ 아래 두 줄 삭제 (msgId는 유지해서 pin 고정 메시지 계속 수정)
+  // localStorage.removeItem(LS.msgId1);
+  // localStorage.removeItem(LS.msgId2);
+
+  localStorage.removeItem(LS.tgHash); // 해시만 초기화 (내용 갱신 트리거)
+
+  // 이벤트 메시지 삭제는 유지
+  const ids = JSON.parse(localStorage.getItem(LS.eventMsgIds)||'[]');
+  for(const msgId of ids){
+    try{
+      await fetch(`https://api.telegram.org/bot${TG2.token}/deleteMessage`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id:TG2.chatId, message_id:msgId })
+      });
+    }catch(e){}
+  }
+  localStorage.removeItem(LS.eventMsgIds);
+  showToast('날짜 변경 - 메시지 초기화됨');
+}, 60000);
 
   // 텔레그램 폴링 초기화
   if(!localStorage.getItem(LS.tgOffset)){
