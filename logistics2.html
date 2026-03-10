@@ -359,7 +359,8 @@ function buildShortMsg(data, eventLogs){
 
   const byTitle = Object.fromEntries((data.sections||[]).map(s=>[s.title,s]));
 
-  const indent = '           ';  // 차량 목록 들여쓰기 — 스페이스바로 조절
+  const carIndent = '     └ ';  // 차량 목록 들여쓰기
+  const carIndentPad = '       ';  // 줄바꿈 시 정렬
 
   PLANTS.forEach(({ label }) => {
     lines.push('');
@@ -375,11 +376,11 @@ function buildShortMsg(data, eventLogs){
         const w = watchList[last4(r.car)] !== undefined ? '👁' : '';
         return r.car + (lng||w ? `${lng}${w}` : '');
       });
-      lines.push(`└ ${secIcon} ${secLabel}(${cars.length})`);
+      lines.push(`${secIcon} ${secLabel}(${cars.length})`);
       if(cars.length){
         const chunks = [];
         for(let i=0; i<cars.length; i+=4) chunks.push(cars.slice(i,i+4).join(', '));
-        lines.push(indent + chunks.join(',\n' + indent));
+        lines.push(carIndent + chunks.join(',\n' + carIndentPad));
       }
     });
   });
@@ -398,21 +399,24 @@ function buildDailySummaryMsg(s){
 
     // 제품
     const pr = s.product[key];
-    lines.push(` 🔵 제품: ${pr.count}대 / ${pr.ton.toLocaleString()}kg`);
+    lines.push(` 🔵 제품(${pr.count})`);
+    lines.push(`     └ ${pr.ton.toLocaleString()}kg`);
 
     // 원료
     const rm = s.rawMaterial[key];
-    lines.push(` 🟢 원료: ${rm.count}대 / ${rm.ton.toLocaleString()}kg`);
+    lines.push(` 🟢 원료(${rm.count})`);
+    lines.push(`     └ ${rm.ton.toLocaleString()}kg`);
 
     // 부자재
     const sm = s.submat[key] || [];
     const smTotal = sm.reduce((a,i)=>a+i.count,0);
     const smKg    = sm.reduce((a,i)=>a+i.total,0);
     if(sm.length){
-      lines.push(` 🟡 부자재: ${smTotal}대 / ${smKg.toLocaleString()}kg`);
-      sm.forEach(i => lines.push(`   └ ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
+      lines.push(` 🟡 부자재(${smTotal})`);
+      lines.push(`     └ ${smKg.toLocaleString()}kg`);
+      sm.forEach(i => lines.push(`       └ ${i.name}(${i.count}) ${i.total.toLocaleString()}kg`));
     } else {
-      lines.push(` 🟡 부자재: 0대`);
+      lines.push(` 🟡 부자재(0)`);
     }
 
     // 컨테이너
@@ -420,10 +424,11 @@ function buildDailySummaryMsg(s){
     const ctTotal = ct.reduce((a,i)=>a+i.count,0);
     const ctKg    = ct.reduce((a,i)=>a+i.total,0);
     if(ct.length){
-      lines.push(` ⚪ 컨테이너: ${ctTotal}대 / ${ctKg.toLocaleString()}kg`);
-      ct.forEach(i => lines.push(`   └ ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
+      lines.push(` ⚪ 컨테이너(${ctTotal})`);
+      lines.push(`     └ ${ctKg.toLocaleString()}kg`);
+      ct.forEach(i => lines.push(`       └ ${i.name}(${i.count}) ${i.total.toLocaleString()}kg`));
     } else {
-      lines.push(` ⚪ 컨테이너: 0대`);
+      lines.push(` ⚪ 컨테이너(0)`);
     }
   });
 
