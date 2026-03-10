@@ -412,7 +412,7 @@ function fmtTag(sec, plant){
   return `[${s}-${plant}]`;
 }
 const SHORT_LABELS = {
-  '제품 상차중':'제 품 상 차', '원료 하차중':'원 료 입 차',
+  '제품 상차중':'제 품 상 차', '원료 하차중':'원 료 하 차',
   '원료 대기':'원 료 대 기', '부자재 입차중':'부 자 재', '컨테이너 입차중':'컨 테 이 너'
 };
 
@@ -444,7 +444,7 @@ function buildShortMsg(data, eventLogs){
   // 섹션 순서 고정 + 아이콘 매핑
   const SEC_ORDER = [
   { key:'제품 상차중',     icon:'🔵', label:'제 품 상 차' },
-  { key:'원료 하차중',     icon:'🟢', label:'원 료 입 차' },
+  { key:'원료 하차중',     icon:'🟢', label:'원 료 하 차' },
   { key:'원료 대기',       icon:'⏸',  label:'원 료 대 기' },
   { key:'부자재 입차중',   icon:'🟡', label:'부 자 재' },
   { key:'컨테이너 입차중', icon:'⚪', label:'컨 테 이 너' },
@@ -541,13 +541,13 @@ function buildDailySummaryMsg(s){
   if(!s) return '';
   const lines = ['\n────────────────', '📊 <b>오늘 실적 요약</b>'];
 
-  // 원료 인수량
-  lines.push('\n🚚 <b>원료 인수량</b>');
+  // 원료
+  lines.push('\n🚚 <b>원료</b>');
   lines.push(`  반월: ${s.rawMaterial.banwol.count}대 / ${s.rawMaterial.banwol.ton.toLocaleString()}kg`);
   lines.push(`  시화: ${s.rawMaterial.sihwa.count}대 / ${s.rawMaterial.sihwa.ton.toLocaleString()}kg`);
 
-  // 제품 출하
-  lines.push('\n📦 <b>제품 출하</b>');
+  // 제품
+  lines.push('\n📦 <b>제품</b>');
   lines.push(`  반월: ${s.product.banwol.count}대 / ${s.product.banwol.ton.toLocaleString()}kg`);
   lines.push(`  시화: ${s.product.sihwa.count}대 / ${s.product.sihwa.ton.toLocaleString()}kg`);
 
