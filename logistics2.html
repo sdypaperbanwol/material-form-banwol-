@@ -565,75 +565,86 @@ async function tgSend2OrEdit(text){
 
 async function tgSendIfChanged(data){
   if(!TG.enabled||!data||!data.sections) return;
-  const hash=buildHash(data);
-  const lastHash=localStorage.getItem(LS.tgHash)||'';
-  if(hash===lastHash) return;
 
-  const curMap=new Map();
-  data.sections.forEach(sec=>sec.groups.forEach(g=>
-    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{ const k=last4(r.car); if(k) curMap.set(k,{sec:sec.title,plant:g.plant,fullCar:r.car}); })
-  ));
-
-  const getMarkIn =s=>({'제품 상차중':'🔵▲','원료 하차중':'🟢▲','원료 대기':'⏸▲','부자재 입차중':'🟡▲','컨테이너 입차중':'⚪▲'}[s]||'🟢▲');
-  const getMarkOut=s=>({'제품 상차중':'🔵▼','원료 하차중':'🟢▼','원료 대기':'⏸▼','부자재 입차중':'🟡▼','컨테이너 입차중':'⚪▼'}[s]||'🟢▼');
-  const secShort=s=>({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
-  const SEC_RANK={'제품 상차중':0,'원료 하차중':1,'원료 대기':2,'부자재 입차중':3,'컨테이너 입차중':4};
-
-  // 이벤트 수집 (공장별)
-  const eventsByPlant={반월:[],시화:[]};
-
-  if(__prevCarMap&&__prevCarMap.size>0){
-    // 입차/섹션변경
-    for(const [car,info] of curMap){
-      const prev=__prevCarMap.get(car);
-      if(!prev||prev.sec!==info.sec){
-        const plant=info.plant;
-        if(eventsByPlant[plant]!==undefined)
-          eventsByPlant[plant].push({rank:SEC_RANK[info.sec]??9, mark:getMarkIn(info.sec), car:info.fullCar, type:'in', sec:info.sec});
-      }
-    }
-    // 출차
-    for(const [car,info] of __prevCarMap){
-      if(!curMap.has(car)){
-        const plant=info.plant;
-        if(eventsByPlant[plant]!==undefined)
-          eventsByPlant[plant].push({rank:(SEC_RANK[info.sec]??9)+0.5, mark:getMarkOut(info.sec), car:info.fullCar, type:'out', sec:info.sec});
-      }
-    }
-  }
-
-  __prevCarMap=new Map(curMap);
-  localStorage.setItem(LS.tgHash,hash);
-  localStorage.setItem(LS.tgTime,String(Date.now()));
-
-  // 이벤트가 있으면 이벤트 로그에 추가 → msgId3 수정
-  const bwEvts=(eventsByPlant['반월']||[]).sort((a,b)=>a.rank-b.rank);
-  const shEvts=(eventsByPlant['시화']||[]).sort((a,b)=>a.rank-b.rank);
-
-  if(bwEvts.length||shEvts.length){
-    const n=nowKST();
-    const timeStr=`${p2(n.getHours())}:${p2(n.getMinutes())}`;
-
-    const eventsArr=[
-      ...bwEvts.map(e=>({plant:'반월', mark:e.mark, car:e.car})),
-      ...shEvts.map(e=>({plant:'시화', mark:e.mark, car:e.car})),
-    ];
-
-    const updatedLog=appendEventLog(timeStr,eventsArr);
-    await tgUpdateEventLog(updatedLog);
-  }
-
-  // 핀 고정 현황 요약 갱신 (msgId2)
-  const shortMsg=buildShortMsg(data);
-  const daily=await loadDailySummary();
-  const dailyPart=buildDailySummaryMsg(daily);
-  if(shortMsg||dailyPart) await tgSend2OrEdit((shortMsg||'')+dailyPart);
+  // ------------------------------------------------------------
+  // [1] 변동 여부와 상관없이 '항상' 실행 (시간 갱신용)
+  // ------------------------------------------------------------
+  
+  // 핀 고정 현황 요약 갱신 (msgId2) - buildShortMsg 내부에서 현재 시간을 가져옴
+  const shortMsg = buildShortMsg(data);
+  const daily = await loadDailySummary();
+  const dailyPart = buildDailySummaryMsg(daily);
+  if(shortMsg || dailyPart) await tgSend2OrEdit((shortMsg || '') + dailyPart);
 
   // 봇1 상세 현황 갱신 (msgId1)
-  const summary=buildSummaryMsg(data);
-  if(summary||dailyPart) await tgSendOrEdit((summary||'')+dailyPart);
-}
+  const summary = buildSummaryMsg(data);
+  if(summary || dailyPart) await tgSendOrEdit((summary || '') + dailyPart);
 
+
+  // ------------------------------------------------------------
+  // [2] 데이터 변동 체크 (여기서부터는 차량 움직임이 있을 때만 실행)
+  // ------------------------------------------------------------
+  const hash = buildHash(data);
+  const lastHash = localStorage.getItem(LS.tgHash) || '';
+  
+  // 변동이 없으면 여기서 함수 종료 (이벤트 로그를 남기지 않음)
+  if(hash === lastHash) return;
+
+  const curMap = new Map();
+  data.sections.forEach(sec => sec.groups.forEach(g =>
+    g.rows.filter(r => !isMonoDigit(r.car)).forEach(r => { 
+      const k = last4(r.car); 
+      if(k) curMap.set(k, {sec: sec.title, plant: g.plant, fullCar: r.car}); 
+    })
+  ));
+
+  const getMarkIn = s => ({'제품 상차중':'🔵▲','원료 하차중':'🟢▲','원료 대기':'⏸▲','부자재 입차중':'🟡▲','컨테이너 입차중':'⚪▲'}[s] || '🟢▲');
+  const getMarkOut = s => ({'제품 상차중':'🔵▼','원료 하차중':'🟢▼','원료 대기':'⏸▼','부자재 입차중':'🟡▼','컨테이너 입차중':'⚪▼'}[s] || '🟢▼');
+  const SEC_RANK = {'제품 상차중':0, '원료 하차중':1, '원료 대기':2, '부자재 입차중':3, '컨테이너 입차중':4};
+
+  const eventsByPlant = {반월:[], 시화:[]};
+
+  if(__prevCarMap && __prevCarMap.size > 0){
+    // 입차/섹션변경 감지
+    for(const [car, info] of curMap){
+      const prev = __prevCarMap.get(car);
+      if(!prev || prev.sec !== info.sec){
+        const plant = info.plant;
+        if(eventsByPlant[plant] !== undefined)
+          eventsByPlant[plant].push({rank: SEC_RANK[info.sec] ?? 9, mark: getMarkIn(info.sec), car: info.fullCar, type: 'in', sec: info.sec});
+      }
+    }
+    // 출차 감지
+    for(const [car, info] of __prevCarMap){
+      if(!curMap.has(car)){
+        const plant = info.plant;
+        if(eventsByPlant[plant] !== undefined)
+          eventsByPlant[plant].push({rank: (SEC_RANK[info.sec] ?? 9) + 0.5, mark: getMarkOut(info.sec), car: info.fullCar, type: 'out', sec: info.sec});
+      }
+    }
+  }
+
+  // 변경된 상태 저장
+  __prevCarMap = new Map(curMap);
+  localStorage.setItem(LS.tgHash, hash);
+  localStorage.setItem(LS.tgTime, String(Date.now()));
+
+  // 변동 사항이 있다면 이벤트 로그(msgId3) 업데이트
+  const bwEvts = (eventsByPlant['반월'] || []).sort((a,b) => a.rank - b.rank);
+  const shEvts = (eventsByPlant['시화'] || []).sort((a,b) => a.rank - b.rank);
+
+  if(bwEvts.length || shEvts.length){
+    const n = nowKST();
+    const timeStr = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
+    const eventsArr = [
+      ...bwEvts.map(e => ({plant: '반월', mark: e.mark, car: e.car})),
+      ...shEvts.map(e => ({plant: '시화', mark: e.mark, car: e.car})),
+    ];
+
+    const updatedLog = appendEventLog(timeStr, eventsArr);
+    await tgUpdateEventLog(updatedLog);
+  }
+}
 // ═══════════════════════════════════════════
 //  [E] 감시 상태 동기화
 // ═══════════════════════════════════════════
