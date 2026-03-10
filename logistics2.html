@@ -544,7 +544,7 @@ async function tgSendIfChanged(data){
       const r = shEvts[i] ? shEvts[i].line : '';
       rows.push(l + r);
     }
-    await tgSend2Event(rows.join('\n'));
+    await tgSend2Event('<code>' + rows.join('\n') + '</code>');
   }
 
   const summary=buildSummaryMsg(data);
