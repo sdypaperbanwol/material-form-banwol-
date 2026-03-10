@@ -545,7 +545,7 @@ async function tgSendIfChanged(data){
     // 헤더
     rows.push(padItem('[반월]') + '[시화]');
     for(let i=0; i<maxLen; i++){
-      const l = bwEvts[i] ? padItem(bwEvts[i].line) : ' '.repeat(18);
+      const l = bwEvts[i] ? padItem(bwEvts[i].line) : ' '.repeat(20);
       const r = shEvts[i] ? shEvts[i].line : '';
       rows.push(l + r);
     }
