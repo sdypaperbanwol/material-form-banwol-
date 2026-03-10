@@ -493,7 +493,7 @@ async function tgSendIfChanged(data){
 
   const curMap=new Map();
   data.sections.forEach(sec=>sec.groups.forEach(g=>
-    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curMap.set(last4(r.car),{sec:sec.title,plant:g.plant,fullCar:r.car}))
+    g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{ const k=last4(r.car); if(k) curMap.set(k,{sec:sec.title,plant:g.plant,fullCar:r.car}); })
   ));
 
   const getMark=s=>({'제품 상차중':'🔵','원료 하차중':'🟢','원료 대기':'⏸','부자재 입차중':'🟡','컨테이너 입차중':'⚪'}[s]||'🟢');
@@ -517,7 +517,7 @@ async function tgSendIfChanged(data){
       if(!curMap.has(car)){
         const plant=info.plant;
         if(eventsByPlant[plant]!==undefined)
-          eventsByPlant[plant].push({rank:(SEC_RANK[info.sec]??9)+0.5, line:`🔴 ${info.fullCar}`});
+          eventsByPlant[plant].push({rank:(SEC_RANK[info.sec]??9)+0.5, line:`🔴 ${info.fullCar} ${secShort(info.sec)}`});
       }
     }
   }
