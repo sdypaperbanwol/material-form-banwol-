@@ -344,7 +344,6 @@ async function syncDailyLogFromServer() {
     const res = await fetch(`${SNAPSHOT_URL}?action=get_daily_log&token=${API_TOKEN}&_ts=${Date.now()}`);
     const data = await res.json();
     if (data && data.events) {
-      // 1. 서버에서 가져온 데이터를 시간대별로 묶기
       let logMap = {}; 
       data.events.forEach(ev => {
         if(!logMap[ev.time]) logMap[ev.time] = [];
@@ -353,27 +352,22 @@ async function syncDailyLogFromServer() {
 
       let formattedLog = Object.entries(logMap).map(([time, events]) => ({ time, events }));
       
-      // 2. [중요] 텔레그램 4,000자 제한에 걸리지 않도록 뒤에서부터(최신순) 자르기
-      // buildEventLogMsg를 시뮬레이션하며 한도 체크
+      // 텔레그램 안전 한도 (태그 포함 3500자)
       while (formattedLog.length > 0) {
         const testMsg = buildEventLogMsg(formattedLog);
-        if (testMsg.length <= EVENT_LOG_MAX_CHARS) break;
-        formattedLog.shift(); // 너무 길면 가장 오래된 기록(오전)부터 제거
+        if (testMsg.length <= 3500) break; 
+        formattedLog.shift(); // 오래된 기록부터 삭제
       }
       
-      // 3. 텔레그램 메시지 3번 업데이트
       await tgUpdateEventLog(formattedLog);
-      
-      // 4. 로컬 로그에도 저장 (이후 실시간 변동분과 합쳐짐)
       saveEventLog(formattedLog);
       showToast(`오늘 기록 ${data.events.length}건 동기화 완료`);
     }
   } catch(e) { 
     console.error("서버 로그 동기화 실패", e); 
-    showToast("로그 동기화 실패 (콘솔 확인)");
+    showToast("로그 동기화 실패");
   }
 }
-
 const SEC_ORDER_SHORT = [
   { key:'제품 상차중',     icon:'🔵', label:'제품 상차' },
   { key:'원료 하차중',     icon:'🟢', label:'원료 하차' },
