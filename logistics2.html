@@ -468,7 +468,7 @@ function buildEventLogMsg(log){
 
   // 헤더: 시각(5) + 공백1 + 반월열 + SEP + 시화열
   const TIME_W = 5;
-  const header2 = ' '.repeat(TIME_W+6) + padR('반월', CELL_W) + SEP + '     ' + '시화';
+  const header2 = ' '.repeat(TIME_W+6) + padR('반월', CELL_W) + SEP + '   ' + '시화';
   const rows = [header2];
 
   log.forEach(entry => {
