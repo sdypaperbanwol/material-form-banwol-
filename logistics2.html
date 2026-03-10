@@ -523,20 +523,32 @@ async function tgSendIfChanged(data){
   }
 
   // 공장별로 묶어서 섹션 순 정렬
-  const rawEvents=[];
-  PLANT_ORDER.forEach(plant=>{
-    const evts=eventsByPlant[plant];
-    if(!evts||!evts.length) return;
-    evts.sort((a,b)=>a.rank-b.rank);
-    rawEvents.push(`[${plant}]`);
-    evts.forEach(e=>rawEvents.push(e.line));
-  });
+  const bwEvts = (eventsByPlant['반월']||[]).sort((a,b)=>a.rank-b.rank);
+  const shEvts = (eventsByPlant['시화']||[]).sort((a,b)=>a.rank-b.rank);
 
   __prevCarMap=new Map(curMap);
   localStorage.setItem(LS.tgHash,hash);
   localStorage.setItem(LS.tgTime,String(Date.now()));
 
-  if(rawEvents.length>0) await tgSend2Event(rawEvents.join('\n'));
+  if(bwEvts.length || shEvts.length){
+    // 각 항목을 고정 너비로 패딩 (이모지1 + 공백 + 차번4 + 공백 + 섹션 최대6 = 약 14자)
+    const padItem = str => {
+      // 이모지는 2칸, 한글은 2칸으로 계산해서 18칸으로 맞춤
+      let w = 0;
+      for(const ch of str){ w += (ch.codePointAt(0) > 0x2E7F) ? 2 : 1; }
+      return str + ' '.repeat(Math.max(0, 18 - w));
+    };
+    const rows = [];
+    const maxLen = Math.max(bwEvts.length, shEvts.length);
+    // 헤더
+    rows.push(padItem('[반월]') + '[시화]');
+    for(let i=0; i<maxLen; i++){
+      const l = bwEvts[i] ? padItem(bwEvts[i].line) : ' '.repeat(18);
+      const r = shEvts[i] ? shEvts[i].line : '';
+      rows.push(l + r);
+    }
+    await tgSend2Event('<code>' + rows.join('\n') + '</code>');
+  }
 
   const summary=buildSummaryMsg(data);
   const daily=await loadDailySummary();
