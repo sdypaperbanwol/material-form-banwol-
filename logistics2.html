@@ -396,13 +396,13 @@ function buildDailySummaryMsg(s){
     lines.push('');
     lines.push(`<b>${label}</b>`);
 
-    // 원료
-    const rm = s.rawMaterial[key];
-    lines.push(` - 원료: ${rm.count}대 / ${rm.ton.toLocaleString()}kg`);
-
     // 제품
     const pr = s.product[key];
     lines.push(` - 제품: ${pr.count}대 / ${pr.ton.toLocaleString()}kg`);
+
+    // 원료
+    const rm = s.rawMaterial[key];
+    lines.push(` - 원료: ${rm.count}대 / ${rm.ton.toLocaleString()}kg`);
 
     // 부자재
     const sm = s.submat[key] || [];
