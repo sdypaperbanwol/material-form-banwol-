@@ -191,9 +191,10 @@ const LS = {
   tgHash     : 'tg.last.hash',
   tgTime     : 'tg.last.time',
   tgOffset   : 'tg.poll.offset',
-  msgId1     : 'tg.msg.id1',
-  msgId2     : 'tg.msg.id2',
-  eventMsgIds: 'tg.event.msg.ids',
+  msgId1     : 'tg.msg.id1',   // 봇1: 상세 현황 (사용 안 함 - 유지만)
+  msgId2     : 'tg.msg.id2',   // 봇2: 핀 고정 현황 요약
+  msgId3     : 'tg.msg.id3',   // 봇2: 오늘 이벤트 이력 (누적)
+  eventLog   : 'tg.event.log', // 이벤트 로그 배열 (JSON)
 };
 
 // ═══════════════════════════════════════════
@@ -349,18 +350,16 @@ const PLANTS = [
 ];
 const WARN_SECS = ['원료 하차중','원료 대기'];
 
-function buildShortMsg(data, eventLogs){
+function buildShortMsg(data){
   if(!data||!data.sections) return null;
   const n=nowKST();
   const ts=`${p2(n.getMonth()+1)}-${p2(n.getDate())} ${p2(n.getHours())}:${p2(n.getMinutes())}`;
   const lines=[`🏭 <b>현황 요약</b> (${ts})`];
 
-  if(eventLogs && eventLogs.length){ lines.push(''); lines.push(...eventLogs); }
-
   const byTitle = Object.fromEntries((data.sections||[]).map(s=>[s.title,s]));
 
-  const carIndent = '     └ ';  // 차량 목록 들여쓰기
-  const carIndentPad = '       ';  // 줄바꿈 시 정렬
+  const carIndent = '     └ ';
+  const carIndentPad = '         ';
 
   PLANTS.forEach(({ label }) => {
     lines.push('');
@@ -397,17 +396,14 @@ function buildDailySummaryMsg(s){
     lines.push('');
     lines.push(`<b>${label}</b>`);
 
-    // 제품
     const pr = s.product[key];
     lines.push(` 🔵 제품(${pr.count})`);
     lines.push(`     └ ${pr.ton.toLocaleString()}kg`);
 
-    // 원료
     const rm = s.rawMaterial[key];
     lines.push(` 🟢 원료(${rm.count})`);
     lines.push(`     └ ${rm.ton.toLocaleString()}kg`);
 
-    // 부자재
     const sm = s.submat[key] || [];
     const smTotal = sm.reduce((a,i)=>a+i.count,0);
     const smKg    = sm.reduce((a,i)=>a+i.total,0);
@@ -419,7 +415,6 @@ function buildDailySummaryMsg(s){
       lines.push(` 🟡 부자재(0)`);
     }
 
-    // 컨테이너
     const ct = s.container[key] || [];
     const ctTotal = ct.reduce((a,i)=>a+i.count,0);
     const ctKg    = ct.reduce((a,i)=>a+i.total,0);
@@ -439,6 +434,101 @@ async function loadDailySummary(){
   try{ const res=await fetch(`${SNAPSHOT_URL}?action=daily_summary&token=${API_TOKEN}&_ts=${Date.now()}`); return await res.json(); }catch(e){ return null; }
 }
 
+// ─────────────────────────────────────────
+//  이벤트 로그 관리 (msgId3)
+//  저장 형식: [{time:'15:28', bw:['🔵 1234'], sh:['🔴 5678 제품']}, ...]
+// ─────────────────────────────────────────
+const EVENT_LOG_MAX_CHARS = 3800;
+
+function loadEventLog(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(LS.eventLog)||'[]');
+    // 구형 포맷(string, 또는 bw/sh 키) 필터링 — events 키 있는 항목만 사용
+    return raw.filter(e=>e&&typeof e==='object'&&e.time&&Array.isArray(e.events));
+  }catch(e){ return []; }
+}
+function saveEventLog(log){ localStorage.setItem(LS.eventLog, JSON.stringify(log)); }
+
+// 저장 포맷: [{time:'15:28', events:[{plant:'반월',mark:'🔵',car:'경기1234'},...]}]
+// 렌더 예:
+// 16:00 시화 🟢 3543  반월 🟢 2688
+//       시화 ⏸ 2888
+function buildEventLogMsg(log){
+  const n=nowKST();
+  const dateStr=`${p2(n.getMonth()+1)}-${p2(n.getDate())}`;
+  const header=`📋 <b>오늘 이벤트</b> (${dateStr})\n`;
+  if(!log||!log.length) return header+'(아직 이벤트 없음)';
+
+  // 셀: 이모지+차번만 (반월/시화는 헤더에 고정)
+  // '🔵▲ 1234' = 이모지2+기호1+공백1+숫자4 = 8칸
+  const CELL_W = 10;
+  const SEP = '  ';
+  const charW = s => { let w=0; for(const c of String(s||'')) w+=(c.codePointAt(0)>0x2E7F)?2:1; return w; };
+  const padR  = (s, w) => s + ' '.repeat(Math.max(0, w - charW(s)));
+
+  // 헤더: 시각(5) + 공백1 + 반월열 + SEP + 시화열
+  const TIME_W = 5;
+  const header2 = ' '.repeat(TIME_W+6) + padR('반월', CELL_W) + SEP + '     ' + '시화';
+  const rows = [header2];
+
+  log.forEach(entry => {
+    const bw = (entry.events||[]).filter(e=>e.plant==='반월');
+    const sh = (entry.events||[]).filter(e=>e.plant==='시화');
+    const maxLen = Math.max(bw.length, sh.length, 1);
+    for(let i=0; i<maxLen; i++){
+      const timeCol = i===0 ? entry.time : ' '.repeat(TIME_W);
+      const bwCell  = bw[i] ? `${bw[i].mark} ${bw[i].car}` : '';
+      const shCell  = sh[i] ? `   ${sh[i].mark} ${sh[i].car}` : '';
+      rows.push((`${timeCol} ${padR(bwCell, CELL_W)}${SEP}${shCell}`).trimEnd());
+    }
+  });
+
+  return header + '<code>' + rows.join('\n') + '</code>';
+}
+
+// 이벤트 로그에 항목 추가 후 4096자 초과 시 오래된 항목부터 제거
+// eventsArr: [{plant, mark, car}] 배열
+function appendEventLog(timeStr, eventsArr){
+  const log = loadEventLog();
+
+  // 같은 분이면 마지막 항목에 병합
+  const last = log[log.length-1];
+  if(last && last.time === timeStr){
+    eventsArr.forEach(e => last.events.push(e));
+  } else {
+    log.push({ time: timeStr, events: [...eventsArr] });
+  }
+
+  // 크기 초과 시 오래된 항목 제거
+  while(true){
+    const msg = buildEventLogMsg(log);
+    const rawLen = msg.replace(/<[^>]+>/g,'').length;
+    if(rawLen <= EVENT_LOG_MAX_CHARS || log.length === 0) break;
+    log.shift();
+  }
+
+  saveEventLog(log);
+  return log;
+}
+
+// msgId3: 이벤트 이력 메시지 수정 or 신규 생성
+async function tgUpdateEventLog(log){
+  if(!TG.enabled) return;
+  const text = buildEventLogMsg(log);
+  const msgId = localStorage.getItem(LS.msgId3);
+  try{
+    if(msgId){
+      const res=await fetch(`https://api.telegram.org/bot${TG2.token}/editMessageText`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG2.chatId,message_id:Number(msgId),text,parse_mode:'HTML'})});
+      const j=await res.json(); if(!j.ok) throw new Error(j.description);
+    } else throw new Error('no msgId3');
+  }catch(e){
+    try{
+      const res=await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG2.chatId,text,parse_mode:'HTML'})});
+      const j=await res.json(); if(j.ok&&j.result) localStorage.setItem(LS.msgId3,String(j.result.message_id));
+    }catch(e2){}
+  }
+}
+
 // 봇1 고정 메시지 수정
 async function tgSendOrEdit(text){
   if(!TG.enabled) return;
@@ -456,7 +546,7 @@ async function tgSendOrEdit(text){
   }
 }
 
-// 봇2 고정 메시지 수정 (pin 유지 — msgId 자정에도 삭제 안 함)
+// 봇2 핀 고정 메시지 수정 (msgId2)
 async function tgSend2OrEdit(text){
   if(!TG.enabled) return;
   const msgId=localStorage.getItem(LS.msgId2);
@@ -473,20 +563,6 @@ async function tgSend2OrEdit(text){
   }
 }
 
-// 봇2 이벤트 메시지 (항상 새 메시지)
-async function tgSend2Event(text){
-  if(!TG.enabled) return;
-  try{
-    const res=await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG2.chatId,text,parse_mode:'HTML'})});
-    const j=await res.json();
-    if(j.ok&&j.result){
-      const ids=JSON.parse(localStorage.getItem(LS.eventMsgIds)||'[]');
-      ids.push(j.result.message_id);
-      localStorage.setItem(LS.eventMsgIds,JSON.stringify(ids));
-    }
-  }catch(e){}
-}
-
 async function tgSendIfChanged(data){
   if(!TG.enabled||!data||!data.sections) return;
   const hash=buildHash(data);
@@ -498,67 +574,64 @@ async function tgSendIfChanged(data){
     g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{ const k=last4(r.car); if(k) curMap.set(k,{sec:sec.title,plant:g.plant,fullCar:r.car}); })
   ));
 
-  const getMark=s=>({'제품 상차중':'🔵','원료 하차중':'🟢','원료 대기':'⏸','부자재 입차중':'🟡','컨테이너 입차중':'⚪'}[s]||'🟢');
+  const getMarkIn =s=>({'제품 상차중':'🔵▲','원료 하차중':'🟢▲','원료 대기':'⏸▲','부자재 입차중':'🟡▲','컨테이너 입차중':'⚪▲'}[s]||'🟢▲');
+  const getMarkOut=s=>({'제품 상차중':'🔵▼','원료 하차중':'🟢▼','원료 대기':'⏸▼','부자재 입차중':'🟡▼','컨테이너 입차중':'⚪▼'}[s]||'🟢▼');
   const secShort=s=>({'제품 상차중':'제품','원료 하차중':'원료','원료 대기':'원료','부자재 입차중':'부자재','컨테이너 입차중':'컨테이너'}[s]||s);
   const SEC_RANK={'제품 상차중':0,'원료 하차중':1,'원료 대기':2,'부자재 입차중':3,'컨테이너 입차중':4};
-  const PLANT_ORDER=['반월','시화'];
 
-  // 공장별 이벤트 수집: { 반월: [{rank, mark, car, secShort}], 시화: [...] }
+  // 이벤트 수집 (공장별)
   const eventsByPlant={반월:[],시화:[]};
 
   if(__prevCarMap&&__prevCarMap.size>0){
+    // 입차/섹션변경
     for(const [car,info] of curMap){
       const prev=__prevCarMap.get(car);
       if(!prev||prev.sec!==info.sec){
         const plant=info.plant;
         if(eventsByPlant[plant]!==undefined)
-          eventsByPlant[plant].push({rank:SEC_RANK[info.sec]??9, line:`${getMark(info.sec)} ${info.fullCar}`});
+          eventsByPlant[plant].push({rank:SEC_RANK[info.sec]??9, mark:getMarkIn(info.sec), car:info.fullCar, type:'in', sec:info.sec});
       }
     }
+    // 출차
     for(const [car,info] of __prevCarMap){
       if(!curMap.has(car)){
         const plant=info.plant;
         if(eventsByPlant[plant]!==undefined)
-          eventsByPlant[plant].push({rank:(SEC_RANK[info.sec]??9)+0.5, line:`🔴 ${info.fullCar} ${secShort(info.sec)}`});
+          eventsByPlant[plant].push({rank:(SEC_RANK[info.sec]??9)+0.5, mark:getMarkOut(info.sec), car:info.fullCar, type:'out', sec:info.sec});
       }
     }
   }
-
-  // 공장별로 묶어서 섹션 순 정렬
-  const bwEvts = (eventsByPlant['반월']||[]).sort((a,b)=>a.rank-b.rank);
-  const shEvts = (eventsByPlant['시화']||[]).sort((a,b)=>a.rank-b.rank);
 
   __prevCarMap=new Map(curMap);
   localStorage.setItem(LS.tgHash,hash);
   localStorage.setItem(LS.tgTime,String(Date.now()));
 
-  if(bwEvts.length || shEvts.length){
-    // 각 항목을 고정 너비로 패딩 (이모지1 + 공백 + 차번4 + 공백 + 섹션 최대6 = 약 14자)
-    const padItem = str => {
-      // 이모지는 2칸, 한글은 2칸으로 계산해서 18칸으로 맞춤
-      let w = 0;
-      for(const ch of str){ w += (ch.codePointAt(0) > 0x2E7F) ? 2 : 1; }
-      return str + ' '.repeat(Math.max(0, 20 - w));
-    };
-    const rows = [];
-    const maxLen = Math.max(bwEvts.length, shEvts.length);
-    // 헤더
-    rows.push(padItem('[반월]') + '[시화]');
-    for(let i=0; i<maxLen; i++){
-      const l = bwEvts[i] ? padItem(bwEvts[i].line) : ' '.repeat(20);
-      const r = shEvts[i] ? shEvts[i].line : '';
-      rows.push(l + r);
-    }
-    await tgSend2Event('<code>' + rows.join('\n') + '</code>');
+  // 이벤트가 있으면 이벤트 로그에 추가 → msgId3 수정
+  const bwEvts=(eventsByPlant['반월']||[]).sort((a,b)=>a.rank-b.rank);
+  const shEvts=(eventsByPlant['시화']||[]).sort((a,b)=>a.rank-b.rank);
+
+  if(bwEvts.length||shEvts.length){
+    const n=nowKST();
+    const timeStr=`${p2(n.getHours())}:${p2(n.getMinutes())}`;
+
+    const eventsArr=[
+      ...bwEvts.map(e=>({plant:'반월', mark:e.mark, car:e.car})),
+      ...shEvts.map(e=>({plant:'시화', mark:e.mark, car:e.car})),
+    ];
+
+    const updatedLog=appendEventLog(timeStr,eventsArr);
+    await tgUpdateEventLog(updatedLog);
   }
 
-  const summary=buildSummaryMsg(data);
+  // 핀 고정 현황 요약 갱신 (msgId2)
+  const shortMsg=buildShortMsg(data);
   const daily=await loadDailySummary();
   const dailyPart=buildDailySummaryMsg(daily);
-  if(summary||dailyPart) await tgSendOrEdit((summary||'')+dailyPart);
-
-  const shortMsg=buildShortMsg(data,[]);
   if(shortMsg||dailyPart) await tgSend2OrEdit((shortMsg||'')+dailyPart);
+
+  // 봇1 상세 현황 갱신 (msgId1)
+  const summary=buildSummaryMsg(data);
+  if(summary||dailyPart) await tgSendOrEdit((summary||'')+dailyPart);
 }
 
 // ═══════════════════════════════════════════
@@ -581,16 +654,14 @@ function syncWatch(allCars){
 
 async function tgWatchAlert(nums){
   if(!TG.enabled||!nums.length) return;
-  const lines=[`🚨 <b>감시 차량 입차 감지!</b>  ${fmtKST()}`,``];
-  nums.forEach(n=>lines.push(`  🚗 <b>${n}</b> 입차됨`));
-  await tgSend2Event(lines.join('\n'));
-  const cache=localStorage.getItem(LS.cache); if(!cache) return;
-  let data; try{ data=JSON.parse(cache); }catch(e){ return; }
-  localStorage.setItem(LS.tgHash,buildHash(data)); localStorage.setItem(LS.tgTime,String(Date.now()));
-  const curMap=new Map();
-  data.sections.forEach(sec=>sec.groups.forEach(g=>g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>curMap.set(last4(r.car),{sec:sec.title,plant:g.plant}))));
-  __prevCarMap=curMap;
-  const sm=buildSummaryMsg(data); if(sm) await tgSendOrEdit(sm);
+  const n=nowKST();
+  const timeStr=`${p2(n.getHours())}:${p2(n.getMinutes())}`;
+  const eventsArr=nums.map(num=>{
+    const info=__prevCarMap&&__prevCarMap.get(num);
+    return {plant:info?info.plant:'?', mark:'🚨', car:num};
+  });
+  const updatedLog=appendEventLog(timeStr,eventsArr);
+  await tgUpdateEventLog(updatedLog);
 }
 
 // ═══════════════════════════════════════════
@@ -866,20 +937,20 @@ document.getElementById('btnViewWeigh').addEventListener('click',()=>{
     if(document.getElementById('btnViewLive').classList.contains('active')) loadSnapshot({source:'auto'});
   }, 20000);
 
-  // 자정 감지 → 이벤트 메시지만 삭제, msgId1/msgId2는 유지 → pin 고정 메시지 계속 덮어씀
+  // 자정 감지 → 이벤트 로그 초기화 (msgId2, msgId3 메시지 유지 — 내용만 새로)
   let __lastDate=nowKST().getDate();
   setInterval(async ()=>{
     const today=nowKST().getDate();
     if(today===__lastDate) return;
     __lastDate=today;
-    // msgId1, msgId2 삭제 안 함 → pin 유지
+
+    // 이벤트 로그 초기화 (msgId3 내용만 새로)
+    localStorage.removeItem(LS.eventLog);
     localStorage.removeItem(LS.tgHash);
-    const ids=JSON.parse(localStorage.getItem(LS.eventMsgIds)||'[]');
-    for(const msgId of ids){
-      try{ await fetch(`https://api.telegram.org/bot${TG2.token}/deleteMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG2.chatId,message_id:msgId})}); }catch(e){}
-    }
-    localStorage.removeItem(LS.eventMsgIds);
-    showToast('날짜 변경 - 메시지 초기화됨');
+    // msgId3 메시지 내용 초기화 (메시지는 유지)
+    await tgUpdateEventLog([]);
+
+    showToast('날짜 변경 - 이벤트 로그 초기화됨');
   }, 60000);
 
   if(!localStorage.getItem(LS.tgOffset)){
