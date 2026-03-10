@@ -585,7 +585,35 @@ async function tgUpdateEventLog(log) {
     }
   }
 }
+// 봇1 상세 현황용 (메시지 1)
+async function tgSendOrEdit(text){
+  if(!TG.enabled) return;
+  const msgId=localStorage.getItem(LS.msgId1);
+  try{
+    if(msgId){
+      const res=await fetch(`https://api.telegram.org/bot${TG.token}/editMessageText`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG.chatId,message_id:Number(msgId),text,parse_mode:'HTML'})});
+      if(!(await res.json()).ok) throw new Error();
+    } else throw new Error();
+  }catch(e){
+    const res=await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG.chatId,text,parse_mode:'HTML'})});
+    const j=await res.json(); if(j.ok) localStorage.setItem(LS.msgId1,String(j.result.message_id));
+  }
+}
 
+// 봇2 핀 고정 요약용 (메시지 2)
+async function tgSend2OrEdit(text){
+  if(!TG.enabled) return;
+  const msgId=localStorage.getItem(LS.msgId2);
+  try{
+    if(msgId){
+      const res=await fetch(`https://api.telegram.org/bot${TG2.token}/editMessageText`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG2.chatId,message_id:Number(msgId),text,parse_mode:'HTML'})});
+      if(!(await res.json()).ok) throw new Error();
+    } else throw new Error();
+  }catch(e){
+    const res=await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG2.chatId,text,parse_mode:'HTML'})});
+    const j=await res.json(); if(j.ok) localStorage.setItem(LS.msgId2,String(j.result.message_id));
+  }
+}
 // 2. 메인 실행 함수 (변동 사항 감지 및 시간 갱신)
 async function tgSendIfChanged(data) {
   if (!TG.enabled || !data || !data.sections) return;
