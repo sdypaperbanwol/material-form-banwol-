@@ -375,7 +375,7 @@ function buildShortMsg(data, eventLogs){
         const w = watchList[last4(r.car)] !== undefined ? '👁' : '';
         return r.car + (lng||w ? `${lng}${w}` : '');
       });
-      lines.push(`└ ${secIcon}${secLabel}(${cars.length})`);
+      lines.push(`└ ${secIcon} ${secLabel}(${cars.length})`);
       if(cars.length){
         const chunks = [];
         for(let i=0; i<cars.length; i+=4) chunks.push(cars.slice(i,i+4).join(', '));
@@ -398,35 +398,32 @@ function buildDailySummaryMsg(s){
 
     // 원료
     const rm = s.rawMaterial[key];
-    lines.push(`  원료: ${rm.count}대 / ${rm.ton.toLocaleString()}kg`);
-    lines.push('');
+    lines.push(` - 원료: ${rm.count}대 / ${rm.ton.toLocaleString()}kg`);
 
     // 제품
     const pr = s.product[key];
-    lines.push(`  제품: ${pr.count}대 / ${pr.ton.toLocaleString()}kg`);
-    lines.push('');
+    lines.push(` - 제품: ${pr.count}대 / ${pr.ton.toLocaleString()}kg`);
 
     // 부자재
     const sm = s.submat[key] || [];
     const smTotal = sm.reduce((a,i)=>a+i.count,0);
     const smKg    = sm.reduce((a,i)=>a+i.total,0);
     if(sm.length){
-      lines.push(`  부자재: ${smTotal}대 / ${smKg.toLocaleString()}kg`);
-      sm.forEach(i => lines.push(`    ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
+      lines.push(` - 부자재: ${smTotal}대 / ${smKg.toLocaleString()}kg`);
+      sm.forEach(i => lines.push(`   └ ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
     } else {
-      lines.push(`  부자재: 0대`);
+      lines.push(` - 부자재: 0대`);
     }
-    lines.push('');
 
     // 컨테이너
     const ct = s.container[key] || [];
     const ctTotal = ct.reduce((a,i)=>a+i.count,0);
     const ctKg    = ct.reduce((a,i)=>a+i.total,0);
     if(ct.length){
-      lines.push(`  컨테이너: ${ctTotal}대 / ${ctKg.toLocaleString()}kg`);
-      ct.forEach(i => lines.push(`    ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
+      lines.push(` - 컨테이너: ${ctTotal}대 / ${ctKg.toLocaleString()}kg`);
+      ct.forEach(i => lines.push(`   └ ${i.name}: ${i.count}대 / ${i.total.toLocaleString()}kg`));
     } else {
-      lines.push(`  컨테이너: 0대`);
+      lines.push(` - 컨테이너: 0대`);
     }
   });
 
@@ -536,7 +533,7 @@ async function tgSendIfChanged(data){
       // 이모지는 2칸, 한글은 2칸으로 계산해서 18칸으로 맞춤
       let w = 0;
       for(const ch of str){ w += (ch.codePointAt(0) > 0x2E7F) ? 2 : 1; }
-      return str + ' '.repeat(Math.max(0, 20 - w));
+      return str + ' '.repeat(Math.max(0, 18 - w));
     };
     const rows = [];
     const maxLen = Math.max(bwEvts.length, shEvts.length);
@@ -547,7 +544,7 @@ async function tgSendIfChanged(data){
       const r = shEvts[i] ? shEvts[i].line : '';
       rows.push(l + r);
     }
-    await tgSend2Event('<code>' + rows.join('\n') + '</code>');
+    await tgSend2Event(rows.join('\n'));
   }
 
   const summary=buildSummaryMsg(data);
