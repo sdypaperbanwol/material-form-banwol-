@@ -344,8 +344,8 @@ const SEC_ORDER_SHORT = [
   { key:'컨테이너 입차중', icon:'⚪', label:'컨테이너' },
 ];
 const PLANTS = [
-  { key:'banwol', label:'반월', icon:'🔷' },
-  { key:'sihwa',  label:'시화', icon:'🔶' },
+  { key:'banwol', label:'반월' },
+  { key:'sihwa',  label:'시화' },
 ];
 const WARN_SECS = ['원료 하차중','원료 대기'];
 
@@ -362,15 +362,15 @@ function buildShortMsg(data, eventLogs){
   // 4대씩 줄바꿈
   const fmtCarList = (prefix, cars) => {
     if(!cars.length) return null;
-    const indent = ' '.repeat(prefix.length);
+    const indent = '                             ';  //
     const chunks = [];
     for(let i=0; i<cars.length; i+=4) chunks.push(cars.slice(i,i+4).join(', '));
     return prefix + chunks.join(',\n' + indent);
   };
 
-  PLANTS.forEach(({ label, icon }) => {
+  PLANTS.forEach(({ label }) => {
     lines.push('');
-    lines.push(`${icon} <b>${label}</b>`);
+    lines.push(`<b>${label}</b>`);
     SEC_ORDER_SHORT.forEach(({ key: secKey, icon: secIcon, label: secLabel }) => {
       const sec = byTitle[secKey];
       const rows = [];
@@ -395,17 +395,19 @@ function buildDailySummaryMsg(s){
   if(!s) return '';
   const lines = ['\n────────────────', '📊 <b>오늘 실적 요약</b>'];
 
-  PLANTS.forEach(({ key, label, icon }) => {
+  PLANTS.forEach(({ key, label }) => {
     lines.push('');
-    lines.push(`${icon} <b>${label}</b>`);
+    lines.push(`<b>${label}</b>`);
 
     // 원료
     const rm = s.rawMaterial[key];
     lines.push(`  원료: ${rm.count}대 / ${rm.ton.toLocaleString()}kg`);
+    lines.push('');
 
     // 제품
     const pr = s.product[key];
     lines.push(`  제품: ${pr.count}대 / ${pr.ton.toLocaleString()}kg`);
+    lines.push('');
 
     // 부자재
     const sm = s.submat[key] || [];
@@ -417,6 +419,7 @@ function buildDailySummaryMsg(s){
     } else {
       lines.push(`  부자재: 0대`);
     }
+    lines.push('');
 
     // 컨테이너
     const ct = s.container[key] || [];
