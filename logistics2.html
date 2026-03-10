@@ -362,7 +362,7 @@ function buildShortMsg(data, eventLogs){
   // 4대씩 줄바꿈
   const fmtCarList = (prefix, cars) => {
     if(!cars.length) return null;
-    const indent = '                             ';  //
+    const indent = '                                  ';  //
     const chunks = [];
     for(let i=0; i<cars.length; i+=4) chunks.push(cars.slice(i,i+4).join(', '));
     return prefix + chunks.join(',\n' + indent);
