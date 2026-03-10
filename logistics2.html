@@ -533,19 +533,16 @@ async function tgSendIfChanged(data){
   localStorage.setItem(LS.tgTime,String(Date.now()));
 
   if(bwEvts.length || shEvts.length){
-    // 각 항목을 고정 너비로 패딩 (이모지1 + 공백 + 차번4 + 공백 + 섹션 최대6 = 약 14자)
-    const padItem = str => {
-      // 이모지는 2칸, 한글은 2칸으로 계산해서 18칸으로 맞춤
-      let w = 0;
-      for(const ch of str){ w += (ch.codePointAt(0) > 0x2E7F) ? 2 : 1; }
-      return str + ' '.repeat(Math.max(0, 16 - w));
-    };
+    const COL_W = 16;  // 내용줄 고정 너비 — 조절 가능
+    const charW = str => { let w=0; for(const ch of str) w+=(ch.codePointAt(0)>0x2E7F)?2:1; return w; };
+    const pad = str => str + ' '.repeat(Math.max(0, COL_W - charW(str)));
+
     const rows = [];
     const maxLen = Math.max(bwEvts.length, shEvts.length);
-    // 헤더
-    rows.push(padItem('[반월]') + '[시화]');
+    // 헤더: 내용줄과 같은 COL_W로 맞춤
+    rows.push(pad('[반월]') + '[시화]');
     for(let i=0; i<maxLen; i++){
-      const l = bwEvts[i] ? padItem(bwEvts[i].line) : ' '.repeat(18);
+      const l = bwEvts[i] ? pad(bwEvts[i].line) : ' '.repeat(COL_W);
       const r = shEvts[i] ? shEvts[i].line : '';
       rows.push(l + r);
     }
