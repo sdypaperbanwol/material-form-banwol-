@@ -169,7 +169,7 @@
 // ═══════════════════════════════════════════
 //  [A] 설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwxBJNLsPVUZgDbsISrWzqUfW9PKH8iEHQGb97FbcQtn_tYPP6Cvjxhoj-aNyjL7tiO/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxFbOqfBgl78fLFedkyAVsl_DBmQdXxqg_AlLRV6M-EnwAtWjL_gys-uXRHx4kOt7ze/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const TG = {
@@ -193,9 +193,7 @@ const LS = {
   tgOffset   : 'tg.poll.offset',
   msgId1     : 'tg.msg.id1',   // 봇1: 상세 현황 (사용 안 함 - 유지만)
   msgId2     : 'tg.msg.id2',   // 봇2: 핀 고정 현황 요약
-  msgId3     : 'tg.msg.id3',   // 봇2: 오늘 이벤트 이력 (누적)
-  eventLog   : 'tg.event.log', // 이벤트 로그 배열 (JSON)
-};
+  };
 
 // ═══════════════════════════════════════════
 //  [B] 유틸
@@ -436,88 +434,7 @@ async function loadDailySummary(){
 // ─── 이벤트 로그 ───
 const EVENT_LOG_MAX_CHARS = 3800;
 
-function loadEventLog(){
-  try{
-    const raw=JSON.parse(localStorage.getItem(LS.eventLog)||'[]');
-    return raw.filter(e=>e&&typeof e==='object'&&e.time&&Array.isArray(e.events));
-  }catch(e){ return []; }
-}
-function saveEventLog(log){ localStorage.setItem(LS.eventLog, JSON.stringify(log)); }
 
-const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-function buildEventLogMsg(log){
-  const n=nowKST();
-  const dateStr=`${p2(n.getMonth()+1)}-${p2(n.getDate())}`;
-  const header=`📋 <b>오늘 이벤트</b> (${dateStr})\n`;
-  if(!log||!log.length) return header+'(아직 이벤트 없음)';
-
-  const CELL_W = 10;
-  const SEP = '  ';
-  const charW = s => { let w=0; for(const c of String(s||'')) w+=(c.codePointAt(0)>0x2E7F)?2:1; return w; };
-  const padR  = (s, w) => s + ' '.repeat(Math.max(0, w - charW(s)));
-
-  const TIME_W = 5;
-  const header2 = ' '.repeat(TIME_W+6) + padR('반월', CELL_W) + SEP + '    ' + '시화';
-  const rows = [header2];
-
-  log.forEach(entry => {
-    const bw = (entry.events||[]).filter(e=>e.plant==='반월');
-    const sh = (entry.events||[]).filter(e=>e.plant==='시화');
-    const maxLen = Math.max(bw.length, sh.length, 1);
-    for(let i=0; i<maxLen; i++){
-      const timeCol = i===0 ? entry.time : ' '.repeat(TIME_W);
-      const bwCell  = bw[i] ? `${bw[i].mark} ${esc(bw[i].car)}` : '';
-      const shCell  = sh[i] ? `    ${sh[i].mark} ${esc(sh[i].car)}` : '';
-      rows.push((`${timeCol} ${padR(bwCell, CELL_W)}${SEP}${shCell}`).trimEnd());
-    }
-  });
-
-  return header + '<code>' + rows.join('\n') + '</code>';
-}
-
-function appendEventLog(timeStr, eventsArr){
-  const log = loadEventLog();
-  const last = log[log.length-1];
-  if(last && last.time === timeStr){
-    eventsArr.forEach(e => last.events.push(e));
-  } else {
-    log.push({ time: timeStr, events: [...eventsArr] });
-  }
-  while(true){
-    const msg = buildEventLogMsg(log);
-    const rawLen = msg.replace(/<[^>]+>/g,'').length;
-    if(rawLen <= EVENT_LOG_MAX_CHARS || log.length === 0) break;
-    log.shift();
-  }
-  saveEventLog(log);
-  return log;
-}
-
-async function tgUpdateEventLog(log) {
-  if (!TG.enabled) return;
-  const text = buildEventLogMsg(log);
-  const msgId = localStorage.getItem(LS.msgId3);
-  try {
-    if (msgId) {
-      const res = await fetch(`https://api.telegram.org/bot${TG2.token}/editMessageText`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ chat_id:TG2.chatId, message_id:Number(msgId), text, parse_mode:'HTML' })
-      });
-      const j = await res.json();
-      if (!j.ok) throw new Error(j.description);
-    } else throw new Error('no msgId3');
-  } catch(e) {
-    try {
-      const res = await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ chat_id:TG2.chatId, text, parse_mode:'HTML' })
-      });
-      const j = await res.json();
-      if (j.ok && j.result) await saveMsgId('msgId3', j.result.message_id);
-    } catch(e2){ console.error('로그 전송 실패', e2); }
-  }
-}
 
 async function tgSend2OrEdit(text){
   if(!TG.enabled) return;
@@ -531,6 +448,8 @@ async function tgSend2OrEdit(text){
       if(!(await res.json()).ok) throw new Error();
     } else throw new Error();
   } catch(e) {
+     localStorage.removeItem(LS.msgId2);
+    await saveMsgId('msgId2', '');
     const res = await fetch(`https://api.telegram.org/bot${TG2.token}/sendMessage`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ chat_id:TG2.chatId, text, parse_mode:'HTML' })
@@ -558,32 +477,6 @@ async function tgSendOrEdit(text){
     });
     const j=await res.json();
     if(j.ok) localStorage.setItem(LS.msgId1, String(j.result.message_id));
-  }
-}
-
-async function syncDailyLogFromServer() {
-  try {
-    const res = await fetch(`${SNAPSHOT_URL}?action=get_daily_log&token=${API_TOKEN}&_ts=${Date.now()}`);
-    const data = await res.json();
-    if (data && data.events) {
-      let logMap = {};
-      data.events.forEach(ev => {
-        if(!logMap[ev.time]) logMap[ev.time] = [];
-        logMap[ev.time].push({ plant: ev.plant, mark: ev.mark, car: ev.car });
-      });
-      let formattedLog = Object.entries(logMap).map(([time, events]) => ({ time, events }));
-      while (formattedLog.length > 0) {
-        const testMsg = buildEventLogMsg(formattedLog);
-        if (testMsg.length <= 3500) break;
-        formattedLog.shift();
-      }
-      await tgUpdateEventLog(formattedLog);
-      saveEventLog(formattedLog);
-      showToast(`오늘 기록 ${data.events.length}건 동기화 완료`);
-    }
-  } catch(e) {
-    console.error('서버 로그 동기화 실패', e);
-    showToast('로그 동기화 실패');
   }
 }
 
@@ -682,16 +575,6 @@ async function tgSendIfChanged(data) {
   const bwEvts = (eventsByPlant['반월']||[]).sort((a,b)=>a.rank-b.rank);
   const shEvts = (eventsByPlant['시화']||[]).sort((a,b)=>a.rank-b.rank);
 
-  if (bwEvts.length || shEvts.length) {
-    const n = nowKST();
-    const timeStr = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
-    const eventsArr = [
-      ...bwEvts.map(e => ({ plant:'반월', mark:e.mark, car:e.car })),
-      ...shEvts.map(e => ({ plant:'시화', mark:e.mark, car:e.car })),
-    ];
-    const updatedLog = appendEventLog(timeStr, eventsArr);
-    await tgUpdateEventLog(updatedLog);
-  }
 }
 
 // ═══════════════════════════════════════════
@@ -969,7 +852,7 @@ function syncWatch(cars) { /* 감시 로직 필요시 구현 */ }
 
   // ▼ 이 줄 추가: 서버에서 msgId 먼저 로드
   loadMsgIds().then(() => {
-    syncDailyLogFromServer();
+    
     loadSnapshot({source:'auto'});
   });
 
