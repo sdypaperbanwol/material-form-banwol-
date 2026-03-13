@@ -225,7 +225,7 @@
 // ═══════════════════════════════════════════
 //  설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzUoqwDg8jltE8EJNK2x-5X3ggeKOkYGUeJ0rKbZdVviCLtPImfTMl16sDoNGc4xRw0/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyvmuBbnFHkUhXQGSDCSePn2qcG4nW6q4DZjwdU-LcZ_rx7JjjZgrEU4KEng0z0aVgu/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
@@ -564,19 +564,32 @@ async function loadAnalytic(type,force=false){
           __anCache[cacheKey]={mode:'all-daily',types,data:Object.fromEntries(types.map((tp,i)=>[tp,results[i]]))};
         }
       } else if(isMultiDay){
-        const dates=[]; let cur=new Date(__anFrom+'T00:00:00'); const end=new Date(__anTo+'T00:00:00');
-        while(cur<=end){ dates.push(cur.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})); cur=new Date(cur.getTime()+86400000); }
-        const [summaryData,...perDateResults]=await Promise.all([
-          api({action:'weekly_summary',type:__anType,dateFrom:__anFrom,dateTo:__anTo}),
-          ...dates.map(dt=>api({action:'get_weigh_cache',type:__anType,dateFrom:dt,dateTo:dt})),
-        ]);
-        dates.forEach((dt,i)=>{ const k=`${__anType}_${dt}_${dt}`; if(!__anCache[k]) __anCache[k]={mode:'daily',data:perDateResults[i]}; });
-        __anCache[cacheKey]={mode:'weekly',data:summaryData,dates};
-      } else {
-        const data=await api({action:'get_weigh_cache',type:__anType,dateFrom:__anFrom,dateTo:__anTo});
-        __anCache[cacheKey]={mode:'daily',data};
-      }
-    }
+  const [summaryData, weighData] = await Promise.all([
+    api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
+    api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
+  ]);
+  const dates2 = summaryData.daily.map(d => d.date);
+  // 혼잡도용 캐시: 날짜별로 쪼개서 저장
+  const bwByDate = {}, shByDate = {};
+(weighData.banwol || []).forEach(r => {
+  const raw = String(r.WEIDAT || '');
+  const d = raw.length === 8
+    ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
+    : raw;
+  if(!bwByDate[d]) bwByDate[d]=[];
+  bwByDate[d].push(r);
+});
+  (weighData.sihwa || []).forEach(r => {
+    const d = String(r.INTIME||'').slice(0,10) || __anFrom;
+    if(!shByDate[d]) shByDate[d]=[];
+    shByDate[d].push(r);
+  });
+  dates2.forEach(dt => {
+    const k = `${__anType}_${dt}_${dt}`;
+    if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
+  });
+  __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
+}
     const plantFilter=document.getElementById('plantFilter').value||'all';
     const searchQ=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
     const cached=__anCache[cacheKey];
