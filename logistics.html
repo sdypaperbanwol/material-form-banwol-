@@ -207,12 +207,10 @@
       <button class="pbtn" data-preset="lastweek">저번주</button>
       <button class="pbtn" data-preset="custom">직접입력</button>
     </div>
-    <div class="period-custom" id="periodCustom" style="display:none">
-      <input type="date" id="anDateFrom" />
-      <span class="period-sep">~</span>
-      <input type="date" id="anDateTo" />
-      <button class="period-apply" id="anApplyBtn">조회</button>
-    </div>
+   <div class="period-custom" id="periodCustom" style="display:none">
+  <input type="month" id="anYearMonth" />
+  <button class="period-apply" id="anApplyBtn">조회</button>
+</div>
     <span class="period-badge" id="anPeriodBadge"></span>
     <div class="view-toggle" style="margin-left:auto" id="anTypeTabs"></div>
     <button class="btn" id="anRefreshBtn">🔄</button>
@@ -227,7 +225,7 @@
 // ═══════════════════════════════════════════
 //  설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbz_8fudACK4RLKuPCTFmWClk9N96ti_ATxbhk_4ahw8YPCvnNBjO9-RYiGz5ErxH8sr/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzUoqwDg8jltE8EJNK2x-5X3ggeKOkYGUeJ0rKbZdVviCLtPImfTMl16sDoNGc4xRw0/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
@@ -508,8 +506,8 @@ function applyPreset(preset){
 }
 function syncPeriodUI(){
   document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('active',b.dataset.preset===__anPeriod));
-  const fi=document.getElementById('anDateFrom'), ti=document.getElementById('anDateTo');
-  if(fi) fi.value=__anFrom; if(ti) ti.value=__anTo;
+ const ymi=document.getElementById('anYearMonth');
+if(ymi) ymi.value=__anFrom.slice(0,7);
   const badge=document.getElementById('anPeriodBadge');
   if(badge) badge.textContent=__anFrom===__anTo?__anFrom:`${__anFrom} ~ ${__anTo}`;
 }
@@ -521,11 +519,15 @@ function initPeriodBarEvents(){
     else{ applyPreset(preset); document.getElementById('periodCustom').style.display='none'; loadAnalytic(__anType,true); }
   });
   document.getElementById('anApplyBtn').addEventListener('click',()=>{
-    const f=document.getElementById('anDateFrom').value, t=document.getElementById('anDateTo').value;
-    if(!f||!t){ showToast('날짜를 선택하세요'); return; }
-    if(f>t){ showToast('시작일이 종료일보다 늦습니다'); return; }
-    __anFrom=f; __anTo=t; __anPeriod='custom'; syncPeriodUI(); loadAnalytic(__anType,true);
-  });
+  const ym=document.getElementById('anYearMonth').value;
+  if(!ym){ showToast('년월을 선택하세요'); return; }
+  const [y,m]=ym.split('-').map(Number);
+  __anFrom=`${y}-${String(m).padStart(2,'0')}-01`;
+  const lastDay=new Date(y,m,0).getDate();
+  __anTo=`${y}-${String(m).padStart(2,'0')}-${lastDay}`;
+  __anPeriod='custom'; syncPeriodUI();
+  loadAnalytic(__anType,true);
+});
   document.getElementById('anRefreshBtn').addEventListener('click',refreshAnalytic);
   document.getElementById('anTypeTabs').addEventListener('click',e=>{
     const btn=e.target.closest('.tbtn'); if(!btn) return; loadAnalytic(btn.dataset.type,true);
