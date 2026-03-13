@@ -591,11 +591,11 @@ async function loadAnalytic(type,force=false){
           if(!bwByDate[d]) bwByDate[d]=[];
           bwByDate[d].push(r);
         });
-        (weighData.sihwa || []).forEach(r => {
-          const raw = String(r.WEIDAT || '');
-          const d = raw.length === 8
-            ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
-            : raw;
+      (weighData.sihwa || []).forEach(r => {
+    const raw = String(r.WEIDAT || '');
+    const d = raw.length === 8
+      ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
+      : raw;
           if(!shByDate[d]) shByDate[d]=[];
           shByDate[d].push(r);
         });
@@ -603,7 +603,12 @@ async function loadAnalytic(type,force=false){
           const k = `${__anType}_${dt}_${dt}`;
           if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
         });
-        __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
+         __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
+      } else {
+        const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
+        __anCache[cacheKey] = { mode:'daily', data };
+      }
+    }
       } else {
         const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
         __anCache[cacheKey] = { mode:'daily', data };
