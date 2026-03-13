@@ -597,12 +597,7 @@ async function loadAnalytic(type,force=false){
         const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
         __anCache[cacheKey] = { mode:'daily', data };
       }
-    }
-      } else {
-        const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
-        __anCache[cacheKey] = { mode:'daily', data };
-      }
-    }   // ← if(force||!__anCache[cacheKey]) 닫힘
+  }   // ← if(force) 닫힘
     const plantFilter=document.getElementById('plantFilter').value||'all';
     const searchQ=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
     const cached=__anCache[cacheKey];
