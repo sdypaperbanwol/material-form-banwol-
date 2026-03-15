@@ -225,7 +225,7 @@
 // ═══════════════════════════════════════════
 //  설정
 // ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxZyZmlDV2FwCzXmiTuiNfb-tSmZF4N24w3XlntKJkmkjzMggTbcbFqcs1sHNVBh_Z5/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzRq0YuvnEiGDnU15cG5oKnym9OV9oeD0bOkBJw0u9_a-BNWyK5yOJsOzXKCynkP3PiFA/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
@@ -281,7 +281,15 @@ function nowKSTMin(){
   const kst=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
   return kst.getHours()*60+kst.getMinutes();
 }
-function isFutureTime(t){ const m=timeToMin(t); if(m==null) return false; return m>nowKSTMin()+30; }
+
+// ★ 변경: isFutureTime 제거 → isOvernightEntry 로 교체
+// 전날 입차 판단: 출차시간 < 입차시간 (역전된 경우)
+function isOvernightEntry(inT, outT){
+  const inM = timeToMin(inT), outM = timeToMin(outT);
+  if(inM == null || outM == null) return false;
+  return outM < inM;
+}
+
 function todayKST(){ return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}); }
 function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}); }
 function thisWeekMonday(){
@@ -506,8 +514,8 @@ function applyPreset(preset){
 }
 function syncPeriodUI(){
   document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('active',b.dataset.preset===__anPeriod));
- const ymi=document.getElementById('anYearMonth');
-if(ymi) ymi.value=__anFrom.slice(0,7);
+  const ymi=document.getElementById('anYearMonth');
+  if(ymi) ymi.value=__anFrom.slice(0,7);
   const badge=document.getElementById('anPeriodBadge');
   if(badge) badge.textContent=__anFrom===__anTo?__anFrom:`${__anFrom} ~ ${__anTo}`;
 }
@@ -519,15 +527,15 @@ function initPeriodBarEvents(){
     else{ applyPreset(preset); document.getElementById('periodCustom').style.display='none'; loadAnalytic(__anType,true); }
   });
   document.getElementById('anApplyBtn').addEventListener('click',()=>{
-  const ym=document.getElementById('anYearMonth').value;
-  if(!ym){ showToast('년월을 선택하세요'); return; }
-  const [y,m]=ym.split('-').map(Number);
-  __anFrom=`${y}-${String(m).padStart(2,'0')}-01`;
-  const lastDay=new Date(y,m,0).getDate();
-  __anTo=`${y}-${String(m).padStart(2,'0')}-${lastDay}`;
-  __anPeriod='custom'; syncPeriodUI();
-  loadAnalytic(__anType,true);
-});
+    const ym=document.getElementById('anYearMonth').value;
+    if(!ym){ showToast('년월을 선택하세요'); return; }
+    const [y,m]=ym.split('-').map(Number);
+    __anFrom=`${y}-${String(m).padStart(2,'0')}-01`;
+    const lastDay=new Date(y,m,0).getDate();
+    __anTo=`${y}-${String(m).padStart(2,'0')}-${lastDay}`;
+    __anPeriod='custom'; syncPeriodUI();
+    loadAnalytic(__anType,true);
+  });
   document.getElementById('anRefreshBtn').addEventListener('click',refreshAnalytic);
   document.getElementById('anTypeTabs').addEventListener('click',e=>{
     const btn=e.target.closest('.tbtn'); if(!btn) return; loadAnalytic(btn.dataset.type,true);
@@ -563,8 +571,6 @@ async function loadAnalytic(type,force=false){
           const results=await Promise.all(types.map(tp=>api({action:'get_weigh_cache',type:tp,dateFrom:__anFrom,dateTo:__anTo})));
           __anCache[cacheKey]={mode:'all-daily',types,data:Object.fromEntries(types.map((tp,i)=>[tp,results[i]]))};
         }
-
-
       } else if(isMultiDay){
         const [summaryData, weighData] = await Promise.all([
           api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
@@ -580,11 +586,11 @@ async function loadAnalytic(type,force=false){
           if(!bwByDate[d]) bwByDate[d]=[];
           bwByDate[d].push(r);
         });
-      (weighData.sihwa || []).forEach(r => {
-    const raw = String(r.WEIDAT || '');
-    const d = raw.length === 8
-      ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
-      : raw;
+        (weighData.sihwa || []).forEach(r => {
+          const raw = String(r.WEIDAT || '');
+          const d = raw.length === 8
+            ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
+            : raw;
           if(!shByDate[d]) shByDate[d]=[];
           shByDate[d].push(r);
         });
@@ -592,12 +598,12 @@ async function loadAnalytic(type,force=false){
           const k = `${__anType}_${dt}_${dt}`;
           if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
         });
-         __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
+        __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
       } else {
         const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
         __anCache[cacheKey] = { mode:'daily', data };
       }
-  }   // ← if(force) 닫힘
+    }
     const plantFilter=document.getElementById('plantFilter').value||'all';
     const searchQ=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
     const cached=__anCache[cacheKey];
@@ -610,30 +616,28 @@ async function loadAnalytic(type,force=false){
 function refreshAnalytic(){ const k=`${__anType}_${__anFrom}_${__anTo}`; delete __anCache[k]; loadAnalytic(__anType,true); }
 
 // ─── 혼잡도 계산 유틸 ──────────────────────────────────────────────────────
-// [프론트엔드 JS 수정] 기존 calcCongestion 함수를 아래로 교체
 function calcCongestionStacked(rowsByDate, plantFilter) {
   const SLOTS = 144;
   const TYPES = ['product', 'sub', 'container'];
   const COLORS = { product: '#06b6d4', sub: '#f97316', container: '#a855f7' };
   const LABELS = { product: '제품', sub: '부자재', container: '컨테이너' };
 
-  // 1. 유형별 타임라인 초기화
   const stackedTimelines = {};
   TYPES.forEach(t => stackedTimelines[t] = Array(SLOTS).fill(0));
-  
+
   const daysCount = rowsByDate.length || 1;
 
   rowsByDate.forEach(({ rows }) => {
-    const filtered = rows.filter(r => 
+    const filtered = rows.filter(r =>
       plantFilter === 'all' || (plantFilter === 'banwol' && r._plant === '반월') || (plantFilter === 'sihwa' && r._plant === '시화')
     );
-
     filtered.forEach(r => {
       const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
       if (inM == null) return;
+      // ★ 전날입차(역전)는 혼잡도 계산에서 제외
+      if (outM != null && outM < inM) return;
       const start = Math.floor(inM / 10);
       const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
-      
       const typeKey = r._type || 'product';
       if (stackedTimelines[typeKey]) {
         for (let s = start; s < Math.min(end, SLOTS); s++) {
@@ -643,28 +647,24 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
     });
   });
 
-  // 2. 일평균 데이터로 변환 (여러 날짜 조회 시)
   if (daysCount > 1) {
     TYPES.forEach(t => {
       stackedTimelines[t] = stackedTimelines[t].map(v => Math.round(v / daysCount * 10) / 10);
     });
   }
 
-  // 3. Chart.js용 데이터셋 구성
   const datasets = TYPES.map(t => ({
     label: LABELS[t],
     data: stackedTimelines[t],
     backgroundColor: COLORS[t],
-    stack: 'stack0', // 누적 설정
+    stack: 'stack0',
     borderRadius: 2
   }));
 
-  // 4. 전체 합계 타임라인 (CAPA 및 피크 계산용)
-  const totalTimeline = Array(SLOTS).fill(0).map((_, i) => 
+  const totalTimeline = Array(SLOTS).fill(0).map((_, i) =>
     TYPES.reduce((sum, t) => sum + stackedTimelines[t][i], 0)
   );
 
-  // 5. CAPA 추정 (95퍼센타일)
   const sorted = totalTimeline.filter(v => v > 0).sort((a, b) => a - b);
   const rawCapa = sorted[Math.floor(sorted.length * 0.95)] || 5;
   const capa = Math.max(5, Math.ceil(rawCapa / 5) * 5);
@@ -672,8 +672,6 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
   return { datasets, totalTimeline, capa };
 }
 
-
-// 여기에 추가 ↓
 function calcCongestion(rowsByDate, plantFilter) {
   const SLOTS = 144;
   const daysCount = rowsByDate.length || 1;
@@ -689,6 +687,8 @@ function calcCongestion(rowsByDate, plantFilter) {
     filtered.forEach(r => {
       const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
       if (inM == null) return;
+      // ★ 전날입차(역전)는 혼잡도 계산에서 제외
+      if (outM != null && outM < inM) return;
       const start = Math.floor(inM / 10);
       const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
       for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
@@ -705,7 +705,6 @@ function calcCongestion(rowsByDate, plantFilter) {
 
   return { byDate, capa, globalTimeline };
 }
-
 
 function congKpiHtml(timeline,capa){
   const peakSlot=timeline.indexOf(Math.max(...timeline));
@@ -751,25 +750,15 @@ function drawCongChart(canvasId,timeline,capa,peakSlot,peakVal,peakPct){
       {type:'line',label:`CAPA (${capa}대)`,data:Array(SLOTS).fill(capa),borderColor:'rgba(239,68,68,0.8)',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false,tension:0},
       {type:'line',label:`주의선 (${Math.round(capa*0.8)}대)`,data:Array(SLOTS).fill(Math.round(capa*0.8)),borderColor:'rgba(245,158,11,0.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0},
     ]},
-   // [프론트엔드 JS 수정] drawCongChart 함수 내 options 부분 수정
-options: {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'index', intersect: false },
-  scales: {
-    x: {
-      stacked: true,
-      ticks: { color: '#777', font: { size: 10 }, maxRotation: 0, callback: (v, i) => SLOT_LABELS[i] || null }
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{stacked:true,ticks:{color:'#777',font:{size:10},maxRotation:0,callback:(v,i)=>SLOT_LABELS[i]||null}},
+        y:{stacked:true,beginAtZero:true,ticks:{color:'#777',font:{size:10}}},
+      },
+      plugins:{}
     },
-    y: {
-      stacked: true,
-      beginAtZero: true,
-      ticks: { color: '#777', font: { size: 10 } }
-    },
-  },
-  plugins: {}
-},
-
     plugins:[{id:'peakCong',afterDatasetsDraw(chart){
       if(!peakVal) return;
       const {ctx,scales:{x,y}}=chart;
@@ -781,7 +770,6 @@ options: {
 function drawCongChartStacked(canvasId, datasets, capa) {
   const SLOTS = 144;
   if (__anCharts[canvasId]) __anCharts[canvasId].destroy();
-
   __anCharts[canvasId] = new Chart(document.getElementById(canvasId), {
     type: 'bar',
     data: {
@@ -810,14 +798,14 @@ function drawCongChartStacked(canvasId, datasets, capa) {
     }
   });
 }
+
 // ─── 전체 타입 렌더 ────────────────────────────────────────────────────────
-// [수정된 renderAnalyticAll 함수 부분]
 function renderAnalyticAll(cached, plantFilter) {
   const panel = document.getElementById('analyticPanel');
   destroyCharts();
   const isDaily = cached.mode === 'all-daily';
   const types = cached.types || ['product', 'sub', 'container'];
-  
+
   let rowsByDate = [];
   if (isDaily) {
     const allRows = types.flatMap(tp => {
@@ -841,16 +829,11 @@ function renderAnalyticAll(cached, plantFilter) {
     });
   }
 
-  // 1. 누적 혼잡도 데이터 계산 호출
   const { datasets, totalTimeline, capa } = calcCongestionStacked(rowsByDate, plantFilter);
-  
-  // 2. 요약 정보 계산
   const peakIdx = totalTimeline.indexOf(Math.max(...totalTimeline));
   const peakTime = SLOT_LABELS_FULL[peakIdx];
   const totalRows = rowsByDate.reduce((sum, d) => sum + d.rows.length, 0);
   const avgAll = rowsByDate.length > 0 ? Math.round(totalRows / rowsByDate.length) : 0;
-
-  // 3. KPI HTML 생성 (중복 제거 버전)
   const { peakPct, html: congHtml } = congKpiHtml(totalTimeline, capa);
 
   panel.innerHTML = `
@@ -864,16 +847,15 @@ function renderAnalyticAll(cached, plantFilter) {
         <div class="kpi-val">${totalRows.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span></div>
         <div class="kpi-sub">제품+부자재+컨테이너</div>
       </div>
-      ${congHtml} </div>
+      ${congHtml}
+    </div>
   `;
 
-  // 4. 차트 영역 추가
   panel.innerHTML += anCard(
     `<span class="dot" style="--dc:#6366f1"></span>시간대별 누적 점유 현황`,
     `<div class="chart-wrap tall"><canvas id="chartCongestion"></canvas></div>`
   );
 
-  // 5. 차트 그리기 (datasets 전달)
   drawCongChartStacked('chartCongestion', datasets, capa);
 }
 
@@ -895,7 +877,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
   const diffBadge=diffPct==null?'':diffPct>0?`<span class="diff-badge up">▲ ${diffPct}%</span>`:diffPct<0?`<span class="diff-badge down">▼ ${Math.abs(diffPct)}%</span>`:`<span class="diff-badge flat">→ 0%</span>`;
   destroyCharts();
 
-  // 혼잡도 계산 (주간)
   const rowsByDate=dates.map((dt,di)=>{
     const k=`${type}_${dt}_${dt}`; const c=__anCache[k];
     if(!c) return {date:dt,rows:[]};
@@ -960,20 +941,23 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     </table></div>`
   );
 
-  // 품목별×일별 체류시간
   if(dates&&dates.length){
     const isSub=(type==='sub'||type==='container');
     const crossMap={}, allItems=new Set();
     dates.forEach((dt,di)=>{
       const k=`${type}_${dt}_${dt}`; const c=__anCache[k]; if(!c) return;
-      const rows=[...(c.data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(c.data.sihwa||[]).map(r=>({...r,_plant:'시화'}))].filter(r=>plantFilter==='all'||(plantFilter==='banwol'&&r._plant==='반월')||(plantFilter==='sihwa'&&r._plant==='시화'));
+      const rows=[...(c.data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(c.data.sihwa||[]).map(r=>({...r,_plant:'시화'}))]
+        .filter(r=>plantFilter==='all'||(plantFilter==='banwol'&&r._plant==='반월')||(plantFilter==='sihwa'&&r._plant==='시화'));
       rows.forEach(r=>{
         const nm=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
         allItems.add(nm); if(!crossMap[nm]) crossMap[nm]={};
         if(!crossMap[nm][di]) crossMap[nm][di]={durSum:0,durCnt:0,count:0};
         crossMap[nm][di].count++;
-        const dur=diffMin(r.INTIME,r.OUTIME);
-        if(dur!=null&&dur>0&&dur<=480){crossMap[nm][di].durSum+=dur;crossMap[nm][di].durCnt++;}
+        // ★ 전날입차는 체류시간 계산 제외
+        if(!isOvernightEntry(r.INTIME, r.OUTIME)){
+          const dur=diffMin(r.INTIME,r.OUTIME);
+          if(dur!=null&&dur>0&&dur<=480){crossMap[nm][di].durSum+=dur;crossMap[nm][di].durCnt++;}
+        }
       });
     });
     const itemList=[...allItems].sort((a,b)=>Object.values(crossMap[b]||{}).reduce((s,v)=>s+v.count,0)-Object.values(crossMap[a]||{}).reduce((s,v)=>s+v.count,0));
@@ -1012,7 +996,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       );
     }
 
-    // 차량 단위 분석
     const allRows=[];
     dates.forEach((dt,di)=>{
       const k=`${type}_${dt}_${dt}`; const c=__anCache[k]; if(!c) return;
@@ -1024,7 +1007,8 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       const carMap={};
       allRows.forEach(r=>{
         const car=last4(r.CARNUM||''); if(!car) return;
-        const dur=diffMin(r.INTIME,r.OUTIME);
+        // ★ 전날입차는 체류시간 계산 제외
+        const dur=isOvernightEntry(r.INTIME, r.OUTIME) ? null : diffMin(r.INTIME,r.OUTIME);
         const item=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
         if(!carMap[car]) carMap[car]={visits:[],durSum:0,durCnt:0};
         carMap[car].visits.push({date:r._date,di:r._di,dur,plant:r._plant,item});
@@ -1034,16 +1018,16 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       const totalDurCnt=Object.values(carMap).reduce((s,v)=>s+v.durCnt,0);
       const globalAvg=totalDurCnt>0?Math.round(totalDurSum/totalDurCnt):0;
       const slowCars=Object.entries(carMap).filter(([,v])=>v.durCnt>=2).map(([car,v])=>({car,avg:Math.round(v.durSum/v.durCnt),cnt:v.durCnt,total:v.visits.length})).sort((a,b)=>b.avg-a.avg).slice(0,10);
-      const DOW=['일','월','화','수','목','금','토'];
-      const patternCars=Object.entries(carMap).filter(([,v])=>v.visits.length>=3).map(([car,v])=>{
-        const dowCnt={};
-        v.visits.forEach(vi=>{const d=new Date(vi.date+'T00:00:00').getDay();dowCnt[d]=(dowCnt[d]||0)+1;});
-        return {car,visits:v.visits,dowCnt,total:v.visits.length};
+      const patternCars2=Object.entries(carMap).filter(([,v])=>v.visits.length>=3).map(([car,v])=>{
+        const diCnt={};
+        v.visits.forEach(vi=>{ diCnt[vi.di]=(diCnt[vi.di]||0)+1; });
+        return {car,visits:v.visits,diCnt,total:v.visits.length};
       }).sort((a,b)=>b.total-a.total).slice(0,20);
+
       if(slowCars.length){
         const maxAvg=slowCars[0].avg||1;
         panel.innerHTML+=anCard(
-          `<span class="dot" style="--dc:#ef4444"></span>평균 체류시간 긴 차량 TOP ${slowCars.length} <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px">전체 평균 ${globalAvg}분 기준 · 2건 이상</span>`,
+          `<span class="dot" style="--dc:#ef4444"></span>평균 체류시간 긴 차량 TOP ${slowCars.length} <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px">전체 평균 ${globalAvg}분 기준 · 2건 이상 · 전날입차 제외</span>`,
           `<div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">${slowCars.map((d,i)=>{
             const pct=Math.round(d.avg/maxAvg*100), overAvg=d.avg-globalAvg;
             const badge=overAvg>0?`<span style="font-size:10px;background:#fee2e2;color:#b91c1c;border-radius:4px;padding:1px 5px;margin-left:5px">+${overAvg}분</span>`:`<span style="font-size:10px;background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:5px">${overAvg}분</span>`;
@@ -1056,13 +1040,8 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
           }).join('')}</div>`
         );
       }
-     if(patternCars.length){
-        // 요일 기준 → 날짜 인덱스(di) 기준으로 변경: 14일이면 14컬럼
-        const patternCars2=Object.entries(carMap).filter(([,v])=>v.visits.length>=3).map(([car,v])=>{
-          const diCnt={};
-          v.visits.forEach(vi=>{ diCnt[vi.di]=(diCnt[vi.di]||0)+1; });
-          return {car,visits:v.visits,diCnt,total:v.visits.length};
-        }).sort((a,b)=>b.total-a.total).slice(0,20);
+
+      if(patternCars2.length){
         const thCols2=dates.map(d=>`<th style="min-width:46px;font-size:11px;text-align:center;white-space:nowrap">${dateToDowLabel(d)}</th>`).join('');
         panel.innerHTML+=anCard(
           `<span class="dot" style="--dc:#06b6d4"></span>차량별 날짜별 방문 패턴 <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px">3건 이상 방문 차량 · ${dates.length}일간</span>`,
@@ -1089,7 +1068,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     }
   }
 
-  // 차트 그리기
   drawCongChart('chartCongWeekly',globalTimeline,capa,peakSlot,peakVal,peakPct);
 
   const labels=daily.map(d=>dateToDowLabel(d.date));
@@ -1121,14 +1099,21 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   plantFilter=plantFilter||'all';
   searchQ=(searchQ||'').replace(/\D/g,'').slice(-4);
 
-  function filterFuture(list){ return list.filter(r=>!isFutureTime(r.INTIME)); }
+  // ★ 변경: filterFuture 제거 → 모든 행 포함
   const bwRaw=(data.banwol||[]).map(r=>({...r,_plant:'반월'}));
   const shRaw=(data.sihwa||[]).map(r=>({...r,_plant:'시화'}));
-  let bw=filterFuture(bwRaw),sh=filterFuture(shRaw);
+  let bw=[...bwRaw], sh=[...shRaw];
   if(plantFilter==='banwol') sh=[]; if(plantFilter==='sihwa') bw=[];
-  const all=[...bw,...sh]; const filteredOut=bwRaw.length+shRaw.length-all.length;
+  const all=[...bw,...sh];
 
-  function withDur(list){ return list.map(r=>({...r,_dur:diffMin(r.INTIME,r.OUTIME)})).filter(r=>r._dur!=null&&r._dur>0&&r._dur<=480); }
+  // ★ 변경: withDur에서 전날입차(역전) 케이스 제외
+  function withDur(list){
+    return list
+      .filter(r => !isOvernightEntry(r.INTIME, r.OUTIME))
+      .map(r=>({...r,_dur:diffMin(r.INTIME,r.OUTIME)}))
+      .filter(r=>r._dur!=null&&r._dur>0&&r._dur<=480);
+  }
+
   const allDur=withDur(all),bwDur=withDur(bw),shDur=withDur(sh);
   const avg=arr=>arr.length?Math.round(arr.reduce((s,r)=>s+r._dur,0)/arr.length):0;
   const avgAll=avg(allDur),avgBw=avg(bwDur),avgSh=avg(shDur);
@@ -1145,8 +1130,11 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     if(!itemMap[nm]) itemMap[nm]={count:0,silwei:0,durSum:0,durCnt:0};
     itemMap[nm].count++;
     itemMap[nm].silwei+=Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0;
-    const dur=diffMin(r.INTIME,r.OUTIME);
-    if(dur!=null&&dur>0&&dur<=480){itemMap[nm].durSum+=dur;itemMap[nm].durCnt++;}
+    // ★ 전날입차는 체류시간 제외
+    if(!isOvernightEntry(r.INTIME, r.OUTIME)){
+      const dur=diffMin(r.INTIME,r.OUTIME);
+      if(dur!=null&&dur>0&&dur<=480){itemMap[nm].durSum+=dur;itemMap[nm].durCnt++;}
+    }
   });
   const itemEntries=Object.entries(itemMap).sort((a,b)=>b[1].count-a[1].count);
 
@@ -1158,7 +1146,6 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   bw.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)bwHour[Math.floor(m/60)]++;});
   sh.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)shHour[Math.floor(m/60)]++;});
 
-  // 혼잡도 계산 (오늘)
   const allRowsForCong=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
   const {byDate:congByDate,capa}=calcCongestion([{date:__anFrom,rows:allRowsForCong}],plantFilter);
   const congTimeline=congByDate[0]?.timeline||Array(144).fill(0);
@@ -1166,17 +1153,18 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
   const panel=document.getElementById('analyticPanel');
 
+  // ★ 변경: KPI에서 "미래 N건 제외" 문구 제거
   panel.innerHTML=`<div class="kpi-row">
     ${congHtml}
     <div class="kpi" style="--kc:${cfg.dc}">
       <div class="kpi-label">전체 건수</div>
       <div class="kpi-val">${all.length}<span style="font-size:14px;font-weight:400">건</span></div>
-      <div class="kpi-sub">반월 ${bw.length} · 시화 ${sh.length}${filteredOut>0?` <span style="color:#f59e0b">(미래 ${filteredOut}건 제외)</span>`:''}</div>
+      <div class="kpi-sub">반월 ${bw.length} · 시화 ${sh.length}</div>
     </div>
     <div class="kpi" style="--kc:${cfg.dc}">
       <div class="kpi-label">평균 체류시간</div>
       <div class="kpi-val">${avgAll}<span style="font-size:14px;font-weight:400">분</span></div>
-      <div class="kpi-sub">반월 ${avgBw}분 · 시화 ${avgSh}분</div>
+      <div class="kpi-sub">반월 ${avgBw}분 · 시화 ${avgSh}분 <span style="font-size:10px;color:#a0aec0">(전날입차 제외)</span></div>
     </div>
     <div class="kpi" style="--kc:#10b981">
       <div class="kpi-label">출차 완료</div>
@@ -1208,30 +1196,36 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>${isSub?'품목별':'유형별'} 입차 현황`,'<div style="display:flex;flex-direction:column;gap:10px">'+itemRows+'</div>');
   }
 
+  // ★ 변경: 테이블 행 - 전날입차 뱃지 표시, 카운팅은 정상 포함
   const tableAll=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
   const hasQ=searchQ&&searchQ.length>=2;
   const tableRows=tableAll.length===0?`<tr><td colspan="${isSub?7:6}" class="empty">데이터 없음</td></tr>`:tableAll.map((r,i)=>{
-    const plant=r._plant||'-',future=isFutureTime(r.INTIME);
-    const dur=diffMin(r.INTIME,r.OUTIME),durValid=dur!=null&&dur>0&&dur<=480;
+    const plant=r._plant||'-';
+    // ★ 전날입차 판단: 출차 < 입차 역전
+    const overnight=isOvernightEntry(r.INTIME, r.OUTIME);
+    // ★ 전날입차는 체류시간 표시 불가
+    const dur=overnight ? null : diffMin(r.INTIME,r.OUTIME);
+    const durValid=dur!=null&&dur>0&&dur<=480;
     const durWarn=durValid&&dur>=120?' style="color:#ef4444;font-weight:700"':'';
-    const durDisplay=dur==null?'-':!durValid?'<span style="color:#f59e0b" title="체류시간 오류">?</span>':String(dur);
+    const durDisplay=overnight
+      ? '<span style="color:#a0aec0;font-size:11px">전날입차</span>'
+      : dur==null?'-':!durValid?'<span style="color:#f59e0b" title="체류시간 오류">?</span>':String(dur);
     const carNum=String(r.CARNUM||''),isMatch=hasQ&&carNum.includes(searchQ),isDim=hasQ&&!isMatch;
+    // ★ 전날입차: 연한 보라색 배경, 미래 뱃지 → 🌙전날입차 뱃지
     let rowStyle='';
     if(isMatch) rowStyle=' style="background:#eff6ff;font-weight:600"';
-    else if(future) rowStyle=' style="background:#fffbeb"';
+    else if(overnight) rowStyle=' style="background:#f0f0ff"';
     if(isDim) rowStyle=' style="opacity:0.25"';
-    const futureNote=future?'<span style="color:#f59e0b;font-size:10px"> ⚠미래</span>':'';
+    const overnightNote=overnight?'<span style="color:#6366f1;font-size:10px"> 🌙전날입차</span>':'';
     const itemNm=isSub?`<td style="font-size:12px;color:#555">${String(r.ITEMNM||'').trim()||'-'}</td>`:'';
-    return `<tr${rowStyle}><td>${i+1}</td><td>${carNum}</td><td>${plant}</td>${itemNm}<td>${fmtTime(r.INTIME)}${futureNote}</td><td>${fmtTime(r.OUTIME)}</td><td${durWarn}>${durDisplay}</td></tr>`;
+    return `<tr${rowStyle}><td>${i+1}</td><td>${carNum}</td><td>${plant}</td>${itemNm}<td>${fmtTime(r.INTIME)}${overnightNote}</td><td>${fmtTime(r.OUTIME)}</td><td${durWarn}>${durDisplay}</td></tr>`;
   }).join('');
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>전체 데이터 (${all.length}건)`,
     `<div style="overflow-x:auto;max-height:320px;overflow-y:auto"><table><thead><tr><th>No</th><th>차량</th><th>공장</th>${isSub?'<th>품목</th>':''}<th>입차</th><th>출차</th><th>체류(분)</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
   );
 
-  // 혼잡도 차트 (오늘)
   drawCongChart('chartCongToday',congTimeline,capa,cPeakSlot,cPeakVal,cPeakPct);
 
-  // 시간대 콤보 차트
   const combinedHour=hrLabels.map((_,i)=>(bwHour[i]||0)+(shHour[i]||0));
   const peakH=combinedHour.indexOf(Math.max(...combinedHour));
   __anCharts.hourCombo=new Chart(document.getElementById('chartHourCombo'),{
