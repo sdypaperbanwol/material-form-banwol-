@@ -653,19 +653,30 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
     filtered.forEach(r => {
       const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
       if (inM == null) return;
-      // ★ 전날입차(역전)는 혼잡도 계산에서 제외
-      if (outM != null && outM < inM) return;
       const typeKey = r._type || 'product';
-      // ★ 제품: 06시 이전 슬롯 제외 (실질 작업시간 기준)
       const WORK_SLOT = WORK_START_MIN / 10; // 36슬롯 = 06:00
+      const isOvernight = outM != null && outM < inM;
+
+      // 전날입차 처리
+      if (isOvernight) {
+        if (typeKey !== 'product') return; // 비제품 전날입차: 제외
+        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
+        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        const start = WORK_SLOT;
+        const end = Math.ceil(outM / 10);
+        if (stackedTimelines[typeKey]) {
+          for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
+        }
+        return;
+      }
+
+      // 일반입차: 제품은 06시 이전 슬롯 제외
       const rawStart = Math.floor(inM / 10);
       const start = (typeKey === 'product') ? Math.max(rawStart, WORK_SLOT) : rawStart;
       const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
-      if (start >= end) return; // 06시 이전 출차면 슬롯 없음
+      if (start >= end) return;
       if (stackedTimelines[typeKey]) {
-        for (let s = start; s < Math.min(end, SLOTS); s++) {
-          stackedTimelines[typeKey][s]++;
-        }
+        for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
       }
     });
   });
@@ -711,11 +722,23 @@ function calcCongestion(rowsByDate, plantFilter, type) {
     filtered.forEach(r => {
       const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
       if (inM == null) return;
-      // ★ 전날입차(역전)는 혼잡도 계산에서 제외
-      if (outM != null && outM < inM) return;
-      // ★ 제품: 06시 이전 슬롯 제외
       const isProduct = (type === 'product') || (r._type === 'product');
+      const isOvernight = outM != null && outM < inM;
+
+      // 전날입차 처리
+      if (isOvernight) {
+        if (!isProduct) return; // 비제품 전날입차: 제외
+        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
+        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        const start = WORK_SLOT;
+        const end = Math.ceil(outM / 10);
+        for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
+        return;
+      }
+
+      // 일반입차
       const rawStart = Math.floor(inM / 10);
+      // 제품: 06시 이전 슬롯 제외
       const start = isProduct ? Math.max(rawStart, WORK_SLOT) : rawStart;
       const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
       if (start >= end) return;
