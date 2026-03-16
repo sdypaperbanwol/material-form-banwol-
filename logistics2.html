@@ -1185,8 +1185,11 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const avg=arr=>arr.length?Math.round(arr.reduce((s,r)=>s+r._dur,0)/arr.length):0;
   const avgAll=avg(allDur),avgBw=avg(bwDur),avgSh=avg(shDur);
 
-  const hourBucket=Array(24).fill(0);
-  all.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)hourBucket[Math.floor(m/60)]++;});
+ const hourBucket=Array(24).fill(0);
+  all.forEach(r=>{
+    if(isOvernightEntry(r.INTIME, r.OUTIME)) return; // 전날입차: 입차시각이 다음날 기준이라 제외
+    const m=timeToMin(r.INTIME);if(m!=null)hourBucket[Math.floor(m/60)]++;
+  });
   const hourDurSum=Array(24).fill(0),hourDurCnt=Array(24).fill(0);
   allDur.forEach(r=>{const m=timeToMin(r.INTIME);if(m==null)return;const h=Math.floor(m/60);hourDurSum[h]+=r._dur;hourDurCnt[h]++;});
   const hourAvgDur=Array(24).fill(null).map((_,i)=>hourDurCnt[i]>0?Math.round(hourDurSum[i]/hourDurCnt[i]):null);
@@ -1210,8 +1213,14 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const bwDone=bw.filter(r=>r.OUTIME).length,shDone=sh.filter(r=>r.OUTIME).length;
   const hrLabels=Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}시`);
   const bwHour=Array(24).fill(0),shHour=Array(24).fill(0);
-  bw.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)bwHour[Math.floor(m/60)]++;});
-  sh.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)shHour[Math.floor(m/60)]++;});
+  bw.forEach(r=>{
+    if(isOvernightEntry(r.INTIME, r.OUTIME)) return; // 전날입차 제외
+    const m=timeToMin(r.INTIME);if(m!=null)bwHour[Math.floor(m/60)]++;
+  });
+  sh.forEach(r=>{
+    if(isOvernightEntry(r.INTIME, r.OUTIME)) return; // 전날입차 제외
+    const m=timeToMin(r.INTIME);if(m!=null)shHour[Math.floor(m/60)]++;
+  });
 
   const allRowsForCong=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
   const {byDate:congByDate,capa}=calcCongestion([{date:__anFrom,rows:allRowsForCong}],plantFilter,type);
