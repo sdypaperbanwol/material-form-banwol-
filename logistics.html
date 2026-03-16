@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
   <title>공장 내 차량 현황</title>
   <link rel="icon" href="data:,">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -282,51 +285,61 @@ function nowKSTMin(){
   return kst.getHours()*60+kst.getMinutes();
 }
 
-// ★ 변경: isFutureTime 제거 → isOvernightEntry 로 교체
-// 전날 입차 판단: 출차시간 < 입차시간 (역전된 경우)
 function isOvernightEntry(inT, outT){
   const inM = timeToMin(inT), outM = timeToMin(outT);
   if(inM == null || outM == null) return false;
   return outM < inM;
 }
 
-// ★ 제품 타입 체류시간 보정: 06:00 이전 입차는 06:00 기준으로 계산
-const WORK_START_MIN = 6 * 60; // 06:00 = 360분
+const WORK_START_MIN = 6 * 60;
 function effectiveDurMin(inT, outT, type){
   if(type !== 'product') return diffMin(inT, outT);
   const inM = timeToMin(inT), outM = timeToMin(outT);
   if(inM == null || outM == null) return null;
-  // 전날입차(역전): 출차시각 - 06:00 으로 계산
   if(outM < inM){
-    if(outM <= WORK_START_MIN) return null; // 06시 전 출차 → 제외
-    return outM - WORK_START_MIN;           // 출차시각 - 06:00
+    if(outM <= WORK_START_MIN) return null;
+    return outM - WORK_START_MIN;
   }
-  // 06시 이전 입차 → 06시 이전 출차: 실질 작업 없음, 제외
   if(outM <= WORK_START_MIN) return null;
-  // 입차시간이 06:00 이전이면 06:00 기준으로 보정 (새벽 대기시간 제거)
   const effectiveIn = inM < WORK_START_MIN ? WORK_START_MIN : inM;
   const dur = outM - effectiveIn;
   return dur > 0 ? dur : null;
 }
 
-function todayKST(){ return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}); }
-function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}); }
+function todayKST(){
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+}
+function daysAgo(n){
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000 - n * 86400000);
+  return kst.toISOString().slice(0, 10);
+}
 function thisWeekMonday(){
-  const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
-  const day=now.getDay(); const diff=day===0?6:day-1;
-  const mon=new Date(now); mon.setDate(now.getDate()-diff);
-  return mon.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const day = kst.getUTCDay();
+  const diff = day === 0 ? 6 : day - 1;
+  const mon = new Date(kst.getTime() - diff * 86400000);
+  return mon.toISOString().slice(0, 10);
 }
 function lastWeekRange(){
-  const mon=new Date(thisWeekMonday()); mon.setDate(mon.getDate()-7);
-  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
-  return { from:mon.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}), to:sun.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}) };
+  const monStr = thisWeekMonday();
+  const mon = new Date(monStr + 'T00:00:00Z');
+  const lastMon = new Date(mon.getTime() - 7 * 86400000);
+  const lastSun = new Date(lastMon.getTime() + 6 * 86400000);
+  return {
+    from: lastMon.toISOString().slice(0, 10),
+    to:   lastSun.toISOString().slice(0, 10)
+  };
 }
 function dateToDowLabel(dateStr){
-  const dow=['일','월','화','수','목','금','토'];
-  const d=new Date(dateStr+'T00:00:00');
-  const mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
-  return `${dow[d.getDay()]}(${mm}/${dd})`;
+  const dow = ['일','월','화','수','목','금','토'];
+  const d = new Date(dateStr + 'T00:00:00Z');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${dow[d.getUTCDay()]}(${mm}/${dd})`;
 }
 
 // ═══════════════════════════════════════════
@@ -654,14 +667,12 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
       const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
       if (inM == null) return;
       const typeKey = r._type || 'product';
-      const WORK_SLOT = WORK_START_MIN / 10; // 36슬롯 = 06:00
+      const WORK_SLOT = WORK_START_MIN / 10;
       const isOvernight = outM != null && outM < inM;
 
-      // 전날입차 처리
       if (isOvernight) {
-        if (typeKey !== 'product') return; // 비제품 전날입차: 제외
-        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
-        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        if (typeKey !== 'product') return;
+        if (outM == null || outM <= WORK_START_MIN) return;
         const start = WORK_SLOT;
         const end = Math.ceil(outM / 10);
         if (stackedTimelines[typeKey]) {
@@ -670,7 +681,6 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
         return;
       }
 
-      // 일반입차: 제품은 06시 이전 슬롯 제외
       const rawStart = Math.floor(inM / 10);
       const start = (typeKey === 'product') ? Math.max(rawStart, WORK_SLOT) : rawStart;
       const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
@@ -710,7 +720,7 @@ function calcCongestion(rowsByDate, plantFilter, type) {
   const SLOTS = 144;
   const daysCount = rowsByDate.length || 1;
   const globalTimeline = Array(SLOTS).fill(0);
-  const WORK_SLOT = WORK_START_MIN / 10; // 36 = 06:00
+  const WORK_SLOT = WORK_START_MIN / 10;
 
   const byDate = rowsByDate.map(({ date, rows }) => {
     const timeline = Array(SLOTS).fill(0);
@@ -725,20 +735,16 @@ function calcCongestion(rowsByDate, plantFilter, type) {
       const isProduct = (type === 'product') || (r._type === 'product');
       const isOvernight = outM != null && outM < inM;
 
-      // 전날입차 처리
       if (isOvernight) {
-        if (!isProduct) return; // 비제품 전날입차: 제외
-        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
-        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        if (!isProduct) return;
+        if (outM == null || outM <= WORK_START_MIN) return;
         const start = WORK_SLOT;
         const end = Math.ceil(outM / 10);
         for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
         return;
       }
 
-      // 일반입차
       const rawStart = Math.floor(inM / 10);
-      // 제품: 06시 이전 슬롯 제외
       const start = isProduct ? Math.max(rawStart, WORK_SLOT) : rawStart;
       const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
       if (start >= end) return;
@@ -1004,7 +1010,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
         allItems.add(nm); if(!crossMap[nm]) crossMap[nm]={};
         if(!crossMap[nm][di]) crossMap[nm][di]={durSum:0,durCnt:0,count:0};
         crossMap[nm][di].count++;
-        // ★ effectiveDurMin이 전날입차/06시보정 모두 처리
         const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
         if(dur!=null&&dur>0&&dur<=480){crossMap[nm][di].durSum+=dur;crossMap[nm][di].durCnt++;}
       });
@@ -1056,7 +1061,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       const carMap={};
       allRows.forEach(r=>{
         const car=last4(r.CARNUM||''); if(!car) return;
-        // ★ effectiveDurMin이 전날입차/06시보정 모두 처리
         const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
         const item=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
         if(!carMap[car]) carMap[car]={visits:[],durSum:0,durCnt:0};
@@ -1148,17 +1152,20 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   plantFilter=plantFilter||'all';
   searchQ=(searchQ||'').replace(/\D/g,'').slice(-4);
 
-  // ★ 변경: filterFuture 제거 → 모든 행 포함
   const bwRaw=(data.banwol||[]).map(r=>({...r,_plant:'반월'}));
   const shRaw=(data.sihwa||[]).map(r=>({...r,_plant:'시화'}));
   let bw=[...bwRaw], sh=[...shRaw];
   if(plantFilter==='banwol') sh=[]; if(plantFilter==='sihwa') bw=[];
   const all=[...bw,...sh];
 
-  // ★ 전날입차 포함, effectiveDurMin이 케이스별로 처리 (전날+06시후출차→06:00기준, 나머지 제외)
+  // ★ 핵심 수정: _overnight 플래그를 withDur 단계에서 한 번만 판단
   function withDur(list){
     return list
-      .map(r=>({...r, _dur: effectiveDurMin(r.INTIME, r.OUTIME, type)}))
+      .map(r=>({
+        ...r,
+        _dur: effectiveDurMin(r.INTIME, r.OUTIME, type),
+        _overnight: isOvernightEntry(r.INTIME, r.OUTIME)
+      }))
       .filter(r=>r._dur!=null&&r._dur>0&&r._dur<=480);
   }
 
@@ -1167,9 +1174,20 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const avgAll=avg(allDur),avgBw=avg(bwDur),avgSh=avg(shDur);
 
   const hourBucket=Array(24).fill(0);
-  all.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)hourBucket[Math.floor(m/60)]++;});
+  all.forEach(r=>{
+    if(isOvernightEntry(r.INTIME, r.OUTIME)) return;
+    const m=timeToMin(r.INTIME);if(m!=null)hourBucket[Math.floor(m/60)]++;
+  });
+
   const hourDurSum=Array(24).fill(0),hourDurCnt=Array(24).fill(0);
-  allDur.forEach(r=>{const m=timeToMin(r.INTIME);if(m==null)return;const h=Math.floor(m/60);hourDurSum[h]+=r._dur;hourDurCnt[h]++;});
+  allDur.forEach(r=>{
+    // ★ 핵심 수정: isOvernightEntry 재호출 대신 withDur에서 붙인 _overnight 플래그 사용
+    const m = r._overnight ? WORK_START_MIN : timeToMin(r.INTIME);
+    if(m==null)return;
+    const h=Math.floor(m/60);
+    hourDurSum[h]+=r._dur;
+    hourDurCnt[h]++;
+  });
   const hourAvgDur=Array(24).fill(null).map((_,i)=>hourDurCnt[i]>0?Math.round(hourDurSum[i]/hourDurCnt[i]):null);
 
   const itemMap={};
@@ -1178,11 +1196,8 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     if(!itemMap[nm]) itemMap[nm]={count:0,silwei:0,durSum:0,durCnt:0};
     itemMap[nm].count++;
     itemMap[nm].silwei+=Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0;
-    // ★ effectiveDurMin이 전날입차/06시보정 모두 처리 (새벽단수 제외)
-    {
-      const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
-      if(dur!=null&&dur>0&&dur<=480){itemMap[nm].durSum+=dur;itemMap[nm].durCnt++;}
-    }
+    const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
+    if(dur!=null&&dur>0&&dur<=480){itemMap[nm].durSum+=dur;itemMap[nm].durCnt++;}
   });
   const itemEntries=Object.entries(itemMap).sort((a,b)=>b[1].count-a[1].count);
 
@@ -1191,8 +1206,14 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const bwDone=bw.filter(r=>r.OUTIME).length,shDone=sh.filter(r=>r.OUTIME).length;
   const hrLabels=Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}시`);
   const bwHour=Array(24).fill(0),shHour=Array(24).fill(0);
-  bw.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)bwHour[Math.floor(m/60)]++;});
-  sh.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)shHour[Math.floor(m/60)]++;});
+  bw.forEach(r=>{
+    if(isOvernightEntry(r.INTIME, r.OUTIME)) return;
+    const m=timeToMin(r.INTIME);if(m!=null)bwHour[Math.floor(m/60)]++;
+  });
+  sh.forEach(r=>{
+    if(isOvernightEntry(r.INTIME, r.OUTIME)) return;
+    const m=timeToMin(r.INTIME);if(m!=null)shHour[Math.floor(m/60)]++;
+  });
 
   const allRowsForCong=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
   const {byDate:congByDate,capa}=calcCongestion([{date:__anFrom,rows:allRowsForCong}],plantFilter,type);
@@ -1201,7 +1222,6 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
   const panel=document.getElementById('analyticPanel');
 
-  // ★ 변경: KPI에서 "미래 N건 제외" 문구 제거
   panel.innerHTML=`<div class="kpi-row">
     ${congHtml}
     <div class="kpi" style="--kc:${cfg.dc}">
@@ -1244,7 +1264,6 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>${isSub?'품목별':'유형별'} 입차 현황`,'<div style="display:flex;flex-direction:column;gap:10px">'+itemRows+'</div>');
   }
 
-  // ★ 변경: 테이블 행 - 전날입차 뱃지 표시, 카운팅은 정상 포함
   const tableAll=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
   const hasQ=searchQ&&searchQ.length>=2;
   const tableRows=tableAll.length===0?`<tr><td colspan="${isSub?7:6}" class="empty">데이터 없음</td></tr>`:tableAll.map((r,i)=>{
@@ -1253,16 +1272,10 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     const inM=timeToMin(r.INTIME), outM=timeToMin(r.OUTIME);
     const isProduct=(type==='product');
 
-    // ── 케이스 분류 ──────────────────────────────────────────
-    // 케이스1: 전날입차 (출차 < 입차 역전) → 제품이면 출차-06:00 계산, 아니면 표시불가
     const case1=overnight;
-    // 케이스1-b: 전날입차인데 06시 전 출차 → 제외
     const case1_earlyOut = overnight && outM!=null && outM<=WORK_START_MIN;
-    // 케이스1-c: 전날입차인데 출차없음
     const case1_noOut = overnight && outM==null;
-    // 케이스2: 제품 + 06시 이전 입차 → 06시 이전 출차 (새벽 단수)
     const case2=isProduct && !overnight && inM!=null && outM!=null && inM<WORK_START_MIN && outM<=WORK_START_MIN;
-    // 케이스3: 제품 + 06시 이전 입차 → 06시 이후 출차 (06시 기준 보정)
     const case3=isProduct && !overnight && inM!=null && inM<WORK_START_MIN && (outM==null||outM>WORK_START_MIN);
 
     const dur=case2 ? null : effectiveDurMin(r.INTIME, r.OUTIME, type);
@@ -1271,13 +1284,10 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
     let durDisplay;
     if(case1_earlyOut){
-      // 전날입차 + 06시 전 출차: 작업시간 없음
       durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
     } else if(case1_noOut){
-      // 전날입차 + 출차없음
       durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
     } else if(case1 && durValid){
-      // 전날입차 + 06시 이후 출차 → 출차-06:00 표시
       durDisplay=`${dur}<span style="color:#6366f1;font-size:10px;margin-left:3px" title="전날입차, 06:00 기준 계산">🌙06↑</span>`;
     } else if(case2){
       durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
@@ -1297,7 +1307,6 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     else if(case3)                 rowStyle=' style="background:#f0f7ff"';
     if(isDim)                      rowStyle=' style="opacity:0.25"';
 
-    // 입차시각 옆 뱃지
     const overnightNote=case1?'<span style="color:#6366f1;font-size:10px"> 🌙전날입차</span>':'';
     const earlyNote    =case2?'<span style="color:#94a3b8;font-size:10px"> 🌙새벽단수</span>':
                         case3?'<span style="color:#6366f1;font-size:10px"> ⏰06시보정</span>':'';
