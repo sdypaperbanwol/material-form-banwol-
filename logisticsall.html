@@ -1,274 +1,1429 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>실시간 차량현황(시트 뷰)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>공장 내 차량 현황</title>
+  <link rel="icon" href="data:,">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    :root { --gap: 16px; --card: #ddd; --muted:#777; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
-    .topbar { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
-    .topbar strong { font-size:18px; }
-    .timestamp { color: var(--muted); }
-
-    /* 페어(반월/시화) 그리드: 두 칼럼 좁게 + 가운데 정렬 */
-    .grid {
-      display: grid;
-      grid-template-columns: 520px 520px; /* 필요하면 숫자만 조정 */
-      justify-content: center;
-      gap: var(--gap);
-      margin-inline: auto;
-    }
-    .pair-title { font-weight:700; margin: 4px 0 8px; }
-
-    .section { border:1px solid var(--card); border-radius:10px; padding:12px; }
-    .section h3 { margin:0 0 8px 0; font-size:16px; display:flex; gap:8px; align-items:baseline; }
-    .muted { color: var(--muted); font-weight:500; }
-
-    table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-    th, td { border:1px solid #ccc; text-align:center; vertical-align:middle; padding:6px; }
-    th { font-weight:700; }
-    colgroup col:nth-child(1) { width: 80px; }
-    colgroup col:nth-child(2) { width: 120px; }
-    colgroup col:nth-child(3) { width: 100px; }
-
-    /* 모바일/좁은 화면에서는 1열로 */
-    /* 변경: 모바일만 1열로 (700px 이하) */
-@media (max-width: 700px) {
-  .grid { grid-template-columns: 1fr; }
-}
-
-
-
-    button { padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:8px; cursor:pointer; }
-    button:hover { background:#f5f5f5; }
+  :root{
+    --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
+    --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff;
+    --brand:#0f62fe; --radius:16px; --shadow:0 6px 18px rgba(0,0,0,.05);
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif; }
+  .wrap{ max-width:980px; margin:24px auto; padding:0 16px }
+  .header{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
+  .title{ margin:0; font-size:20px; letter-spacing:-.2px }
+  .subtitle{ margin:4px 0 0 0; color:var(--muted); font-size:12.5px; display:flex; align-items:center; gap:6px }
+  .mini-spinner{ display:inline-block; width:12px; height:12px; border:2px solid #cfd8ff;
+    border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+  .badges{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px }
+  .badge{ background:var(--badge); border:1px solid #d9e2ff; border-radius:999px; padding:3px 8px; font-size:12px }
+  .toolbar{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap }
+  .btn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:8px 12px; font-size:13px; cursor:pointer; }
+  .btn:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) }
+  .input,.select{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; font-size:13px }
+  .view-toggle{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden }
+  .view-toggle .tbtn{ border:0; background:#fff; padding:8px 12px; font-size:13px; cursor:pointer }
+  .view-toggle .tbtn+.tbtn{ border-left:1px solid var(--line) }
+  .view-toggle .tbtn.active{ background:var(--brand); color:#fff }
+  .grid{ display:grid; grid-template-columns:1fr; gap:14px }
+  .col{ display:grid; gap:14px }
+  @media(min-width:900px){ .grid{ grid-template-columns:1fr 1fr } }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden; }
+  .stripe{ height:4px }
+  .stripe.cyan{ background:var(--cyan) }
+  .stripe.green{ background:var(--green) }
+  .stripe.purple{ background:#a855f7 }
+  .stripe.orange{ background:#f97316 }
+  .card .head{ padding:16px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:8px }
+  .card .head h3{ margin:0; font-size:15px }
+  .head-right{ display:flex; align-items:center; gap:8px }
+  .summary{ padding:8px 14px; color:var(--muted); border-bottom:1px solid var(--line); font-size:12.5px }
+  table{ width:100%; border-collapse:separate; border-spacing:0 }
+  thead th{ position:sticky; top:0; background:#fafbfd; border-bottom:1px solid var(--line);
+    color:#333; font-weight:600; z-index:10; }
+  th,td{ padding:8px 10px; text-align:center }
+  tbody tr:nth-child(odd){ background:#fcfcfe }
+  tbody td{ border-bottom:1px solid #f1f1f4 }
+  .empty{ padding:18px 14px; color:var(--muted) }
+  tbody tr.plant-sep td{ border-top:2px solid #ff6b6b }
+  td.cell-hit{ background:#fff2cc !important }
+  .badge.search-pill{ background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px }
+  tbody tr.watch-hit td{ background:#d4edda !important; font-weight:600; }
+  tbody tr.watch-hit:nth-child(odd) td{ background:#c3e6cb !important; }
+  .watch-panel{ background:var(--card); border:1px solid #d9e2ff; border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:14px 16px; margin-bottom:14px; border-left:4px solid var(--brand); }
+  .watch-panel-title{ font-size:13px; font-weight:600; color:#333; margin:0 0 10px 0;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .watch-panel-title .hint{ font-size:11.5px; color:var(--muted); font-weight:normal;
+    background:#f0f3f7; border-radius:6px; padding:2px 7px; }
+  .watch-input-row{ display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .watch-input{ border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:7px 10px; font-size:14px; width:110px; letter-spacing:2px; text-align:center; font-weight:600; }
+  .watch-input:focus{ outline:none; border-color:var(--brand); box-shadow:0 0 0 2px rgba(15,98,254,.12) }
+  .watch-add-btn{ appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff;
+    border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600; }
+  .watch-add-btn:hover{ background:#0353e9 }
+  .watch-clear-btn{ appearance:none; border:1px solid #ddd; background:#fff; color:#888;
+    border-radius:10px; padding:7px 10px; font-size:12px; cursor:pointer; }
+  .watch-tags-row{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:28px; }
+  .watch-empty-hint{ color:var(--muted); font-size:12.5px }
+  .watch-tag{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px 4px 8px;
+    border-radius:999px; font-size:13px; border:1.5px solid; font-weight:600; transition:transform .1s; }
+  .watch-tag.found{ background:#d4edda; border-color:#82c89a; color:#155724; }
+  .watch-tag.not-found{ background:#f8d7da; border-color:#f1a8ae; color:#721c24; }
+  .watch-tag.pending{ background:#fff3cd; border-color:#ffc107; color:#856404; }
+  .watch-tag .tag-status{ font-size:11px; font-weight:normal; opacity:.8 }
+  .watch-tag .remove-btn{ background:none; border:none; padding:0; cursor:pointer;
+    font-size:14px; line-height:1; opacity:.5; margin-left:2px; }
+  .watch-tag .remove-btn:hover{ opacity:1 }
+  @keyframes watchPulse{
+    0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(40,167,69,.6) }
+    50%{ transform:scale(1.08); box-shadow:0 0 0 6px rgba(40,167,69,0) }
+    100%{ transform:scale(1); }
+  }
+  .watch-tag.pulse{ animation:watchPulse .5s ease-out }
+  .toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111; color:#fff;
+    padding:8px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10000; font-size:13px; }
+  .toast.show{ opacity:1 }
+  @media print{
+    body{ background:#fff }
+    .btn,.toast,.toolbar,.watch-panel{ display:none }
+    .wrap{ max-width:1000px; margin:0; padding:0 }
+    .grid{ grid-template-columns:1fr 1fr }
+    .card{ box-shadow:none; border:1px solid #eee }
+  }
+  /* ── 분석 탭 전용 ── */
+  #analyticPanel{ display:none }
+  .kpi-row{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:14px }
+  .kpi{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+    position:relative; overflow:hidden; }
+  .kpi::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--kc,#0f62fe) }
+  .kpi-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px }
+  .kpi-val{ font-size:22px; font-weight:700; line-height:1.1 }
+  .kpi-sub{ font-size:11px; color:var(--muted); margin-top:2px }
+  .an-card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden; padding:16px 18px; margin-bottom:14px; }
+  .an-card h4{ margin:0 0 12px; font-size:14px; color:#444; display:flex; align-items:center; gap:6px }
+  .an-card h4 .dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--dc,#0f62fe) }
+  .an-card h4 .an-collapse-btn{ margin-left:auto; flex-shrink:0; appearance:none; border:1px solid var(--line);
+    background:#fff; border-radius:8px; padding:2px 8px; font-size:11px; cursor:pointer; color:var(--muted); }
+  .an-card h4 .an-collapse-btn:hover{ background:#f3f4f6 }
+  .an-card-body.collapsed{ display:none }
+  .chart-wrap{ position:relative; height:200px }
+  .chart-wrap.tall{ height:240px }
+  .an-loading{ text-align:center; padding:40px; color:var(--muted); font-size:13px }
+  /* 기간 선택 바 */
+  .period-bar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:12px 16px; margin-bottom:14px;
+  }
+  .period-bar label{ font-size:12px; color:var(--muted); flex-shrink:0 }
+  .period-presets{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; flex-shrink:0 }
+  .period-presets .pbtn{ border:0; background:#fff; padding:7px 13px; font-size:13px; cursor:pointer }
+  .period-presets .pbtn+.pbtn{ border-left:1px solid var(--line) }
+  .period-presets .pbtn.active{ background:var(--brand); color:#fff }
+  .period-custom{ display:flex; align-items:center; gap:6px; flex-wrap:wrap }
+  .period-custom input[type=date]{
+    border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:6px 10px; font-size:13px; color:var(--ink);
+  }
+  .period-custom input[type=date]:focus{ outline:none; border-color:var(--brand) }
+  .period-sep{ color:var(--muted); font-size:12px }
+  .period-apply{ appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff;
+    border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; }
+  .period-apply:hover{ background:#0353e9 }
+  .period-badge{ font-size:12px; color:var(--muted); background:#f5f5f5; border-radius:6px; padding:3px 8px; margin-left:auto }
+  .diff-badge{ display:inline-block; font-size:11px; font-weight:600; border-radius:999px; padding:1px 7px; margin-left:5px; }
+  .diff-badge.up{ background:#dcfce7; color:#15803d }
+  .diff-badge.down{ background:#fee2e2; color:#b91c1c }
+  .diff-badge.flat{ background:#f3f4f6; color:#6b7280 }
+  .dow-table td, .dow-table th{ padding:6px 10px; font-size:13px }
+  .dow-table td.today-col{ background:#eff6ff; font-weight:700 }
+  .dow-table tr:hover td{ background:#f8faff }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <strong>실시간 차량현황(시트 뷰)</strong>
-    <span class="timestamp" id="ts"></span>
-    <button id="btnUpdate">새로고침</button>
+<div class="wrap">
+  <section class="header">
+    <h1 class="title">공장 내 차량 현황</h1>
+    <p class="subtitle" id="updated">업데이트 준비 중…</p>
+    <div class="badges">
+      <span class="badge">신대양제지 반월/시화</span>
+      <span class="badge">계근 기준</span>
+      <span class="badge" id="watchCountBadge" style="display:none"></span>
+    </div>
+    <div class="toolbar">
+      <select id="plantFilter" class="select">
+        <option value="all">전체</option>
+        <option value="banwol">반월만</option>
+        <option value="sihwa">시화만</option>
+      </select>
+      <div class="view-toggle" role="tablist">
+        <button class="tbtn active" id="btnViewLive" role="tab">입차 조회</button>
+        <button class="tbtn" id="btnViewWeigh" role="tab">계근 조회(제품)</button>
+        <button class="tbtn" id="btnViewAnalytic" role="tab">📊 분석</button>
+      </div>
+      <input id="searchInput" class="input" placeholder="차량번호 검색" />
+      <span id="searchSummary" class="badge search-pill" style="display:none"></span>
+    </div>
+  </section>
+
+  <section class="watch-panel" id="watchPanelEl">
+    <div class="watch-panel-title">
+      🔍 감시 차량 등록
+      <span class="hint">서버 저장 · 공유됨</span>
+    </div>
+    <div class="watch-input-row">
+      <input type="text" id="watchInput" class="watch-input" placeholder="0000" maxlength="4" inputmode="numeric" />
+      <button class="watch-add-btn" id="watchAddBtn">+ 등록</button>
+      <button class="watch-clear-btn" id="watchClearBtn">전체 삭제</button>
+    </div>
+    <div class="watch-tags-row" id="watchTagsRow">
+      <span class="watch-empty-hint">4자리 입력 후 등록</span>
+    </div>
+  </section>
+
+  <section class="grid" id="weighingPanel" style="display:none"></section>
+  <section class="grid" id="sections"></section>
+
+  <div class="period-bar" id="periodBar" style="display:none">
+    <label>기간</label>
+    <div class="period-presets">
+      <button class="pbtn active" data-preset="today">오늘</button>
+      <button class="pbtn" data-preset="week">이번주</button>
+      <button class="pbtn" data-preset="lastweek">저번주</button>
+      <button class="pbtn" data-preset="custom">직접입력</button>
+    </div>
+   <div class="period-custom" id="periodCustom" style="display:none">
+  <input type="month" id="anYearMonth" />
+  <button class="period-apply" id="anApplyBtn">조회</button>
+</div>
+    <span class="period-badge" id="anPeriodBadge"></span>
+    <div class="view-toggle" style="margin-left:auto" id="anTypeTabs"></div>
+    <button class="btn" id="anRefreshBtn">🔄</button>
   </div>
 
-  <!-- 페어 렌더링 컨테이너 -->
-  <div class="grid" id="pairs"></div>
+  <section id="analyticPanel"></section>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-  // ==== 설정 ====
-  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyxNerH4RGxiJ8Ygz3qnMvqhmfp9B-di2Amuj4XyvFde0kX6P7E-VshI1I75EVNCC3Y/exec";
-  const API_TOKEN  = "DY_SCALE";
+// ═══════════════════════════════════════════
+//  설정
+// ═══════════════════════════════════════════
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzRq0YuvnEiGDnU15cG5oKnym9OV9oeD0bOkBJw0u9_a-BNWyK5yOJsOzXKCynkP3PiFA/exec';
+const API_TOKEN    = 'DY_SCALE';
 
-  // 반응형 분기 기준(px)
-  const BREAKPOINT = 700;
+const SLOT_LABELS = Array.from({length:144}, (_,i) => {
+  const h = Math.floor(i*10/60), m = (i*10)%60;
+  return m === 0 ? `${String(h).padStart(2,'0')}시` : null;
+});
+const SLOT_LABELS_FULL = Array.from({length:144}, (_,i) => {
+  const h = Math.floor(i*10/60), m = (i*10)%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+});
 
-  const SECTIONS = ["제품 입차중","원료 하차중","원료 도착","부자재 입차중","컨테이너 입차중"];
+const LS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.q' };
 
-  // 섹션별 시간 모드: 모두 HH:MM
-  const TIME_MODE_BY_SECTION = {
-    "제품 입차중":   "HM",
-    "원료 하차중":   "HM",
-    "원료 도착":     "HM",
-    "부자재 입차중": "HM",
-    "컨테이너 입차중":"HM"
+const CAPA_MAP = {
+  '반월': { '제품 상차중': 8, '원료 하차중': 5, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+  '시화': { '제품 상차중': 9, '원료 하차중': 12, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+};
+
+// ═══════════════════════════════════════════
+//  유틸
+// ═══════════════════════════════════════════
+function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):''; }
+function isMonoDigit(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4&&d.split('').every(c=>c===d[0]); }
+function fmtTime(raw){
+  if(raw==null) return '';
+  const s0=String(raw).trim(); if(!s0) return '';
+  const m=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+  const d=s0.replace(/\D/g,'');
+  if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+  return s0;
+}
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function stripeClass(c){ return String(c||'').toLowerCase().includes('00ff00')?'green':'cyan'; }
+const collapseMap=(()=>{ try{ return JSON.parse(localStorage.getItem(LS.collapse)||'{}'); }catch(_){return{};} })();
+
+function api(params){
+  const qs=Object.entries(params).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
+  return fetch(`${SNAPSHOT_URL}?token=${API_TOKEN}&_ts=${Date.now()}&${qs}`).then(r=>r.json());
+}
+function timeToMin(t){
+  if(!t) return null;
+  const s=fmtTime(t); const m=s.match(/(\d{1,2}):(\d{2})/);
+  if(!m) return null;
+  return parseInt(m[1])*60+parseInt(m[2]);
+}
+function diffMin(inT,outT){
+  const a=timeToMin(inT), b=timeToMin(outT);
+  if(a==null||b==null) return null;
+  let d=b-a; if(d<0) d+=1440; return d;
+}
+function nowKSTMin(){
+  const kst=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  return kst.getHours()*60+kst.getMinutes();
+}
+
+// ★ 변경: isFutureTime 제거 → isOvernightEntry 로 교체
+// 전날 입차 판단: 출차시간 < 입차시간 (역전된 경우)
+function isOvernightEntry(inT, outT){
+  const inM = timeToMin(inT), outM = timeToMin(outT);
+  if(inM == null || outM == null) return false;
+  return outM < inM;
+}
+
+// ★ 제품 타입 체류시간 보정: 06:00 이전 입차는 06:00 기준으로 계산
+const WORK_START_MIN = 6 * 60; // 06:00 = 360분
+function effectiveDurMin(inT, outT, type){
+  if(type !== 'product') return diffMin(inT, outT);
+  const inM = timeToMin(inT), outM = timeToMin(outT);
+  if(inM == null || outM == null) return null;
+  // 전날입차(역전): 출차시각 - 06:00 으로 계산
+  if(outM < inM){
+    if(outM <= WORK_START_MIN) return null; // 06시 전 출차 → 제외
+    return outM - WORK_START_MIN;           // 출차시각 - 06:00
+  }
+  // 06시 이전 입차 → 06시 이전 출차: 실질 작업 없음, 제외
+  if(outM <= WORK_START_MIN) return null;
+  // 입차시간이 06:00 이전이면 06:00 기준으로 보정 (새벽 대기시간 제거)
+  const effectiveIn = inM < WORK_START_MIN ? WORK_START_MIN : inM;
+  const dur = outM - effectiveIn;
+  return dur > 0 ? dur : null;
+}
+
+function todayKST(){ return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}); }
+function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}); }
+function thisWeekMonday(){
+  const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  const day=now.getDay(); const diff=day===0?6:day-1;
+  const mon=new Date(now); mon.setDate(now.getDate()-diff);
+  return mon.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
+}
+function lastWeekRange(){
+  const mon=new Date(thisWeekMonday()); mon.setDate(mon.getDate()-7);
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  return { from:mon.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}), to:sun.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}) };
+}
+function dateToDowLabel(dateStr){
+  const dow=['일','월','화','수','목','금','토'];
+  const d=new Date(dateStr+'T00:00:00');
+  const mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return `${dow[d.getDay()]}(${mm}/${dd})`;
+}
+
+// ═══════════════════════════════════════════
+//  감시 차량
+// ═══════════════════════════════════════════
+let watchList={};
+async function fetchWatch(){
+  try{
+    const res=await api({action:'get_watch'}); const raw=res.watch||{};
+    Object.keys(raw).forEach(k=>{ if(watchList[k]===undefined) watchList[k]='pending'; });
+    Object.keys(watchList).forEach(k=>{ if(raw[k]===undefined) delete watchList[k]; });
+    renderWatchTags();
+  }catch(e){}
+}
+async function addWatch(num,silent=false){
+  const c=String(num).replace(/\D/g,'').slice(-4);
+  if(c.length!==4){ if(!silent) showToast('4자리 숫자를 입력하세요'); return false; }
+  if(watchList[c]!==undefined){ if(!silent) showToast(`${c} 이미 등록됨`); return false; }
+  try{
+    const res=await api({action:'add_watch',num:c});
+    if(!res.ok){ if(!silent) showToast(res.error||'등록 실패'); return false; }
+    watchList[c]='pending'; renderWatchTags(); if(!silent) showToast(`${c} 등록 완료`); return true;
+  }catch(e){ if(!silent) showToast('오류 발생'); return false; }
+}
+window.removeWatch=async function(num,silent=false){
+  try{
+    await api({action:'del_watch',num}); delete watchList[num];
+    renderWatchTags(); rerenderCache(); if(!silent) showToast(`${num} 삭제됨`);
+  }catch(e){}
+};
+function renderWatchTags(){
+  const row=document.getElementById('watchTagsRow'); const keys=Object.keys(watchList);
+  const badge=document.getElementById('watchCountBadge');
+  if(!keys.length){ row.innerHTML='<span class="watch-empty-hint">4자리 입력 후 등록</span>'; badge.style.display='none'; return; }
+  badge.style.display='inline-block'; badge.textContent=`감시 ${keys.length}대`;
+  row.innerHTML=keys.map(k=>{
+    const st=watchList[k];
+    const cls=st==='found'?'found':st==='not-found'?'not-found':'pending';
+    const icon=st==='found'?'✅':st==='not-found'?'❌':'⏳';
+    const label=st==='found'?'입차됨':st==='not-found'?'미확인':'대기';
+    return `<span class="watch-tag ${cls}" id="wtag-${k}">${icon} <strong>${k}</strong><span class="tag-status">${label}</span><button class="remove-btn" onclick="removeWatch('${k}')">✕</button></span>`;
+  }).join('');
+}
+function syncWatch(allCars){
+  if(!Object.keys(watchList).length) return;
+  const found=new Set(allCars.map(c=>last4(c)).filter(Boolean)); let changed=false;
+  Object.keys(watchList).forEach(k=>{ const ns=found.has(k)?'found':'not-found'; if(watchList[k]!==ns){ watchList[k]=ns; changed=true; } });
+  if(changed){
+    renderWatchTags();
+    Object.keys(watchList).filter(k=>watchList[k]==='found').forEach(k=>{
+      const el=document.getElementById(`wtag-${k}`);
+      if(el){el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');}
+    });
+  }
+}
+
+// ═══════════════════════════════════════════
+//  입차 조회 탭
+// ═══════════════════════════════════════════
+let __searchCount=0, __lastWeigh=null, __lastData=null;
+const elUpdated=document.getElementById('updated');
+const elSections=document.getElementById('sections');
+const elWeighPanel=document.getElementById('weighingPanel');
+
+function render(data){
+  if(!data||!data.sections) return;
+  __lastData=data; __searchCount=0;
+  elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
+  const plantSel=document.getElementById('plantFilter').value;
+  const q=(document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
+  const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
+  const LEFT=['제품 상차중','부자재 입차중','컨테이너 입차중'];
+  const RIGHT=['원료 하차중','원료 대기'];
+  const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
+  const allCars=[];
+
+  const buildSec=sec=>{
+    let rows=[];
+    sec.groups.forEach(g=>{
+      if(plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화'))
+        rows.push(...g.rows.filter(r=>!isMonoDigit(r.car)).map(r=>({...r,plant:g.plant})));
+    });
+    rows.forEach(r=>allCars.push(r.car));
+    if(q) rows=rows.filter(r=>{ const m=isFour?last4(r.car)===dqq:String(r.car).includes(q); if(m)__searchCount++; return m; });
+    const collapsed=collapseMap[sec.title];
+    let seq=1;
+    const rowsHTML=rows.length?rows.map((r,i)=>{
+      const sep=(plantSel==='all'&&i>0&&rows[i-1].plant!==r.plant);
+      if(sep) seq=1;
+      const watched=last4(r.car)&&watchList[last4(r.car)]!==undefined;
+      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}">
+        <td>${seq++}</td>
+        <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
+        <td>${fmtTime(r.time)}</td><td>${r.plant}</td>
+      </tr>`;
+    }).join(''):'<tr><td colspan="4" class="empty">(데이터 없음)</td></tr>';
+
+    const bc=rows.filter(r=>r.plant==='반월').length;
+    const sc=rows.filter(r=>r.plant==='시화').length;
+    const capaB=CAPA_MAP['반월'][sec.title];
+    const capaS=CAPA_MAP['시화'][sec.title];
+    const pctB=capaB?Math.round(bc/capaB*100):null;
+    const pctS=capaS?Math.round(sc/capaS*100):null;
+    const summaryStr=`반월 ${bc}${pctB!=null?' ('+pctB+'%)':''} · 시화 ${sc}${pctS!=null?' ('+pctS+'%)':''}`;
+
+    return `<article class="card">
+      <div class="stripe ${stripeClass(sec.color)}"></div>
+      <div class="head"><h3>${sec.title}</h3>
+        <div class="head-right">
+          <button class="btn" onclick="toggleCard('${encodeURIComponent(sec.title)}',this)">${collapsed?'펼치기':'접기'}</button>
+        </div>
+      </div>
+      <div class="summary">총 ${rows.length} · ${summaryStr}</div>
+      <div class="body" style="${collapsed?'display:none':''}">
+        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">시간</th><th style="width:56px">공장</th></tr></thead>
+        <tbody>${rowsHTML}</tbody></table>
+      </div>
+    </article>`;
   };
-  function timeModeFor(title){ return TIME_MODE_BY_SECTION[title] ?? "HM"; }
 
-  // 안전 이스케이프
-  function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  elSections.innerHTML=`
+    <div class="col">${LEFT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>
+    <div class="col">${RIGHT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>`;
+  syncWatch(allCars);
+  const badge=document.getElementById('searchSummary');
+  if(q){ badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
+  else badge.style.display='none';
+}
 
-  // 시간 포맷터: HM/HMS/MS 지원 + KST 보정
-  function formatTime(val, mode){
-    if (val == null || val === "") return "";
-    const s = String(val).trim();
-    if (/^0+$/.test(s.replace(/\D/g,""))) return "";
+window.toggleCard=(enc,btn)=>{
+  const t=decodeURIComponent(enc);
+  const body=btn.closest('.card').querySelector('.body');
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':''; btn.textContent=open?'펼치기':'접기';
+  collapseMap[t]=open; localStorage.setItem(LS.collapse,JSON.stringify(collapseMap));
+};
+window.toggleAnCard=(btn)=>{
+  const body=btn.closest('.an-card').querySelector('.an-card-body');
+  if(!body) return;
+  const isOpen=!body.classList.contains('collapsed');
+  body.classList.toggle('collapsed',isOpen); btn.textContent=isOpen?'펼치기':'접기';
+};
+function anCard(title,bodyHtml,style=''){
+  return `<div class="an-card"${style?` style="${style}"`:''}>
+    <h4>${title}<button class="an-collapse-btn" onclick="toggleAnCard(this)">접기</button></h4>
+    <div class="an-card-body">${bodyHtml}</div>
+  </div>`;
+}
 
-    // ISO/Date → KST
-    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
-      const d = new Date(s);
-      if (!isNaN(d.getTime())) {
-        const parts = new Intl.DateTimeFormat('ko-KR', {
-          timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-        }).formatToParts(d);
-        const HH = parts.find(x=>x.type==='hour')?.value ?? '00';
-        const MM = parts.find(x=>x.type==='minute')?.value ?? '00';
-        const SS = parts.find(x=>x.type==='second')?.value ?? '00';
-        if (mode === 'HM')  return `${HH}:${MM}`;
-        if (mode === 'MS')  return `${MM}:${SS}`;
-        return `${HH}:${MM}:${SS}`;
+// ═══════════════════════════════════════════
+//  계근 조회 탭
+// ═══════════════════════════════════════════
+function buildWeighTable(title,list,q){
+  const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
+  const filtered=(list||[]).filter(r=>!q||(isFour?last4(r.CARNUM||'')===dqq:(r.CARNUM||'').includes(q)));
+  const rowsHTML=filtered.length?filtered.map((r,i)=>{
+    const car=r.CARNUM||''; const hit=q&&(isFour?last4(car)===dqq:car.includes(q));
+    const watched=last4(car)&&watchList[last4(car)]!==undefined;
+    return `<tr class="${watched?'watch-hit':''}">
+      <td>${i+1}</td><td class="${hit?'cell-hit':''}">${car}</td>
+      <td>${fmtTime(r.INTIME)}</td><td>${fmtTime(r.OUTIME)}</td>
+      <td>${r.TOTWEI||''}</td><td>${r.SILWEI||''}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" class="empty">(결과 없음)</td></tr>';
+  return `<article class="card">
+    <div class="stripe cyan"></div>
+    <div class="head"><h3>${title}</h3><div class="head-right"><div class="summary">총 ${filtered.length}건</div></div></div>
+    <div class="body"><table>
+      <thead><tr><th style="width:44px">No</th><th style="width:120px">차량번호</th><th style="width:74px">입차</th><th style="width:74px">출차</th><th style="width:84px">총중량</th><th style="width:84px">실중량</th></tr></thead>
+      <tbody>${rowsHTML}</tbody>
+    </table></div>
+  </article>`;
+}
+function renderWeigh(payload){
+  __lastWeigh=payload; elUpdated.textContent=`업데이트: ${payload.updatedAt||''}`;
+  const q=document.getElementById('searchInput').value||'';
+  elWeighPanel.innerHTML=`
+    <div class="col">${buildWeighTable('계근 조회(제품) – 반월',payload.banwol,q)}</div>
+    <div class="col">${buildWeighTable('계근 조회(제품) – 시화',payload.sihwa,q)}</div>`;
+  syncWatch([...(payload.banwol||[]),...(payload.sihwa||[])].map(r=>r.CARNUM||''));
+}
+
+// ═══════════════════════════════════════════
+//  분석 탭 상태
+// ═══════════════════════════════════════════
+let __anCharts={}, __anType='product', __anCache={}, __anPeriod='today';
+let __anFrom=todayKST(), __anTo=todayKST();
+
+const AN_TYPES=[
+  {key:'all',label:'전체',dc:'#6366f1'},
+  {key:'product',label:'제품',dc:'#06b6d4'},
+  {key:'sub',label:'부자재',dc:'#f97316'},
+  {key:'container',label:'컨테이너',dc:'#a855f7'},
+];
+
+function destroyCharts(){ Object.values(__anCharts).forEach(c=>{ try{c.destroy();}catch(e){} }); __anCharts={}; }
+
+function applyPreset(preset){
+  __anPeriod=preset; const today=todayKST();
+  if(preset==='today'){ __anFrom=today; __anTo=today; }
+  else if(preset==='week'){ __anFrom=thisWeekMonday(); __anTo=today; }
+  else if(preset==='lastweek'){ const r=lastWeekRange(); __anFrom=r.from; __anTo=r.to; }
+  syncPeriodUI();
+}
+function syncPeriodUI(){
+  document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('active',b.dataset.preset===__anPeriod));
+  const ymi=document.getElementById('anYearMonth');
+  if(ymi) ymi.value=__anFrom.slice(0,7);
+  const badge=document.getElementById('anPeriodBadge');
+  if(badge) badge.textContent=__anFrom===__anTo?__anFrom:`${__anFrom} ~ ${__anTo}`;
+}
+function initPeriodBarEvents(){
+  document.querySelector('.period-presets').addEventListener('click',e=>{
+    const btn=e.target.closest('.pbtn'); if(!btn) return;
+    const preset=btn.dataset.preset;
+    if(preset==='custom'){ __anPeriod='custom'; document.getElementById('periodCustom').style.display='flex'; syncPeriodUI(); }
+    else{ applyPreset(preset); document.getElementById('periodCustom').style.display='none'; loadAnalytic(__anType,true); }
+  });
+  document.getElementById('anApplyBtn').addEventListener('click',()=>{
+    const ym=document.getElementById('anYearMonth').value;
+    if(!ym){ showToast('년월을 선택하세요'); return; }
+    const [y,m]=ym.split('-').map(Number);
+    __anFrom=`${y}-${String(m).padStart(2,'0')}-01`;
+    const lastDay=new Date(y,m,0).getDate();
+    __anTo=`${y}-${String(m).padStart(2,'0')}-${lastDay}`;
+    __anPeriod='custom'; syncPeriodUI();
+    loadAnalytic(__anType,true);
+  });
+  document.getElementById('anRefreshBtn').addEventListener('click',refreshAnalytic);
+  document.getElementById('anTypeTabs').addEventListener('click',e=>{
+    const btn=e.target.closest('.tbtn'); if(!btn) return; loadAnalytic(btn.dataset.type,true);
+  });
+}
+
+async function loadAnalytic(type,force=false){
+  __anType=type||'product';
+  document.getElementById('anTypeTabs').innerHTML=AN_TYPES.map(t=>`<button class="tbtn${t.key===__anType?' active':''}" data-type="${t.key}">${t.label}</button>`).join('');
+  syncPeriodUI();
+  const panel=document.getElementById('analyticPanel');
+  const isMultiDay=__anFrom!==__anTo;
+  const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
+  destroyCharts();
+  panel.innerHTML=`<div class="an-loading"><span class="mini-spinner"></span> 데이터 불러오는 중…</div>`;
+  try{
+    if(force||!__anCache[cacheKey]){
+      if(__anType==='all'){
+        const types=['product','sub','container'];
+        if(isMultiDay){
+          const dates=[]; let cur=new Date(__anFrom+'T00:00:00'); const end=new Date(__anTo+'T00:00:00');
+          while(cur<=end){ dates.push(cur.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})); cur=new Date(cur.getTime()+86400000); }
+          const allResults=await Promise.all(types.map(tp=>Promise.all([
+            api({action:'weekly_summary',type:tp,dateFrom:__anFrom,dateTo:__anTo}),
+            ...dates.map(dt=>api({action:'get_weigh_cache',type:tp,dateFrom:dt,dateTo:dt})),
+          ])));
+          types.forEach((tp,ti)=>{
+            const [,...perDate]=allResults[ti];
+            dates.forEach((dt,di)=>{ const k=`${tp}_${dt}_${dt}`; if(!__anCache[k]) __anCache[k]={mode:'daily',data:perDate[di]}; });
+          });
+          __anCache[cacheKey]={mode:'all-weekly',types,dates,summaries:allResults.map(r=>r[0]),perDate:allResults.map(r=>r.slice(1))};
+        } else {
+          const results=await Promise.all(types.map(tp=>api({action:'get_weigh_cache',type:tp,dateFrom:__anFrom,dateTo:__anTo})));
+          __anCache[cacheKey]={mode:'all-daily',types,data:Object.fromEntries(types.map((tp,i)=>[tp,results[i]]))};
+        }
+      } else if(isMultiDay){
+        const [summaryData, weighData] = await Promise.all([
+          api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
+          api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
+        ]);
+        const dates2 = summaryData.daily.map(d => d.date);
+        const bwByDate = {}, shByDate = {};
+        (weighData.banwol || []).forEach(r => {
+          const raw = String(r.WEIDAT || '');
+          const d = raw.length === 8
+            ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
+            : raw;
+          if(!bwByDate[d]) bwByDate[d]=[];
+          bwByDate[d].push(r);
+        });
+        (weighData.sihwa || []).forEach(r => {
+          const raw = String(r.WEIDAT || '');
+          const d = raw.length === 8
+            ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
+            : raw;
+          if(!shByDate[d]) shByDate[d]=[];
+          shByDate[d].push(r);
+        });
+        dates2.forEach(dt => {
+          const k = `${__anType}_${dt}_${dt}`;
+          if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
+        });
+        __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
+      } else {
+        const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
+        __anCache[cacheKey] = { mode:'daily', data };
       }
     }
+    const plantFilter=document.getElementById('plantFilter').value||'all';
+    const searchQ=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
+    const cached=__anCache[cacheKey];
+    panel.innerHTML='';
+    if(cached.mode==='all-daily'||cached.mode==='all-weekly') renderAnalyticAll(cached,plantFilter);
+    else if(cached.mode==='weekly') renderAnalyticWeekly(cached.data,cached.dates,__anType,plantFilter);
+    else renderAnalyticDaily(cached.data,__anType,plantFilter,searchQ);
+  }catch(e){ panel.innerHTML=`<div class="an-loading">데이터를 불러올 수 없습니다.</div>`; }
+}
+function refreshAnalytic(){ const k=`${__anType}_${__anFrom}_${__anTo}`; delete __anCache[k]; loadAnalytic(__anType,true); }
 
-    // HH:MM[:SS]
-    let m = s.match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (m){
-      const HH=m[1], MM=m[2], SS=m[3]||"00";
-      if (mode === 'HM')  return `${HH}:${MM}`;
-      if (mode === 'MS')  return `${MM}:${SS}`;
-      return `${HH}:${MM}:${SS}`;
-    }
+// ─── 혼잡도 계산 유틸 ──────────────────────────────────────────────────────
+function calcCongestionStacked(rowsByDate, plantFilter) {
+  const SLOTS = 144;
+  const TYPES = ['product', 'sub', 'container'];
+  const COLORS = { product: '#06b6d4', sub: '#f97316', container: '#a855f7' };
+  const LABELS = { product: '제품', sub: '부자재', container: '컨테이너' };
 
-    // 숫자만: HHMMSS / HHMM / MMSS
-    const digits = s.replace(/\D/g,"");
-    if (digits.length >= 6){
-      const t6 = digits.slice(-6);
-      const HH=t6.slice(0,2), MM=t6.slice(2,4), SS=t6.slice(4,6);
-      if (mode === 'HM')  return `${HH}:${MM}`;
-      if (mode === 'MS')  return `${MM}:${SS}`;
-      return `${HH}:${MM}:${SS}`;
-    }
-    if (digits.length === 4){
-      const A=digits.slice(0,2), B=digits.slice(2,4);
-      if (mode === 'HM')  return `${A}:${B}`;
-      if (mode === 'MS')  return `${A}:${B}`;
-      return `${A}:${B}:00`;
-    }
-    return s;
-  }
+  const stackedTimelines = {};
+  TYPES.forEach(t => stackedTimelines[t] = Array(SLOTS).fill(0));
 
-  function tableHTML(title, rows) {
-    const mode = timeModeFor(title);
-    const hdr = `<tr><th>번호</th><th>차량번호</th><th>시간</th></tr>`;
-    const body = rows && rows.length
-      ? rows.map(r => {
-          const no = esc(r[0]);
-          const car = esc(r[1]);
-          const t  = esc(formatTime(r[2], mode));
-          return `<tr><td>${no}</td><td>${car}</td><td>${t}</td></tr>`;
-        }).join("")
-      : `<tr><td colspan="3" class="muted">데이터 없음</td></tr>`;
-    return `<table>
-      <colgroup><col><col><col></colgroup>
-      <thead>${hdr}</thead><tbody>${body}</tbody></table>`;
-  }
+  const daysCount = rowsByDate.length || 1;
 
-  function sectionHTML(title, data) {
-    const count = data?.count || 0;
-    const rows = data?.rows || [];
-    return `<div class="section">
-      <h3>${esc(title)} <span class="muted">(${count}대)</span></h3>
-      ${tableHTML(title, rows)}
-    </div>`;
-  }
+  rowsByDate.forEach(({ rows }) => {
+    const filtered = rows.filter(r =>
+      plantFilter === 'all' || (plantFilter === 'banwol' && r._plant === '반월') || (plantFilter === 'sihwa' && r._plant === '시화')
+    );
+    filtered.forEach(r => {
+      const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
+      if (inM == null) return;
+      const typeKey = r._type || 'product';
+      const WORK_SLOT = WORK_START_MIN / 10; // 36슬롯 = 06:00
+      const isOvernight = outM != null && outM < inM;
 
-  // ========== 렌더링 ==========
-  function renderPairs(left, right) {
-    const host = document.getElementById('pairs');
-    const rows = [];
-    rows.push(`<div class="pair-title">반월</div>`, `<div class="pair-title">시화</div>`);
-    for (const t of SECTIONS) {
-      rows.push(sectionHTML(t, left?.[t]), sectionHTML(t, right?.[t]));
-    }
-    host.innerHTML = rows.join("");
-    host.classList.add('grid'); // 2열
-  }
+      // 전날입차 처리
+      if (isOvernight) {
+        if (typeKey !== 'product') return; // 비제품 전날입차: 제외
+        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
+        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        const start = WORK_SLOT;
+        const end = Math.ceil(outM / 10);
+        if (stackedTimelines[typeKey]) {
+          for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
+        }
+        return;
+      }
 
-  function renderStacked(left, right) {
-    const host = document.getElementById('pairs');
-    const rows = [];
-    rows.push(`<div class="pair-title">반월</div>`);
-    for (const t of SECTIONS) rows.push(sectionHTML(t, left?.[t]));
-    rows.push(`<div class="pair-title">시화</div>`);
-    for (const t of SECTIONS) rows.push(sectionHTML(t, right?.[t]));
-    host.innerHTML = rows.join("");
-    host.classList.remove('grid'); // 1열(블록 흐름)
-  }
+      // 일반입차: 제품은 06시 이전 슬롯 제외
+      const rawStart = Math.floor(inM / 10);
+      const start = (typeKey === 'product') ? Math.max(rawStart, WORK_SLOT) : rawStart;
+      const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
+      if (start >= end) return;
+      if (stackedTimelines[typeKey]) {
+        for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
+      }
+    });
+  });
 
-  function renderResponsive(left, right) {
-    if (window.innerWidth <= BREAKPOINT) renderStacked(left, right);
-    else renderPairs(left, right);
-  }
-
-  // ========== 데이터 로드 ==========
-  let __lastData = null;
-
-  async function loadSnapshot() {
-    const tsEl = document.getElementById('ts');
-    tsEl.textContent = "불러오는 중…";
-    try {
-      const res = await fetch(WEBAPP_URL, { cache: "no-store", mode: "cors" });
-      if (!res.ok) throw new Error(res.status + " " + res.statusText);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      applyData(data);
-    } catch (e) {
-      callWithJSONP(WEBAPP_URL).then(applyData).catch(err=>{
-        tsEl.textContent = "불러오기 실패";
-        alert("스냅샷 로드 실패: " + (err?.message || err || e.message));
-      });
-    }
-  }
-
-  function applyData(data){
-    __lastData = data;
-    document.getElementById('ts').textContent = data.stamp ? `기준일: ${data.stamp}` : "";
-    renderResponsive(data.left, data.right);
-  }
-
-  // 강제 갱신 → 최신 스냅샷 받기 (서버에서 한 번에)
-  async function forceUpdateThenLoad(){
-    const tsEl = document.getElementById('ts');
-    tsEl.textContent = "갱신 중…";
-    try {
-      const url = `${WEBAPP_URL}?action=update_snapshot&token=${encodeURIComponent(API_TOKEN)}`;
-      const data = await callWithFallback(url);
-      applyData(data); // 서버에서 최신 스냅샷 바로 수신
-    } catch(e){
-      tsEl.textContent = "갱신 실패";
-      alert(e.message || e);
-    }
-  }
-
-  // fetch → 실패 시 JSONP 폴백
-  async function callWithFallback(url){
-    try {
-      const r = await fetch(url, { cache:'no-store', mode:'cors' });
-      const j = await r.json();
-      if (j.error) throw new Error(j.error);
-      return j;
-    } catch {
-      return callWithJSONP(url);
-    }
-  }
-  function callWithJSONP(url){
-    return new Promise((resolve, reject)=>{
-      const cb = "__dy_cb_"+Date.now();
-      const s = document.createElement('script');
-      const full = url + (url.includes('?') ? '&' : '?') + `callback=${cb}&t=${Date.now()}`;
-      s.src = full;
-      s.async = true;
-      let done = false;
-
-      window[cb] = (data)=>{
-        if (done) return;
-        done = true;
-        try{ delete window[cb]; document.body.removeChild(s); }catch{}
-        if (data && !data.error) resolve(data);
-        else reject(new Error(data?.error || 'JSONP 응답 오류'));
-      };
-      s.onerror = ()=>{
-        if (done) return;
-        done = true;
-        try{ delete window[cb]; document.body.removeChild(s); }catch{}
-        reject(new Error('JSONP 스크립트 로드 실패'));
-      };
-
-      document.body.appendChild(s);
+  if (daysCount > 1) {
+    TYPES.forEach(t => {
+      stackedTimelines[t] = stackedTimelines[t].map(v => Math.round(v / daysCount * 10) / 10);
     });
   }
 
-  // 버튼
-  document.getElementById('btnUpdate').addEventListener('click', forceUpdateThenLoad);
+  const datasets = TYPES.map(t => ({
+    label: LABELS[t],
+    data: stackedTimelines[t],
+    backgroundColor: COLORS[t],
+    stack: 'stack0',
+    borderRadius: 2
+  }));
 
-  // 최초 로드
-  loadSnapshot();
+  const totalTimeline = Array(SLOTS).fill(0).map((_, i) =>
+    TYPES.reduce((sum, t) => sum + stackedTimelines[t][i], 0)
+  );
 
-  // 화면 크기 변경 시 재-렌더 (데이터는 다시 안 긁고, 현재 스냅샷으로만 레이아웃 전환)
-  window.addEventListener('resize', ()=>{
-    if (!__lastData) return;
-    renderResponsive(__lastData.left, __lastData.right);
+  const sorted = totalTimeline.filter(v => v > 0).sort((a, b) => a - b);
+  const rawCapa = sorted[Math.floor(sorted.length * 0.95)] || 5;
+  const capa = Math.max(5, Math.ceil(rawCapa / 5) * 5);
+
+  return { datasets, totalTimeline, capa };
+}
+
+function calcCongestion(rowsByDate, plantFilter, type) {
+  const SLOTS = 144;
+  const daysCount = rowsByDate.length || 1;
+  const globalTimeline = Array(SLOTS).fill(0);
+  const WORK_SLOT = WORK_START_MIN / 10; // 36 = 06:00
+
+  const byDate = rowsByDate.map(({ date, rows }) => {
+    const timeline = Array(SLOTS).fill(0);
+    const filtered = rows.filter(r =>
+      plantFilter === 'all' ||
+      (plantFilter === 'banwol' && r._plant === '반월') ||
+      (plantFilter === 'sihwa' && r._plant === '시화')
+    );
+    filtered.forEach(r => {
+      const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
+      if (inM == null) return;
+      const isProduct = (type === 'product') || (r._type === 'product');
+      const isOvernight = outM != null && outM < inM;
+
+      // 전날입차 처리
+      if (isOvernight) {
+        if (!isProduct) return; // 비제품 전날입차: 제외
+        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
+        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        const start = WORK_SLOT;
+        const end = Math.ceil(outM / 10);
+        for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
+        return;
+      }
+
+      // 일반입차
+      const rawStart = Math.floor(inM / 10);
+      // 제품: 06시 이전 슬롯 제외
+      const start = isProduct ? Math.max(rawStart, WORK_SLOT) : rawStart;
+      const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
+      if (start >= end) return;
+      for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
+    });
+    timeline.forEach((v, i) => globalTimeline[i] += v);
+    return { date, timeline };
   });
-</script>
 
+  globalTimeline.forEach((v, i) => globalTimeline[i] = Math.round(v / daysCount * 10) / 10);
+
+  const sorted = globalTimeline.filter(v => v > 0).sort((a, b) => a - b);
+  const rawCapa = sorted[Math.floor(sorted.length * 0.95)] || 5;
+  const capa = Math.max(5, Math.ceil(rawCapa / 5) * 5);
+
+  return { byDate, capa, globalTimeline };
+}
+
+function congKpiHtml(timeline,capa){
+  const peakSlot=timeline.indexOf(Math.max(...timeline));
+  const peakVal=timeline[peakSlot]||0;
+  const peakPct=Math.round(peakVal/capa*100);
+  const dangerSlots=timeline.filter(v=>v/capa>=1.0).length;
+  const warningSlots=timeline.filter(v=>v/capa>=0.8&&v/capa<1.0).length;
+  const dangerH=Math.round(dangerSlots*10/60*10)/10;
+  const warningH=Math.round(warningSlots*10/60*10)/10;
+  const congColor=peakPct>=100?'#ef4444':peakPct>=80?'#f59e0b':'#10b981';
+  return {peakSlot,peakVal,peakPct,dangerSlots,warningSlots,dangerH,warningH,congColor,
+    html:`
+      <div class="kpi" style="--kc:${congColor}">
+        <div class="kpi-label">피크 혼잡도</div>
+        <div class="kpi-val" style="color:${congColor}">${peakPct}<span style="font-size:14px;font-weight:400">%</span></div>
+        <div class="kpi-sub">${SLOT_LABELS_FULL[peakSlot]} · ${peakVal}대 동시</div>
+      </div>
+      <div class="kpi" style="--kc:#6366f1">
+        <div class="kpi-label">추정 CAPA</div>
+        <div class="kpi-val">${capa}<span style="font-size:14px;font-weight:400">대</span></div>
+        <div class="kpi-sub">95퍼센타일 기준</div>
+      </div>
+      <div class="kpi" style="--kc:#ef4444">
+        <div class="kpi-label">위험 구간</div>
+        <div class="kpi-val" style="color:#ef4444">${dangerH}<span style="font-size:14px;font-weight:400">h</span></div>
+        <div class="kpi-sub">혼잡도 100% 초과 (${dangerSlots}슬롯)</div>
+      </div>
+      <div class="kpi" style="--kc:#f59e0b">
+        <div class="kpi-label">주의 구간</div>
+        <div class="kpi-val" style="color:#f59e0b">${warningH}<span style="font-size:14px;font-weight:400">h</span></div>
+        <div class="kpi-sub">혼잡도 80~100% (${warningSlots}슬롯)</div>
+      </div>`
+  };
+}
+
+function drawCongChart(canvasId,timeline,capa,peakSlot,peakVal,peakPct){
+  const SLOTS=144;
+  const bgColors=timeline.map(v=>{ const r=v/capa; return r>=1?'rgba(239,68,68,0.75)':r>=0.8?'rgba(245,158,11,0.75)':'rgba(99,102,241,0.7)'; });
+  __anCharts[canvasId]=new Chart(document.getElementById(canvasId),{
+    type:'bar',
+    data:{labels:SLOT_LABELS,datasets:[
+      {type:'bar',label:'동시 점유',data:timeline,backgroundColor:bgColors,borderRadius:2},
+      {type:'line',label:`CAPA (${capa}대)`,data:Array(SLOTS).fill(capa),borderColor:'rgba(239,68,68,0.8)',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false,tension:0},
+      {type:'line',label:`주의선 (${Math.round(capa*0.8)}대)`,data:Array(SLOTS).fill(Math.round(capa*0.8)),borderColor:'rgba(245,158,11,0.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{stacked:true,ticks:{color:'#777',font:{size:10},maxRotation:0,callback:(v,i)=>SLOT_LABELS[i]||null}},
+        y:{stacked:true,beginAtZero:true,ticks:{color:'#777',font:{size:10}}},
+      },
+      plugins:{}
+    },
+    plugins:[{id:'peakCong',afterDatasetsDraw(chart){
+      if(!peakVal) return;
+      const {ctx,scales:{x,y}}=chart;
+      const xPos=x.getPixelForValue(peakSlot),yPos=y.getPixelForValue(peakVal);
+      ctx.save();ctx.fillStyle='#ef4444';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText(`▼ 피크 ${peakPct}%`,xPos,yPos-8);ctx.restore();
+    }}]
+  });
+}
+function drawCongChartStacked(canvasId, datasets, capa) {
+  const SLOTS = 144;
+  if (__anCharts[canvasId]) __anCharts[canvasId].destroy();
+  __anCharts[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: {
+      labels: SLOT_LABELS,
+      datasets: [
+        ...datasets,
+        {
+          type: 'line',
+          label: `CAPA (${capa}대)`,
+          data: Array(SLOTS).fill(capa),
+          borderColor: 'rgba(239,68,68,0.8)',
+          borderWidth: 2,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 0, callback: (v, i) => SLOT_LABELS[i] } },
+        y: { stacked: true, beginAtZero: true, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+// ─── 전체 타입 렌더 ────────────────────────────────────────────────────────
+function renderAnalyticAll(cached, plantFilter) {
+  const panel = document.getElementById('analyticPanel');
+  destroyCharts();
+  const isDaily = cached.mode === 'all-daily';
+  const types = cached.types || ['product', 'sub', 'container'];
+
+  let rowsByDate = [];
+  if (isDaily) {
+    const allRows = types.flatMap(tp => {
+      const d = cached.data[tp] || {};
+      return [
+        ...(d.banwol || []).map(r => ({ ...r, _plant: '반월', _type: tp })),
+        ...(d.sihwa || []).map(r => ({ ...r, _plant: '시화', _type: tp }))
+      ];
+    });
+    rowsByDate = [{ date: __anFrom, rows: allRows }];
+  } else {
+    rowsByDate = cached.dates.map((dt, di) => {
+      const rows = types.flatMap((tp, ti) => {
+        const d = cached.perDate[ti][di] || {};
+        return [
+          ...(d.banwol || []).map(r => ({ ...r, _plant: '반월', _type: tp })),
+          ...(d.sihwa || []).map(r => ({ ...r, _plant: '시화', _type: tp }))
+        ];
+      });
+      return { date: dt, rows };
+    });
+  }
+
+  const { datasets, totalTimeline, capa } = calcCongestionStacked(rowsByDate, plantFilter);
+  const peakIdx = totalTimeline.indexOf(Math.max(...totalTimeline));
+  const peakTime = SLOT_LABELS_FULL[peakIdx];
+  const totalRows = rowsByDate.reduce((sum, d) => sum + d.rows.length, 0);
+  const avgAll = rowsByDate.length > 0 ? Math.round(totalRows / rowsByDate.length) : 0;
+  const { peakPct, html: congHtml } = congKpiHtml(totalTimeline, capa);
+
+  panel.innerHTML = `
+    <div style="margin-bottom:15px; padding:15px; background:#fff; border-radius:12px; border:1px solid #e6e6e6; font-size:13px; line-height:1.6;">
+      📢 <b>분석 요약:</b> 기간 내 총 <b>${totalRows.toLocaleString()}건</b>의 차량이 입차했습니다.<br>
+      가장 혼잡한 시간대는 <b>${peakTime}</b>(혼잡도 ${peakPct}%)이며, 일평균 <b>${avgAll}건</b>이 처리되었습니다.
+    </div>
+    <div class="kpi-row">
+      <div class="kpi" style="--kc:#6366f1">
+        <div class="kpi-label">총 입차 건수</div>
+        <div class="kpi-val">${totalRows.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span></div>
+        <div class="kpi-sub">제품+부자재+컨테이너</div>
+      </div>
+      ${congHtml}
+    </div>
+  `;
+
+  panel.innerHTML += anCard(
+    `<span class="dot" style="--dc:#6366f1"></span>시간대별 누적 점유 현황`,
+    `<div class="chart-wrap tall"><canvas id="chartCongestion"></canvas></div>`
+  );
+
+  drawCongChartStacked('chartCongestion', datasets, capa);
+}
+
+// ─── 주간 분석 렌더 ──────────────────────────────────────────────────────
+function renderAnalyticWeekly(data,dates,type,plantFilter){
+  const panel=document.getElementById('analyticPanel');
+  panel.innerHTML='';
+  const cfg=AN_TYPES.find(t=>t.key===type)||AN_TYPES[0];
+  const daily=data.daily||[]; const today=todayKST();
+  const cnt=day=>plantFilter==='banwol'?day.banwol.count:plantFilter==='sihwa'?day.sihwa.count:day.banwol.count+day.sihwa.count;
+  const sil=day=>plantFilter==='banwol'?day.banwol.silwei:plantFilter==='sihwa'?day.sihwa.silwei:day.banwol.silwei+day.sihwa.silwei;
+  const totalCnt=daily.reduce((s,d)=>s+cnt(d),0), totalSil=daily.reduce((s,d)=>s+sil(d),0);
+  const maxCnt=Math.max(...daily.map(d=>cnt(d)),1);
+  const peakDay=daily.reduce((a,b)=>cnt(a)>=cnt(b)?a:b,daily[0]||{});
+  const avgCnt=daily.length?Math.round(totalCnt/daily.length):0;
+  let prevTotal=null;
+  if(data.prevDaily) prevTotal=data.prevDaily.reduce((s,d)=>s+cnt(d),0);
+  const diffPct=prevTotal!=null&&prevTotal>0?Math.round((totalCnt-prevTotal)/prevTotal*100):null;
+  const diffBadge=diffPct==null?'':diffPct>0?`<span class="diff-badge up">▲ ${diffPct}%</span>`:diffPct<0?`<span class="diff-badge down">▼ ${Math.abs(diffPct)}%</span>`:`<span class="diff-badge flat">→ 0%</span>`;
+  destroyCharts();
+
+  const rowsByDate=dates.map((dt,di)=>{
+    const k=`${type}_${dt}_${dt}`; const c=__anCache[k];
+    if(!c) return {date:dt,rows:[]};
+    const rows=[...(c.data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(c.data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
+    return {date:dt,rows};
+  });
+  const {byDate,capa,globalTimeline}=calcCongestion(rowsByDate,plantFilter,type);
+  const {peakSlot,peakVal,peakPct,html:congHtml}=congKpiHtml(globalTimeline,capa);
+
+  const dowHTML=daily.map(d=>{
+    const isToday=d.date===today; const bw=d.banwol.count,sh=d.sihwa.count,tot=cnt(d);
+    const bar=Math.round(tot/maxCnt*100);
+    return `<tr>
+      <td class="${isToday?'today-col':''}">${dateToDowLabel(d.date)}</td>
+      <td class="${isToday?'today-col':''}" style="text-align:left">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;max-width:120px;background:#f0f0f0;border-radius:99px;height:8px;overflow:hidden"><div style="width:${bar}%;height:100%;background:${cfg.dc};border-radius:99px"></div></div>
+          <strong>${tot}</strong>건
+        </div>
+      </td>
+      ${plantFilter==='all'?`<td class="${isToday?'today-col':''}">${bw}</td><td class="${isToday?'today-col':''}">${sh}</td>`:''}
+      <td class="${isToday?'today-col':''}">${sil(d)>=1000?(sil(d)/1000).toFixed(1)+'톤':sil(d)>0?sil(d)+'kg':'-'}</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML+=`
+    <div class="kpi-row">
+      <div class="kpi" style="--kc:${cfg.dc}">
+        <div class="kpi-label">기간 총 건수</div>
+        <div class="kpi-val">${totalCnt.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span>${diffBadge}</div>
+        <div class="kpi-sub">${data.dateFrom} ~ ${data.dateTo}</div>
+      </div>
+      <div class="kpi" style="--kc:${cfg.dc}">
+        <div class="kpi-label">일 평균</div>
+        <div class="kpi-val">${avgCnt}<span style="font-size:14px;font-weight:400">건</span></div>
+        <div class="kpi-sub">${daily.length}일 기준</div>
+      </div>
+      <div class="kpi" style="--kc:#10b981">
+        <div class="kpi-label">기간 총 중량</div>
+        <div class="kpi-val">${totalSil>=1000?(totalSil/1000).toFixed(1):''+totalSil}<span style="font-size:14px;font-weight:400">${totalSil>=1000?'톤':'kg'}</span></div>
+        <div class="kpi-sub">실중량 합계</div>
+      </div>
+      <div class="kpi" style="--kc:#f59e0b">
+        <div class="kpi-label">피크일</div>
+        <div class="kpi-val" style="font-size:16px">${peakDay?.date?dateToDowLabel(peakDay.date):'-'}</div>
+        <div class="kpi-sub">${peakDay?cnt(peakDay)+'건':''}</div>
+      </div>
+      ${congHtml}
+    </div>`;
+
+  panel.innerHTML+=anCard(`<span class="dot" style="--dc:#6366f1"></span>일평균 시간대별 동시 점유 차량 수`,'<div class="chart-wrap tall"><canvas id="chartCongWeekly"></canvas></div>');
+  panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>일별 입차 건수`,'<div class="chart-wrap tall"><canvas id="chartWeekBar"></canvas></div>');
+  panel.innerHTML+=anCard(`<span class="dot" style="--dc:#6366f1"></span>날짜별 상세`,
+    `<div style="overflow-x:auto"><table class="dow-table">
+      <thead><tr><th>날짜</th><th style="text-align:left">건수</th>${plantFilter==='all'?'<th>반월</th><th>시화</th>':''}<th>중량</th></tr></thead>
+      <tbody>${dowHTML}</tbody>
+      <tfoot><tr style="font-weight:700;background:#f8faff">
+        <td>합계</td><td style="text-align:left">${totalCnt}건</td>
+        ${plantFilter==='all'?`<td>${daily.reduce((s,d)=>s+d.banwol.count,0)}</td><td>${daily.reduce((s,d)=>s+d.sihwa.count,0)}</td>`:''}
+        <td>${totalSil>=1000?(totalSil/1000).toFixed(1)+'톤':totalSil+'kg'}</td>
+      </tr></tfoot>
+    </table></div>`
+  );
+
+  if(dates&&dates.length){
+    const isSub=(type==='sub'||type==='container');
+    const crossMap={}, allItems=new Set();
+    dates.forEach((dt,di)=>{
+      const k=`${type}_${dt}_${dt}`; const c=__anCache[k]; if(!c) return;
+      const rows=[...(c.data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(c.data.sihwa||[]).map(r=>({...r,_plant:'시화'}))]
+        .filter(r=>plantFilter==='all'||(plantFilter==='banwol'&&r._plant==='반월')||(plantFilter==='sihwa'&&r._plant==='시화'));
+      rows.forEach(r=>{
+        const nm=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
+        allItems.add(nm); if(!crossMap[nm]) crossMap[nm]={};
+        if(!crossMap[nm][di]) crossMap[nm][di]={durSum:0,durCnt:0,count:0};
+        crossMap[nm][di].count++;
+        // ★ effectiveDurMin이 전날입차/06시보정 모두 처리
+        const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
+        if(dur!=null&&dur>0&&dur<=480){crossMap[nm][di].durSum+=dur;crossMap[nm][di].durCnt++;}
+      });
+    });
+    const itemList=[...allItems].sort((a,b)=>Object.values(crossMap[b]||{}).reduce((s,v)=>s+v.count,0)-Object.values(crossMap[a]||{}).reduce((s,v)=>s+v.count,0));
+    if(itemList.length){
+      let globalMax=1;
+      itemList.forEach(nm=>dates.forEach((_,di)=>{const v=crossMap[nm]?.[di]; if(v&&v.durCnt>0) globalMax=Math.max(globalMax,Math.round(v.durSum/v.durCnt));}));
+      const thCols=dates.map(d=>`<th style="min-width:72px;font-size:12px;text-align:center">${dateToDowLabel(d)}</th>`).join('');
+      const bodyRows=itemList.map(nm=>{
+        const cells=dates.map((_,di)=>{
+          const v=crossMap[nm]?.[di]; if(!v||v.count===0) return `<td style="text-align:center;color:#ddd;font-size:12px">-</td>`;
+          const avgD=v.durCnt>0?Math.round(v.durSum/v.durCnt):null;
+          const intensity=avgD!=null?avgD/globalMax:0;
+          const alpha=(intensity*0.65+0.1).toFixed(2);
+          const bg=`rgba(251,146,60,${alpha})`;
+          const textColor=intensity>0.65?'#7c2d12':intensity>0.35?'#c2410c':'#92400e';
+          return `<td style="text-align:center;background:${bg};border-radius:5px">${avgD!=null?`<div style="font-size:12px;font-weight:700;color:${textColor}">${avgD}분</div>`:`<div style="font-size:11px;color:#aaa">-</div>`}<div style="font-size:10px;color:rgba(0,0,0,.4)">${v.count}건</div></td>`;
+        }).join('');
+        const totD=Object.values(crossMap[nm]||{}).reduce((s,v)=>s+v.durSum,0);
+        const totC=Object.values(crossMap[nm]||{}).reduce((s,v)=>s+v.durCnt,0);
+        const totN=Object.values(crossMap[nm]||{}).reduce((s,v)=>s+v.count,0);
+        const rowAvg=totC>0?Math.round(totD/totC):null;
+        return `<tr><td style="font-size:12px;color:#444;text-align:right;padding-right:10px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis" title="${nm}">${nm}</td>${cells}<td style="text-align:center;border-left:2px solid #eee;font-size:12px;font-weight:700;color:#d97706">${rowAvg!=null?rowAvg+'분':'-'}<div style="font-size:10px;color:#999;font-weight:400">${totN}건</div></td></tr>`;
+      }).join('');
+      const footCells=dates.map((_,di)=>{
+        let s=0,c=0,n=0; itemList.forEach(nm=>{const v=crossMap[nm]?.[di];if(v){s+=v.durSum;c+=v.durCnt;n+=v.count;}});
+        const a=c>0?Math.round(s/c):null;
+        return `<td style="text-align:center;font-size:12px;font-weight:700;color:#6366f1">${a!=null?a+'분':'-'}<div style="font-size:10px;color:#999;font-weight:400">${n}건</div></td>`;
+      }).join('');
+      panel.innerHTML+=anCard(`<span class="dot" style="--dc:#f59e0b"></span>품목별 · 일별 평균 체류시간`,
+        `<div style="overflow-x:auto;margin-top:4px"><table style="border-collapse:separate;border-spacing:4px;width:100%">
+          <thead><tr><th style="text-align:right;min-width:80px;font-size:12px;color:#888">품목 ╲ 날짜</th>${thCols}<th style="font-size:12px;color:#d97706;border-left:2px solid #eee;text-align:center">전체평균</th></tr></thead>
+          <tbody>${bodyRows}</tbody>
+          <tfoot><tr><td style="font-size:12px;font-weight:600;color:#6366f1;text-align:right;padding-right:10px">일별평균</td>${footCells}<td></td></tr></tfoot>
+        </table></div>
+        <div style="margin-top:6px;font-size:11px;color:var(--muted)">셀 색상: 진할수록 평균 체류시간이 긴 것</div>`
+      );
+    }
+
+    const allRows=[];
+    dates.forEach((dt,di)=>{
+      const k=`${type}_${dt}_${dt}`; const c=__anCache[k]; if(!c) return;
+      [...(c.data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(c.data.sihwa||[]).map(r=>({...r,_plant:'시화'}))]
+        .filter(r=>plantFilter==='all'||(plantFilter==='banwol'&&r._plant==='반월')||(plantFilter==='sihwa'&&r._plant==='시화'))
+        .forEach(r=>allRows.push({...r,_date:dt,_di:di}));
+    });
+    if(allRows.length){
+      const carMap={};
+      allRows.forEach(r=>{
+        const car=last4(r.CARNUM||''); if(!car) return;
+        // ★ effectiveDurMin이 전날입차/06시보정 모두 처리
+        const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
+        const item=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
+        if(!carMap[car]) carMap[car]={visits:[],durSum:0,durCnt:0};
+        carMap[car].visits.push({date:r._date,di:r._di,dur,plant:r._plant,item});
+        if(dur!=null&&dur>0&&dur<=480){carMap[car].durSum+=dur;carMap[car].durCnt++;}
+      });
+      const totalDurSum=Object.values(carMap).reduce((s,v)=>s+v.durSum,0);
+      const totalDurCnt=Object.values(carMap).reduce((s,v)=>s+v.durCnt,0);
+      const globalAvg=totalDurCnt>0?Math.round(totalDurSum/totalDurCnt):0;
+      const slowCars=Object.entries(carMap).filter(([,v])=>v.durCnt>=2).map(([car,v])=>({car,avg:Math.round(v.durSum/v.durCnt),cnt:v.durCnt,total:v.visits.length})).sort((a,b)=>b.avg-a.avg).slice(0,10);
+      const patternCars2=Object.entries(carMap).filter(([,v])=>v.visits.length>=3).map(([car,v])=>{
+        const diCnt={};
+        v.visits.forEach(vi=>{ diCnt[vi.di]=(diCnt[vi.di]||0)+1; });
+        return {car,visits:v.visits,diCnt,total:v.visits.length};
+      }).sort((a,b)=>b.total-a.total).slice(0,20);
+
+      if(slowCars.length){
+        const maxAvg=slowCars[0].avg||1;
+        panel.innerHTML+=anCard(
+          `<span class="dot" style="--dc:#ef4444"></span>평균 체류시간 긴 차량 TOP ${slowCars.length} <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px">전체 평균 ${globalAvg}분 기준 · 2건 이상 · 전날입차 제외</span>`,
+          `<div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">${slowCars.map((d,i)=>{
+            const pct=Math.round(d.avg/maxAvg*100), overAvg=d.avg-globalAvg;
+            const badge=overAvg>0?`<span style="font-size:10px;background:#fee2e2;color:#b91c1c;border-radius:4px;padding:1px 5px;margin-left:5px">+${overAvg}분</span>`:`<span style="font-size:10px;background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:5px">${overAvg}분</span>`;
+            return `<div style="display:flex;align-items:center;gap:8px;font-size:13px">
+              <div style="width:18px;text-align:center;color:#999;font-size:11px;flex-shrink:0">${i+1}</div>
+              <div style="width:44px;font-weight:700;color:#374151;flex-shrink:0">${d.car}</div>
+              <div style="flex:1;background:#f0f0f0;border-radius:99px;height:8px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${d.avg>globalAvg*1.5?'#ef4444':'#f97316'};border-radius:99px"></div></div>
+              <div style="min-width:140px;font-size:12px"><strong style="color:#b45309">${d.avg}분</strong>${badge}<span style="color:#999;margin-left:4px">${d.cnt}건</span></div>
+            </div>`;
+          }).join('')}</div>`
+        );
+      }
+
+      if(patternCars2.length){
+        const thCols2=dates.map(d=>`<th style="min-width:46px;font-size:11px;text-align:center;white-space:nowrap">${dateToDowLabel(d)}</th>`).join('');
+        panel.innerHTML+=anCard(
+          `<span class="dot" style="--dc:#06b6d4"></span>차량별 날짜별 방문 패턴 <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px">3건 이상 방문 차량 · ${dates.length}일간</span>`,
+          `<div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:2px">
+            <thead><tr><th style="font-size:12px;text-align:left;min-width:48px">차량</th>
+            ${thCols2}
+            <th style="font-size:12px;text-align:center">총방문</th><th style="font-size:12px;text-align:left">주력품목</th></tr></thead>
+            <tbody>${patternCars2.map(d=>{
+              const maxC=Math.max(...dates.map((_,di)=>d.diCnt[di]||0),1);
+              const cells=dates.map((_,di)=>{
+                const c=d.diCnt[di]||0;
+                if(!c) return `<td style="text-align:center"><span style="color:#e5e7eb;font-size:16px">·</span></td>`;
+                const alpha=(c/maxC*0.7+0.2).toFixed(2);
+                return `<td style="text-align:center"><div style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(6,182,212,${alpha});font-size:11px;font-weight:700;color:${c/maxC>0.5?'#164e63':'#0e7490'}">${c}</div></td>`;
+              }).join('');
+              const iFreq={}; d.visits.forEach(vi=>{iFreq[vi.item]=(iFreq[vi.item]||0)+1;});
+              const topItem=Object.entries(iFreq).sort((a,b)=>b[1]-a[1])[0]?.[0]||'-';
+              return `<tr><td style="font-size:13px;font-weight:700;color:#374151">${d.car}</td>${cells}<td style="text-align:center;font-size:12px;color:#666;font-weight:600">${d.total}</td><td style="font-size:11px;color:#888">${topItem}</td></tr>`;
+            }).join('')}</tbody>
+          </table></div>
+          <div style="margin-top:6px;font-size:11px;color:var(--muted)">원 크기/색상: 해당 날짜 방문 횟수가 많을수록 진함</div>`
+        );
+      }
+    }
+  }
+
+  drawCongChart('chartCongWeekly',globalTimeline,capa,peakSlot,peakVal,peakPct);
+
+  const labels=daily.map(d=>dateToDowLabel(d.date));
+  const bwData=daily.map(d=>d.banwol.count), shData=daily.map(d=>d.sihwa.count);
+  const peakIdx=daily.indexOf(peakDay);
+  __anCharts.weekBar=new Chart(document.getElementById('chartWeekBar'),{
+    type:'bar',
+    data:{labels,datasets:plantFilter==='all'?[
+      {label:'반월',data:bwData,backgroundColor:bwData.map((_,i)=>i===peakIdx?'rgba(59,130,246,1)':'rgba(96,165,250,.75)'),borderRadius:4,stack:'s'},
+      {label:'시화',data:shData,backgroundColor:shData.map((_,i)=>i===peakIdx?'rgba(16,185,129,1)':'rgba(52,211,153,.75)'),borderRadius:4,stack:'s'},
+    ]:[{label:plantFilter==='banwol'?'반월':'시화',data:daily.map(d=>cnt(d)),backgroundColor:daily.map((_,i)=>i===peakIdx?cfg.dc:cfg.dc+'b3'),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{x:{stacked:true,ticks:{color:'#777',font:{size:11}}},y:{stacked:true,ticks:{color:'#777',font:{size:10}},beginAtZero:true}},
+      plugins:{legend:{labels:{font:{size:11},color:'#555'}},tooltip:{callbacks:{footer:items=>items[0].dataIndex===peakIdx?['▼ 피크']:[]}}}
+    },
+    plugins:[{id:'peakLabelWeek',afterDatasetsDraw(chart){
+      const total=daily.map(d=>cnt(d)); if(!total[peakIdx]) return;
+      const {ctx,scales:{x,y}}=chart;
+      const xPos=x.getPixelForValue(peakIdx),yPos=y.getPixelForValue(total[peakIdx]);
+      ctx.save();ctx.fillStyle='#ef4444';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('▼ 피크',xPos,yPos-8);ctx.restore();
+    }}]
+  });
+}
+
+// ─── 단일일 분석 렌더 ──────────────────────────────────────────────────────
+function renderAnalyticDaily(data,type,plantFilter,searchQ){
+  const cfg=AN_TYPES.find(t=>t.key===type)||AN_TYPES[0];
+  const isSub=(type==='sub'||type==='container');
+  plantFilter=plantFilter||'all';
+  searchQ=(searchQ||'').replace(/\D/g,'').slice(-4);
+
+  // ★ 변경: filterFuture 제거 → 모든 행 포함
+  const bwRaw=(data.banwol||[]).map(r=>({...r,_plant:'반월'}));
+  const shRaw=(data.sihwa||[]).map(r=>({...r,_plant:'시화'}));
+  let bw=[...bwRaw], sh=[...shRaw];
+  if(plantFilter==='banwol') sh=[]; if(plantFilter==='sihwa') bw=[];
+  const all=[...bw,...sh];
+
+  // ★ 전날입차 포함, effectiveDurMin이 케이스별로 처리 (전날+06시후출차→06:00기준, 나머지 제외)
+  function withDur(list){
+    return list
+      .map(r=>({...r, _dur: effectiveDurMin(r.INTIME, r.OUTIME, type)}))
+      .filter(r=>r._dur!=null&&r._dur>0&&r._dur<=480);
+  }
+
+  const allDur=withDur(all),bwDur=withDur(bw),shDur=withDur(sh);
+  const avg=arr=>arr.length?Math.round(arr.reduce((s,r)=>s+r._dur,0)/arr.length):0;
+  const avgAll=avg(allDur),avgBw=avg(bwDur),avgSh=avg(shDur);
+
+  const hourBucket=Array(24).fill(0);
+  all.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)hourBucket[Math.floor(m/60)]++;});
+  const hourDurSum=Array(24).fill(0),hourDurCnt=Array(24).fill(0);
+  allDur.forEach(r=>{const m=timeToMin(r.INTIME);if(m==null)return;const h=Math.floor(m/60);hourDurSum[h]+=r._dur;hourDurCnt[h]++;});
+  const hourAvgDur=Array(24).fill(null).map((_,i)=>hourDurCnt[i]>0?Math.round(hourDurSum[i]/hourDurCnt[i]):null);
+
+  const itemMap={};
+  all.forEach(r=>{
+    const nm=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
+    if(!itemMap[nm]) itemMap[nm]={count:0,silwei:0,durSum:0,durCnt:0};
+    itemMap[nm].count++;
+    itemMap[nm].silwei+=Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0;
+    // ★ effectiveDurMin이 전날입차/06시보정 모두 처리 (새벽단수 제외)
+    {
+      const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
+      if(dur!=null&&dur>0&&dur<=480){itemMap[nm].durSum+=dur;itemMap[nm].durCnt++;}
+    }
+  });
+  const itemEntries=Object.entries(itemMap).sort((a,b)=>b[1].count-a[1].count);
+
+  const peakHour=hourBucket.indexOf(Math.max(...hourBucket));
+  const peakCount=hourBucket[peakHour];
+  const bwDone=bw.filter(r=>r.OUTIME).length,shDone=sh.filter(r=>r.OUTIME).length;
+  const hrLabels=Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}시`);
+  const bwHour=Array(24).fill(0),shHour=Array(24).fill(0);
+  bw.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)bwHour[Math.floor(m/60)]++;});
+  sh.forEach(r=>{const m=timeToMin(r.INTIME);if(m!=null)shHour[Math.floor(m/60)]++;});
+
+  const allRowsForCong=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
+  const {byDate:congByDate,capa}=calcCongestion([{date:__anFrom,rows:allRowsForCong}],plantFilter,type);
+  const congTimeline=congByDate[0]?.timeline||Array(144).fill(0);
+  const {peakSlot:cPeakSlot,peakVal:cPeakVal,peakPct:cPeakPct,html:congHtml}=congKpiHtml(congTimeline,capa);
+
+  const panel=document.getElementById('analyticPanel');
+
+  // ★ 변경: KPI에서 "미래 N건 제외" 문구 제거
+  panel.innerHTML=`<div class="kpi-row">
+    ${congHtml}
+    <div class="kpi" style="--kc:${cfg.dc}">
+      <div class="kpi-label">전체 건수</div>
+      <div class="kpi-val">${all.length}<span style="font-size:14px;font-weight:400">건</span></div>
+      <div class="kpi-sub">반월 ${bw.length} · 시화 ${sh.length}</div>
+    </div>
+    <div class="kpi" style="--kc:${cfg.dc}">
+      <div class="kpi-label">평균 체류시간</div>
+      <div class="kpi-val">${avgAll}<span style="font-size:14px;font-weight:400">분</span></div>
+      <div class="kpi-sub">반월 ${avgBw}분 · 시화 ${avgSh}분 <span style="font-size:10px;color:#a0aec0">(전날입차 제외${type==='product'?' · 06시 기준':''})</span></div>
+    </div>
+    <div class="kpi" style="--kc:#10b981">
+      <div class="kpi-label">출차 완료</div>
+      <div class="kpi-val">${bwDone+shDone}<span style="font-size:14px;font-weight:400">건</span></div>
+      <div class="kpi-sub">반월 ${bwDone} · 시화 ${shDone}</div>
+    </div>
+    <div class="kpi" style="--kc:#f59e0b">
+      <div class="kpi-label">피크 시간대</div>
+      <div class="kpi-val">${String(peakHour).padStart(2,'0')}시</div>
+      <div class="kpi-sub">${peakCount}건 집중</div>
+    </div>
+    ${isSub?`<div class="kpi" style="--kc:${cfg.dc}"><div class="kpi-label">품목 수</div><div class="kpi-val">${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span></div><div class="kpi-sub">${itemEntries[0]?itemEntries[0][0]+' 최다':''}</div></div>`:''}
+  </div>`;
+
+  panel.innerHTML+=anCard('<span class="dot" style="--dc:#6366f1"></span>시간대별 동시 점유 차량 수 (오늘)','<div class="chart-wrap tall"><canvas id="chartCongToday"></canvas></div>');
+  panel.innerHTML+=anCard('<span class="dot" style="--dc:#0f62fe"></span>시간대별 입차 건수 · 평균 체류시간','<div class="chart-wrap tall"><canvas id="chartHourCombo"></canvas></div>');
+
+  if(itemEntries.length){
+    const itemRows=itemEntries.map(([nm,v])=>{
+      const kg=v.silwei,ton=(kg/1000).toFixed(1);
+      const maxKg=itemEntries[0][1].silwei||1,pct=Math.round(kg/maxKg*100);
+      const avgDurItem=v.durCnt>0?Math.round(v.durSum/v.durCnt):null;
+      return `<div style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <div style="width:90px;text-align:right;color:#444;flex-shrink:0;font-weight:${isSub?'normal':'600'}">${nm}</div>
+        <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${cfg.dc};border-radius:99px"></div></div>
+        <div style="min-width:130px;font-weight:600;color:#333">${kg>=1000?ton+'톤':kg>0?kg+'kg':'-'} <span style="font-weight:400;color:var(--muted);font-size:11px">(${v.count}건)</span>${avgDurItem!=null?` <span style="margin-left:6px;font-size:11px;color:#f59e0b;font-weight:600">⏱ 평균 ${avgDurItem}분</span>`:''}</div>
+      </div>`;
+    }).join('');
+    panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>${isSub?'품목별':'유형별'} 입차 현황`,'<div style="display:flex;flex-direction:column;gap:10px">'+itemRows+'</div>');
+  }
+
+  // ★ 변경: 테이블 행 - 전날입차 뱃지 표시, 카운팅은 정상 포함
+  const tableAll=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
+  const hasQ=searchQ&&searchQ.length>=2;
+  const tableRows=tableAll.length===0?`<tr><td colspan="${isSub?7:6}" class="empty">데이터 없음</td></tr>`:tableAll.map((r,i)=>{
+    const plant=r._plant||'-';
+    const overnight=isOvernightEntry(r.INTIME, r.OUTIME);
+    const inM=timeToMin(r.INTIME), outM=timeToMin(r.OUTIME);
+    const isProduct=(type==='product');
+
+    // ── 케이스 분류 ──────────────────────────────────────────
+    // 케이스1: 전날입차 (출차 < 입차 역전) → 제품이면 출차-06:00 계산, 아니면 표시불가
+    const case1=overnight;
+    // 케이스1-b: 전날입차인데 06시 전 출차 → 제외
+    const case1_earlyOut = overnight && outM!=null && outM<=WORK_START_MIN;
+    // 케이스1-c: 전날입차인데 출차없음
+    const case1_noOut = overnight && outM==null;
+    // 케이스2: 제품 + 06시 이전 입차 → 06시 이전 출차 (새벽 단수)
+    const case2=isProduct && !overnight && inM!=null && outM!=null && inM<WORK_START_MIN && outM<=WORK_START_MIN;
+    // 케이스3: 제품 + 06시 이전 입차 → 06시 이후 출차 (06시 기준 보정)
+    const case3=isProduct && !overnight && inM!=null && inM<WORK_START_MIN && (outM==null||outM>WORK_START_MIN);
+
+    const dur=case2 ? null : effectiveDurMin(r.INTIME, r.OUTIME, type);
+    const durValid=dur!=null&&dur>0&&dur<=480;
+    const durWarn=durValid&&dur>=120?' style="color:#ef4444;font-weight:700"':'';
+
+    let durDisplay;
+    if(case1_earlyOut){
+      // 전날입차 + 06시 전 출차: 작업시간 없음
+      durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
+    } else if(case1_noOut){
+      // 전날입차 + 출차없음
+      durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
+    } else if(case1 && durValid){
+      // 전날입차 + 06시 이후 출차 → 출차-06:00 표시
+      durDisplay=`${dur}<span style="color:#6366f1;font-size:10px;margin-left:3px" title="전날입차, 06:00 기준 계산">🌙06↑</span>`;
+    } else if(case2){
+      durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
+    } else if(case3&&durValid){
+      durDisplay=`${dur}<span style="color:#6366f1;font-size:10px;margin-left:3px" title="06:00 기준 보정">06↑</span>`;
+    } else if(!durValid){
+      durDisplay='<span style="color:#f59e0b" title="체류시간 오류">?</span>';
+    } else {
+      durDisplay=String(dur);
+    }
+
+    const carNum=String(r.CARNUM||''),isMatch=hasQ&&carNum.includes(searchQ),isDim=hasQ&&!isMatch;
+    let rowStyle='';
+    if(isMatch)                    rowStyle=' style="background:#eff6ff;font-weight:600"';
+    else if(case1_earlyOut||case2) rowStyle=' style="background:#f5f5f5"';
+    else if(case1)                 rowStyle=' style="background:#f0f0ff"';
+    else if(case3)                 rowStyle=' style="background:#f0f7ff"';
+    if(isDim)                      rowStyle=' style="opacity:0.25"';
+
+    // 입차시각 옆 뱃지
+    const overnightNote=case1?'<span style="color:#6366f1;font-size:10px"> 🌙전날입차</span>':'';
+    const earlyNote    =case2?'<span style="color:#94a3b8;font-size:10px"> 🌙새벽단수</span>':
+                        case3?'<span style="color:#6366f1;font-size:10px"> ⏰06시보정</span>':'';
+
+    const itemNm=isSub?`<td style="font-size:12px;color:#555">${String(r.ITEMNM||'').trim()||'-'}</td>`:'';
+    return `<tr${rowStyle}><td>${i+1}</td><td>${carNum}</td><td>${plant}</td>${itemNm}<td>${fmtTime(r.INTIME)}${overnightNote}${earlyNote}</td><td>${fmtTime(r.OUTIME)}</td><td${durWarn}>${durDisplay}</td></tr>`;
+  }).join('');
+  panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>전체 데이터 (${all.length}건)`,
+    `<div style="overflow-x:auto;max-height:320px;overflow-y:auto"><table><thead><tr><th>No</th><th>차량</th><th>공장</th>${isSub?'<th>품목</th>':''}<th>입차</th><th>출차</th><th>체류(분)</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
+  );
+
+  drawCongChart('chartCongToday',congTimeline,capa,cPeakSlot,cPeakVal,cPeakPct);
+
+  const combinedHour=hrLabels.map((_,i)=>(bwHour[i]||0)+(shHour[i]||0));
+  const peakH=combinedHour.indexOf(Math.max(...combinedHour));
+  __anCharts.hourCombo=new Chart(document.getElementById('chartHourCombo'),{
+    type:'bar',
+    data:{labels:hrLabels,datasets:[
+      {type:'bar',label:'반월 입차',data:bwHour,yAxisID:'yCount',backgroundColor:bwHour.map((_,i)=>i===peakH?'rgba(59,130,246,1)':'rgba(96,165,250,.7)'),borderRadius:3,stack:'s'},
+      {type:'bar',label:'시화 입차',data:shHour,yAxisID:'yCount',backgroundColor:shHour.map((_,i)=>i===peakH?'rgba(16,185,129,1)':'rgba(52,211,153,.7)'),borderRadius:3,stack:'s'},
+      {type:'line',label:'평균 체류(분)',data:hourAvgDur,yAxisID:'yDur',borderColor:'rgba(245,158,11,1)',backgroundColor:'rgba(245,158,11,.15)',pointBackgroundColor:'rgba(245,158,11,1)',pointRadius:3,tension:0.35,fill:true,spanGaps:true},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{stacked:true,ticks:{color:'#777',font:{size:10}}},
+        yCount:{stacked:true,position:'left',beginAtZero:true,ticks:{color:'#777',font:{size:10}},title:{display:true,text:'입차 건수',color:'#888',font:{size:10}}},
+        yDur:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false},ticks:{color:'#f59e0b',font:{size:10},callback:v=>v!=null?v+'분':''},title:{display:true,text:'평균 체류(분)',color:'#f59e0b',font:{size:10}}},
+      },
+      plugins:{legend:{labels:{font:{size:11},color:'#555'}},tooltip:{callbacks:{label:ctx=>ctx.dataset.yAxisID==='yDur'?(ctx.raw!=null?`평균 체류: ${ctx.raw}분`:'데이터 없음'):`${ctx.dataset.label}: ${ctx.raw}건`}}}
+    },
+    plugins:[{id:'peakLabelCombo',afterDatasetsDraw(chart){
+      if(!combinedHour[peakH]) return;
+      const {ctx,scales:{x,yCount}}=chart;
+      const xPos=x.getPixelForValue(peakH),yPos=yCount.getPixelForValue(combinedHour[peakH]);
+      ctx.save();ctx.fillStyle='#ef4444';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('▼ 피크',xPos,yPos-8);ctx.restore();
+    }}]
+  });
+}
+
+// ═══════════════════════════════════════════
+//  데이터 로딩
+// ═══════════════════════════════════════════
+let __fetching=false;
+async function loadSnapshot(){
+  if(__fetching) return; __fetching=true;
+  elUpdated.innerHTML='<span class="mini-spinner"></span>업데이트 중…';
+  try{
+    const data=await api({action:'snapshot_live'});
+    if(data&&data.sections&&document.getElementById('btnViewLive').classList.contains('active')) render(data);
+  }catch(e){ console.error('로드 실패:',e); }
+  finally{ __fetching=false; }
+}
+async function loadWeigh(){
+  elUpdated.innerHTML='<span class="mini-spinner"></span>불러오는 중…';
+  try{ const data=await api({action:'get_weigh_cache',type:'product'}); renderWeigh(data); }
+  catch(e){ showToast('계근 데이터를 불러올 수 없었습니다.'); }
+}
+function rerenderCache(){ if(__lastData) render(__lastData); }
+
+// ═══════════════════════════════════════════
+//  탭 전환
+// ═══════════════════════════════════════════
+function setTab(tabName){
+  const liveActive=tabName==='live',weighActive=tabName==='weigh',anActive=tabName==='analytic';
+  document.getElementById('btnViewLive').classList.toggle('active',liveActive);
+  document.getElementById('btnViewWeigh').classList.toggle('active',weighActive);
+  document.getElementById('btnViewAnalytic').classList.toggle('active',anActive);
+  elSections.style.display=liveActive?'grid':'none';
+  elWeighPanel.style.display=weighActive?'grid':'none';
+  document.getElementById('periodBar').style.display=anActive?'flex':'none';
+  document.getElementById('analyticPanel').style.display=anActive?'block':'none';
+  document.getElementById('watchPanelEl').style.display=anActive?'none':'block';
+  document.getElementById('searchSummary').style.display='none';
+}
+
+// ═══════════════════════════════════════════
+//  이벤트
+// ═══════════════════════════════════════════
+document.getElementById('plantFilter').addEventListener('change',e=>{
+  localStorage.setItem(LS.plant,e.target.value);
+  const live=document.getElementById('btnViewLive').classList.contains('active');
+  const an=document.getElementById('btnViewAnalytic').classList.contains('active');
+  if(live) rerenderCache(); else if(an) loadAnalytic(__anType,true);
+});
+document.getElementById('searchInput').addEventListener('input',e=>{
+  localStorage.setItem(LS.q,e.target.value);
+  const live=document.getElementById('btnViewLive').classList.contains('active');
+  const an=document.getElementById('btnViewAnalytic').classList.contains('active');
+  if(live) rerenderCache();
+  else if(an){
+    const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
+    const cached=__anCache[cacheKey];
+    if(cached&&cached.mode==='daily'){
+      destroyCharts();
+      document.getElementById('analyticPanel').innerHTML='';
+      renderAnalyticDaily(cached.data,__anType,document.getElementById('plantFilter').value,e.target.value);
+    }
+  }
+  else if(__lastWeigh) renderWeigh(__lastWeigh);
+});
+document.getElementById('watchAddBtn').addEventListener('click',()=>{
+  const inp=document.getElementById('watchInput'); addWatch(inp.value).then(ok=>{if(ok)inp.value='';}); inp.focus();
+});
+document.getElementById('watchInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('watchAddBtn').click();});
+document.getElementById('watchClearBtn').addEventListener('click',async()=>{
+  if(!Object.keys(watchList).length) return;
+  if(!confirm('감시 목록을 전부 삭제할까요?')) return;
+  try{ await api({action:'clear_watch'}); Object.keys(watchList).forEach(k=>delete watchList[k]); renderWatchTags(); rerenderCache(); showToast('감시 목록 삭제됨'); }
+  catch(e){ showToast('오류 발생'); }
+});
+document.getElementById('btnViewLive').addEventListener('click',()=>{setTab('live');rerenderCache();});
+document.getElementById('btnViewWeigh').addEventListener('click',()=>{setTab('weigh');if(!__lastWeigh)loadWeigh();else renderWeigh(__lastWeigh);});
+document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab('analytic');loadAnalytic(__anType||'product');});
+
+// ═══════════════════════════════════════════
+//  초기화
+// ═══════════════════════════════════════════
+(async function init(){
+  const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
+  const sq=localStorage.getItem(LS.q); if(sq) document.getElementById('searchInput').value=sq;
+  initPeriodBarEvents();
+  await fetchWatch();
+  await loadSnapshot();
+  setInterval(()=>{if(document.getElementById('btnViewLive').classList.contains('active'))loadSnapshot();},20000);
+  setInterval(fetchWatch,5*60*1000);
+})();
+</script>
 </body>
 </html>
