@@ -991,10 +991,8 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
   const maxCnt=Math.max(...daily.map(d=>cnt(d)),1);
   const peakDay=daily.reduce((a,b)=>cnt(a)>=cnt(b)?a:b,daily[0]||{});
   const avgCnt=daily.length?Math.round(totalCnt/daily.length):0;
-  let prevTotal=null;
-  if(data.prevDaily) prevTotal=data.prevDaily.reduce((s,d)=>s+cnt(d),0);
-  const diffPct=prevTotal!=null&&prevTotal>0?Math.round((totalCnt-prevTotal)/prevTotal*100):null;
-  const diffBadge=diffPct==null?'':diffPct>0?`<span class="diff-badge up">▲ ${diffPct}%</span>`:diffPct<0?`<span class="diff-badge down">▼ ${Math.abs(diffPct)}%</span>`:`<span class="diff-badge flat">→ 0%</span>`;
+  const diffPct=null;
+  const diffBadge='';
   destroyCharts();
 
   const rowsByDate=dates.map((dt)=>{
@@ -1004,27 +1002,11 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     return {date:dt,rows};
   });
   const {byDate,capa,globalTimeline}=calcCongestion(rowsByDate,plantFilter,type);
-  const {peakSlot,peakVal,peakPct,dangerH,warningH}=congKpiHtml(globalTimeline,capa);
+  const {peakSlot,peakVal,peakPct}=congKpiHtml(globalTimeline,capa);
 
-  const dowHTML=daily.map(d=>{
-    const isToday=d.date===today; const bw=d.banwol.count,sh=d.sihwa.count,tot=cnt(d);
-    const bar=Math.round(tot/maxCnt*100);
-    return `<tr>
-      <td class="${isToday?'today-col':''}">${dateToDowLabel(d.date)}</td>
-      <td class="${isToday?'today-col':''}" style="text-align:left">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="flex:1;max-width:120px;background:#f0f0f0;border-radius:99px;height:8px;overflow:hidden"><div style="width:${bar}%;height:100%;background:${cfg.dc};border-radius:99px"></div></div>
-          <strong>${tot}</strong>건
-        </div>
-      </td>
-      ${plantFilter==='all'?`<td class="${isToday?'today-col':''}">${bw}</td><td class="${isToday?'today-col':''}">${sh}</td>`:''}
-      <td class="${isToday?'today-col':''}">${sil(d)>=1000?(sil(d)/1000).toFixed(1)+'톤':sil(d)>0?sil(d)+'kg':'-'}</td>
-    </tr>`;
-  }).join('');
-
-  const congColorW = peakPct>=100?'#ef4444':peakPct>=80?'#f59e0b':'#10b981';
+  // ── KPI ──
   const weekKpiItems = [
-    { label:'기간 총 건수', val:`${totalCnt.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span>${diffBadge}`, sub:`${data.dateFrom} ~ ${data.dateTo}`, color:cfg.dc },
+    { label:'기간 총 건수', val:`${totalCnt.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span>`, sub:`${data.dateFrom} ~ ${data.dateTo}`, color:cfg.dc },
     { label:'일 평균', val:`${avgCnt}<span style="font-size:14px;font-weight:400">건</span>`, sub:`${daily.length}일 기준`, color:cfg.dc },
     { label:'기간 총 중량', val:`${totalSil>=1000?(totalSil/1000).toFixed(1):''+totalSil}<span style="font-size:14px;font-weight:400">${totalSil>=1000?'톤':'kg'}</span>`, sub:'실중량 합계', color:'#10b981' },
     { label:'피크일', val:`<span style="font-size:16px;color:#f59e0b">${peakDay?.date?dateToDowLabel(peakDay.date):'-'}</span>`, sub:`${peakDay?cnt(peakDay)+'건':''}`, color:'#f59e0b' },
@@ -1040,6 +1022,7 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     </div>`).join('')}
   </div>`;
 
+  // ── 일평균 체류시간 + 시간대별 혼잡도 히트맵 ──
   const bwDurRows = rowsByDate.flatMap(d=>d.rows.filter(r=>r._plant==='반월'));
   const shDurRows = rowsByDate.flatMap(d=>d.rows.filter(r=>r._plant==='시화'));
   const allDurRows = rowsByDate.flatMap(d=>d.rows);
@@ -1114,7 +1097,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       const color = r===0?'#e8e8e8':r<0.4?'#C0DD97':r<0.6?'#97C459':r<0.8?'#FAC775':r<1.0?'#EF9F27':'#E24B4A';
       const cell = document.createElement('div');
       cell.style.cssText = `flex:1;height:20px;border-radius:2px;background:${color};cursor:default`;
-      cell.dataset.h=h; cell.dataset.v=v; cell.dataset.r=Math.round(r*100);
       cell.addEventListener('mouseenter',()=>{ const tip=document.createElement('div'); tip.id='hm-tip'; tip.style.cssText='position:fixed;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:5px 8px;font-size:11px;white-space:nowrap;z-index:10000;color:#222;pointer-events:none'; tip.textContent=`${String(h).padStart(2,'0')}시 · 일평균 ${v}대 (${Math.round(r*100)}%)`; document.body.appendChild(tip); });
       cell.addEventListener('mousemove',e=>{ const tip=document.getElementById('hm-tip'); if(!tip)return; tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY-28)+'px'; });
       cell.addEventListener('mouseleave',()=>document.getElementById('hm-tip')?.remove());
@@ -1137,7 +1119,23 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
   const weekTicks=document.getElementById('weekHeatmapTicks');
   if(weekTicks){ Array.from({length:24},(_,h)=>{ const s=document.createElement('span'); s.style.cssText=`font-size:9px;color:#bbb;position:absolute;left:${h/23*100}%;transform:translateX(-50%)`; s.textContent=String(h); weekTicks.appendChild(s); }); }
 
-  panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>일별 입차 건수`,'<div class="chart-wrap tall"><canvas id="chartWeekBar"></canvas></div>');
+  // ── 날짜별 상세 ──
+  const dowHTML=daily.map(d=>{
+    const isToday=d.date===today; const bw=d.banwol.count,sh=d.sihwa.count,tot=cnt(d);
+    const bar=Math.round(tot/maxCnt*100);
+    return `<tr>
+      <td class="${isToday?'today-col':''}">${dateToDowLabel(d.date)}</td>
+      <td class="${isToday?'today-col':''}" style="text-align:left">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;max-width:120px;background:#f0f0f0;border-radius:99px;height:8px;overflow:hidden"><div style="width:${bar}%;height:100%;background:${cfg.dc};border-radius:99px"></div></div>
+          <strong>${tot}</strong>건
+        </div>
+      </td>
+      ${plantFilter==='all'?`<td class="${isToday?'today-col':''}">${bw}</td><td class="${isToday?'today-col':''}">${sh}</td>`:''}
+      <td class="${isToday?'today-col':''}">${sil(d)>=1000?(sil(d)/1000).toFixed(1)+'톤':sil(d)>0?sil(d)+'kg':'-'}</td>
+    </tr>`;
+  }).join('');
+
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:#6366f1"></span>날짜별 상세`,
     `<div style="overflow-x:auto"><table class="dow-table">
       <thead><tr><th>날짜</th><th style="text-align:left">건수</th>${plantFilter==='all'?'<th>반월</th><th>시화</th>':''}<th>중량</th></tr></thead>
@@ -1149,6 +1147,8 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       </tr></tfoot>
     </table></div>`
   );
+}
+
 
   if(dates&&dates.length){
     const isSub=(type==='sub'||type==='container');
