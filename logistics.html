@@ -1184,9 +1184,16 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   // 실시간 혼잡도
   let realtimeHtml = '';
   if(__lastData && __lastData.sections) {
-    const CAPA = { '반월': 8, '시화': 9 };
+    const SECTION_MAP = { product:'제품 상차중', sub:'부자재 입차중', container:'컨테이너 입차중' };
+    const CAPA_RT = {
+      product: { '반월': 8, '시화': 9 },
+      sub:     { '반월': 5, '시화': 5 },
+      container:{ '반월': 3, '시화': 3 },
+    };
+    const CAPA = CAPA_RT[type] || CAPA_RT.product;
+    const targetSection = SECTION_MAP[type] || '제품 상차중';
     const counts = { '반월': 0, '시화': 0 };
-    __lastData.sections.filter(s=>s.title==='제품 상차중').forEach(s=>{
+    __lastData.sections.filter(s=>s.title===targetSection).forEach(s=>{
       s.groups.forEach(g=>{ counts[g.plant] = (counts[g.plant]||0) + g.rows.filter(r=>!isMonoDigit(r.car)).length; });
     });
     const bwPct = Math.round(counts['반월']/CAPA['반월']*100);
@@ -1211,7 +1218,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
         <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['시화']} / ${CAPA['시화']}대</span>
         <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${shBg};color:${shTx}">${shPct}%</span>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">현재 제품 상차중 차량 기준 · 입차 탭 데이터</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>
     </div>`;
   }
 
