@@ -1218,26 +1218,28 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const allRowsForCong=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
   const {byDate:congByDate,capa}=calcCongestion([{date:__anFrom,rows:allRowsForCong}],plantFilter,type);
   const congTimeline=congByDate[0]?.timeline||Array(144).fill(0);
-  const {peakSlot:cPeakSlot,peakVal:cPeakVal,peakPct:cPeakPct,html:congHtml}=congKpiHtml(congTimeline,capa);
+  const {peakSlot:cPeakSlot,peakVal:cPeakVal,peakPct:cPeakPct,dangerH,warningH}=congKpiHtml(congTimeline,capa);
 
   const panel=document.getElementById('analyticPanel');
 
-  panel.innerHTML=`<div class="kpi-row">
-    ${congHtml}
+const congColor = cPeakPct>=100?'#ef4444':cPeakPct>=80?'#f59e0b':'#10b981';
+panel.innerHTML=`
+  <div style="margin-bottom:12px;padding:10px 14px;background:#fff;border:1px solid #e6e6e6;border-left:4px solid ${congColor};border-radius:12px;font-size:12.5px;color:#444;line-height:1.8">
+    <span style="font-weight:600;color:${congColor}">● 혼잡도</span>
+    &nbsp;피크 <b>${SLOT_LABELS_FULL[cPeakSlot]}</b> · CAPA ${capa}대 중 <b>${cPeakVal}대</b> 동시 점유
+    (<b style="color:${congColor}">${cPeakPct}%</b>)
+    &nbsp;·&nbsp; 위험 <b>${dangerH}h</b> &nbsp;·&nbsp; 주의 <b>${warningH}h</b>
+  </div>
+  <div class="kpi-row">
     <div class="kpi" style="--kc:${cfg.dc}">
       <div class="kpi-label">전체 건수</div>
       <div class="kpi-val">${all.length}<span style="font-size:14px;font-weight:400">건</span></div>
-      <div class="kpi-sub">반월 ${bw.length} · 시화 ${sh.length}</div>
+      <div class="kpi-sub">반월 ${bw.length} · 시화 ${sh.length} &nbsp;|&nbsp; 출차 완료 ${bwDone+shDone}건</div>
     </div>
     <div class="kpi" style="--kc:${cfg.dc}">
       <div class="kpi-label">평균 체류시간</div>
       <div class="kpi-val">${avgAll}<span style="font-size:14px;font-weight:400">분</span></div>
       <div class="kpi-sub">반월 ${avgBw}분 · 시화 ${avgSh}분 <span style="font-size:10px;color:#a0aec0">(전날입차 제외${type==='product'?' · 06시 기준':''})</span></div>
-    </div>
-    <div class="kpi" style="--kc:#10b981">
-      <div class="kpi-label">출차 완료</div>
-      <div class="kpi-val">${bwDone+shDone}<span style="font-size:14px;font-weight:400">건</span></div>
-      <div class="kpi-sub">반월 ${bwDone} · 시화 ${shDone}</div>
     </div>
     <div class="kpi" style="--kc:#f59e0b">
       <div class="kpi-label">피크 시간대</div>
@@ -1247,8 +1249,127 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     ${isSub?`<div class="kpi" style="--kc:${cfg.dc}"><div class="kpi-label">품목 수</div><div class="kpi-val">${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span></div><div class="kpi-sub">${itemEntries[0]?itemEntries[0][0]+' 최다':''}</div></div>`:''}
   </div>`;
 
-  panel.innerHTML+=anCard('<span class="dot" style="--dc:#6366f1"></span>시간대별 동시 점유 차량 수 (오늘)','<div class="chart-wrap tall"><canvas id="chartCongToday"></canvas></div>');
-  panel.innerHTML+=anCard('<span class="dot" style="--dc:#0f62fe"></span>시간대별 입차 건수 · 평균 체류시간','<div class="chart-wrap tall"><canvas id="chartHourCombo"></canvas></div>');
+  // 출차 완료 / 대기 계산
+
+const bwWaiting = bw.length - bwDone;
+const shWaiting = sh.length - shDone;
+
+
+// 혼잡도 히트맵용 시간별 최대값 계산
+const hourArr = Array(24).fill(0);
+for(let i=0;i<144;i++) hourArr[Math.floor(i/6)] = Math.max(hourArr[Math.floor(i/6)], congTimeline[i]);
+
+// 반월/시화 각각 혼잡도 타임라인 계산 (전체 선택 시)
+const bwRowsForCong = (data.banwol||[]).map(r=>({...r,_plant:'반월'}));
+const shRowsForCong = (data.sihwa||[]).map(r=>({...r,_plant:'시화'}));
+const {byDate:bwCongByDate, capa:bwCapa} = calcCongestion([{date:__anFrom,rows:bwRowsForCong}],'banwol',type);
+const {byDate:shCongByDate, capa:shCapa} = calcCongestion([{date:__anFrom,rows:shRowsForCong}],'sihwa',type);
+const allCapa = bwCapa + shCapa;
+const bwCongTimeline = bwCongByDate[0]?.timeline||Array(144).fill(0);
+const shCongTimeline = shCongByDate[0]?.timeline||Array(144).fill(0);
+const bwHourArr = Array(24).fill(0);
+const shHourArr = Array(24).fill(0);
+for(let i=0;i<144;i++){
+  bwHourArr[Math.floor(i/6)] = Math.max(bwHourArr[Math.floor(i/6)], bwCongTimeline[i]);
+  shHourArr[Math.floor(i/6)] = Math.max(shHourArr[Math.floor(i/6)], shCongTimeline[i]);
+}
+
+function heatmapRowHtml(id, label, arr, capa){
+  const cells = arr.map((v,h)=>{
+    const r = v/capa;
+    const color = r===0?'#e8e8e8':r<0.4?'#C0DD97':r<0.6?'#97C459':r<0.8?'#FAC775':r<1.0?'#EF9F27':'#E24B4A';
+    return `<div data-h="${h}" data-v="${v}" data-r="${Math.round(r*100)}" style="flex:1;height:22px;border-radius:3px;background:${color};cursor:default;position:relative"></div>`;
+  }).join('');
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+    <span style="font-size:11px;color:var(--muted);width:28px;flex-shrink:0">${label}</span>
+    <div style="display:flex;gap:2px;flex:1" id="${id}">${cells}</div>
+  </div>`;
+}
+
+
+
+const showMulti = plantFilter === 'all';
+const heatmapHtml = showMulti
+  ? heatmapRowHtml('hmBw','반월',bwHourArr,bwCapa) + heatmapRowHtml('hmSh','시화',shHourArr,shCapa) + heatmapRowHtml('hmAll','합계',hourArr,allCapa)
+  : heatmapRowHtml('hmAll','',hourArr,capa);
+
+const summaryCardHtml = `
+<div class="an-card" style="margin-bottom:14px">
+  <div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:10px">평균 체류시간</div>
+  <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:18px">
+    ${(plantFilter==='all'
+  ? [['합계',avgAll,'#378ADD'],['반월',avgBw,'#3B82F6'],['시화',avgSh,'#10B981']]
+  : plantFilter==='banwol'
+    ? [['반월',avgBw,'#3B82F6']]
+    : [['시화',avgSh,'#10B981']]
+).map(([lbl,val,color])=>{
+      const maxVal=Math.max(avgAll,avgBw,avgSh,1);
+      const pct=Math.round(val/maxVal*100);
+      const badge=val>=90?['혼잡','#FCEBEB','#A32D2D']:val>=60?['보통','#FAEEDA','#854F0B']:['원활','#EAF3DE','#3B6D11'];
+      return `<div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--muted);width:36px;flex-shrink:0">${lbl}</span>
+        <div style="flex:1;background:#ebebeb;border-radius:99px;height:8px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;border-radius:99px;background:${color}"></div>
+        </div>
+        <span style="font-size:12px;font-weight:600;min-width:32px;text-align:right">${val}분</span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:99px;flex-shrink:0;background:${badge[1]};color:${badge[2]}">${badge[0]}</span>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:10px">시간대별 혼잡도</div>
+  ${heatmapHtml}
+  <div style="position:relative;height:16px;margin-top:4px" id="heatmapTicks"></div>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+    <span style="font-size:11px;color:var(--muted)">원활</span>
+    ${['#C0DD97','#97C459','#FAC775','#EF9F27','#E24B4A'].map(c=>`<div style="width:16px;height:10px;border-radius:2px;background:${c}"></div>`).join('')}
+    <span style="font-size:11px;color:var(--muted)">혼잡</span>
+  </div>
+  <div style="font-size:11px;color:#A32D2D;margin-top:6px" id="heatmapPeakNote"></div>
+</div>`;
+
+// KPI 뒤에 바로 삽입
+panel.innerHTML += summaryCardHtml;
+
+// 툴팁 이벤트 등록
+['hmBw','hmSh','hmAll'].forEach(id=>{
+  const wrap = document.getElementById(id); if(!wrap) return;
+  wrap.querySelectorAll('div[data-h]').forEach(cell=>{
+    const h=cell.dataset.h, v=cell.dataset.v, r=cell.dataset.r;
+    cell.addEventListener('mouseenter',()=>{
+      const tip=document.createElement('div');
+      tip.id='hm-tip';
+      tip.style.cssText='position:fixed;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:5px 8px;font-size:11px;white-space:nowrap;z-index:10000;color:#222;pointer-events:none';
+      tip.textContent=`${String(h).padStart(2,'0')}시 · 최대 ${v}대 (${r}%)`;
+      document.body.appendChild(tip);
+    });
+    cell.addEventListener('mousemove',e=>{
+      const tip=document.getElementById('hm-tip'); if(!tip) return;
+      tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY-28)+'px';
+    });
+    cell.addEventListener('mouseleave',()=>{ document.getElementById('hm-tip')?.remove(); });
+  });
+});
+
+// 틱 라벨
+const heatmapTicks = document.getElementById('heatmapTicks');
+if(heatmapTicks){
+  [0,6,12,18,23].forEach(h=>{
+    const span=document.createElement('span');
+    span.style.cssText=`font-size:10px;color:#999;position:absolute;left:${h/23*100}%;transform:translateX(-50%)`;
+    span.textContent=`${String(h).padStart(2,'0')}시`;
+    heatmapTicks.appendChild(span);
+  });
+}
+
+// 피크 노트 (합계 기준)
+const peakHour2 = hourArr.indexOf(Math.max(...hourArr));
+const peakVal2 = hourArr[peakHour2];
+const usedCapa = showMulti ? allCapa : capa;
+const peakPct2 = Math.round(peakVal2 / usedCapa * 100);
+const peakNote = document.getElementById('heatmapPeakNote');
+if(peakNote) peakNote.textContent = `피크 ${String(peakHour2).padStart(2,'0')}시 · 동시 ${peakVal2}대 · CAPA의 ${peakPct2}%`;
+
 
   if(itemEntries.length){
     const itemRows=itemEntries.map(([nm,v])=>{
@@ -1321,32 +1442,6 @@ panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>전체 
     `<div style="overflow-x:auto;max-height:320px;overflow-y:auto"><table><thead><tr><th>No</th><th>차량</th><th>공장</th>${isSub?'<th>품목</th>':''}<th>입차</th><th>출차</th><th>체류(분)</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
   );
 
-  drawCongChart('chartCongToday',congTimeline,capa,cPeakSlot,cPeakVal,cPeakPct);
-
-  const combinedHour=hrLabels.map((_,i)=>(bwHour[i]||0)+(shHour[i]||0));
-  const peakH=combinedHour.indexOf(Math.max(...combinedHour));
-  __anCharts.hourCombo=new Chart(document.getElementById('chartHourCombo'),{
-    type:'bar',
-    data:{labels:hrLabels,datasets:[
-      {type:'bar',label:'반월 입차',data:bwHour,yAxisID:'yCount',backgroundColor:bwHour.map((_,i)=>i===peakH?'rgba(59,130,246,1)':'rgba(96,165,250,.7)'),borderRadius:3,stack:'s'},
-      {type:'bar',label:'시화 입차',data:shHour,yAxisID:'yCount',backgroundColor:shHour.map((_,i)=>i===peakH?'rgba(16,185,129,1)':'rgba(52,211,153,.7)'),borderRadius:3,stack:'s'},
-      {type:'line',label:'평균 체류(분)',data:hourAvgDur,yAxisID:'yDur',borderColor:'rgba(245,158,11,1)',backgroundColor:'rgba(245,158,11,.15)',pointBackgroundColor:'rgba(245,158,11,1)',pointRadius:3,tension:0.35,fill:true,spanGaps:true},
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{
-        x:{stacked:true,ticks:{color:'#777',font:{size:10}}},
-        yCount:{stacked:true,position:'left',beginAtZero:true,ticks:{color:'#777',font:{size:10}},title:{display:true,text:'입차 건수',color:'#888',font:{size:10}}},
-        yDur:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false},ticks:{color:'#f59e0b',font:{size:10},callback:v=>v!=null?v+'분':''},title:{display:true,text:'평균 체류(분)',color:'#f59e0b',font:{size:10}}},
-      },
-      plugins:{legend:{labels:{font:{size:11},color:'#555'}},tooltip:{callbacks:{label:ctx=>ctx.dataset.yAxisID==='yDur'?(ctx.raw!=null?`평균 체류: ${ctx.raw}분`:'데이터 없음'):`${ctx.dataset.label}: ${ctx.raw}건`}}}
-    },
-    plugins:[{id:'peakLabelCombo',afterDatasetsDraw(chart){
-      if(!combinedHour[peakH]) return;
-      const {ctx,scales:{x,yCount}}=chart;
-      const xPos=x.getPixelForValue(peakH),yPos=yCount.getPixelForValue(combinedHour[peakH]);
-      ctx.save();ctx.fillStyle='#ef4444';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('▼ 피크',xPos,yPos-8);ctx.restore();
-    }}]
-  });
 }
 
 // ═══════════════════════════════════════════
