@@ -1268,15 +1268,9 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const {peakSlot:cPeakSlot,peakVal:cPeakVal,peakPct:cPeakPct,dangerH,warningH}=congKpiHtml(congTimeline,capa);
 
   const panel=document.getElementById('analyticPanel');
-  const congColor = cPeakPct>=100?'#ef4444':cPeakPct>=80?'#f59e0b':'#10b981';
 
-  panel.innerHTML = realtimeHtml + `
-  <div style="margin-bottom:12px;padding:10px 14px;background:#fff;border:1px solid #e6e6e6;border-left:4px solid ${congColor};border-radius:12px;font-size:12.5px;color:#444;line-height:1.8">
-    <span style="font-weight:600;color:${congColor}">● 혼잡도 (계근 완료 기준)</span>
-    &nbsp;피크 <b>${SLOT_LABELS_FULL[cPeakSlot]}</b> · CAPA ${capa}대 중 <b>${cPeakVal}대</b> 동시 점유
-    (<b style="color:${congColor}">${cPeakPct}%</b>)
-    &nbsp;·&nbsp; 위험 <b>${dangerH}h</b> &nbsp;·&nbsp; 주의 <b>${warningH}h</b>
-  </div>
+  // 순서: 1.KPI → 2.실시간혼잡도 → 3.체류시간+히트맵 → 4.유형별/전체데이터
+  panel.innerHTML = `
   <div class="kpi-row">
     <div class="kpi" style="--kc:${cfg.dc}">
       <div class="kpi-label">전체 건수</div>
@@ -1295,6 +1289,8 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     </div>
     ${isSub?`<div class="kpi" style="--kc:${cfg.dc}"><div class="kpi-label">품목 수</div><div class="kpi-val">${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span></div><div class="kpi-sub">${itemEntries[0]?itemEntries[0][0]+' 최다':''}</div></div>`:''}
   </div>`;
+
+  panel.innerHTML += realtimeHtml;
 
   const hourArr = Array(24).fill(0);
   for(let i=0;i<144;i++) hourArr[Math.floor(i/6)] = Math.max(hourArr[Math.floor(i/6)], congTimeline[i]);
