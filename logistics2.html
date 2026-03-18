@@ -1195,26 +1195,44 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     const bwPct = Math.round(counts['반월']/CAPA['반월']*100);
     const shPct = Math.round(counts['시화']/CAPA['시화']*100);
     function rtColor(pct){ return pct>=100?'#E24B4A':pct>=80?'#EF9F27':pct>=40?'#97C459':'#C0DD97'; }
+    function rtBoxes(count, capa){
+      const total=Math.max(capa, count);
+      let html='';
+      for(let i=0;i<total;i++){
+        const filled=i<count;
+        const isOver=i>=capa;
+        const pct=(i+1)/capa;
+        const slotColor=isOver?'#A32D2D':pct<=0.4?'#C0DD97':pct<=0.8?'#97C459':pct<1.0?'#EF9F27':'#E24B4A';
+        const color=filled?slotColor:'#e5e7eb';
+        const border='border:1.5px solid '+(filled?slotColor:'#d1d5db');
+        html+=`<div style="width:20px;height:20px;border-radius:4px;background:${color};${border};display:inline-block;margin:1px"></div>`;
+      }
+      return html;
+    }
     function rtBadge(pct){ return pct>=100?['#FCEBEB','#A32D2D']:pct>=80?['#FAEEDA','#854F0B']:['#EAF3DE','#3B6D11']; }
     const [bwBg,bwTx]=rtBadge(bwPct), [shBg,shTx]=rtBadge(shPct);
+    const rtRowBw=`<div style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:600;color:#333">반월</span>
+          <span style="font-size:11px;color:#555">${counts['반월']} / ${CAPA['반월']}대</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxes(counts['반월'],CAPA['반월'])}</div>
+      </div>`;
+    const rtRowSh=`<div style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:600;color:#333">시화</span>
+          <span style="font-size:11px;color:#555">${counts['시화']} / ${CAPA['시화']}대</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxes(counts['시화'],CAPA['시화'])}</div>
+      </div>`;
+    const rtRows=plantFilter==='banwol'?rtRowBw:plantFilter==='sihwa'?rtRowSh:rtRowBw+rtRowSh;
     realtimeHtml = `<div class="an-card" id="realtimeCard" style="margin-bottom:14px">
-      <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+      <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px">
         실시간 혼잡도
         <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">반월</span>
-        <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(bwPct,100)}%;height:100%;border-radius:99px;background:${rtColor(bwPct)}"></div></div>
-        <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['반월']} / ${CAPA['반월']}대</span>
-        <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${bwBg};color:${bwTx}">${bwPct}%</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">시화</span>
-        <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(shPct,100)}%;height:100%;border-radius:99px;background:${rtColor(shPct)}"></div></div>
-        <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['시화']} / ${CAPA['시화']}대</span>
-        <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${shBg};color:${shTx}">${shPct}%</span>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>
+      ${rtRows}
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>
     </div>`;
   }
 
@@ -1274,7 +1292,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
   // 순서: 1.KPI → 2.실시간혼잡도 → 3.체류시간+히트맵 → 4.유형별/전체데이터
   const kpiItems = [
-    { label:'전체 건수', val:`${all.length}<span style="font-size:14px;font-weight:400">건</span>`, sub:`반월 ${bw.length} · 시화 ${sh.length} &nbsp;|&nbsp; 출차 완료 ${bwDone+shDone}건`, color:cfg.dc },
+    { label:'전체 건수', val:`${all.length}<span style="font-size:14px;font-weight:400">건</span>`, sub:(()=>{ const totalSil=all.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0); return `반월 ${bw.length} · 시화 ${sh.length} &nbsp;|&nbsp; ${totalSil>0?totalSil.toLocaleString()+'kg':'-'}`; })(), color:cfg.dc },
     { label:'평균 체류시간', val:`${avgAll}<span style="font-size:14px;font-weight:400">분</span>`, sub:`반월 ${avgBw}분 · 시화 ${avgSh}분`, color:cfg.dc },
     { label:'피크 시간대', val:`<span style="color:#f59e0b">${String(peakHour).padStart(2,'0')}시</span>`, sub:`${peakCount}건 집중`, color:'#f59e0b' },
     ...(isSub?[{ label:'품목 수', val:`${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span>`, sub:`${itemEntries[0]?itemEntries[0][0]+' 최다':''}`, color:cfg.dc }]:[]),
@@ -1291,6 +1309,23 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   </div>`;
 
   panel.innerHTML += realtimeHtml;
+
+  panel.innerHTML += anCard(
+    `<span class="dot" style="--dc:${cfg.dc}"></span>시간대별 혼잡도 <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">출차 완료 기준 · 실시간 반영 아님</span>`,
+    `<div style="font-size:11px;color:#888;background:#f5f5f5;border-radius:8px;padding:4px 10px;display:inline-block;margin-bottom:10px">출차 완료된 차량 데이터 기준</div>
+    <div id="heatmapContainer"></div>
+    <div style="position:relative;height:16px;margin-top:4px" id="heatmapTicks"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+      <span style="font-size:11px;color:var(--muted)">원활</span>
+      <div style="width:14px;height:8px;border-radius:2px;background:#C0DD97"></div>
+      <div style="width:14px;height:8px;border-radius:2px;background:#97C459"></div>
+      <div style="width:14px;height:8px;border-radius:2px;background:#FAC775"></div>
+      <div style="width:14px;height:8px;border-radius:2px;background:#EF9F27"></div>
+      <div style="width:14px;height:8px;border-radius:2px;background:#E24B4A"></div>
+      <span style="font-size:11px;color:var(--muted)">혼잡</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px" id="heatmapPeakNote"></span>
+    </div>`
+  );
 
   const hourArr = Array(24).fill(0);
   for(let i=0;i<144;i++) hourArr[Math.floor(i/6)] = Math.max(hourArr[Math.floor(i/6)], congTimeline[i]);
@@ -1311,51 +1346,6 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
   const showMulti = plantFilter === 'all';
 
-  const summaryCardHtml = `
-<div class="an-card" style="margin-bottom:14px">
-  <div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:10px">평균 체류시간</div>
-  <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:4px">
-    ${(plantFilter==='all'
-      ? [['합계',avgAll,'#378ADD'],['반월',avgBw,'#3B82F6'],['시화',avgSh,'#10B981']]
-      : plantFilter==='banwol'
-        ? [['반월',avgBw,'#3B82F6']]
-        : [['시화',avgSh,'#10B981']]
-    ).map(([lbl,val,color])=>{
-      const maxVal=Math.max(avgAll,avgBw,avgSh,1);
-      const pct=Math.round(val/maxVal*100);
-      const badge=val>=90?['혼잡','#FCEBEB','#A32D2D']:val>=60?['보통','#FAEEDA','#854F0B']:['원활','#EAF3DE','#3B6D11'];
-      return `<div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:12px;color:var(--muted);width:36px;flex-shrink:0">${lbl}</span>
-        <div style="flex:1;background:#ebebeb;border-radius:99px;height:8px;overflow:hidden">
-          <div style="width:${pct}%;height:100%;border-radius:99px;background:${color}"></div>
-        </div>
-        <span style="font-size:12px;font-weight:600;min-width:32px;text-align:right">${val}분</span>
-        <span style="font-size:10px;padding:2px 7px;border-radius:99px;flex-shrink:0;background:${badge[1]};color:${badge[2]}">${badge[0]}</span>
-      </div>`;
-    }).join('')}
-  </div>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:16px">출차 완료된 차량 기준 · 전날입차 제외</div>
-
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-    <div style="font-size:12px;color:var(--muted);font-weight:500">시간대별 혼잡도</div>
-    <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#f0f0f0;color:#888">출차 완료 기준</span>
-  </div>
-  <div style="font-size:11px;color:#888;background:#f5f5f5;border-radius:8px;padding:5px 10px;display:inline-block;margin-bottom:10px">출차 완료된 차량 데이터 기준 · 실시간 반영 아님</div>
-  <div id="heatmapContainer"></div>
-  <div style="position:relative;height:16px;margin-top:4px" id="heatmapTicks"></div>
-  <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
-    <span style="font-size:11px;color:var(--muted)">원활</span>
-    <div style="width:14px;height:8px;border-radius:2px;background:#C0DD97"></div>
-    <div style="width:14px;height:8px;border-radius:2px;background:#97C459"></div>
-    <div style="width:14px;height:8px;border-radius:2px;background:#FAC775"></div>
-    <div style="width:14px;height:8px;border-radius:2px;background:#EF9F27"></div>
-    <div style="width:14px;height:8px;border-radius:2px;background:#E24B4A"></div>
-    <span style="font-size:11px;color:var(--muted)">혼잡</span>
-  </div>
-  <div style="font-size:11px;color:#A32D2D;margin-top:6px" id="heatmapPeakNote"></div>
-</div>`;
-
-  panel.innerHTML += summaryCardHtml;
 
   function buildHeatmapRow(containerId, label, arr, capVal) {
     const wrap = document.getElementById(containerId); if(!wrap) return;
@@ -1408,18 +1398,45 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const peakNote = document.getElementById('heatmapPeakNote');
   if(peakNote) peakNote.textContent = `피크 ${String(peakHour2).padStart(2,'0')}시 · 동시 ${peakVal2}대 · CAPA의 ${peakPct2}%`;
 
-  if(itemEntries.length){
-    const itemRows=itemEntries.map(([nm,v])=>{
-      const kg=v.silwei,ton=(kg/1000).toFixed(1);
-      const maxKg=itemEntries[0][1].silwei||1,pct=Math.round(kg/maxKg*100);
-      const avgDurItem=v.durCnt>0?Math.round(v.durSum/v.durCnt):null;
-      return `<div style="display:flex;align-items:center;gap:10px;font-size:13px">
-        <div style="width:90px;text-align:right;color:#444;flex-shrink:0;font-weight:${isSub?'normal':'600'}">${nm}</div>
-        <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${cfg.dc};border-radius:99px"></div></div>
-        <div style="min-width:130px;font-weight:600;color:#333">${kg>=1000?ton+'톤':kg>0?kg+'kg':'-'} <span style="font-weight:400;color:var(--muted);font-size:11px">(${v.count}건)</span>${avgDurItem!=null?` <span style="margin-left:6px;font-size:11px;color:#f59e0b;font-weight:600">⏱ 평균 ${avgDurItem}분</span>`:''}</div>
+  if(isSub && itemEntries.length){
+    const donutId='donutChart_'+Date.now();
+    const donutColors=['#06b6d4','#f97316','#a855f7','#22c55e','#f59e0b','#ef4444','#6366f1','#ec4899','#14b8a6','#84cc16'];
+    const totalKg=itemEntries.reduce((s,[,v])=>s+v.silwei,0)||1;
+    const legendHtml=itemEntries.map(([nm,v],i)=>{
+      const pct=Math.round(v.silwei/totalKg*100);
+      const avgDur=v.durCnt>0?Math.round(v.durSum/v.durCnt):null;
+      return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:5px">
+        <div style="width:10px;height:10px;border-radius:2px;background:${donutColors[i%donutColors.length]};flex-shrink:0"></div>
+        <span style="flex:1;color:#333">${nm}</span>
+        <span style="color:#555;font-weight:600">${pct}%</span>
+        <span style="color:var(--muted);font-size:11px">(${v.count}건${avgDur!=null?' · '+avgDur+'분':''})</span>
       </div>`;
     }).join('');
-    panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>${isSub?'품목별':'유형별'} 입차 현황`,'<div style="display:flex;flex-direction:column;gap:10px">'+itemRows+'</div>');
+    panel.innerHTML+=anCard(
+      `<span class="dot" style="--dc:${cfg.dc}"></span>품목별 입차 현황`,
+      `<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <div style="position:relative;width:160px;height:160px;flex-shrink:0">
+          <canvas id="${donutId}" width="160" height="160"></canvas>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+            <div style="font-size:18px;font-weight:700;color:#333">${itemEntries.length}</div>
+            <div style="font-size:10px;color:var(--muted)">품목</div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:140px;padding-top:4px">${legendHtml}</div>
+      </div>`
+    );
+    setTimeout(()=>{
+      const canvas=document.getElementById(donutId);
+      if(!canvas||!window.Chart) return;
+      new Chart(canvas,{
+        type:'doughnut',
+        data:{
+          labels:itemEntries.map(([nm])=>nm),
+          datasets:[{data:itemEntries.map(([,v])=>v.silwei||v.count),backgroundColor:itemEntries.map((_,i)=>donutColors[i%donutColors.length]),borderWidth:2,borderColor:'#fff'}]
+        },
+        options:{responsive:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const v=itemEntries[ctx.dataIndex][1];const pct=Math.round((v.silwei||v.count)/totalKg*100);return ` ${v.count}건 · ${pct}%`;}}}}}
+      });
+    },100);
   }
 
   let bwNo=1, shNo=1;
@@ -1594,24 +1611,41 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
           const [bwBg,bwTx]=rtBadgeBg(bwPct),[shBg,shTx]=rtBadgeBg(shPct);
           const rtCard=document.getElementById('realtimeCard');
           if(rtCard){
+            function rtBoxesBg(count,capa){
+              const total=Math.max(capa,count); let h='';
+              for(let i=0;i<total;i++){
+                const filled=i<count, isOver=i>=capa;
+                const pct=(i+1)/capa;
+                const slotColor=isOver?'#A32D2D':pct<=0.4?'#C0DD97':pct<=0.8?'#97C459':pct<1.0?'#EF9F27':'#E24B4A';
+                const color=filled?slotColor:'#e5e7eb';
+                const brd='border:1.5px solid '+(filled?slotColor:'#d1d5db');
+                h+=`<div style="width:20px;height:20px;border-radius:4px;background:${color};${brd};display:inline-block;margin:1px"></div>`;
+              }
+              return h;
+            }
+            const pf=document.getElementById('plantFilter').value||'all';
+            const rtBgBw=`<div style="margin-bottom:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                  <span style="font-size:12px;font-weight:600;color:#333">반월</span>
+                  <span style="font-size:11px;color:#555">${counts['반월']} / ${CAPA['반월']}대</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxesBg(counts['반월'],CAPA['반월'])}</div>
+              </div>`;
+            const rtBgSh=`<div style="margin-bottom:8px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                  <span style="font-size:12px;font-weight:600;color:#333">시화</span>
+                  <span style="font-size:11px;color:#555">${counts['시화']} / ${CAPA['시화']}대</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxesBg(counts['시화'],CAPA['시화'])}</div>
+              </div>`;
+            const rtBgRows=pf==='banwol'?rtBgBw:pf==='sihwa'?rtBgSh:rtBgBw+rtBgSh;
             rtCard.innerHTML=`
-              <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+              <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px">
                 실시간 혼잡도
                 <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
               </div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-                <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">반월</span>
-                <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(bwPct,100)}%;height:100%;border-radius:99px;background:${rtColorBg(bwPct)}"></div></div>
-                <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['반월']} / ${CAPA['반월']}대</span>
-                <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${bwBg};color:${bwTx}">${bwPct}%</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">시화</span>
-                <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(shPct,100)}%;height:100%;border-radius:99px;background:${rtColorBg(shPct)}"></div></div>
-                <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['시화']} / ${CAPA['시화']}대</span>
-                <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${shBg};color:${shTx}">${shPct}%</span>
-              </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:4px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>`;
+              ${rtBgRows}
+              <div style="font-size:11px;color:var(--muted);margin-top:6px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>`;
           }
         }
       }
