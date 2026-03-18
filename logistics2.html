@@ -180,6 +180,7 @@
       <input id="searchInput" class="input" placeholder="차량번호 검색" />
       <span id="searchSummary" class="badge search-pill" style="display:none"></span>
     </div>
+    <div id="carLocationBanner" style="display:none;margin-top:8px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:13px;color:#1e40af"></div>
   </section>
 
   <section class="watch-panel" id="watchPanelEl">
@@ -226,7 +227,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyY0_pknmJi_TnQ2cNuVhKVMMru-meYI64UZtZ7J6TWmIlqtbOntfTbker0JW7cQHJoaA/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzGv6zT575SmZmnE66c1bb-fBUuM4Y2pKlScUAk7cKL437Tbqt9aiRwxBt1tiN3qwNABA/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
@@ -242,7 +243,7 @@ const LS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.q' };
 
 const CAPA_MAP = {
   '반월': { '제품 상차중': 5, '원료 하차중': 5, '부자재 입차중': 5, '컨테이너 입차중': 3 },
-  '시화': { '제품 상차중': 7, '원료 하차중': 12, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+  '시화': { '제품 상차중': 10, '원료 하차중': 10, '부자재 입차중': 5, '컨테이너 입차중': 3 },
 };
 
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):''; }
@@ -448,6 +449,35 @@ function render(data){
   const badge=document.getElementById('searchSummary');
   if(q){ badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
   else badge.style.display='none';
+
+  // 차량 위치 배너
+  const banner=document.getElementById('carLocationBanner');
+  if(banner){
+    if(isFour){
+      const found=[];
+      data.sections.forEach(sec=>{
+        sec.groups.forEach(g=>{
+          g.rows.filter(r=>last4(r.car)===dqq&&!isMonoDigit(r.car)).forEach(r=>{
+            found.push({section:sec.title,plant:g.plant,time:fmtTime(r.time),car:r.car});
+          });
+        });
+      });
+      if(found.length){
+        const items=found.map(f=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px">
+          <strong>${f.car}</strong>
+          <span style="color:#3b82f6">→</span>
+          ${f.plant} · ${f.section} · 입차 ${f.time}
+        </span>`).join('');
+        banner.innerHTML=`<span style="font-weight:600;margin-right:8px">🔍 ${dqq}</span>${items}`;
+        banner.style.display='block';
+      } else {
+        banner.innerHTML=`<span style="color:#6b7280">🔍 ${dqq} — 현재 입차된 차량 없음</span>`;
+        banner.style.display='block';
+      }
+    } else {
+      banner.style.display='none';
+    }
+  }
 }
 
 window.toggleCard=(enc,btn)=>{
@@ -515,6 +545,94 @@ const AN_TYPES=[
 
 function destroyCharts(){ Object.values(__anCharts).forEach(c=>{ try{c.destroy();}catch(e){} }); __anCharts={}; }
 
+function renderCarHistory(carNum4, cache){
+  const TYPE_LABEL={product:'제품',sub:'부자재',container:'컨테이너',raw:'원료'};
+  const rows=[];
+  const seen=new Set(); // 중복 방지
+
+  const collectRows=(list, plant, tp, date)=>{
+    (list||[]).filter(r=>last4(r.CARNUM||'')===carNum4&&!isMonoDigit(r.CARNUM)).forEach(r=>{
+      // 중복 키: 날짜+타입+공장+입차시간+차량번호
+      const dedup=`${date}|${tp}|${plant}|${r.INTIME}|${r.CARNUM}`;
+      if(seen.has(dedup)) return;
+      seen.add(dedup);
+      rows.push({type:tp,plant,intime:fmtTime(r.INTIME),outtime:fmtTime(r.OUTIME),
+        itemnm:String(r.ITEMNM||'').trim(),
+        silwei:Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||null,
+        date});
+    });
+  };
+
+  const curKey=`${__anType}_${__anFrom}_${__anTo}`;
+  const curCached=__anCache[curKey];
+  if(!curCached) return '';
+
+  if(curCached.mode==='daily'){
+    collectRows(curCached.data.banwol,'반월',__anType,__anFrom);
+    collectRows(curCached.data.sihwa,'시화',__anType,__anFrom);
+  } else if(curCached.mode==='all-daily'){
+    // all 모드: types 배열 순서대로 각 타입별로 수집
+    (curCached.types||['product','raw','sub','container']).forEach(tp=>{
+      const d=curCached.data[tp]||{};
+      collectRows(d.banwol,'반월',tp,__anFrom);
+      collectRows(d.sihwa,'시화',tp,__anFrom);
+    });
+  } else if(curCached.mode==='weekly'&&curCached.dates){
+    curCached.dates.forEach(dt=>{
+      const k=`${__anType}_${dt}_${dt}`;
+      const dc=__anCache[k];
+      if(dc&&dc.mode==='daily'){
+        collectRows(dc.data.banwol,'반월',__anType,dt);
+        collectRows(dc.data.sihwa,'시화',__anType,dt);
+      }
+    });
+  } else if(curCached.mode==='all-weekly'&&curCached.dates){
+    (curCached.types||['product','raw','sub','container']).forEach(tp=>{
+      curCached.dates.forEach(dt=>{
+        const k=`${tp}_${dt}_${dt}`;
+        const dc=__anCache[k];
+        if(dc&&dc.mode==='daily'){
+          collectRows(dc.data.banwol,'반월',tp,dt);
+          collectRows(dc.data.sihwa,'시화',tp,dt);
+        }
+      });
+    });
+  }
+  if(!rows.length) return '';
+
+  // 날짜+입차시간 정렬
+  rows.sort((a,b)=>{
+    if(a.date!==b.date) return a.date<b.date?-1:1;
+    return (timeToMin(a.intime)||0)-(timeToMin(b.intime)||0);
+  });
+
+  // 날짜별 그룹
+  const byDate={};
+  rows.forEach(r=>{ if(!byDate[r.date]) byDate[r.date]=[]; byDate[r.date].push(r); });
+
+  const dateHtml=Object.entries(byDate).map(([date,list])=>{
+    const rowHtml=list.map(r=>{
+      const label=TYPE_LABEL[r.type]||r.type;
+      const detail=(r.type==='sub'||r.type==='container')&&r.itemnm?` · ${r.itemnm}`:'';
+      const sil=r.silwei?` · ${r.silwei.toLocaleString()}kg`:'';
+      const dur=(()=>{ const d=effectiveDurMin(r.intime,r.outtime,r.type); return d&&d>0?` · ${d}분`:''; })();
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f1f1f4;font-size:12px">
+        <span style="width:50px;color:var(--muted);flex-shrink:0">${r.plant}</span>
+        <span style="padding:1px 7px;border-radius:999px;background:#eef3ff;color:#0f62fe;font-size:11px;flex-shrink:0">${label}${detail}</span>
+        <span style="color:#333">${r.intime||'-'} → ${r.outtime||'미출차'}</span>
+        <span style="color:var(--muted);font-size:11px">${dur}${sil}</span>
+      </div>`;
+    }).join('');
+    const dateLabel=date===todayKST()?'오늘':date;
+    return `<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px">${dateLabel}</div>${rowHtml}</div>`;
+  }).join('');
+
+  return anCard(
+    `<span style="font-size:14px">🚛</span> 차량 <strong>${carNum4}</strong> 히스토리 <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px">${rows.length}건</span>`,
+    dateHtml
+  );
+}
+
 function applyPreset(preset){
   __anPeriod=preset; const today=todayKST();
   if(preset==='today'){ __anFrom=today; __anTo=today; }
@@ -557,11 +675,7 @@ async function loadAnalytic(type,force=false){
   document.getElementById('anTypeTabs').innerHTML=AN_TYPES.map(t=>`<button class="tbtn${t.key===__anType?' active':''}" data-type="${t.key}">${t.label}</button>`).join('');
   syncPeriodUI();
   const panel=document.getElementById('analyticPanel');
-  if(__anType==='raw'){
-    destroyCharts();
-    panel.innerHTML='<div class="an-loading" style="color:#888;padding:40px 20px;text-align:center;font-size:14px">⚙️ 원료 분석은 추후 연결 예정입니다.</div>';
-    return;
-  }
+  // raw 타입은 아래 일반 흐름으로 처리 (get_weigh_cache&type=raw)
   const isMultiDay=__anFrom!==__anTo;
   const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
   destroyCharts();
@@ -569,12 +683,14 @@ async function loadAnalytic(type,force=false){
   try{
     if(force||!__anCache[cacheKey]){
       if(__anType==='all'){
-        const types=['product','sub','container'];
+        const types=['product','raw','sub','container'];
         if(isMultiDay){
           const dates=[]; let cur=new Date(__anFrom+'T00:00:00'); const end=new Date(__anTo+'T00:00:00');
           while(cur<=end){ dates.push(cur.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})); cur=new Date(cur.getTime()+86400000); }
           const allResults=await Promise.all(types.map(tp=>Promise.all([
-            api({action:'weekly_summary',type:tp,dateFrom:__anFrom,dateTo:__anTo}),
+            tp==='raw'
+              ? api({action:'get_weigh_cache',type:'raw',dateFrom:__anFrom,dateTo:__anTo})
+              : api({action:'weekly_summary',type:tp,dateFrom:__anFrom,dateTo:__anTo}),
             ...dates.map(dt=>api({action:'get_weigh_cache',type:tp,dateFrom:dt,dateTo:dt})),
           ])));
           types.forEach((tp,ti)=>{
@@ -587,6 +703,10 @@ async function loadAnalytic(type,force=false){
           __anCache[cacheKey]={mode:'all-daily',types,data:Object.fromEntries(types.map((tp,i)=>[tp,results[i]]))};
         }
       } else if(isMultiDay){
+        if(__anType==='raw'){
+          const data=await api({action:'get_weigh_cache',type:'raw',dateFrom:__anFrom,dateTo:__anTo});
+          __anCache[cacheKey]={mode:'daily',data};
+        } else {
         const [summaryData, weighData] = await Promise.all([
           api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
           api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
@@ -610,6 +730,7 @@ async function loadAnalytic(type,force=false){
           if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
         });
         __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
+        } // end raw else
       } else {
         const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
         __anCache[cacheKey] = { mode:'daily', data };
@@ -629,9 +750,9 @@ function refreshAnalytic(){ const k=`${__anType}_${__anFrom}_${__anTo}`; delete 
 // ─── 혼잡도 계산 유틸 ───
 function calcCongestionStacked(rowsByDate, plantFilter) {
   const SLOTS = 144;
-  const TYPES = ['product', 'sub', 'container'];
-  const COLORS = { product: '#06b6d4', sub: '#f97316', container: '#a855f7' };
-  const LABELS = { product: '제품', sub: '부자재', container: '컨테이너' };
+  const TYPES = ['product', 'raw', 'sub', 'container'];
+  const COLORS = { product: '#06b6d4', raw: '#22c55e', sub: '#f97316', container: '#a855f7' };
+  const LABELS = { product: '제품', raw: '원료', sub: '부자재', container: '컨테이너' };
   const stackedTimelines = {};
   TYPES.forEach(t => stackedTimelines[t] = Array(SLOTS).fill(0));
   const daysCount = rowsByDate.length || 1;
@@ -809,7 +930,7 @@ function renderAnalyticAll(cached, plantFilter) {
   const panel = document.getElementById('analyticPanel');
   destroyCharts();
   const isDaily = cached.mode === 'all-daily';
-  const types = cached.types || ['product', 'sub', 'container'];
+  const types = cached.types || ['product', 'raw', 'sub', 'container'];
   let rowsByDate = [];
   if (isDaily) {
     const allRows = types.flatMap(tp => {
@@ -1031,6 +1152,7 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
 
   if(dates&&dates.length){
     const isSub=(type==='sub'||type==='container');
+  const isRaw=(type==='raw');
     const crossMap={}, allItems=new Set();
     dates.forEach((dt,di)=>{
       const k=`${type}_${dt}_${dt}`; const c=__anCache[k]; if(!c) return;
@@ -1180,9 +1302,10 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   // 실시간 혼잡도
   let realtimeHtml = '';
   if(__lastData && __lastData.sections) {
-    const SECTION_MAP = { product:'제품 상차중', sub:'부자재 입차중', container:'컨테이너 입차중' };
+    const SECTION_MAP = { product:'제품 상차중', raw:'원료 하차중', sub:'부자재 입차중', container:'컨테이너 입차중' };
     const CAPA_RT = {
-      product: { '반월': 5, '시화': 7 },
+      product: { '반월': 5, '시화': 10 },
+      raw:     { '반월': 5, '시화': 10 },
       sub:     { '반월': 5, '시화': 5 },
       container:{ '반월': 3, '시화': 3 },
     };
@@ -1238,6 +1361,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
   const cfg=AN_TYPES.find(t=>t.key===type)||AN_TYPES[0];
   const isSub=(type==='sub'||type==='container');
+  const isRaw=(type==='raw');
   plantFilter=plantFilter||'all';
   searchQ=(searchQ||'').replace(/\D/g,'').slice(-4);
 
@@ -1480,7 +1604,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     const inNoteColor=case2?'#94a3b8':'#6366f1';
     const inNoteSpan=inNoteText?`<br><span style="color:${inNoteColor};font-size:9px">${inNoteText}</span>`:'';
     const itemNm=isSub?`<td style="font-size:12px;color:#555">${String(r.ITEMNM||'').trim()||'-'}</td>`:'';
-    const silwei=Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||null;
+    const silwei=isRaw?null:Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||null;
     const silweiDisp=silwei!=null?String(silwei):'-';
     const isFirstSihwa = plantFilter==='all' && r._plant==='시화' && tableAll.indexOf(r)===bw.length;
     const plantBg=r._plant==='반월'?'background:#eff6ff':'background:#f0fdf4';
@@ -1490,20 +1614,22 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     const baseStyleNW=`style="${plantBg};${border};padding:3px 3px;white-space:nowrap"`;
     const durStyle=durWarn?`style="${plantBg};${border};padding:3px 3px;color:#ef4444;font-weight:700"`:`style="${plantBg};${border};padding:3px 3px"`;
     const silStyle=`style="${plantBg};${border};padding:3px 3px;font-weight:500;color:#185FA5"`;
+    const silTd=isRaw?'':`<td ${silStyle}>${silweiDisp}</td>`;
     const rowNo = r._plant==='반월' ? bwNo++ : shNo++;
-    return `<tr><td ${baseStyle}>${rowNo}</td><td ${baseStyle}>${carNum}</td>${itemNm?`<td ${baseStyle}>${String(r.ITEMNM||'').trim()||'-'}</td>`:''}<td ${baseStyleNW}>${fmtTime(r.INTIME)}${inNoteSpan}</td><td ${baseStyleNW}>${fmtTime(r.OUTIME)}</td><td ${durStyle}>${durDisplay}</td><td ${silStyle}>${silweiDisp}</td></tr>`;
+    return `<tr><td ${baseStyle}>${rowNo}</td><td ${baseStyle}>${carNum}</td>${itemNm?`<td ${baseStyle}>${String(r.ITEMNM||'').trim()||'-'}</td>`:''}<td ${baseStyleNW}>${fmtTime(r.INTIME)}${inNoteSpan}</td><td ${baseStyleNW}>${fmtTime(r.OUTIME)}</td><td ${durStyle}>${durDisplay}</td>${silTd}</tr>`;
   }).join('');
 
 
-  const bwSil=bw.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
-  const shSil=sh.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
-  const bwBadge=`<span style="font-size:11px;font-weight:400;padding:1px 8px;border-radius:999px;background:#eff6ff;color:#185FA5">반월 ${bw.length}건 (${bwSil.toLocaleString()}kg)</span>`;
-  const shBadge=`<span style="font-size:11px;font-weight:400;padding:1px 8px;border-radius:999px;background:#f0fdf4;color:#3B6D11">시화 ${sh.length}건 (${shSil.toLocaleString()}kg)</span>`;
+  const bwSil=isRaw?bw.reduce((s,r)=>s+(Number(r.RECCNT||0)),0):bw.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
+  const shSil=isRaw?sh.reduce((s,r)=>s+(Number(r.RECCNT||0)),0):sh.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
+  const silLabel=isRaw?'인수량':'';
+  const bwBadge=`<span style="font-size:11px;font-weight:400;padding:1px 8px;border-radius:999px;background:#eff6ff;color:#185FA5">반월 ${bw.length}건 (${bwSil.toLocaleString()}kg${silLabel})</span>`;
+  const shBadge=`<span style="font-size:11px;font-weight:400;padding:1px 8px;border-radius:999px;background:#f0fdf4;color:#3B6D11">시화 ${sh.length}건 (${shSil.toLocaleString()}kg${silLabel})</span>`;
   const plantBadgesArr=(plantFilter==='all')?[bwBadge,shBadge]:(plantFilter==='banwol')?[bwBadge]:[shBadge];
   const plantBadgesRow=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0 0">${plantBadgesArr.join('')}</div>`;
-  const noteRow=(type==='product')?`<div style="font-size:11px;color:var(--muted);margin-top:4px">※ 전날 입차 또는 06시 이전 입차는 06:00 기준으로 보정 · 체류시간도 동일 적용</div>`:'';
+  const noteRow=(type==='product'||isRaw)?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${type==='product'?'※ 전날 입차 또는 06시 이전 입차는 06:00 기준으로 보정 · 체류시간도 동일 적용':'※ INTIME/OUTIME은 다음주 업데이트 예정'}</div>`:'';
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>전체 데이터 (${all.length}건)`,
-    `${plantBadgesRow}${noteRow}<div style="max-height:320px;overflow-y:auto;margin-top:8px"><table style="table-layout:fixed;width:100%;font-size:11px;border-collapse:collapse"><thead><tr style="border-bottom:1.5px solid #d1d5db"><th style="width:28px;padding:4px 3px">No</th><th style="width:56px;padding:4px 3px">차량</th>${isSub?'<th style="width:64px;padding:4px 3px">품목</th>':''}<th style="width:52px;padding:4px 3px">입차</th><th style="width:46px;padding:4px 3px">출차</th><th style="width:44px;padding:4px 3px">체류(분)</th><th style="width:54px;padding:4px 3px;color:#185FA5">실중량(kg)</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
+    `${plantBadgesRow}${noteRow}<div style="max-height:320px;overflow-y:auto;margin-top:8px"><table style="table-layout:fixed;width:100%;font-size:11px;border-collapse:collapse"><thead><tr style="border-bottom:1.5px solid #d1d5db"><th style="width:28px;padding:4px 3px">No</th><th style="width:56px;padding:4px 3px">차량</th>${isSub?'<th style="width:64px;padding:4px 3px">품목</th>':''}<th style="width:52px;padding:4px 3px">입차</th><th style="width:46px;padding:4px 3px">출차</th><th style="width:44px;padding:4px 3px">체류(분)</th>${isRaw?'':`<th style="width:54px;padding:4px 3px;color:#185FA5">실중량(kg)</th>`}</tr></thead><tbody>${tableRows}</tbody></table></div>`
   );
 }
 
@@ -1551,15 +1677,22 @@ document.getElementById('searchInput').addEventListener('input',e=>{
   const an=document.getElementById('btnViewAnalytic').classList.contains('active');
   if(live) rerenderCache();
   else if(an){
-    const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
-    const cached=__anCache[cacheKey];
-    if(cached&&cached.mode==='daily'){
-      destroyCharts();
-      document.getElementById('analyticPanel').innerHTML='';
-      renderAnalyticDaily(cached.data,__anType,document.getElementById('plantFilter').value,e.target.value);
+    const q=(e.target.value||'').replace(/\D/g,'').slice(-4);
+    const isFour=/^\d{4}$/.test(q);
+    const panel=document.getElementById('analyticPanel');
+    // 기존 히스토리 카드 제거
+    const existing=document.getElementById('carHistoryCard');
+    if(existing) existing.remove();
+    if(isFour){
+      const histHtml=renderCarHistory(q,__anCache);
+      if(histHtml){
+        const div=document.createElement('div');
+        div.id='carHistoryCard';
+        div.innerHTML=histHtml;
+        panel.insertBefore(div,panel.firstChild);
+      }
     }
   }
-  else if(__lastWeigh) renderWeigh(__lastWeigh);
 });
 document.getElementById('watchAddBtn').addEventListener('click',()=>{
   const inp=document.getElementById('watchInput'); addWatch(inp.value).then(ok=>{if(ok)inp.value='';}); inp.focus();
