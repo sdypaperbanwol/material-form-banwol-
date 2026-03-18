@@ -238,8 +238,8 @@ const SLOT_LABELS_FULL = Array.from({length:144}, (_,i) => {
 const LS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.q' };
 
 const CAPA_MAP = {
-  '반월': { '제품 상차중': 8, '원료 하차중': 5, '부자재 입차중': 5, '컨테이너 입차중': 3 },
-  '시화': { '제품 상차중': 9, '원료 하차중': 12, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+  '반월': { '제품 상차중': 5, '원료 하차중': 5, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+  '시화': { '제품 상차중': 7, '원료 하차중': 12, '부자재 입차중': 5, '컨테이너 입차중': 3 },
 };
 
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):''; }
@@ -1186,7 +1186,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   if(__lastData && __lastData.sections) {
     const SECTION_MAP = { product:'제품 상차중', sub:'부자재 입차중', container:'컨테이너 입차중' };
     const CAPA_RT = {
-      product: { '반월': 8, '시화': 9 },
+      product: { '반월': 5, '시화': 7 },
       sub:     { '반월': 5, '시화': 5 },
       container:{ '반월': 3, '시화': 3 },
     };
