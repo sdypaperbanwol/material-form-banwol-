@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>공장 내 차량 현황</title>
   <link rel="icon" href="data:,">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -19,7 +19,7 @@
   html,body{ height:100% }
   body{ margin:0; background:var(--bg); color:var(--ink);
     font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif; }
-  .wrap{ max-width:980px; margin:24px auto; padding:0 16px }
+  .wrap{ max-width:980px; margin:24px auto; padding:0 16px 60px; }
   .header{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
   .title{ margin:0; font-size:20px; letter-spacing:-.2px }
@@ -56,7 +56,7 @@
   table{ width:100%; border-collapse:separate; border-spacing:0 }
   thead th{ position:sticky; top:0; background:#fafbfd; border-bottom:1px solid var(--line);
     color:#333; font-weight:600; z-index:10; }
-  th,td{ padding:8px 10px; text-align:center }
+  th,td{ padding:8px 10px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
   tbody tr:nth-child(odd){ background:#fcfcfe }
   tbody td{ border-bottom:1px solid #f1f1f4 }
   .empty{ padding:18px 14px; color:var(--muted) }
@@ -107,7 +107,6 @@
     .grid{ grid-template-columns:1fr 1fr }
     .card{ box-shadow:none; border:1px solid #eee }
   }
-  /* ── 분석 탭 전용 ── */
   #analyticPanel{ display:none }
   .kpi-row{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:14px }
   .kpi{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
@@ -127,13 +126,13 @@
   .chart-wrap{ position:relative; height:200px }
   .chart-wrap.tall{ height:240px }
   .an-loading{ text-align:center; padding:40px; color:var(--muted); font-size:13px }
-  /* 기간 선택 바 */
   .period-bar{
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    display:flex; flex-direction:column; gap:8px;
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     box-shadow:var(--shadow); padding:12px 16px; margin-bottom:14px;
   }
-  .period-bar label{ font-size:12px; color:var(--muted); flex-shrink:0 }
+  .period-bar-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .period-bar label{ font-size:12px; color:var(--muted); flex-shrink:0; min-width:28px }
   .period-presets{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; flex-shrink:0 }
   .period-presets .pbtn{ border:0; background:#fff; padding:7px 13px; font-size:13px; cursor:pointer }
   .period-presets .pbtn+.pbtn{ border-left:1px solid var(--line) }
@@ -176,7 +175,6 @@
       </select>
       <div class="view-toggle" role="tablist">
         <button class="tbtn active" id="btnViewLive" role="tab">입차 조회</button>
-        <button class="tbtn" id="btnViewWeigh" role="tab">계근 조회(제품)</button>
         <button class="tbtn" id="btnViewAnalytic" role="tab">📊 분석</button>
       </div>
       <input id="searchInput" class="input" placeholder="차량번호 검색" />
@@ -203,20 +201,23 @@
   <section class="grid" id="sections"></section>
 
   <div class="period-bar" id="periodBar" style="display:none">
-    <label>기간</label>
-    <div class="period-presets">
-      <button class="pbtn active" data-preset="today">오늘</button>
-      <button class="pbtn" data-preset="week">이번주</button>
-      <button class="pbtn" data-preset="lastweek">저번주</button>
-      <button class="pbtn" data-preset="custom">직접입력</button>
+    <div class="period-bar-row">
+      <label>기간</label>
+      <div class="period-presets">
+        <button class="pbtn active" data-preset="today">오늘</button>
+        <button class="pbtn" data-preset="week">이번주</button>
+        <button class="pbtn" data-preset="lastweek">저번주</button>
+        <button class="pbtn" data-preset="custom">직접입력</button>
+      </div>
+      <div class="period-custom" id="periodCustom" style="display:none">
+        <input type="month" id="anYearMonth" />
+        <button class="period-apply" id="anApplyBtn">조회</button>
+      </div>
     </div>
-   <div class="period-custom" id="periodCustom" style="display:none">
-  <input type="month" id="anYearMonth" />
-  <button class="period-apply" id="anApplyBtn">조회</button>
-</div>
-    <span class="period-badge" id="anPeriodBadge"></span>
-    <div class="view-toggle" style="margin-left:auto" id="anTypeTabs"></div>
-    <button class="btn" id="anRefreshBtn">🔄</button>
+    <div class="period-bar-row">
+      <label>품목</label>
+      <div class="view-toggle" id="anTypeTabs"></div>
+    </div>
   </div>
 
   <section id="analyticPanel"></section>
@@ -225,10 +226,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════
-//  설정
-// ═══════════════════════════════════════════
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxZyZmlDV2FwCzXmiTuiNfb-tSmZF4N24w3XlntKJkmkjzMggTbcbFqcs1sHNVBh_Z5/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbydOiP_pAwL2MOtXl9X1LmIP94AU5T64XchXT9B41jpF4-3XJ0fuX_2pNqdb47THfbk_Q/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
@@ -243,13 +241,10 @@ const SLOT_LABELS_FULL = Array.from({length:144}, (_,i) => {
 const LS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.q' };
 
 const CAPA_MAP = {
-  '반월': { '제품 상차중': 8, '원료 하차중': 5, '부자재 입차중': 5, '컨테이너 입차중': 3 },
-  '시화': { '제품 상차중': 9, '원료 하차중': 12, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+  '반월': { '제품 상차중': 5, '원료 하차중': 5, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+  '시화': { '제품 상차중': 7, '원료 하차중': 12, '부자재 입차중': 5, '컨테이너 입차중': 3 },
 };
 
-// ═══════════════════════════════════════════
-//  유틸
-// ═══════════════════════════════════════════
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):''; }
 function isMonoDigit(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4&&d.split('').every(c=>c===d[0]); }
 function fmtTime(raw){
@@ -284,34 +279,25 @@ function nowKSTMin(){
   const kst=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
   return kst.getHours()*60+kst.getMinutes();
 }
-
-// ★ 변경: isFutureTime 제거 → isOvernightEntry 로 교체
-// 전날 입차 판단: 출차시간 < 입차시간 (역전된 경우)
 function isOvernightEntry(inT, outT){
   const inM = timeToMin(inT), outM = timeToMin(outT);
   if(inM == null || outM == null) return false;
   return outM < inM;
 }
-
-// ★ 제품 타입 체류시간 보정: 06:00 이전 입차는 06:00 기준으로 계산
-const WORK_START_MIN = 6 * 60; // 06:00 = 360분
+const WORK_START_MIN = 6 * 60;
 function effectiveDurMin(inT, outT, type){
   if(type !== 'product') return diffMin(inT, outT);
   const inM = timeToMin(inT), outM = timeToMin(outT);
   if(inM == null || outM == null) return null;
-  // 전날입차(역전): 출차시각 - 06:00 으로 계산
   if(outM < inM){
-    if(outM <= WORK_START_MIN) return null; // 06시 전 출차 → 제외
-    return outM - WORK_START_MIN;           // 출차시각 - 06:00
+    if(outM <= WORK_START_MIN) return null;
+    return outM - WORK_START_MIN;
   }
-  // 06시 이전 입차 → 06시 이전 출차: 실질 작업 없음, 제외
   if(outM <= WORK_START_MIN) return null;
-  // 입차시간이 06:00 이전이면 06:00 기준으로 보정 (새벽 대기시간 제거)
   const effectiveIn = inM < WORK_START_MIN ? WORK_START_MIN : inM;
   const dur = outM - effectiveIn;
   return dur > 0 ? dur : null;
 }
-
 function todayKST(){
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -335,10 +321,7 @@ function lastWeekRange(){
   const mon = new Date(monStr + 'T00:00:00Z');
   const lastMon = new Date(mon.getTime() - 7 * 86400000);
   const lastSun = new Date(lastMon.getTime() + 6 * 86400000);
-  return {
-    from: lastMon.toISOString().slice(0, 10),
-    to:   lastSun.toISOString().slice(0, 10)
-  };
+  return { from: lastMon.toISOString().slice(0, 10), to: lastSun.toISOString().slice(0, 10) };
 }
 function dateToDowLabel(dateStr){
   const dow = ['일','월','화','수','목','금','토'];
@@ -348,9 +331,7 @@ function dateToDowLabel(dateStr){
   return `${dow[d.getUTCDay()]}(${mm}/${dd})`;
 }
 
-// ═══════════════════════════════════════════
-//  감시 차량
-// ═══════════════════════════════════════════
+// ═══ 감시 차량 ═══
 let watchList={};
 async function fetchWatch(){
   try{
@@ -402,9 +383,7 @@ function syncWatch(allCars){
   }
 }
 
-// ═══════════════════════════════════════════
-//  입차 조회 탭
-// ═══════════════════════════════════════════
+// ═══ 입차 조회 탭 ═══
 let __searchCount=0, __lastWeigh=null, __lastData=null;
 const elUpdated=document.getElementById('updated');
 const elSections=document.getElementById('sections');
@@ -421,7 +400,6 @@ function render(data){
   const RIGHT=['원료 하차중','원료 대기'];
   const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
   const allCars=[];
-
   const buildSec=sec=>{
     let rows=[];
     sec.groups.forEach(g=>{
@@ -442,7 +420,6 @@ function render(data){
         <td>${fmtTime(r.time)}</td><td>${r.plant}</td>
       </tr>`;
     }).join(''):'<tr><td colspan="4" class="empty">(데이터 없음)</td></tr>';
-
     const bc=rows.filter(r=>r.plant==='반월').length;
     const sc=rows.filter(r=>r.plant==='시화').length;
     const capaB=CAPA_MAP['반월'][sec.title];
@@ -450,7 +427,6 @@ function render(data){
     const pctB=capaB?Math.round(bc/capaB*100):null;
     const pctS=capaS?Math.round(sc/capaS*100):null;
     const summaryStr=`반월 ${bc}${pctB!=null?' ('+pctB+'%)':''} · 시화 ${sc}${pctS!=null?' ('+pctS+'%)':''}`;
-
     return `<article class="card">
       <div class="stripe ${stripeClass(sec.color)}"></div>
       <div class="head"><h3>${sec.title}</h3>
@@ -465,7 +441,6 @@ function render(data){
       </div>
     </article>`;
   };
-
   elSections.innerHTML=`
     <div class="col">${LEFT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>
     <div class="col">${RIGHT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>`;
@@ -495,9 +470,7 @@ function anCard(title,bodyHtml,style=''){
   </div>`;
 }
 
-// ═══════════════════════════════════════════
-//  계근 조회 탭
-// ═══════════════════════════════════════════
+// ═══ 계근 조회 탭 ═══
 function buildWeighTable(title,list,q){
   const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
   const filtered=(list||[]).filter(r=>!q||(isFour?last4(r.CARNUM||'')===dqq:(r.CARNUM||'').includes(q)));
@@ -528,15 +501,14 @@ function renderWeigh(payload){
   syncWatch([...(payload.banwol||[]),...(payload.sihwa||[])].map(r=>r.CARNUM||''));
 }
 
-// ═══════════════════════════════════════════
-//  분석 탭 상태
-// ═══════════════════════════════════════════
+// ═══ 분석 탭 상태 ═══
 let __anCharts={}, __anType='product', __anCache={}, __anPeriod='today';
 let __anFrom=todayKST(), __anTo=todayKST();
 
 const AN_TYPES=[
   {key:'all',label:'전체',dc:'#6366f1'},
   {key:'product',label:'제품',dc:'#06b6d4'},
+  {key:'raw',label:'원료',dc:'#22c55e'},
   {key:'sub',label:'부자재',dc:'#f97316'},
   {key:'container',label:'컨테이너',dc:'#a855f7'},
 ];
@@ -574,7 +546,7 @@ function initPeriodBarEvents(){
     __anPeriod='custom'; syncPeriodUI();
     loadAnalytic(__anType,true);
   });
-  document.getElementById('anRefreshBtn').addEventListener('click',refreshAnalytic);
+  
   document.getElementById('anTypeTabs').addEventListener('click',e=>{
     const btn=e.target.closest('.tbtn'); if(!btn) return; loadAnalytic(btn.dataset.type,true);
   });
@@ -585,6 +557,11 @@ async function loadAnalytic(type,force=false){
   document.getElementById('anTypeTabs').innerHTML=AN_TYPES.map(t=>`<button class="tbtn${t.key===__anType?' active':''}" data-type="${t.key}">${t.label}</button>`).join('');
   syncPeriodUI();
   const panel=document.getElementById('analyticPanel');
+  if(__anType==='raw'){
+    destroyCharts();
+    panel.innerHTML='<div class="an-loading" style="color:#888;padding:40px 20px;text-align:center;font-size:14px">⚙️ 원료 분석은 추후 연결 예정입니다.</div>';
+    return;
+  }
   const isMultiDay=__anFrom!==__anTo;
   const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
   destroyCharts();
@@ -618,17 +595,13 @@ async function loadAnalytic(type,force=false){
         const bwByDate = {}, shByDate = {};
         (weighData.banwol || []).forEach(r => {
           const raw = String(r.WEIDAT || '');
-          const d = raw.length === 8
-            ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
-            : raw;
+          const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
           if(!bwByDate[d]) bwByDate[d]=[];
           bwByDate[d].push(r);
         });
         (weighData.sihwa || []).forEach(r => {
           const raw = String(r.WEIDAT || '');
-          const d = raw.length === 8
-            ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`
-            : raw;
+          const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
           if(!shByDate[d]) shByDate[d]=[];
           shByDate[d].push(r);
         });
@@ -653,18 +626,15 @@ async function loadAnalytic(type,force=false){
 }
 function refreshAnalytic(){ const k=`${__anType}_${__anFrom}_${__anTo}`; delete __anCache[k]; loadAnalytic(__anType,true); }
 
-// ─── 혼잡도 계산 유틸 ──────────────────────────────────────────────────────
+// ─── 혼잡도 계산 유틸 ───
 function calcCongestionStacked(rowsByDate, plantFilter) {
   const SLOTS = 144;
   const TYPES = ['product', 'sub', 'container'];
   const COLORS = { product: '#06b6d4', sub: '#f97316', container: '#a855f7' };
   const LABELS = { product: '제품', sub: '부자재', container: '컨테이너' };
-
   const stackedTimelines = {};
   TYPES.forEach(t => stackedTimelines[t] = Array(SLOTS).fill(0));
-
   const daysCount = rowsByDate.length || 1;
-
   rowsByDate.forEach(({ rows }) => {
     const filtered = rows.filter(r =>
       plantFilter === 'all' || (plantFilter === 'banwol' && r._plant === '반월') || (plantFilter === 'sihwa' && r._plant === '시화')
@@ -673,14 +643,11 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
       const inM = timeToMin(r.INTIME), outM = timeToMin(r.OUTIME);
       if (inM == null) return;
       const typeKey = r._type || 'product';
-      const WORK_SLOT = WORK_START_MIN / 10; // 36슬롯 = 06:00
+      const WORK_SLOT = WORK_START_MIN / 10;
       const isOvernight = outM != null && outM < inM;
-
-      // 전날입차 처리
       if (isOvernight) {
-        if (typeKey !== 'product') return; // 비제품 전날입차: 제외
-        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
-        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        if (typeKey !== 'product') return;
+        if (outM == null || outM <= WORK_START_MIN) return;
         const start = WORK_SLOT;
         const end = Math.ceil(outM / 10);
         if (stackedTimelines[typeKey]) {
@@ -688,8 +655,6 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
         }
         return;
       }
-
-      // 일반입차: 제품은 06시 이전 슬롯 제외
       const rawStart = Math.floor(inM / 10);
       const start = (typeKey === 'product') ? Math.max(rawStart, WORK_SLOT) : rawStart;
       const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
@@ -699,29 +664,18 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
       }
     });
   });
-
   if (daysCount > 1) {
     TYPES.forEach(t => {
       stackedTimelines[t] = stackedTimelines[t].map(v => Math.round(v / daysCount * 10) / 10);
     });
   }
-
   const datasets = TYPES.map(t => ({
-    label: LABELS[t],
-    data: stackedTimelines[t],
-    backgroundColor: COLORS[t],
-    stack: 'stack0',
-    borderRadius: 2
+    label: LABELS[t], data: stackedTimelines[t], backgroundColor: COLORS[t], stack: 'stack0', borderRadius: 2
   }));
-
-  const totalTimeline = Array(SLOTS).fill(0).map((_, i) =>
-    TYPES.reduce((sum, t) => sum + stackedTimelines[t][i], 0)
-  );
-
+  const totalTimeline = Array(SLOTS).fill(0).map((_, i) => TYPES.reduce((sum, t) => sum + stackedTimelines[t][i], 0));
   const sorted = totalTimeline.filter(v => v > 0).sort((a, b) => a - b);
   const rawCapa = sorted[Math.floor(sorted.length * 0.95)] || 5;
   const capa = Math.max(5, Math.ceil(rawCapa / 5) * 5);
-
   return { datasets, totalTimeline, capa };
 }
 
@@ -729,8 +683,7 @@ function calcCongestion(rowsByDate, plantFilter, type) {
   const SLOTS = 144;
   const daysCount = rowsByDate.length || 1;
   const globalTimeline = Array(SLOTS).fill(0);
-  const WORK_SLOT = WORK_START_MIN / 10; // 36 = 06:00
-
+  const WORK_SLOT = WORK_START_MIN / 10;
   const byDate = rowsByDate.map(({ date, rows }) => {
     const timeline = Array(SLOTS).fill(0);
     const filtered = rows.filter(r =>
@@ -743,36 +696,28 @@ function calcCongestion(rowsByDate, plantFilter, type) {
       if (inM == null) return;
       const isProduct = (type === 'product') || (r._type === 'product');
       const isOvernight = outM != null && outM < inM;
-
-      // 전날입차 처리
       if (isOvernight) {
-        if (!isProduct) return; // 비제품 전날입차: 제외
-        if (outM == null || outM <= WORK_START_MIN) return; // 06시 전 출차: 제외
-        // 제품 전날입차: 06:00 ~ 출차시각 슬롯만 채움
+        if (!isProduct) return;
+        if (outM == null || outM <= WORK_START_MIN) return;
         const start = WORK_SLOT;
         const end = Math.ceil(outM / 10);
         for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
         return;
       }
-
-      // 일반입차
       const rawStart = Math.floor(inM / 10);
-      // 제품: 06시 이전 슬롯 제외
       const start = isProduct ? Math.max(rawStart, WORK_SLOT) : rawStart;
-      const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
+      const nowSlot = Math.floor(nowKSTMin() / 10);
+      const end = outM != null && outM > inM ? Math.ceil(outM / 10) : Math.min(nowSlot + 1, SLOTS);
       if (start >= end) return;
       for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
     });
     timeline.forEach((v, i) => globalTimeline[i] += v);
     return { date, timeline };
   });
-
   globalTimeline.forEach((v, i) => globalTimeline[i] = Math.round(v / daysCount * 10) / 10);
-
   const sorted = globalTimeline.filter(v => v > 0).sort((a, b) => a - b);
   const rawCapa = sorted[Math.floor(sorted.length * 0.95)] || 5;
   const capa = Math.max(5, Math.ceil(rawCapa / 5) * 5);
-
   return { byDate, capa, globalTimeline };
 }
 
@@ -827,7 +772,6 @@ function drawCongChart(canvasId,timeline,capa,peakSlot,peakVal,peakPct){
         x:{stacked:true,ticks:{color:'#777',font:{size:10},maxRotation:0,callback:(v,i)=>SLOT_LABELS[i]||null}},
         y:{stacked:true,beginAtZero:true,ticks:{color:'#777',font:{size:10}}},
       },
-      plugins:{}
     },
     plugins:[{id:'peakCong',afterDatasetsDraw(chart){
       if(!peakVal) return;
@@ -837,6 +781,7 @@ function drawCongChart(canvasId,timeline,capa,peakSlot,peakVal,peakPct){
     }}]
   });
 }
+
 function drawCongChartStacked(canvasId, datasets, capa) {
   const SLOTS = 144;
   if (__anCharts[canvasId]) __anCharts[canvasId].destroy();
@@ -846,21 +791,11 @@ function drawCongChartStacked(canvasId, datasets, capa) {
       labels: SLOT_LABELS,
       datasets: [
         ...datasets,
-        {
-          type: 'line',
-          label: `CAPA (${capa}대)`,
-          data: Array(SLOTS).fill(capa),
-          borderColor: 'rgba(239,68,68,0.8)',
-          borderWidth: 2,
-          borderDash: [6, 3],
-          pointRadius: 0,
-          fill: false
-        }
+        { type:'line', label:`CAPA (${capa}대)`, data:Array(SLOTS).fill(capa), borderColor:'rgba(239,68,68,0.8)', borderWidth:2, borderDash:[6,3], pointRadius:0, fill:false }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       scales: {
         x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 0, callback: (v, i) => SLOT_LABELS[i] } },
         y: { stacked: true, beginAtZero: true, ticks: { font: { size: 10 } } }
@@ -869,13 +804,12 @@ function drawCongChartStacked(canvasId, datasets, capa) {
   });
 }
 
-// ─── 전체 타입 렌더 ────────────────────────────────────────────────────────
+// ─── 전체 타입 렌더 ───
 function renderAnalyticAll(cached, plantFilter) {
   const panel = document.getElementById('analyticPanel');
   destroyCharts();
   const isDaily = cached.mode === 'all-daily';
   const types = cached.types || ['product', 'sub', 'container'];
-
   let rowsByDate = [];
   if (isDaily) {
     const allRows = types.flatMap(tp => {
@@ -898,16 +832,14 @@ function renderAnalyticAll(cached, plantFilter) {
       return { date: dt, rows };
     });
   }
-
   const { datasets, totalTimeline, capa } = calcCongestionStacked(rowsByDate, plantFilter);
   const peakIdx = totalTimeline.indexOf(Math.max(...totalTimeline));
   const peakTime = SLOT_LABELS_FULL[peakIdx];
   const totalRows = rowsByDate.reduce((sum, d) => sum + d.rows.length, 0);
   const avgAll = rowsByDate.length > 0 ? Math.round(totalRows / rowsByDate.length) : 0;
   const { peakPct, html: congHtml } = congKpiHtml(totalTimeline, capa);
-
   panel.innerHTML = `
-    <div style="margin-bottom:15px; padding:15px; background:#fff; border-radius:12px; border:1px solid #e6e6e6; font-size:13px; line-height:1.6;">
+    <div style="margin-bottom:15px;padding:15px;background:#fff;border-radius:12px;border:1px solid #e6e6e6;font-size:13px;line-height:1.6;">
       📢 <b>분석 요약:</b> 기간 내 총 <b>${totalRows.toLocaleString()}건</b>의 차량이 입차했습니다.<br>
       가장 혼잡한 시간대는 <b>${peakTime}</b>(혼잡도 ${peakPct}%)이며, 일평균 <b>${avgAll}건</b>이 처리되었습니다.
     </div>
@@ -918,18 +850,15 @@ function renderAnalyticAll(cached, plantFilter) {
         <div class="kpi-sub">제품+부자재+컨테이너</div>
       </div>
       ${congHtml}
-    </div>
-  `;
-
+    </div>`;
   panel.innerHTML += anCard(
     `<span class="dot" style="--dc:#6366f1"></span>시간대별 누적 점유 현황`,
     `<div class="chart-wrap tall"><canvas id="chartCongestion"></canvas></div>`
   );
-
   drawCongChartStacked('chartCongestion', datasets, capa);
 }
 
-// ─── 주간 분석 렌더 ──────────────────────────────────────────────────────
+// ─── 주간 분석 렌더 ───
 function renderAnalyticWeekly(data,dates,type,plantFilter){
   const panel=document.getElementById('analyticPanel');
   panel.innerHTML='';
@@ -947,14 +876,14 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
   const diffBadge=diffPct==null?'':diffPct>0?`<span class="diff-badge up">▲ ${diffPct}%</span>`:diffPct<0?`<span class="diff-badge down">▼ ${Math.abs(diffPct)}%</span>`:`<span class="diff-badge flat">→ 0%</span>`;
   destroyCharts();
 
-  const rowsByDate=dates.map((dt,di)=>{
+  const rowsByDate=dates.map((dt)=>{
     const k=`${type}_${dt}_${dt}`; const c=__anCache[k];
     if(!c) return {date:dt,rows:[]};
-    const rows=[...(c.data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(c.data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
+    const rows=[...(c.data.banwol||[]).map(r=>({...r,_plant:'반월',_type:type})),...(c.data.sihwa||[]).map(r=>({...r,_plant:'시화',_type:type}))];
     return {date:dt,rows};
   });
   const {byDate,capa,globalTimeline}=calcCongestion(rowsByDate,plantFilter,type);
-  const {peakSlot,peakVal,peakPct,html:congHtml}=congKpiHtml(globalTimeline,capa);
+  const {peakSlot,peakVal,peakPct,dangerH,warningH}=congKpiHtml(globalTimeline,capa);
 
   const dowHTML=daily.map(d=>{
     const isToday=d.date===today; const bw=d.banwol.count,sh=d.sihwa.count,tot=cnt(d);
@@ -972,32 +901,121 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     </tr>`;
   }).join('');
 
+  const congColorW = peakPct>=100?'#ef4444':peakPct>=80?'#f59e0b':'#10b981';
+  const weekKpiItems = [
+    { label:'기간 총 건수', val:`${totalCnt.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span>${diffBadge}`, sub:`${data.dateFrom} ~ ${data.dateTo}`, color:cfg.dc },
+    { label:'일 평균', val:`${avgCnt}<span style="font-size:14px;font-weight:400">건</span>`, sub:`${daily.length}일 기준`, color:cfg.dc },
+    { label:'기간 총 중량', val:`${totalSil>=1000?(totalSil/1000).toFixed(1):''+totalSil}<span style="font-size:14px;font-weight:400">${totalSil>=1000?'톤':'kg'}</span>`, sub:'실중량 합계', color:'#10b981' },
+    { label:'피크일', val:`<span style="font-size:16px;color:#f59e0b">${peakDay?.date?dateToDowLabel(peakDay.date):'-'}</span>`, sub:`${peakDay?cnt(peakDay)+'건':''}`, color:'#f59e0b' },
+  ];
   panel.innerHTML+=`
-    <div class="kpi-row">
-      <div class="kpi" style="--kc:${cfg.dc}">
-        <div class="kpi-label">기간 총 건수</div>
-        <div class="kpi-val">${totalCnt.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span>${diffBadge}</div>
-        <div class="kpi-sub">${data.dateFrom} ~ ${data.dateTo}</div>
-      </div>
-      <div class="kpi" style="--kc:${cfg.dc}">
-        <div class="kpi-label">일 평균</div>
-        <div class="kpi-val">${avgCnt}<span style="font-size:14px;font-weight:400">건</span></div>
-        <div class="kpi-sub">${daily.length}일 기준</div>
-      </div>
-      <div class="kpi" style="--kc:#10b981">
-        <div class="kpi-label">기간 총 중량</div>
-        <div class="kpi-val">${totalSil>=1000?(totalSil/1000).toFixed(1):''+totalSil}<span style="font-size:14px;font-weight:400">${totalSil>=1000?'톤':'kg'}</span></div>
-        <div class="kpi-sub">실중량 합계</div>
-      </div>
-      <div class="kpi" style="--kc:#f59e0b">
-        <div class="kpi-label">피크일</div>
-        <div class="kpi-val" style="font-size:16px">${peakDay?.date?dateToDowLabel(peakDay.date):'-'}</div>
-        <div class="kpi-sub">${peakDay?cnt(peakDay)+'건':''}</div>
-      </div>
-      ${congHtml}
-    </div>`;
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;margin-bottom:14px;overflow:hidden">
+    ${weekKpiItems.map((k,i)=>`
+    <div style="flex:1;padding:14px 18px;${i>0?'border-left:1px solid var(--line)':''}">
+      <div style="height:3px;background:${k.color};border-radius:2px;margin-bottom:10px"></div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${k.label}</div>
+      <div style="font-size:22px;font-weight:700;line-height:1.1">${k.val}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${k.sub}</div>
+    </div>`).join('')}
+  </div>`;
 
-  panel.innerHTML+=anCard(`<span class="dot" style="--dc:#6366f1"></span>일평균 시간대별 동시 점유 차량 수`,'<div class="chart-wrap tall"><canvas id="chartCongWeekly"></canvas></div>');
+  const bwDurRows = rowsByDate.flatMap(d=>d.rows.filter(r=>r._plant==='반월'));
+  const shDurRows = rowsByDate.flatMap(d=>d.rows.filter(r=>r._plant==='시화'));
+  const allDurRows = rowsByDate.flatMap(d=>d.rows);
+  function weekAvgDur(list){
+    const durs=list.map(r=>effectiveDurMin(r.INTIME,r.OUTIME,type)).filter(v=>v!=null&&v>0&&v<=480);
+    return durs.length?Math.round(durs.reduce((s,v)=>s+v,0)/durs.length):0;
+  }
+  const wAvgAll=weekAvgDur(allDurRows), wAvgBw=weekAvgDur(bwDurRows), wAvgSh=weekAvgDur(shDurRows);
+
+  const wHourArr=Array(24).fill(0);
+  for(let i=0;i<144;i++) wHourArr[Math.floor(i/6)]=Math.max(wHourArr[Math.floor(i/6)],globalTimeline[i]);
+
+  const {byDate:bwCBD,capa:bwCapaW}=calcCongestion(rowsByDate.map(d=>({...d,rows:d.rows.filter(r=>r._plant==='반월')})),'all',type);
+  const {byDate:shCBD,capa:shCapaW}=calcCongestion(rowsByDate.map(d=>({...d,rows:d.rows.filter(r=>r._plant==='시화')})),'all',type);
+  const allCapaW=capa;
+  const bwHourArrW=Array(24).fill(0), shHourArrW=Array(24).fill(0);
+  bwCBD.forEach(d=>{ d.timeline.forEach((v,i)=>{ bwHourArrW[Math.floor(i/6)]=Math.max(bwHourArrW[Math.floor(i/6)],v); }); });
+  shCBD.forEach(d=>{ d.timeline.forEach((v,i)=>{ shHourArrW[Math.floor(i/6)]=Math.max(shHourArrW[Math.floor(i/6)],v); }); });
+
+  const showMultiW=plantFilter==='all';
+  const wDurList=plantFilter==='all'
+    ? [['합계',wAvgAll,'#378ADD'],['반월',wAvgBw,'#3B82F6'],['시화',wAvgSh,'#10B981']]
+    : plantFilter==='banwol'?[['반월',wAvgBw,'#3B82F6']]:[['시화',wAvgSh,'#10B981']];
+
+  panel.innerHTML+=`<div class="an-card" style="margin-bottom:14px">
+  <div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:10px">일평균 체류시간</div>
+  <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:4px">
+    ${wDurList.map(([lbl,val,color])=>{
+      const maxVal=Math.max(wAvgAll,wAvgBw,wAvgSh,1);
+      const pct=Math.round(val/maxVal*100);
+      const badge=val>=90?['혼잡','#FCEBEB','#A32D2D']:val>=60?['보통','#FAEEDA','#854F0B']:['원활','#EAF3DE','#3B6D11'];
+      return `<div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--muted);width:36px;flex-shrink:0">${lbl}</span>
+        <div style="flex:1;background:#ebebeb;border-radius:99px;height:8px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;border-radius:99px;background:${color}"></div>
+        </div>
+        <span style="font-size:12px;font-weight:600;min-width:32px;text-align:right">${val}분</span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:99px;flex-shrink:0;background:${badge[1]};color:${badge[2]}">${badge[0]}</span>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:14px">출차 완료된 차량 기준 · 전날입차 제외</div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+    <div style="font-size:12px;color:var(--muted);font-weight:500">시간대별 혼잡도 (일평균)</div>
+    <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#f0f0f0;color:#888">출차 완료 기준</span>
+  </div>
+  <div style="font-size:11px;color:#888;background:#f5f5f5;border-radius:8px;padding:5px 10px;display:inline-block;margin-bottom:10px">출차 완료된 차량 데이터 기준 · 실시간 반영 아님</div>
+  <div id="wHeatmapContainer"></div>
+  <div style="position:relative;height:16px;margin-top:4px" id="weekHeatmapTicks"></div>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+    <span style="font-size:11px;color:var(--muted)">원활</span>
+    <div style="width:14px;height:8px;border-radius:2px;background:#C0DD97"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#97C459"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#FAC775"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#EF9F27"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#E24B4A"></div>
+    <span style="font-size:11px;color:var(--muted)">혼잡</span>
+  </div>
+</div>`;
+
+  function buildHeatmapRowW(containerId, label, arr, capVal) {
+    const wrap = document.getElementById(containerId); if(!wrap) return;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:4px';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px;color:var(--muted);width:28px;flex-shrink:0';
+    lbl.textContent = label; row.appendChild(lbl);
+    const cells = document.createElement('div');
+    cells.style.cssText = 'display:flex;gap:2px;flex:1';
+    arr.forEach((v,h) => {
+      const r = v/capVal;
+      const color = r===0?'#e8e8e8':r<0.4?'#C0DD97':r<0.6?'#97C459':r<0.8?'#FAC775':r<1.0?'#EF9F27':'#E24B4A';
+      const cell = document.createElement('div');
+      cell.style.cssText = `flex:1;height:20px;border-radius:2px;background:${color};cursor:default`;
+      cell.dataset.h=h; cell.dataset.v=v; cell.dataset.r=Math.round(r*100);
+      cell.addEventListener('mouseenter',()=>{ const tip=document.createElement('div'); tip.id='hm-tip'; tip.style.cssText='position:fixed;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:5px 8px;font-size:11px;white-space:nowrap;z-index:10000;color:#222;pointer-events:none'; tip.textContent=`${String(h).padStart(2,'0')}시 · 일평균 ${v}대 (${Math.round(r*100)}%)`; document.body.appendChild(tip); });
+      cell.addEventListener('mousemove',e=>{ const tip=document.getElementById('hm-tip'); if(!tip)return; tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY-28)+'px'; });
+      cell.addEventListener('mouseleave',()=>document.getElementById('hm-tip')?.remove());
+      cells.appendChild(cell);
+    });
+    row.appendChild(cells); wrap.appendChild(row);
+  }
+
+  const wHeatmapContainer = document.getElementById('wHeatmapContainer');
+  if(wHeatmapContainer) {
+    if(showMultiW) {
+      buildHeatmapRowW('wHeatmapContainer','반월', bwHourArrW, bwCapaW);
+      buildHeatmapRowW('wHeatmapContainer','시화', shHourArrW, shCapaW);
+      buildHeatmapRowW('wHeatmapContainer','합계', wHourArr, allCapaW);
+    } else {
+      buildHeatmapRowW('wHeatmapContainer','', wHourArr, capa);
+    }
+  }
+
+  const weekTicks=document.getElementById('weekHeatmapTicks');
+  if(weekTicks){ Array.from({length:24},(_,h)=>{ const s=document.createElement('span'); s.style.cssText=`font-size:9px;color:#bbb;position:absolute;left:${h/23*100}%;transform:translateX(-50%)`; s.textContent=String(h); weekTicks.appendChild(s); }); }
+
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>일별 입차 건수`,'<div class="chart-wrap tall"><canvas id="chartWeekBar"></canvas></div>');
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:#6366f1"></span>날짜별 상세`,
     `<div style="overflow-x:auto"><table class="dow-table">
@@ -1023,7 +1041,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
         allItems.add(nm); if(!crossMap[nm]) crossMap[nm]={};
         if(!crossMap[nm][di]) crossMap[nm][di]={durSum:0,durCnt:0,count:0};
         crossMap[nm][di].count++;
-        // ★ effectiveDurMin이 전날입차/06시보정 모두 처리
         const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
         if(dur!=null&&dur>0&&dur<=480){crossMap[nm][di].durSum+=dur;crossMap[nm][di].durCnt++;}
       });
@@ -1075,7 +1092,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       const carMap={};
       allRows.forEach(r=>{
         const car=last4(r.CARNUM||''); if(!car) return;
-        // ★ effectiveDurMin이 전날입차/06시보정 모두 처리
         const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
         const item=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
         if(!carMap[car]) carMap[car]={visits:[],durSum:0,durCnt:0};
@@ -1136,8 +1152,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     }
   }
 
-  drawCongChart('chartCongWeekly',globalTimeline,capa,peakSlot,peakVal,peakPct);
-
   const labels=daily.map(d=>dateToDowLabel(d.date));
   const bwData=daily.map(d=>d.banwol.count), shData=daily.map(d=>d.sihwa.count);
   const peakIdx=daily.indexOf(peakDay);
@@ -1160,24 +1174,64 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
   });
 }
 
-// ─── 단일일 분석 렌더 ──────────────────────────────────────────────────────
+// ─── 단일일 분석 렌더 ───
 function renderAnalyticDaily(data,type,plantFilter,searchQ){
+
+  // 실시간 혼잡도
+  let realtimeHtml = '';
+  if(__lastData && __lastData.sections) {
+    const SECTION_MAP = { product:'제품 상차중', sub:'부자재 입차중', container:'컨테이너 입차중' };
+    const CAPA_RT = {
+      product: { '반월': 5, '시화': 7 },
+      sub:     { '반월': 5, '시화': 5 },
+      container:{ '반월': 3, '시화': 3 },
+    };
+    const CAPA = CAPA_RT[type] || CAPA_RT.product;
+    const targetSection = SECTION_MAP[type] || '제품 상차중';
+    const counts = { '반월': 0, '시화': 0 };
+    __lastData.sections.filter(s=>s.title===targetSection).forEach(s=>{
+      s.groups.forEach(g=>{ counts[g.plant] = (counts[g.plant]||0) + g.rows.filter(r=>!isMonoDigit(r.car)).length; });
+    });
+    const bwPct = Math.round(counts['반월']/CAPA['반월']*100);
+    const shPct = Math.round(counts['시화']/CAPA['시화']*100);
+    function rtColor(pct){ return pct>=100?'#E24B4A':pct>=80?'#EF9F27':pct>=40?'#97C459':'#C0DD97'; }
+    function rtBadge(pct){ return pct>=100?['#FCEBEB','#A32D2D']:pct>=80?['#FAEEDA','#854F0B']:['#EAF3DE','#3B6D11']; }
+    const [bwBg,bwTx]=rtBadge(bwPct), [shBg,shTx]=rtBadge(shPct);
+    realtimeHtml = `<div class="an-card" id="realtimeCard" style="margin-bottom:14px">
+      <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        실시간 혼잡도
+        <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">반월</span>
+        <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(bwPct,100)}%;height:100%;border-radius:99px;background:${rtColor(bwPct)}"></div></div>
+        <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['반월']} / ${CAPA['반월']}대</span>
+        <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${bwBg};color:${bwTx}">${bwPct}%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">시화</span>
+        <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(shPct,100)}%;height:100%;border-radius:99px;background:${rtColor(shPct)}"></div></div>
+        <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['시화']} / ${CAPA['시화']}대</span>
+        <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${shBg};color:${shTx}">${shPct}%</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>
+    </div>`;
+  }
+
   const cfg=AN_TYPES.find(t=>t.key===type)||AN_TYPES[0];
   const isSub=(type==='sub'||type==='container');
   plantFilter=plantFilter||'all';
   searchQ=(searchQ||'').replace(/\D/g,'').slice(-4);
 
-  // ★ 변경: filterFuture 제거 → 모든 행 포함
   const bwRaw=(data.banwol||[]).map(r=>({...r,_plant:'반월'}));
   const shRaw=(data.sihwa||[]).map(r=>({...r,_plant:'시화'}));
   let bw=[...bwRaw], sh=[...shRaw];
   if(plantFilter==='banwol') sh=[]; if(plantFilter==='sihwa') bw=[];
   const all=[...bw,...sh];
 
-  // ★ 전날입차 포함, effectiveDurMin이 케이스별로 처리 (전날+06시후출차→06:00기준, 나머지 제외)
   function withDur(list){
     return list
-      .map(r=>({...r, _dur: effectiveDurMin(r.INTIME, r.OUTIME, type)}))
+      .map(r=>({ ...r, _dur: effectiveDurMin(r.INTIME, r.OUTIME, type), _overnight: isOvernightEntry(r.INTIME, r.OUTIME) }))
       .filter(r=>r._dur!=null&&r._dur>0&&r._dur<=480);
   }
 
@@ -1185,14 +1239,16 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const avg=arr=>arr.length?Math.round(arr.reduce((s,r)=>s+r._dur,0)/arr.length):0;
   const avgAll=avg(allDur),avgBw=avg(bwDur),avgSh=avg(shDur);
 
- const hourBucket=Array(24).fill(0);
-  all.forEach(r=>{
-    if(isOvernightEntry(r.INTIME, r.OUTIME)) return; // 전날입차: 입차시각이 다음날 기준이라 제외
-    const m=timeToMin(r.INTIME);if(m!=null)hourBucket[Math.floor(m/60)]++;
-  });
+  const hourBucket=Array(24).fill(0);
+  all.forEach(r=>{ if(isOvernightEntry(r.INTIME, r.OUTIME)) return; const m=timeToMin(r.INTIME);if(m!=null)hourBucket[Math.floor(m/60)]++; });
+
   const hourDurSum=Array(24).fill(0),hourDurCnt=Array(24).fill(0);
-  allDur.forEach(r=>{const m=timeToMin(r.INTIME);if(m==null)return;const h=Math.floor(m/60);hourDurSum[h]+=r._dur;hourDurCnt[h]++;});
-  const hourAvgDur=Array(24).fill(null).map((_,i)=>hourDurCnt[i]>0?Math.round(hourDurSum[i]/hourDurCnt[i]):null);
+  allDur.forEach(r=>{
+    const m = r._overnight ? WORK_START_MIN : timeToMin(r.INTIME);
+    if(m==null)return;
+    const h=Math.floor(m/60);
+    hourDurSum[h]+=r._dur; hourDurCnt[h]++;
+  });
 
   const itemMap={};
   all.forEach(r=>{
@@ -1200,63 +1256,157 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     if(!itemMap[nm]) itemMap[nm]={count:0,silwei:0,durSum:0,durCnt:0};
     itemMap[nm].count++;
     itemMap[nm].silwei+=Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0;
-    // ★ effectiveDurMin이 전날입차/06시보정 모두 처리 (새벽단수 제외)
-    {
-      const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
-      if(dur!=null&&dur>0&&dur<=480){itemMap[nm].durSum+=dur;itemMap[nm].durCnt++;}
-    }
+    const dur=effectiveDurMin(r.INTIME, r.OUTIME, type);
+    if(dur!=null&&dur>0&&dur<=480){itemMap[nm].durSum+=dur;itemMap[nm].durCnt++;}
   });
   const itemEntries=Object.entries(itemMap).sort((a,b)=>b[1].count-a[1].count);
 
   const peakHour=hourBucket.indexOf(Math.max(...hourBucket));
   const peakCount=hourBucket[peakHour];
   const bwDone=bw.filter(r=>r.OUTIME).length,shDone=sh.filter(r=>r.OUTIME).length;
-  const hrLabels=Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}시`);
-  const bwHour=Array(24).fill(0),shHour=Array(24).fill(0);
-  bw.forEach(r=>{
-    if(isOvernightEntry(r.INTIME, r.OUTIME)) return; // 전날입차 제외
-    const m=timeToMin(r.INTIME);if(m!=null)bwHour[Math.floor(m/60)]++;
-  });
-  sh.forEach(r=>{
-    if(isOvernightEntry(r.INTIME, r.OUTIME)) return; // 전날입차 제외
-    const m=timeToMin(r.INTIME);if(m!=null)shHour[Math.floor(m/60)]++;
-  });
 
-  const allRowsForCong=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
+  const allRowsForCong=[...(data.banwol||[]).map(r=>({...r,_plant:'반월',_type:type})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화',_type:type}))];
   const {byDate:congByDate,capa}=calcCongestion([{date:__anFrom,rows:allRowsForCong}],plantFilter,type);
   const congTimeline=congByDate[0]?.timeline||Array(144).fill(0);
-  const {peakSlot:cPeakSlot,peakVal:cPeakVal,peakPct:cPeakPct,html:congHtml}=congKpiHtml(congTimeline,capa);
+  const {peakSlot:cPeakSlot,peakVal:cPeakVal,peakPct:cPeakPct,dangerH,warningH}=congKpiHtml(congTimeline,capa);
 
   const panel=document.getElementById('analyticPanel');
 
-  // ★ 변경: KPI에서 "미래 N건 제외" 문구 제거
-  panel.innerHTML=`<div class="kpi-row">
-    ${congHtml}
-    <div class="kpi" style="--kc:${cfg.dc}">
-      <div class="kpi-label">전체 건수</div>
-      <div class="kpi-val">${all.length}<span style="font-size:14px;font-weight:400">건</span></div>
-      <div class="kpi-sub">반월 ${bw.length} · 시화 ${sh.length}</div>
-    </div>
-    <div class="kpi" style="--kc:${cfg.dc}">
-      <div class="kpi-label">평균 체류시간</div>
-      <div class="kpi-val">${avgAll}<span style="font-size:14px;font-weight:400">분</span></div>
-      <div class="kpi-sub">반월 ${avgBw}분 · 시화 ${avgSh}분 <span style="font-size:10px;color:#a0aec0">(전날입차 제외${type==='product'?' · 06시 기준':''})</span></div>
-    </div>
-    <div class="kpi" style="--kc:#10b981">
-      <div class="kpi-label">출차 완료</div>
-      <div class="kpi-val">${bwDone+shDone}<span style="font-size:14px;font-weight:400">건</span></div>
-      <div class="kpi-sub">반월 ${bwDone} · 시화 ${shDone}</div>
-    </div>
-    <div class="kpi" style="--kc:#f59e0b">
-      <div class="kpi-label">피크 시간대</div>
-      <div class="kpi-val">${String(peakHour).padStart(2,'0')}시</div>
-      <div class="kpi-sub">${peakCount}건 집중</div>
-    </div>
-    ${isSub?`<div class="kpi" style="--kc:${cfg.dc}"><div class="kpi-label">품목 수</div><div class="kpi-val">${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span></div><div class="kpi-sub">${itemEntries[0]?itemEntries[0][0]+' 최다':''}</div></div>`:''}
+  // 순서: 1.KPI → 2.실시간혼잡도 → 3.체류시간+히트맵 → 4.유형별/전체데이터
+  const kpiItems = [
+    { label:'전체 건수', val:`${all.length}<span style="font-size:14px;font-weight:400">건</span>`, sub:`반월 ${bw.length} · 시화 ${sh.length} &nbsp;|&nbsp; 출차 완료 ${bwDone+shDone}건`, color:cfg.dc },
+    { label:'평균 체류시간', val:`${avgAll}<span style="font-size:14px;font-weight:400">분</span>`, sub:`반월 ${avgBw}분 · 시화 ${avgSh}분`, color:cfg.dc },
+    { label:'피크 시간대', val:`<span style="color:#f59e0b">${String(peakHour).padStart(2,'0')}시</span>`, sub:`${peakCount}건 집중`, color:'#f59e0b' },
+    ...(isSub?[{ label:'품목 수', val:`${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span>`, sub:`${itemEntries[0]?itemEntries[0][0]+' 최다':''}`, color:cfg.dc }]:[]),
+  ];
+  panel.innerHTML = `
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;margin-bottom:14px;overflow:hidden">
+    ${kpiItems.map((k,i)=>`
+    <div style="flex:1;padding:14px 18px;${i>0?'border-left:1px solid var(--line)':''}">
+      <div style="height:3px;background:${k.color};border-radius:2px;margin-bottom:10px"></div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${k.label}</div>
+      <div style="font-size:22px;font-weight:700;line-height:1.1">${k.val}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${k.sub}</div>
+    </div>`).join('')}
   </div>`;
 
-  panel.innerHTML+=anCard('<span class="dot" style="--dc:#6366f1"></span>시간대별 동시 점유 차량 수 (오늘)','<div class="chart-wrap tall"><canvas id="chartCongToday"></canvas></div>');
-  panel.innerHTML+=anCard('<span class="dot" style="--dc:#0f62fe"></span>시간대별 입차 건수 · 평균 체류시간','<div class="chart-wrap tall"><canvas id="chartHourCombo"></canvas></div>');
+  panel.innerHTML += realtimeHtml;
+
+  const hourArr = Array(24).fill(0);
+  for(let i=0;i<144;i++) hourArr[Math.floor(i/6)] = Math.max(hourArr[Math.floor(i/6)], congTimeline[i]);
+
+  const bwRowsForCong = (data.banwol||[]).map(r=>({...r,_plant:'반월',_type:type}));
+  const shRowsForCong = (data.sihwa||[]).map(r=>({...r,_plant:'시화',_type:type}));
+  const {byDate:bwCongByDate, capa:bwCapa} = calcCongestion([{date:__anFrom,rows:bwRowsForCong}],'all',type);
+  const {byDate:shCongByDate, capa:shCapa} = calcCongestion([{date:__anFrom,rows:shRowsForCong}],'all',type);
+  const allCapa = capa;
+  const bwCongTimeline = bwCongByDate[0]?.timeline||Array(144).fill(0);
+  const shCongTimeline = shCongByDate[0]?.timeline||Array(144).fill(0);
+  const bwHourArr = Array(24).fill(0);
+  const shHourArr = Array(24).fill(0);
+  for(let i=0;i<144;i++){
+    bwHourArr[Math.floor(i/6)] = Math.max(bwHourArr[Math.floor(i/6)], bwCongTimeline[i]);
+    shHourArr[Math.floor(i/6)] = Math.max(shHourArr[Math.floor(i/6)], shCongTimeline[i]);
+  }
+
+  const showMulti = plantFilter === 'all';
+
+  const summaryCardHtml = `
+<div class="an-card" style="margin-bottom:14px">
+  <div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:10px">평균 체류시간</div>
+  <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:4px">
+    ${(plantFilter==='all'
+      ? [['합계',avgAll,'#378ADD'],['반월',avgBw,'#3B82F6'],['시화',avgSh,'#10B981']]
+      : plantFilter==='banwol'
+        ? [['반월',avgBw,'#3B82F6']]
+        : [['시화',avgSh,'#10B981']]
+    ).map(([lbl,val,color])=>{
+      const maxVal=Math.max(avgAll,avgBw,avgSh,1);
+      const pct=Math.round(val/maxVal*100);
+      const badge=val>=90?['혼잡','#FCEBEB','#A32D2D']:val>=60?['보통','#FAEEDA','#854F0B']:['원활','#EAF3DE','#3B6D11'];
+      return `<div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--muted);width:36px;flex-shrink:0">${lbl}</span>
+        <div style="flex:1;background:#ebebeb;border-radius:99px;height:8px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;border-radius:99px;background:${color}"></div>
+        </div>
+        <span style="font-size:12px;font-weight:600;min-width:32px;text-align:right">${val}분</span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:99px;flex-shrink:0;background:${badge[1]};color:${badge[2]}">${badge[0]}</span>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:16px">출차 완료된 차량 기준 · 전날입차 제외</div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+    <div style="font-size:12px;color:var(--muted);font-weight:500">시간대별 혼잡도</div>
+    <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#f0f0f0;color:#888">출차 완료 기준</span>
+  </div>
+  <div style="font-size:11px;color:#888;background:#f5f5f5;border-radius:8px;padding:5px 10px;display:inline-block;margin-bottom:10px">출차 완료된 차량 데이터 기준 · 실시간 반영 아님</div>
+  <div id="heatmapContainer"></div>
+  <div style="position:relative;height:16px;margin-top:4px" id="heatmapTicks"></div>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+    <span style="font-size:11px;color:var(--muted)">원활</span>
+    <div style="width:14px;height:8px;border-radius:2px;background:#C0DD97"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#97C459"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#FAC775"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#EF9F27"></div>
+    <div style="width:14px;height:8px;border-radius:2px;background:#E24B4A"></div>
+    <span style="font-size:11px;color:var(--muted)">혼잡</span>
+  </div>
+  <div style="font-size:11px;color:#A32D2D;margin-top:6px" id="heatmapPeakNote"></div>
+</div>`;
+
+  panel.innerHTML += summaryCardHtml;
+
+  function buildHeatmapRow(containerId, label, arr, capVal) {
+    const wrap = document.getElementById(containerId); if(!wrap) return;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:4px';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px;color:var(--muted);width:28px;flex-shrink:0';
+    lbl.textContent = label; row.appendChild(lbl);
+    const cells = document.createElement('div');
+    cells.style.cssText = 'display:flex;gap:2px;flex:1';
+    arr.forEach((v,h) => {
+      const r = v/capVal;
+      const color = r===0?'#e8e8e8':r<0.4?'#C0DD97':r<0.6?'#97C459':r<0.8?'#FAC775':r<1.0?'#EF9F27':'#E24B4A';
+      const cell = document.createElement('div');
+      cell.style.cssText = `flex:1;height:20px;border-radius:2px;background:${color};cursor:default`;
+      cell.dataset.h=h; cell.dataset.v=v; cell.dataset.r=Math.round(r*100);
+      cell.addEventListener('mouseenter',()=>{ const tip=document.createElement('div'); tip.id='hm-tip'; tip.style.cssText='position:fixed;background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:5px 8px;font-size:11px;white-space:nowrap;z-index:10000;color:#222;pointer-events:none'; tip.textContent=`${String(h).padStart(2,'0')}시 · 최대 ${v}대 (${Math.round(r*100)}%)`; document.body.appendChild(tip); });
+      cell.addEventListener('mousemove',e=>{ const tip=document.getElementById('hm-tip'); if(!tip)return; tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY-28)+'px'; });
+      cell.addEventListener('mouseleave',()=>document.getElementById('hm-tip')?.remove());
+      cells.appendChild(cell);
+    });
+    row.appendChild(cells); wrap.appendChild(row);
+  }
+
+  const heatmapContainer = document.getElementById('heatmapContainer');
+  if(heatmapContainer) {
+    if(showMulti) {
+      buildHeatmapRow('heatmapContainer','반월', bwHourArr, bwCapa);
+      buildHeatmapRow('heatmapContainer','시화', shHourArr, shCapa);
+      buildHeatmapRow('heatmapContainer','합계', hourArr, allCapa);
+    } else {
+      buildHeatmapRow('heatmapContainer','', hourArr, capa);
+    }
+  }
+
+  const heatmapTicks = document.getElementById('heatmapTicks');
+  if(heatmapTicks){
+    Array.from({length:24},(_,h)=>{
+      const span=document.createElement('span');
+      span.style.cssText=`font-size:9px;color:#bbb;position:absolute;left:${h/23*100}%;transform:translateX(-50%)`;
+      span.textContent=String(h);
+      heatmapTicks.appendChild(span);
+    });
+  }
+
+  const peakHour2 = hourArr.indexOf(Math.max(...hourArr));
+  const peakVal2 = hourArr[peakHour2];
+  const usedCapa = showMulti ? allCapa : capa;
+  const peakPct2 = Math.round(peakVal2 / usedCapa * 100);
+  const peakNote = document.getElementById('heatmapPeakNote');
+  if(peakNote) peakNote.textContent = `피크 ${String(peakHour2).padStart(2,'0')}시 · 동시 ${peakVal2}대 · CAPA의 ${peakPct2}%`;
 
   if(itemEntries.length){
     const itemRows=itemEntries.map(([nm,v])=>{
@@ -1272,102 +1422,75 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>${isSub?'품목별':'유형별'} 입차 현황`,'<div style="display:flex;flex-direction:column;gap:10px">'+itemRows+'</div>');
   }
 
-  // ★ 변경: 테이블 행 - 전날입차 뱃지 표시, 카운팅은 정상 포함
-  const tableAll=[...(data.banwol||[]).map(r=>({...r,_plant:'반월'})),...(data.sihwa||[]).map(r=>({...r,_plant:'시화'}))];
+  let bwNo=1, shNo=1;
+  const sortByOut=arr=>[...arr].sort((a,b)=>{
+    const at=timeToMin(a.OUTIME),bt=timeToMin(b.OUTIME);
+    if(at==null&&bt==null) return 0;
+    if(at==null) return 1; if(bt==null) return -1;
+    return at-bt;
+  });
+  const tableAll=[...sortByOut(bw),...sortByOut(sh)]; // 반월 출차순 → 시화 출차순, 미출차 맨 뒤
   const hasQ=searchQ&&searchQ.length>=2;
   const tableRows=tableAll.length===0?`<tr><td colspan="${isSub?7:6}" class="empty">데이터 없음</td></tr>`:tableAll.map((r,i)=>{
     const plant=r._plant||'-';
     const overnight=isOvernightEntry(r.INTIME, r.OUTIME);
     const inM=timeToMin(r.INTIME), outM=timeToMin(r.OUTIME);
     const isProduct=(type==='product');
-
-    // ── 케이스 분류 ──────────────────────────────────────────
-    // 케이스1: 전날입차 (출차 < 입차 역전) → 제품이면 출차-06:00 계산, 아니면 표시불가
     const case1=overnight;
-    // 케이스1-b: 전날입차인데 06시 전 출차 → 제외
     const case1_earlyOut = overnight && outM!=null && outM<=WORK_START_MIN;
-    // 케이스1-c: 전날입차인데 출차없음
     const case1_noOut = overnight && outM==null;
-    // 케이스2: 제품 + 06시 이전 입차 → 06시 이전 출차 (새벽 단수)
     const case2=isProduct && !overnight && inM!=null && outM!=null && inM<WORK_START_MIN && outM<=WORK_START_MIN;
-    // 케이스3: 제품 + 06시 이전 입차 → 06시 이후 출차 (06시 기준 보정)
     const case3=isProduct && !overnight && inM!=null && inM<WORK_START_MIN && (outM==null||outM>WORK_START_MIN);
-
     const dur=case2 ? null : effectiveDurMin(r.INTIME, r.OUTIME, type);
     const durValid=dur!=null&&dur>0&&dur<=480;
     const durWarn=durValid&&dur>=120?' style="color:#ef4444;font-weight:700"':'';
-
     let durDisplay;
-    if(case1_earlyOut){
-      // 전날입차 + 06시 전 출차: 작업시간 없음
-      durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
-    } else if(case1_noOut){
-      // 전날입차 + 출차없음
-      durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
-    } else if(case1 && durValid){
-      // 전날입차 + 06시 이후 출차 → 출차-06:00 표시
-      durDisplay=`${dur}<span style="color:#6366f1;font-size:10px;margin-left:3px" title="전날입차, 06:00 기준 계산">🌙06↑</span>`;
-    } else if(case2){
-      durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
-    } else if(case3&&durValid){
-      durDisplay=`${dur}<span style="color:#6366f1;font-size:10px;margin-left:3px" title="06:00 기준 보정">06↑</span>`;
-    } else if(!durValid){
-      durDisplay='<span style="color:#f59e0b" title="체류시간 오류">?</span>';
-    } else {
-      durDisplay=String(dur);
-    }
-
+    if(case1_earlyOut){ durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>'; }
+    else if(case1_noOut){ durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>'; }
+    else if(case1 && durValid){ durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">🌙06↑</span>`; }
+    else if(case2){ durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>'; }
+    else if(case3&&durValid){ durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">06↑</span>`; }
+    else if(!durValid){ durDisplay='<span style="color:#f59e0b" title="체류시간 오류">?</span>'; }
+    else { durDisplay=String(dur); }
     const carNum=String(r.CARNUM||''),isMatch=hasQ&&carNum.includes(searchQ),isDim=hasQ&&!isMatch;
     let rowStyle='';
-    if(isMatch)                    rowStyle=' style="background:#eff6ff;font-weight:600"';
+    if(isMatch) rowStyle=' style="background:#eff6ff;font-weight:600"';
     else if(case1_earlyOut||case2) rowStyle=' style="background:#f5f5f5"';
-    else if(case1)                 rowStyle=' style="background:#f0f0ff"';
-    else if(case3)                 rowStyle=' style="background:#f0f7ff"';
-    if(isDim)                      rowStyle=' style="opacity:0.25"';
-
-    // 입차시각 옆 뱃지
-    const overnightNote=case1?'<span style="color:#6366f1;font-size:10px"> 🌙전날입차</span>':'';
-    const earlyNote    =case2?'<span style="color:#94a3b8;font-size:10px"> 🌙새벽단수</span>':
-                        case3?'<span style="color:#6366f1;font-size:10px"> ⏰06시보정</span>':'';
-
+    else if(case1) rowStyle=' style="background:#f0f0ff"';
+    else if(case3) rowStyle=' style="background:#f0f7ff"';
+    if(isDim) rowStyle=' style="opacity:0.25"';
+    const inNoteText=case1?'🌙전날':case2?'🌙새벽':case3?'⏰06시':'';
+    const inNoteColor=case2?'#94a3b8':'#6366f1';
+    const inNoteSpan=inNoteText?`<br><span style="color:${inNoteColor};font-size:9px">${inNoteText}</span>`:'';
     const itemNm=isSub?`<td style="font-size:12px;color:#555">${String(r.ITEMNM||'').trim()||'-'}</td>`:'';
-    return `<tr${rowStyle}><td>${i+1}</td><td>${carNum}</td><td>${plant}</td>${itemNm}<td>${fmtTime(r.INTIME)}${overnightNote}${earlyNote}</td><td>${fmtTime(r.OUTIME)}</td><td${durWarn}>${durDisplay}</td></tr>`;
+    const silwei=Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||null;
+    const silweiDisp=silwei!=null?String(silwei):'-';
+    const isFirstSihwa = plantFilter==='all' && r._plant==='시화' && tableAll.indexOf(r)===bw.length;
+    const plantBg=r._plant==='반월'?'background:#eff6ff':'background:#f0fdf4';
+    const sepBorder=isFirstSihwa?'border-top:2px solid #ff6b6b;':'';
+    const border=`${sepBorder}border-bottom:1px solid #e5e7eb`;
+    const baseStyle=`style="${plantBg};${border};padding:3px 3px"`;
+    const baseStyleNW=`style="${plantBg};${border};padding:3px 3px;white-space:nowrap"`;
+    const durStyle=durWarn?`style="${plantBg};${border};padding:3px 3px;color:#ef4444;font-weight:700"`:`style="${plantBg};${border};padding:3px 3px"`;
+    const silStyle=`style="${plantBg};${border};padding:3px 3px;font-weight:500;color:#185FA5"`;
+    const rowNo = r._plant==='반월' ? bwNo++ : shNo++;
+    return `<tr><td ${baseStyle}>${rowNo}</td><td ${baseStyle}>${carNum}</td>${itemNm?`<td ${baseStyle}>${String(r.ITEMNM||'').trim()||'-'}</td>`:''}<td ${baseStyleNW}>${fmtTime(r.INTIME)}${inNoteSpan}</td><td ${baseStyleNW}>${fmtTime(r.OUTIME)}</td><td ${durStyle}>${durDisplay}</td><td ${silStyle}>${silweiDisp}</td></tr>`;
   }).join('');
+
+
+  const bwSil=bw.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
+  const shSil=sh.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
+  const bwBadge=`<span style="font-size:11px;font-weight:400;padding:1px 8px;border-radius:999px;background:#eff6ff;color:#185FA5">반월 ${bw.length}건 (${bwSil.toLocaleString()}kg)</span>`;
+  const shBadge=`<span style="font-size:11px;font-weight:400;padding:1px 8px;border-radius:999px;background:#f0fdf4;color:#3B6D11">시화 ${sh.length}건 (${shSil.toLocaleString()}kg)</span>`;
+  const plantBadgesArr=(plantFilter==='all')?[bwBadge,shBadge]:(plantFilter==='banwol')?[bwBadge]:[shBadge];
+  const plantBadgesRow=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0 0">${plantBadgesArr.join('')}</div>`;
+  const noteRow=(type==='product')?`<div style="font-size:11px;color:var(--muted);margin-top:4px">※ 전날 입차 또는 06시 이전 입차는 06:00 기준으로 보정 · 체류시간도 동일 적용</div>`:'';
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>전체 데이터 (${all.length}건)`,
-    `<div style="overflow-x:auto;max-height:320px;overflow-y:auto"><table><thead><tr><th>No</th><th>차량</th><th>공장</th>${isSub?'<th>품목</th>':''}<th>입차</th><th>출차</th><th>체류(분)</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
+    `${plantBadgesRow}${noteRow}<div style="max-height:320px;overflow-y:auto;margin-top:8px"><table style="table-layout:fixed;width:100%;font-size:11px;border-collapse:collapse"><thead><tr style="border-bottom:1.5px solid #d1d5db"><th style="width:28px;padding:4px 3px">No</th><th style="width:56px;padding:4px 3px">차량</th>${isSub?'<th style="width:64px;padding:4px 3px">품목</th>':''}<th style="width:52px;padding:4px 3px">입차</th><th style="width:46px;padding:4px 3px">출차</th><th style="width:44px;padding:4px 3px">체류(분)</th><th style="width:54px;padding:4px 3px;color:#185FA5">실중량(kg)</th></tr></thead><tbody>${tableRows}</tbody></table></div>`
   );
-
-  drawCongChart('chartCongToday',congTimeline,capa,cPeakSlot,cPeakVal,cPeakPct);
-
-  const combinedHour=hrLabels.map((_,i)=>(bwHour[i]||0)+(shHour[i]||0));
-  const peakH=combinedHour.indexOf(Math.max(...combinedHour));
-  __anCharts.hourCombo=new Chart(document.getElementById('chartHourCombo'),{
-    type:'bar',
-    data:{labels:hrLabels,datasets:[
-      {type:'bar',label:'반월 입차',data:bwHour,yAxisID:'yCount',backgroundColor:bwHour.map((_,i)=>i===peakH?'rgba(59,130,246,1)':'rgba(96,165,250,.7)'),borderRadius:3,stack:'s'},
-      {type:'bar',label:'시화 입차',data:shHour,yAxisID:'yCount',backgroundColor:shHour.map((_,i)=>i===peakH?'rgba(16,185,129,1)':'rgba(52,211,153,.7)'),borderRadius:3,stack:'s'},
-      {type:'line',label:'평균 체류(분)',data:hourAvgDur,yAxisID:'yDur',borderColor:'rgba(245,158,11,1)',backgroundColor:'rgba(245,158,11,.15)',pointBackgroundColor:'rgba(245,158,11,1)',pointRadius:3,tension:0.35,fill:true,spanGaps:true},
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{
-        x:{stacked:true,ticks:{color:'#777',font:{size:10}}},
-        yCount:{stacked:true,position:'left',beginAtZero:true,ticks:{color:'#777',font:{size:10}},title:{display:true,text:'입차 건수',color:'#888',font:{size:10}}},
-        yDur:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false},ticks:{color:'#f59e0b',font:{size:10},callback:v=>v!=null?v+'분':''},title:{display:true,text:'평균 체류(분)',color:'#f59e0b',font:{size:10}}},
-      },
-      plugins:{legend:{labels:{font:{size:11},color:'#555'}},tooltip:{callbacks:{label:ctx=>ctx.dataset.yAxisID==='yDur'?(ctx.raw!=null?`평균 체류: ${ctx.raw}분`:'데이터 없음'):`${ctx.dataset.label}: ${ctx.raw}건`}}}
-    },
-    plugins:[{id:'peakLabelCombo',afterDatasetsDraw(chart){
-      if(!combinedHour[peakH]) return;
-      const {ctx,scales:{x,yCount}}=chart;
-      const xPos=x.getPixelForValue(peakH),yPos=yCount.getPixelForValue(combinedHour[peakH]);
-      ctx.save();ctx.fillStyle='#ef4444';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('▼ 피크',xPos,yPos-8);ctx.restore();
-    }}]
-  });
 }
 
-// ═══════════════════════════════════════════
-//  데이터 로딩
-// ═══════════════════════════════════════════
+// ═══ 데이터 로딩 ═══
 let __fetching=false;
 async function loadSnapshot(){
   if(__fetching) return; __fetching=true;
@@ -1385,25 +1508,20 @@ async function loadWeigh(){
 }
 function rerenderCache(){ if(__lastData) render(__lastData); }
 
-// ═══════════════════════════════════════════
-//  탭 전환
-// ═══════════════════════════════════════════
+// ═══ 탭 전환 ═══
 function setTab(tabName){
-  const liveActive=tabName==='live',weighActive=tabName==='weigh',anActive=tabName==='analytic';
+  const liveActive=tabName==='live',anActive=tabName==='analytic';
   document.getElementById('btnViewLive').classList.toggle('active',liveActive);
-  document.getElementById('btnViewWeigh').classList.toggle('active',weighActive);
   document.getElementById('btnViewAnalytic').classList.toggle('active',anActive);
   elSections.style.display=liveActive?'grid':'none';
-  elWeighPanel.style.display=weighActive?'grid':'none';
+  elWeighPanel.style.display='none';
   document.getElementById('periodBar').style.display=anActive?'flex':'none';
   document.getElementById('analyticPanel').style.display=anActive?'block':'none';
   document.getElementById('watchPanelEl').style.display=anActive?'none':'block';
   document.getElementById('searchSummary').style.display='none';
 }
 
-// ═══════════════════════════════════════════
-//  이벤트
-// ═══════════════════════════════════════════
+// ═══ 이벤트 ═══
 document.getElementById('plantFilter').addEventListener('change',e=>{
   localStorage.setItem(LS.plant,e.target.value);
   const live=document.getElementById('btnViewLive').classList.contains('active');
@@ -1437,12 +1555,9 @@ document.getElementById('watchClearBtn').addEventListener('click',async()=>{
   catch(e){ showToast('오류 발생'); }
 });
 document.getElementById('btnViewLive').addEventListener('click',()=>{setTab('live');rerenderCache();});
-document.getElementById('btnViewWeigh').addEventListener('click',()=>{setTab('weigh');if(!__lastWeigh)loadWeigh();else renderWeigh(__lastWeigh);});
 document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab('analytic');loadAnalytic(__anType||'product');});
 
-// ═══════════════════════════════════════════
-//  초기화
-// ═══════════════════════════════════════════
+// ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
   const sq=localStorage.getItem(LS.q); if(sq) document.getElementById('searchInput').value=sq;
@@ -1451,6 +1566,57 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   await loadSnapshot();
   setInterval(()=>{if(document.getElementById('btnViewLive').classList.contains('active'))loadSnapshot();},20000);
   setInterval(fetchWatch,5*60*1000);
+  // 분석탭 실시간 혼잡도 카드 갱신 — 1분마다 snapshot 백그라운드 업데이트
+  setInterval(async ()=>{
+    const isAnalytic = document.getElementById('btnViewAnalytic').classList.contains('active');
+    if(!isAnalytic) return;
+    try{
+      const data = await api({action:'snapshot_live'});
+      if(data && data.sections){
+        __lastData = data;
+        // 실시간 혼잡도 카드만 다시 그리기 (패널 전체 재렌더 X)
+        const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
+        const cached=__anCache[cacheKey];
+        if(cached && cached.mode==='daily'){
+          const plantFilter=document.getElementById('plantFilter').value||'all';
+          const SECTION_MAP={product:'제품 상차중',sub:'부자재 입차중',container:'컨테이너 입차중'};
+          const CAPA_RT={product:{'반월':5,'시화':7},sub:{'반월':5,'시화':5},container:{'반월':3,'시화':3}};
+          const CAPA=CAPA_RT[__anType]||CAPA_RT.product;
+          const targetSection=SECTION_MAP[__anType]||'제품 상차중';
+          const counts={'반월':0,'시화':0};
+          data.sections.filter(s=>s.title===targetSection).forEach(s=>{
+            s.groups.forEach(g=>{counts[g.plant]=(counts[g.plant]||0)+g.rows.filter(r=>!isMonoDigit(r.car)).length;});
+          });
+          const bwPct=Math.round(counts['반월']/CAPA['반월']*100);
+          const shPct=Math.round(counts['시화']/CAPA['시화']*100);
+          function rtColorBg(pct){return pct>=100?'#E24B4A':pct>=80?'#EF9F27':pct>=40?'#97C459':'#C0DD97';}
+          function rtBadgeBg(pct){return pct>=100?['#FCEBEB','#A32D2D']:pct>=80?['#FAEEDA','#854F0B']:['#EAF3DE','#3B6D11'];}
+          const [bwBg,bwTx]=rtBadgeBg(bwPct),[shBg,shTx]=rtBadgeBg(shPct);
+          const rtCard=document.getElementById('realtimeCard');
+          if(rtCard){
+            rtCard.innerHTML=`
+              <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+                실시간 혼잡도
+                <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">반월</span>
+                <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(bwPct,100)}%;height:100%;border-radius:99px;background:${rtColorBg(bwPct)}"></div></div>
+                <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['반월']} / ${CAPA['반월']}대</span>
+                <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${bwBg};color:${bwTx}">${bwPct}%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">시화</span>
+                <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(shPct,100)}%;height:100%;border-radius:99px;background:${rtColorBg(shPct)}"></div></div>
+                <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['시화']} / ${CAPA['시화']}대</span>
+                <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${shBg};color:${shTx}">${shPct}%</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>`;
+          }
+        }
+      }
+    }catch(e){}
+  }, 60000);
 })();
 </script>
 </body>
