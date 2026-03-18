@@ -1201,7 +1201,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     function rtColor(pct){ return pct>=100?'#E24B4A':pct>=80?'#EF9F27':pct>=40?'#97C459':'#C0DD97'; }
     function rtBadge(pct){ return pct>=100?['#FCEBEB','#A32D2D']:pct>=80?['#FAEEDA','#854F0B']:['#EAF3DE','#3B6D11']; }
     const [bwBg,bwTx]=rtBadge(bwPct), [shBg,shTx]=rtBadge(shPct);
-    realtimeHtml = `<div class="an-card" style="margin-bottom:14px">
+    realtimeHtml = `<div class="an-card" id="realtimeCard" style="margin-bottom:14px">
       <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px">
         실시간 혼잡도
         <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
@@ -1277,24 +1277,21 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const panel=document.getElementById('analyticPanel');
 
   // 순서: 1.KPI → 2.실시간혼잡도 → 3.체류시간+히트맵 → 4.유형별/전체데이터
+  const kpiItems = [
+    { label:'전체 건수', val:`${all.length}<span style="font-size:14px;font-weight:400">건</span>`, sub:`반월 ${bw.length} · 시화 ${sh.length} &nbsp;|&nbsp; 출차 완료 ${bwDone+shDone}건`, color:cfg.dc },
+    { label:'평균 체류시간', val:`${avgAll}<span style="font-size:14px;font-weight:400">분</span>`, sub:`반월 ${avgBw}분 · 시화 ${avgSh}분`, color:cfg.dc },
+    { label:'피크 시간대', val:`<span style="color:#f59e0b">${String(peakHour).padStart(2,'0')}시</span>`, sub:`${peakCount}건 집중`, color:'#f59e0b' },
+    ...(isSub?[{ label:'품목 수', val:`${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span>`, sub:`${itemEntries[0]?itemEntries[0][0]+' 최다':''}`, color:cfg.dc }]:[]),
+  ];
   panel.innerHTML = `
-  <div class="kpi-row">
-    <div class="kpi" style="--kc:${cfg.dc}">
-      <div class="kpi-label">전체 건수</div>
-      <div class="kpi-val">${all.length}<span style="font-size:14px;font-weight:400">건</span></div>
-      <div class="kpi-sub">반월 ${bw.length} · 시화 ${sh.length} &nbsp;|&nbsp; 출차 완료 ${bwDone+shDone}건</div>
-    </div>
-    <div class="kpi" style="--kc:${cfg.dc}">
-      <div class="kpi-label">평균 체류시간</div>
-      <div class="kpi-val">${avgAll}<span style="font-size:14px;font-weight:400">분</span></div>
-      <div class="kpi-sub">반월 ${avgBw}분 · 시화 ${avgSh}분 <span style="font-size:10px;color:#a0aec0">(전날입차 제외${type==='product'?' · 06시 기준':''})</span></div>
-    </div>
-    <div class="kpi" style="--kc:#f59e0b">
-      <div class="kpi-label">피크 시간대</div>
-      <div class="kpi-val">${String(peakHour).padStart(2,'0')}시</div>
-      <div class="kpi-sub">${peakCount}건 집중</div>
-    </div>
-    ${isSub?`<div class="kpi" style="--kc:${cfg.dc}"><div class="kpi-label">품목 수</div><div class="kpi-val">${itemEntries.length}<span style="font-size:14px;font-weight:400">종</span></div><div class="kpi-sub">${itemEntries[0]?itemEntries[0][0]+' 최다':''}</div></div>`:''}
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;margin-bottom:14px;overflow:hidden">
+    ${kpiItems.map((k,i)=>`
+    <div style="flex:1;padding:14px 18px;${i>0?'border-left:1px solid var(--line)':''}">
+      <div style="height:3px;background:${k.color};border-radius:2px;margin-bottom:10px"></div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${k.label}</div>
+      <div style="font-size:22px;font-weight:700;line-height:1.1">${k.val}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${k.sub}</div>
+    </div>`).join('')}
   </div>`;
 
   panel.innerHTML += realtimeHtml;
@@ -1551,6 +1548,57 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   await loadSnapshot();
   setInterval(()=>{if(document.getElementById('btnViewLive').classList.contains('active'))loadSnapshot();},20000);
   setInterval(fetchWatch,5*60*1000);
+  // 분석탭 실시간 혼잡도 카드 갱신 — 1분마다 snapshot 백그라운드 업데이트
+  setInterval(async ()=>{
+    const isAnalytic = document.getElementById('btnViewAnalytic').classList.contains('active');
+    if(!isAnalytic) return;
+    try{
+      const data = await api({action:'snapshot_live'});
+      if(data && data.sections){
+        __lastData = data;
+        // 실시간 혼잡도 카드만 다시 그리기 (패널 전체 재렌더 X)
+        const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
+        const cached=__anCache[cacheKey];
+        if(cached && cached.mode==='daily'){
+          const plantFilter=document.getElementById('plantFilter').value||'all';
+          const SECTION_MAP={product:'제품 상차중',sub:'부자재 입차중',container:'컨테이너 입차중'};
+          const CAPA_RT={product:{'반월':5,'시화':7},sub:{'반월':5,'시화':5},container:{'반월':3,'시화':3}};
+          const CAPA=CAPA_RT[__anType]||CAPA_RT.product;
+          const targetSection=SECTION_MAP[__anType]||'제품 상차중';
+          const counts={'반월':0,'시화':0};
+          data.sections.filter(s=>s.title===targetSection).forEach(s=>{
+            s.groups.forEach(g=>{counts[g.plant]=(counts[g.plant]||0)+g.rows.filter(r=>!isMonoDigit(r.car)).length;});
+          });
+          const bwPct=Math.round(counts['반월']/CAPA['반월']*100);
+          const shPct=Math.round(counts['시화']/CAPA['시화']*100);
+          function rtColorBg(pct){return pct>=100?'#E24B4A':pct>=80?'#EF9F27':pct>=40?'#97C459':'#C0DD97';}
+          function rtBadgeBg(pct){return pct>=100?['#FCEBEB','#A32D2D']:pct>=80?['#FAEEDA','#854F0B']:['#EAF3DE','#3B6D11'];}
+          const [bwBg,bwTx]=rtBadgeBg(bwPct),[shBg,shTx]=rtBadgeBg(shPct);
+          const rtCard=document.getElementById('realtimeCard');
+          if(rtCard){
+            rtCard.innerHTML=`
+              <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+                실시간 혼잡도
+                <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">반월</span>
+                <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(bwPct,100)}%;height:100%;border-radius:99px;background:${rtColorBg(bwPct)}"></div></div>
+                <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['반월']} / ${CAPA['반월']}대</span>
+                <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${bwBg};color:${bwTx}">${bwPct}%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <span style="font-size:12px;color:var(--muted);width:32px;flex-shrink:0">시화</span>
+                <div style="flex:1;background:#ebebeb;border-radius:99px;height:10px;overflow:hidden"><div style="width:${Math.min(shPct,100)}%;height:100%;border-radius:99px;background:${rtColorBg(shPct)}"></div></div>
+                <span style="font-size:12px;font-weight:600;min-width:48px;text-align:right">${counts['시화']} / ${CAPA['시화']}대</span>
+                <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:${shBg};color:${shTx}">${shPct}%</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>`;
+          }
+        }
+      }
+    }catch(e){}
+  }, 60000);
 })();
 </script>
 </body>
