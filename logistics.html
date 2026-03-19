@@ -232,30 +232,29 @@
         <button class="tbtn" id="btnViewAnalytic" role="tab">분석</button>
       </div>
     </div>
-    <!-- 필터 + 검색 (같은 줄) -->
+    <!-- 1행: 필터 + 검색 -->
     <div style="display:flex;gap:7px;margin-top:12px;align-items:center">
-      <select id="plantFilter" class="select" style="flex:0 0 auto;width:auto">
+      <select id="plantFilter" class="select" style="flex:0 0 90px;width:90px;min-width:0">
         <option value="all">전체</option>
         <option value="banwol">반월</option>
         <option value="sihwa">시화</option>
       </select>
-      <input id="searchInput" class="input" placeholder="차량번호 검색" style="flex:1;min-width:0;width:auto" />
+      <input id="searchInput" class="input" placeholder="0000" maxlength="4" inputmode="numeric" style="width:72px;flex:0 0 72px;min-width:0;letter-spacing:2px;text-align:center;font-weight:600" />
+      <button class="watch-add-btn" id="searchBtn" style="flex-shrink:0">검색</button>
       <span id="searchSummary" class="badge search-pill" style="display:none;flex-shrink:0"></span>
     </div>
-    <!-- 감시 차량 -->
-    <div id="watchPanelEl" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
-      <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px">
-        <span style="font-size:11px;font-weight:600;color:#555">감시 차량</span>
-        <span class="badge" id="watchCountBadge" style="display:none"></span>
-      </div>
+    <!-- 2행: 감시 차량 -->
+    <div id="watchPanelEl" style="margin-top:8px">
       <div style="display:flex;gap:7px;align-items:center">
+        <span class="select" style="display:inline-flex;align-items:center;justify-content:center;width:90px;flex:0 0 90px;color:#555;white-space:nowrap;cursor:default">감시 차량</span>
+        <span class="badge" id="watchCountBadge" style="display:none;flex-shrink:0"></span>
         <input type="text" id="watchInput" placeholder="0000" maxlength="4" inputmode="numeric"
-          style="width:64px;flex-shrink:0;padding:7px 6px;font-size:13px;letter-spacing:2px;text-align:center;font-weight:600;border:1px solid var(--line);border-radius:10px;background:#fff" />
-        <button class="watch-add-btn" id="watchAddBtn" style="flex:1">+ 등록</button>
+          style="width:72px;flex:0 0 72px;padding:7px 6px;font-size:13px;letter-spacing:2px;text-align:center;font-weight:600;border:1px solid var(--line);border-radius:10px;background:#fff" />
+        <button class="watch-add-btn" id="watchAddBtn" style="flex-shrink:0">등록</button>
         <button class="watch-clear-btn" id="watchClearBtn" style="flex-shrink:0">삭제</button>
       </div>
-      <div class="watch-tags-row" id="watchTagsRow" style="margin-top:7px">
-        <span class="watch-empty-hint">등록된 감시 차량 없음</span>
+      <div class="watch-tags-row" id="watchTagsRow" style="margin-top:6px">
+        <span class="watch-empty-hint"></span>
       </div>
     </div>
   </section>
@@ -520,7 +519,7 @@ window.removeWatch=async function(num,silent=false){
 function renderWatchTags(){
   const row=document.getElementById('watchTagsRow'); const keys=Object.keys(watchList);
   const badge=document.getElementById('watchCountBadge');
-  if(!keys.length){ row.innerHTML='<span class="watch-empty-hint">4자리 입력 후 등록</span>'; badge.style.display='none'; return; }
+  if(!keys.length){ row.innerHTML='<span class="watch-empty-hint"></span>'; badge.style.display='none'; return; }
   badge.style.display='inline-block'; badge.textContent=`감시 ${keys.length}대`;
   row.innerHTML=keys.map(k=>{
     const st=watchList[k];
@@ -1938,24 +1937,20 @@ document.getElementById('plantFilter').addEventListener('change',e=>{
   const an=document.getElementById('btnViewAnalytic').classList.contains('active');
   if(live) rerenderCache(); else if(an) loadAnalytic(__anType,true);
 });
-document.getElementById('searchInput').addEventListener('input',e=>{
-  localStorage.setItem(LS.q,e.target.value);
+function doSearch(){
+  const val=document.getElementById('searchInput').value||'';
+  localStorage.setItem(LS.q,val);
   const live=document.getElementById('btnViewLive').classList.contains('active');
   const an=document.getElementById('btnViewAnalytic').classList.contains('active');
-  const q=(e.target.value||'').replace(/\D/g,'').slice(-4);
+  const q=val.replace(/\D/g,'').slice(-4);
   const isFour=/^\d{4}$/.test(q);
 
   if(live){
-    rerenderCache(); // render() 안에서 updateCarSearchPanel 호출됨
+    rerenderCache();
   } else if(an){
-    // 4자리 아니면 패널 숨김
     if(!isFour){ document.getElementById('carSearchPanel').style.display='none'; return; }
-
     const histEl=document.getElementById('carSearchHistory');
-    // 위치 정보는 __lastData 기준으로 즉시 업데이트
     updateCarSearchPanel(q, __lastData);
-
-    // 히스토리: 캐시 있으면 즉시, 없으면 로딩
     const allKey=`all_${__anFrom}_${__anTo}`;
     const showHist=()=>{
       const html=buildHistoryRows(q);
@@ -1966,6 +1961,18 @@ document.getElementById('searchInput').addEventListener('input',e=>{
       histEl.innerHTML=`<span style="color:#9ca3af;font-size:12px"><span class="mini-spinner"></span> 히스토리 불러오는 중…</span>`;
       loadAllTypesForSearch().then(showHist).catch(()=>{ histEl.innerHTML=''; });
     }
+  }
+}
+document.getElementById('searchBtn').addEventListener('click', doSearch);
+document.getElementById('searchInput').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
+document.getElementById('searchInput').addEventListener('input',e=>{
+  // 입력값 비어있으면 즉시 초기화
+  if(!(e.target.value||'').trim()){
+    localStorage.setItem(LS.q,'');
+    document.getElementById('searchSummary').style.display='none';
+    document.getElementById('carSearchPanel').style.display='none';
+    const live=document.getElementById('btnViewLive').classList.contains('active');
+    if(live) rerenderCache();
   }
 });
 document.getElementById('watchAddBtn').addEventListener('click',()=>{
