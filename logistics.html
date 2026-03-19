@@ -335,10 +335,10 @@ const CAPA_MAP = {
 
 // ★ 혼잡도 패널에 쓸 품목 정의
 const CONG_TYPES = [
-  { key:'제품 상차중',     label:'제품',    capaB:5,  capaS:7  },
-  { key:'원료 하차중',     label:'원료',    capaB:5,  capaS:10 },
-  { key:'부자재 입차중',   label:'부자재',  capaB:5,  capaS:5  },
-  { key:'컨테이너 입차중', label:'컨테이너',capaB:3,  capaS:3  },
+  { key:'제품 상차중',     label:'제품',     tp:'product',   capaB:5,  capaS:7  },
+  { key:'원료 하차중',     label:'원료',     tp:'raw',       capaB:5,  capaS:10 },
+  { key:'부자재 입차중',   label:'부자재',   tp:'sub',       capaB:5,  capaS:5  },
+  { key:'컨테이너 입차중', label:'컨테이너', tp:'container', capaB:3,  capaS:3  },
 ];
 
 function congColor(pct){
@@ -347,6 +347,44 @@ function congColor(pct){
 function congColorTxt(pct){
   return pct >= 100 ? 'cong-danger-txt' : pct >= 60 ? 'cong-warn-txt' : 'cong-ok-txt';
 }
+
+
+// ═══ 평균 체류시간 캐시 (혼잡도+예상출차에서 공용) ═══
+let __avgDurMap = {}; // {product_반월: 54, raw_시화: 22, ...}
+
+function calcAvgDurMap(plantFilter){
+  const today = todayKST();
+  const allKey = `all_${today}_${today}`;
+  const cached = __anCache[allKey];
+  const map = {};
+  if(!cached || cached.mode!=='all-daily') return map;
+  const TYPE_KEYS = ['product','raw','sub','container'];
+  TYPE_KEYS.forEach(tp=>{
+    const d = cached.data[tp]||{};
+    ['banwol','sihwa'].forEach(p=>{
+      const plant = p==='banwol'?'반월':'시화';
+      const durs = (d[p]||[]).map(r=>effectiveDurMin(r.INTIME,r.OUTIME,tp)).filter(v=>v!=null&&v>0&&v<=120);
+      if(durs.length) map[`${tp}_${plant}`] = Math.round(durs.reduce((s,v)=>s+v,0)/durs.length);
+    });
+  });
+  return map;
+}
+
+function refreshAvgDurMap(plantFilter){
+  const today = todayKST();
+  const allKey = `all_${today}_${today}`;
+  if(__anCache[allKey]){
+    __avgDurMap = calcAvgDurMap(plantFilter);
+    // 이미 캐시 있으면 즉시 재렌더 불필요 (render 흐름 안에서 호출됨)
+  } else {
+    loadAllTypesForSearch().then(()=>{
+      __avgDurMap = calcAvgDurMap(plantFilter);
+      // 캐시 로드 완료 후 화면 다시 그려서 평균+예상출차 표시
+      if(document.getElementById('btnViewLive').classList.contains('active')) rerenderCache();
+    }).catch(()=>{});
+  }
+}
+
 
 function renderCongPanel(data, plantFilter){
   const grid = document.getElementById('congGrid');
@@ -373,6 +411,11 @@ function renderCongPanel(data, plantFilter){
     const showB = (plantFilter !== 'sihwa');
     const showS = (plantFilter !== 'banwol');
 
+    const avgB = __avgDurMap[`${t.tp}_반월`];
+    const avgS = __avgDurMap[`${t.tp}_시화`];
+    const avgBStr = avgB ? `평균 ${avgB}분` : '';
+    const avgSStr = avgS ? `평균 ${avgS}분` : '';
+
     const rowB = showB ? `
       <div class="cong-row">
         <span class="cong-plant">반월</span>
@@ -380,7 +423,8 @@ function renderCongPanel(data, plantFilter){
           <div class="cong-bar ${congColor(pctB)}" style="width:${barWidthB}%"></div>
         </div>
         <span class="cong-num ${congColorTxt(pctB)}">${bw}/${t.capaB}</span>
-      </div>` : '';
+      </div>
+      ${avgBStr?`<div style="font-size:9px;color:var(--muted);padding-left:31px;margin-bottom:2px">${avgBStr}</div>`:''}` : '';
 
     const rowS = showS ? `
       <div class="cong-row">
@@ -389,7 +433,8 @@ function renderCongPanel(data, plantFilter){
           <div class="cong-bar ${congColor(pctS)}" style="width:${barWidthS}%"></div>
         </div>
         <span class="cong-num ${congColorTxt(pctS)}">${sh}/${t.capaS}</span>
-      </div>` : '';
+      </div>
+      ${avgSStr?`<div style="font-size:9px;color:var(--muted);padding-left:31px;margin-bottom:2px">${avgSStr}</div>`:''}` : '';
 
     // 셀 테두리 색: 가장 혼잡한 쪽 기준
     const worstPct = showB && showS ? Math.max(pctB, pctS) : showB ? pctB : pctS;
@@ -573,10 +618,30 @@ function render(data){
       const sep=(plantSel==='all'&&i>0&&rows[i-1].plant!==r.plant);
       if(sep) seq=1;
       const watched=last4(r.car)&&watchList[last4(r.car)]!==undefined;
+      // 예상 출차: 입차시간 + 평균 체류시간, 2시간(120분) 초과 체류는 표시 안 함
+      const TYPE_FOR_SEC = {'제품 상차중':'product','원료 하차중':'raw','원료 대기':'raw','부자재 입차중':'sub','컨테이너 입차중':'container'};
+      const secType = TYPE_FOR_SEC[sec.title]||'product';
+      const avgDurForRow = __avgDurMap[`${secType}_${r.plant}`];
+      const inMinForRow = timeToMin(fmtTime(r.time));
+      const nowMinForRow = nowKSTMin();
+      const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
+      let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
+      if(avgDurForRow && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0 && elapsedForRow<120){
+        const estMin = inMinForRow + avgDurForRow;
+        const remainMin = estMin - nowMinForRow;
+        if(remainMin > 0){
+          const estStr = `${String(Math.floor(estMin/60)%24).padStart(2,'0')}:${String(estMin%60).padStart(2,'0')}`;
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#0C447C">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후</span></td>`;
+        } else {
+          // 예상 시간 지났는데 아직 있음 — 초과 표시
+          const overMin = Math.abs(remainMin);
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
+        }
+      }
       return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}">
         <td>${seq++}</td>
         <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
-        <td>${fmtTime(r.time)}</td><td>${r.plant}</td>
+        <td>${fmtTime(r.time)}</td><td>${r.plant}</td>${estTd}
       </tr>`;
     }).join(''):'<tr><td colspan="4" class="empty">(데이터 없음)</td></tr>';
     const bc=rows.filter(r=>r.plant==='반월').length;
@@ -595,7 +660,7 @@ function render(data){
       </div>
       <div class="summary">총 ${rows.length} · ${summaryStr}</div>
       <div class="body" style="${collapsed?'display:none':''}">
-        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">시간</th><th style="width:56px">공장</th></tr></thead>
+        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">입차</th><th style="width:56px">공장</th><th style="width:80px">예상 출차</th></tr></thead>
         <tbody>${rowsHTML}</tbody></table>
       </div>
     </article>`;
@@ -608,6 +673,7 @@ function render(data){
   // ★ 혼잡도 패널 렌더 (입차 조회 탭에서만)
   if(document.getElementById('btnViewLive').classList.contains('active')){
     renderCongPanel(data, plantSel);
+    refreshAvgDurMap(plantSel);
   }
 
   const badge=document.getElementById('searchSummary');
