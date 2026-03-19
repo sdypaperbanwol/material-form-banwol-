@@ -1781,76 +1781,83 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   initPeriodBarEvents();
   await fetchWatch();
   await loadSnapshot();
-  setInterval(()=>{if(document.getElementById('btnViewLive').classList.contains('active'))loadSnapshot();},20000);
+  
   setInterval(fetchWatch,5*60*1000);
   // 분석탭 실시간 혼잡도 카드 갱신 — 1분마다 snapshot 백그라운드 업데이트
-  setInterval(async ()=>{
-    const isAnalytic = document.getElementById('btnViewAnalytic').classList.contains('active');
-    if(!isAnalytic) return;
-    try{
-      const data = await api({action:'snapshot_live'});
-      if(data && data.sections){
-        __lastData = data;
-        // 실시간 혼잡도 카드만 다시 그리기 (패널 전체 재렌더 X)
-        const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
-        const cached=__anCache[cacheKey];
-        if(cached && cached.mode==='daily'){
-          const plantFilter=document.getElementById('plantFilter').value||'all';
-          const SECTION_MAP={product:'제품 상차중',raw:'원료 하차중',sub:'부자재 입차중',container:'컨테이너 입차중'};
-const CAPA_RT={product:{'반월':5,'시화':7},raw:{'반월':5,'시화':10},sub:{'반월':5,'시화':5},container:{'반월':3,'시화':3}};
-          const CAPA=CAPA_RT[__anType]||CAPA_RT.product;
-          const targetSection=SECTION_MAP[__anType]||'제품 상차중';
-          const counts={'반월':0,'시화':0};
-          data.sections.filter(s=>s.title===targetSection).forEach(s=>{
-            s.groups.forEach(g=>{counts[g.plant]=(counts[g.plant]||0)+g.rows.filter(r=>!isMonoDigit(r.car)).length;});
-          });
-          const bwPct=Math.round(counts['반월']/CAPA['반월']*100);
-          const shPct=Math.round(counts['시화']/CAPA['시화']*100);
-          function rtColorBg(pct){return pct>=100?'#E24B4A':pct>=80?'#EF9F27':pct>=40?'#97C459':'#C0DD97';}
-          function rtBadgeBg(pct){return pct>=100?['#FCEBEB','#A32D2D']:pct>=80?['#FAEEDA','#854F0B']:['#EAF3DE','#3B6D11'];}
-          const [bwBg,bwTx]=rtBadgeBg(bwPct),[shBg,shTx]=rtBadgeBg(shPct);
-          const rtCard=document.getElementById('realtimeCard');
-          if(rtCard){
-            function rtBoxesBg(count,capa){
-              const total=Math.max(capa,count); let h='';
-              for(let i=0;i<total;i++){
-                const filled=i<count, isOver=i>=capa;
-                const pct=(i+1)/capa;
-                const slotColor=isOver?'#A32D2D':pct<=0.4?'#C0DD97':pct<=0.8?'#97C459':pct<1.0?'#EF9F27':'#E24B4A';
-                const color=filled?slotColor:'#e5e7eb';
-                const brd='border:1.5px solid '+(filled?slotColor:'#d1d5db');
-                h+=`<div style="width:20px;height:20px;border-radius:4px;background:${color};${brd};display:inline-block;margin:1px"></div>`;
-              }
-              return h;
+setInterval(async ()=>{
+  try{
+    const data = await api({action:'snapshot_live'});
+    if(data && data.sections){
+      __lastData = data;
+      // 업데이트 시간은 항상 갱신
+      elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
+      // 입차 조회 탭이면 화면도 갱신
+      if(document.getElementById('btnViewLive').classList.contains('active')){
+        render(data);
+        return;
+      }
+      // 분석탭 + 오늘(daily)일 때만 실시간 혼잡도 카드 갱신
+      const isAnalytic = document.getElementById('btnViewAnalytic').classList.contains('active');
+      if(!isAnalytic) return;
+      const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
+      const cached=__anCache[cacheKey];
+      if(cached && cached.mode==='daily'){
+        const plantFilter=document.getElementById('plantFilter').value||'all';
+        const SECTION_MAP={product:'제품 상차중',raw:'원료 하차중',sub:'부자재 입차중',container:'컨테이너 입차중'};
+        const CAPA_RT={product:{'반월':5,'시화':7},raw:{'반월':5,'시화':10},sub:{'반월':5,'시화':5},container:{'반월':3,'시화':3}};
+        const CAPA=CAPA_RT[__anType]||CAPA_RT.product;
+        const targetSection=SECTION_MAP[__anType]||'제품 상차중';
+        const counts={'반월':0,'시화':0};
+        data.sections.filter(s=>s.title===targetSection).forEach(s=>{
+          s.groups.forEach(g=>{counts[g.plant]=(counts[g.plant]||0)+g.rows.filter(r=>!isMonoDigit(r.car)).length;});
+        });
+        const bwPct=Math.round(counts['반월']/CAPA['반월']*100);
+        const shPct=Math.round(counts['시화']/CAPA['시화']*100);
+        function rtColorBg(pct){return pct>=100?'#E24B4A':pct>=80?'#EF9F27':pct>=40?'#97C459':'#C0DD97';}
+        function rtBadgeBg(pct){return pct>=100?['#FCEBEB','#A32D2D']:pct>=80?['#FAEEDA','#854F0B']:['#EAF3DE','#3B6D11'];}
+        const [bwBg,bwTx]=rtBadgeBg(bwPct),[shBg,shTx]=rtBadgeBg(shPct);
+        const rtCard=document.getElementById('realtimeCard');
+        if(rtCard){
+          function rtBoxesBg(count,capa){
+            const total=Math.max(capa,count); let h='';
+            for(let i=0;i<total;i++){
+              const filled=i<count, isOver=i>=capa;
+              const pct=(i+1)/capa;
+              const slotColor=isOver?'#A32D2D':pct<=0.4?'#C0DD97':pct<=0.8?'#97C459':pct<1.0?'#EF9F27':'#E24B4A';
+              const color=filled?slotColor:'#e5e7eb';
+              const brd='border:1.5px solid '+(filled?slotColor:'#d1d5db');
+              h+=`<div style="width:20px;height:20px;border-radius:4px;background:${color};${brd};display:inline-block;margin:1px"></div>`;
             }
-            const pf=document.getElementById('plantFilter').value||'all';
-            const rtBgBw=`<div style="margin-bottom:10px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-                  <span style="font-size:12px;font-weight:600;color:#333">반월</span>
-                  <span style="font-size:11px;color:#555">${counts['반월']} / ${CAPA['반월']}대</span>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxesBg(counts['반월'],CAPA['반월'])}</div>
-              </div>`;
-            const rtBgSh=`<div style="margin-bottom:8px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-                  <span style="font-size:12px;font-weight:600;color:#333">시화</span>
-                  <span style="font-size:11px;color:#555">${counts['시화']} / ${CAPA['시화']}대</span>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxesBg(counts['시화'],CAPA['시화'])}</div>
-              </div>`;
-            const rtBgRows=pf==='banwol'?rtBgBw:pf==='sihwa'?rtBgSh:rtBgBw+rtBgSh;
-            rtCard.innerHTML=`
-              <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-                실시간 혼잡도
-                <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
-              </div>
-              ${rtBgRows}
-              <div style="font-size:11px;color:var(--muted);margin-top:6px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>`;
+            return h;
           }
+          const pf=document.getElementById('plantFilter').value||'all';
+          const rtBgBw=`<div style="margin-bottom:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:12px;font-weight:600;color:#333">반월</span>
+                <span style="font-size:11px;color:#555">${counts['반월']} / ${CAPA['반월']}대</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxesBg(counts['반월'],CAPA['반월'])}</div>
+            </div>`;
+          const rtBgSh=`<div style="margin-bottom:8px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:12px;font-weight:600;color:#333">시화</span>
+                <span style="font-size:11px;color:#555">${counts['시화']} / ${CAPA['시화']}대</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:2px">${rtBoxesBg(counts['시화'],CAPA['시화'])}</div>
+            </div>`;
+          const rtBgRows=pf==='banwol'?rtBgBw:pf==='sihwa'?rtBgSh:rtBgBw+rtBgSh;
+          rtCard.innerHTML=`
+            <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+              실시간 혼잡도
+              <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c">● 실시간</span>
+            </div>
+            ${rtBgRows}
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">현재 ${targetSection} 차량 기준 · 입차 탭 데이터</div>`;
         }
       }
-    }catch(e){}
-  }, 60000);
+    }
+  }catch(e){}
+}, 60000);
 })();
 </script>
 </body>
