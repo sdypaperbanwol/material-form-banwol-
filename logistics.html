@@ -611,11 +611,17 @@ function render(data){
   }
 
   const badge=document.getElementById('searchSummary');
-  if(q){ badge.style.display='inline-block'; badge.textContent=`${__searchCount}건 검색`; }
+  if(q) badge.style.display='inline-block';
   else badge.style.display='none';
+  // 건수는 히스토리 로드 후 updateSearchBadge()로 갱신
 
   // 차량 검색 통합 패널 — 현재 위치 갱신
   updateCarSearchPanel(isFour ? dqq : null, data);
+}
+
+function updateSearchBadge(count){
+  const badge=document.getElementById('searchSummary');
+  if(badge&&badge.style.display!=='none') badge.textContent=`${count}건`;
 }
 
 function updateCarSearchPanel(carNum4, liveData){
@@ -625,12 +631,9 @@ function updateCarSearchPanel(carNum4, liveData){
   const histEl=document.getElementById('carSearchHistory');
   if(!panel) return;
 
-  if(!carNum4){
-    panel.style.display='none';
-    return;
-  }
+  if(!carNum4){ panel.style.display='none'; return; }
 
-  // ── 현재 입차 위치 ──
+  // 현재 입차 중인 항목 수집
   const found=[];
   if(liveData&&liveData.sections){
     liveData.sections.forEach(sec=>{
@@ -642,26 +645,34 @@ function updateCarSearchPanel(carNum4, liveData){
     });
   }
   titleEl.textContent=`차량 ${carNum4}`;
-  if(found.length){
-    locEl.innerHTML=found.map(f=>`
-      <span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px">
-        <span style="font-size:11px;padding:1px 8px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-weight:600">${f.plant} · ${f.section}</span>
-        <span style="color:#6b7280">입차 ${f.time}</span>
-      </span>`).join('');
-  } else {
-    locEl.innerHTML=`<span style="color:#9ca3af">현재 입차된 차량 없음</span>`;
-  }
-  locEl.style.display='block';
+  locEl.style.display='none'; // 위치 별도 표시 제거 — 히스토리에 통합
 
-  // ── 히스토리 영역 (분석탭에서 채워짐, 입차탭에서는 로딩 트리거) ──
   const isAnalytic=document.getElementById('btnViewAnalytic').classList.contains('active');
   if(!isAnalytic){
-    // 입차탭: 히스토리 영역 비우고 로딩 시작
     histEl.innerHTML=`<span style="color:#9ca3af;font-size:12px"><span class="mini-spinner"></span> 히스토리 불러오는 중…</span>`;
     panel.style.display='block';
     const allKey=`all_${__anFrom}_${__anTo}`;
     const showHist=()=>{
-      const html=buildHistoryRows(carNum4);
+      const html=buildHistoryRows(carNum4, found);
+      const allKey2=`all_${__anFrom}_${__anTo}`;
+      const cached=__anCache[allKey2];
+      // 총 건수 = 히스토리 건수 + 현재 입차 중 건수(히스토리에 없는 것)
+      let totalCount=0;
+      if(cached){
+        const types=['product','raw','sub','container'];
+        const seen2=new Set();
+        const count=(list,tp)=>(list||[]).filter(r=>{
+          const c=last4(r.CARNUM||''); if(c!==carNum4||isMonoDigit(r.CARNUM)) return false;
+          const k=`${tp}|${r._plant||''}|${r.INTIME}|${r.CARNUM}`;
+          if(seen2.has(k)) return false; seen2.add(k); return true;
+        }).length;
+        if(cached.mode==='all-daily'){
+          types.forEach(tp=>{ const d=cached.data[tp]||{};
+            totalCount+=count(d.banwol,tp); totalCount+=count(d.sihwa,tp); });
+        }
+      }
+      totalCount+=found.length; // 현재 입차중 추가
+      updateSearchBadge(totalCount||'');
       histEl.innerHTML=html||`<span style="color:#9ca3af">오늘 입차 기록 없음</span>`;
     };
     if(__anCache[allKey]){ showHist(); }
@@ -671,7 +682,7 @@ function updateCarSearchPanel(carNum4, liveData){
   }
 }
 
-function buildHistoryRows(carNum4){
+function buildHistoryRows(carNum4, liveFound){
   const TYPE_LABEL={product:'제품',raw:'원료',sub:'부자재',container:'컨테이너'};
   const TYPE_COLOR={product:'#06b6d4',raw:'#22c55e',sub:'#f97316',container:'#a855f7'};
   const allKey=`all_${__anFrom}_${__anTo}`;
@@ -709,8 +720,25 @@ function buildHistoryRows(carNum4){
   });
   const byDate={};
   rows.forEach(r=>{ if(!byDate[r.date]) byDate[r.date]=[]; byDate[r.date].push(r); });
+  // 현재 입차중 항목을 오늘 날짜 맨 아래에 추가
+  const todayStr=todayKST();
+  const liveRows=(liveFound||[]).map(f=>{
+    const SEC_TYPE={'제품 상차중':'product','원료 하차중':'raw','원료 대기':'raw','부자재 입차중':'sub','컨테이너 입차중':'container'};
+    const tp=SEC_TYPE[f.section]||'product';
+    const TYPE_COLOR2={product:'#06b6d4',raw:'#22c55e',sub:'#f97316',container:'#a855f7'};
+    const color=TYPE_COLOR2[tp];
+    const label=TYPE_LABEL[tp]||tp;
+    return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;background:#fffbeb;border-radius:4px;margin:1px 0">
+      <span style="width:28px;font-size:11px;color:#9ca3af;flex-shrink:0">${f.plant}</span>
+      <span style="padding:1px 7px;border-radius:999px;background:${color}22;color:${color};font-size:11px;font-weight:600;flex-shrink:0">${label}</span>
+      <span style="color:#374151;font-size:12px">${f.time} → <span style="color:#f59e0b;font-weight:600">입차중</span></span>
+      <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:#fef3c7;color:#b45309">현재</span>
+    </div>`;
+  }).join('');
+
   return Object.entries(byDate).map(([date,list])=>{
-    const dateLabel=date===todayKST()?'오늘':date;
+    const dateLabel=date===todayStr?'오늘':date;
+    const isToday=date===todayStr;
     const rowHtml=list.map(r=>{
       const label=TYPE_LABEL[r.type]||r.type;
       const color=TYPE_COLOR[r.type]||'#6366f1';
@@ -735,9 +763,9 @@ function buildHistoryRows(carNum4){
     }).join('');
     return `<div style="margin-bottom:6px">
       <div style="font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:3px;letter-spacing:.03em">${dateLabel}</div>
-      ${rowHtml}
+      ${rowHtml}${isToday?liveRows:''}
     </div>`;
-  }).join('');
+  }).join('')+(Object.keys(byDate).length===0&&liveRows?`<div style="margin-bottom:6px"><div style="font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:3px">오늘</div>${liveRows}</div>`:'');
 }
 
 window.toggleCard=(enc,btn)=>{
