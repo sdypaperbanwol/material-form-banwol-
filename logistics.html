@@ -654,26 +654,45 @@ function updateCarSearchPanel(carNum4, liveData){
     const allKey=`all_${__anFrom}_${__anTo}`;
     const showHist=()=>{
       const html=buildHistoryRows(carNum4, found);
+      // 건수 계산
       const allKey2=`all_${__anFrom}_${__anTo}`;
       const cached=__anCache[allKey2];
-      // 총 건수 = 히스토리 건수 + 현재 입차 중 건수(히스토리에 없는 것)
       let totalCount=0;
-      if(cached){
+      if(cached&&cached.mode==='all-daily'){
         const types=['product','raw','sub','container'];
         const seen2=new Set();
-        const count=(list,tp)=>(list||[]).filter(r=>{
-          const c=last4(r.CARNUM||''); if(c!==carNum4||isMonoDigit(r.CARNUM)) return false;
-          const k=`${tp}|${r._plant||''}|${r.INTIME}|${r.CARNUM}`;
-          if(seen2.has(k)) return false; seen2.add(k); return true;
-        }).length;
-        if(cached.mode==='all-daily'){
-          types.forEach(tp=>{ const d=cached.data[tp]||{};
-            totalCount+=count(d.banwol,tp); totalCount+=count(d.sihwa,tp); });
-        }
+        types.forEach(tp=>{ const d=cached.data[tp]||{};
+          [...(d.banwol||[]),...(d.sihwa||[])].forEach(r=>{
+            const c=last4(r.CARNUM||'');
+            if(c!==carNum4||isMonoDigit(r.CARNUM)) return;
+            const k=`${tp}|${r.INTIME}|${r.CARNUM}`;
+            if(seen2.has(k)) return; seen2.add(k); totalCount++;
+          });
+        });
       }
-      totalCount+=found.length; // 현재 입차중 추가
+      totalCount+=found.length;
       updateSearchBadge(totalCount||'');
-      histEl.innerHTML=html||`<span style="color:#9ca3af">오늘 입차 기록 없음</span>`;
+      if(html){
+        histEl.innerHTML=html;
+      } else if(found.length){
+        // 히스토리 없어도 현재 입차중 항목은 직접 렌더
+        const TYPE_COLOR2={product:'#06b6d4',raw:'#22c55e',sub:'#f97316',container:'#a855f7'};
+        const TYPE_LABEL2={product:'제품',raw:'원료',sub:'부자재',container:'컨테이너'};
+        const SEC_TYPE2={'제품 상차중':'product','원료 하차중':'raw','원료 대기':'raw','부자재 입차중':'sub','컨테이너 입차중':'container'};
+        const liveHtml=found.map(f=>{
+          const tp=SEC_TYPE2[f.section]||'product';
+          const color=TYPE_COLOR2[tp]; const label=TYPE_LABEL2[tp];
+          return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;background:#fffbeb;border-radius:4px;margin:1px 0">
+            <span style="width:28px;font-size:11px;color:#9ca3af;flex-shrink:0">${f.plant}</span>
+            <span style="padding:1px 7px;border-radius:999px;background:${color}22;color:${color};font-size:11px;font-weight:600;flex-shrink:0">${label}</span>
+            <span style="color:#374151;font-size:12px">${f.time} → <span style="color:#f59e0b;font-weight:600">입차중</span></span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:#fef3c7;color:#b45309">현재</span>
+          </div>`;
+        }).join('');
+        histEl.innerHTML=`<div style="margin-bottom:6px"><div style="font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:3px">오늘</div>${liveHtml}</div>`;
+      } else {
+        histEl.innerHTML=`<span style="color:#9ca3af">오늘 입차 기록 없음</span>`;
+      }
     };
     if(__anCache[allKey]){ showHist(); }
     else { loadAllTypesForSearch().then(showHist).catch(()=>{ histEl.innerHTML=''; }); }
@@ -765,7 +784,7 @@ function buildHistoryRows(carNum4, liveFound){
       <div style="font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:3px;letter-spacing:.03em">${dateLabel}</div>
       ${rowHtml}${isToday?liveRows:''}
     </div>`;
-  }).join('')+(Object.keys(byDate).length===0&&liveRows?`<div style="margin-bottom:6px"><div style="font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:3px">오늘</div>${liveRows}</div>`:'');
+  }).join('')+(Object.keys(byDate).length===0&&(liveFound||[]).length>0?`<div style="margin-bottom:6px"><div style="font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:3px">오늘</div>${liveRows}</div>`:'');
 }
 
 window.toggleCard=(enc,btn)=>{
