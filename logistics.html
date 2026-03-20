@@ -632,21 +632,26 @@ function render(data){
       const inMinForRow = timeToMin(fmtTime(r.time));
       const nowMinForRow = nowKSTMin();
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
+const threshold = avgDurForRow || 120; // 평균 없으면 120분 폴백
+      const isAbnormal = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
-      if(avgDurForRow && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0 && elapsedForRow<120){
-        const estMin = inMinForRow + avgDurForRow;
+      if(!isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
+        const estMin = inMinForRow + threshold;
         const remainMin = estMin - nowMinForRow;
         if(remainMin > 0){
           const estStr = `${String(Math.floor(estMin/60)%24).padStart(2,'0')}:${String(estMin%60).padStart(2,'0')}`;
           estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#0C447C">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후</span></td>`;
         } else {
-          // 예상 시간 지났는데 아직 있음 — 초과 표시
           const overMin = Math.abs(remainMin);
           estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
         }
+      } else if(isAbnormal){
+        const elapsed = elapsedForRow!=null&&elapsedForRow>0 ? elapsedForRow : null;
+        const elapsedStr = elapsed ? `${Math.floor(elapsed/60)>0?Math.floor(elapsed/60)+'h ':''}${elapsed%60}m` : '';
+        estTd = `<td style="font-size:11px"><span style="color:var(--color-text-secondary)">이상체류${elapsedStr?' · '+elapsedStr:''}</span></td>`;
       }
       const isOver120 = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow>120||elapsedForRow<0);
-      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}"${isOver120?' style="opacity:0.35"':''}>
+     return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
         <td>${seq++}</td>
         <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
         <td>${fmtTime(r.time)}</td><td>${r.plant}</td>${estTd}
