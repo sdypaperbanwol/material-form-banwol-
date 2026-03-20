@@ -392,14 +392,21 @@ function renderCongPanel(data, plantFilter){
 
   // 섹션 제목 → rows 매핑
   const sectionMap = {};
-  data.sections.forEach(sec => {
+data.sections.forEach(sec => {
     const counts = { '반월': 0, '시화': 0 };
     sec.groups.forEach(g => {
-      counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => !isMonoDigit(r.car)).length;
+      counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
+        if(isMonoDigit(r.car)) return false;
+        if(sec.title==='원료 대기') return true;
+        const inM = timeToMin(fmtTime(r.time));
+        if(inM==null) return true;
+        const elapsed = nowKSTMin() - inM;
+        if(elapsed<0||elapsed>120) return false;
+        return true;
+      }).length;
     });
     sectionMap[sec.title] = counts;
   });
-
   grid.innerHTML = CONG_TYPES.map(t => {
     const counts = sectionMap[t.key] || { '반월': 0, '시화': 0 };
     const bw = counts['반월'], sh = counts['시화'];
@@ -638,7 +645,8 @@ function render(data){
           estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
         }
       }
-      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}">
+      const isOver120 = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow>120||elapsedForRow<0);
+      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}"${isOver120?' style="opacity:0.35"':''}>
         <td>${seq++}</td>
         <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
         <td>${fmtTime(r.time)}</td><td>${r.plant}</td>${estTd}
