@@ -397,11 +397,15 @@ data.sections.forEach(sec => {
     sec.groups.forEach(g => {
       counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
         if(isMonoDigit(r.car)) return false;
-        if(sec.title==='원료 대기') return true;
+        if(sec.title!=='제품 상차중') return true;
         const inM = timeToMin(fmtTime(r.time));
         if(inM==null) return true;
+        const TYPE_FOR_SEC = {'제품 상차중':'product'};
+        const tp = TYPE_FOR_SEC[sec.title]||'product';
+        const avg = __avgDurMap[`${tp}_${g.plant}`];
+        const threshold = avg || 120;
         const elapsed = nowKSTMin() - inM;
-        if(elapsed<0||elapsed>120) return false;
+        if(elapsed<0||elapsed>threshold*2) return false;
         return true;
       }).length;
     });
