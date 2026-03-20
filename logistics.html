@@ -660,7 +660,7 @@ function render(data){
       </div>
       <div class="summary">총 ${rows.length} · ${summaryStr}</div>
       <div class="body" style="${collapsed?'display:none':''}">
-        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">입차</th><th style="width:56px">공장</th><th style="width:80px">예상 출차</th></tr></thead>
+        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:56px">공장</th><th style="width:80px">${sec.title==='원료 대기'?'예상 입차':'예상 출차'}</th></tr></thead>
         <tbody>${rowsHTML}</tbody></table>
       </div>
     </article>`;
@@ -751,7 +751,7 @@ function updateCarSearchPanel(carNum4, liveData){
           return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;background:#fffbeb;border-radius:4px;margin:1px 0">
             <span style="width:28px;font-size:11px;color:#9ca3af;flex-shrink:0">${f.plant}</span>
             <span style="padding:1px 7px;border-radius:999px;background:${color}22;color:${color};font-size:11px;font-weight:600;flex-shrink:0">${label}</span>
-            <span style="color:#374151;font-size:12px">${f.time} → <span style="color:#f59e0b;font-weight:600">입차중</span></span>
+            <span style="color:#374151;font-size:12px">${f.time} → <span style="color:#f59e0b;font-weight:600">${f.section==='원료 대기'?'대기중':'입차중'}</span></span>
             <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:#fef3c7;color:#b45309">현재</span>
           </div>`;
         }).join('');
@@ -816,7 +816,7 @@ function buildHistoryRows(carNum4, liveFound){
     return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #f3f4f6;background:#fffbeb;border-radius:4px;margin:1px 0">
       <span style="width:28px;font-size:11px;color:#9ca3af;flex-shrink:0">${f.plant}</span>
       <span style="padding:1px 7px;border-radius:999px;background:${color}22;color:${color};font-size:11px;font-weight:600;flex-shrink:0">${label}</span>
-      <span style="color:#374151;font-size:12px">${f.time} → <span style="color:#f59e0b;font-weight:600">입차중</span></span>
+      <span style="color:#374151;font-size:12px">${f.time} → <span style="color:#f59e0b;font-weight:600">${f.section==='원료 대기'?'대기중':'입차중'}</span></span>
       <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:#fef3c7;color:#b45309">현재</span>
     </div>`;
   }).join('');
