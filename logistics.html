@@ -633,9 +633,10 @@ function render(data){
       const nowMinForRow = nowKSTMin();
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
 const threshold = avgDurForRow || 120; // 평균 없으면 120분 폴백
-      const isAbnormal = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
+  const isAbnormal = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
-      if(!isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
+      if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
+        
         const estMin = inMinForRow + threshold;
         const remainMin = estMin - nowMinForRow;
         if(remainMin > 0){
