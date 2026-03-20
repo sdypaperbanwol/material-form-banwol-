@@ -2126,7 +2126,8 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   await loadSnapshot();
   
   setInterval(fetchWatch,5*60*1000);
-  setInterval(async ()=>{
+ setInterval(async ()=>{
+    if(document.hidden) return;
     try{
       const data = await api({action:'snapshot_live'});
       if(data && data.sections){
