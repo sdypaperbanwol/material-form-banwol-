@@ -610,8 +610,8 @@ function render(data){
   const plantSel=document.getElementById('plantFilter').value;
   const q=(document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
   const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
-  const LEFT=['제품 상차중','부자재 입차중','컨테이너 입차중'];
-  const RIGHT=['원료 하차중','원료 대기'];
+  const LEFT=['제품 상차중','원료 하차중','원료 대기'];
+const RIGHT=['부자재 입차중','컨테이너 입차중'];
   const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
   const allCars=[];
   const buildSec=sec=>{
