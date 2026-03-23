@@ -216,6 +216,11 @@
   .cong-ok-txt   { color:#3B6D11 }
   .cong-warn-txt { color:#854F0B }
   .cong-danger-txt{ color:#A32D2D }
+
+tbody tr.bw-row td { background:#eff6ff !important; }
+tbody tr.sh-row td { background:#f0fdf4 !important; }
+tbody tr.bw-row td.cell-hit { background:#fff2cc !important; }
+tbody tr.sh-row td.cell-hit { background:#fff2cc !important; }
   </style>
 </head>
 <body>
@@ -315,7 +320,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwws5G6ruQkUH8FP3e3P1vIOZqDAm-8PngGCUbAY9FZHMhh5Ana7VPeM2IIWPol8k9cOg/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxy4YeGNQVdYBD6DtTY1HnJNKmLk19prVQ4rVJde868f0qsf40UKEBurB53TuXKaSDEBQ/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
@@ -655,29 +660,53 @@ const threshold = avgDurForRow || 120; // 평균 없으면 120분 폴백
         estTd = `<td style="font-size:11px"><span style="color:var(--color-text-secondary)">이상체류${elapsedStr?' · '+elapsedStr:''}</span></td>`;
       }
       const isOver120 = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow>120||elapsedForRow<0);
-     return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':''].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
-        <td>${seq++}</td>
+const plantClass = r.plant==='반월' ? 'bw-row' : 'sh-row';
+return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
+<td>${seq++}</td>
         <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
-        <td>${fmtTime(r.time)}</td><td>${r.plant}</td>${estTd}
+        <td>${fmtTime(r.time)}</td>${estTd}
+        <td style="color:#185FA5;font-size:12px">${r.totwei?Number(String(r.totwei).replace(/[^\d.]/g,'')).toLocaleString()+'kg':'—'}</td>
       </tr>`;
-    }).join(''):'<tr><td colspan="4" class="empty">(데이터 없음)</td></tr>';
-    const bc=rows.filter(r=>r.plant==='반월').length;
-    const sc=rows.filter(r=>r.plant==='시화').length;
+    }).join(''):'<tr><td colspan="5" class="empty">(데이터 없음)</td></tr>';
+const bc=rows.filter(r=>{
+      if(r.plant!=='반월') return false;
+      if(sec.title!=='제품 상차중') return true;
+      const inM=timeToMin(fmtTime(r.time));
+      if(inM==null) return true;
+      const avg=__avgDurMap[`product_반월`];
+      const threshold=avg?avg*2:120;
+      const elapsed=nowKSTMin()-inM;
+      return !(elapsed<0||elapsed>threshold);
+    }).length;
+    const sc=rows.filter(r=>{
+      if(r.plant!=='시화') return false;
+      if(sec.title!=='제품 상차중') return true;
+      const inM=timeToMin(fmtTime(r.time));
+      if(inM==null) return true;
+      const avg=__avgDurMap[`product_시화`];
+      const threshold=avg?avg*2:120;
+      const elapsed=nowKSTMin()-inM;
+      return !(elapsed<0||elapsed>threshold);
+    }).length;
     const capaB=CAPA_MAP['반월'][sec.title];
     const capaS=CAPA_MAP['시화'][sec.title];
     const pctB=capaB?Math.round(bc/capaB*100):null;
     const pctS=capaS?Math.round(sc/capaS*100):null;
-    const summaryStr=`반월 ${bc}${pctB!=null?' ('+pctB+'%)':''} · 시화 ${sc}${pctS!=null?' ('+pctS+'%)':''}`;
+    const summaryStr=`반월 ${bc} · 시화 ${sc}`;
     return `<article class="card">
       <div class="stripe ${stripeClass(sec.color)}"></div>
       <div class="head"><h3>${sec.title}</h3>
         <div class="head-right">
+          ${plantSel==='all'?`<span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#eff6ff;border:1px solid #bfdbfe"></span>반월
+            <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f0fdf4;border:1px solid #bbf7d0"></span>시화
+          </span>`:''}
           <button class="btn" onclick="toggleCard('${encodeURIComponent(sec.title)}',this)">${collapsed?'펼치기':'접기'}</button>
         </div>
       </div>
       <div class="summary">총 ${rows.length} · ${summaryStr}</div>
       <div class="body" style="${collapsed?'display:none':''}">
-        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:56px">공장</th><th style="width:80px">${sec.title==='원료 대기'?'예상 입차':'예상 출차'}</th></tr></thead>
+        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:68px">${sec.title==='원료 대기'?'예상 입차':'예상 출차'}</th><th style="width:70px">입차중량</th></tr></thead>
         <tbody>${rowsHTML}</tbody></table>
       </div>
     </article>`;
