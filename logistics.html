@@ -320,7 +320,7 @@ tbody tr.sh-row td.cell-hit { background:#fff2cc !important; }
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxy4YeGNQVdYBD6DtTY1HnJNKmLk19prVQ4rVJde868f0qsf40UKEBurB53TuXKaSDEBQ/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyFaBvARLt5HaASRCGctWp6HaVJLDscVy7J7vb64SV0U6IdJ_07P_MwqTo8UCfcao7t5w/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
@@ -381,11 +381,9 @@ function refreshAvgDurMap(plantFilter){
   const allKey = `all_${today}_${today}`;
   if(__anCache[allKey]){
     __avgDurMap = calcAvgDurMap(plantFilter);
-    // 이미 캐시 있으면 즉시 재렌더 불필요 (render 흐름 안에서 호출됨)
   } else {
     loadAllTypesForSearch().then(()=>{
       __avgDurMap = calcAvgDurMap(plantFilter);
-      // 캐시 로드 완료 후 화면 다시 그려서 평균+예상출차 표시
       if(document.getElementById('btnViewLive').classList.contains('active')) rerenderCache();
     }).catch(()=>{});
   }
@@ -396,25 +394,25 @@ function renderCongPanel(data, plantFilter){
   const grid = document.getElementById('congGrid');
   if(!grid || !data || !data.sections) return;
 
-  // 섹션 제목 → rows 매핑
   const sectionMap = {};
-data.sections.forEach(sec => {
+  data.sections.forEach(sec => {
     const counts = { '반월': 0, '시화': 0 };
     sec.groups.forEach(g => {
       counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
         if(isMonoDigit(r.car)) return false;
-       if(sec.title!=='제품 상차중') return true;
-const inM = timeToMin(fmtTime(r.time));
-if(inM==null) return true;
-const avg = __avgDurMap[`product_${g.plant}`];
-const threshold = avg ? avg * 2 : 120;
-const elapsed = nowKSTMin() - inM;
-if(elapsed<0||elapsed>threshold) return false;
-return true;
+        if(sec.title!=='제품 상차중') return true;
+        const inM = timeToMin(fmtTime(r.time));
+        if(inM==null) return true;
+        const avg = __avgDurMap[`product_${g.plant}`];
+        const threshold = avg ? avg * 2 : 120;
+        const elapsed = nowKSTMin() - inM;
+        if(elapsed<0||elapsed>threshold) return false;
+        return true;
       }).length;
     });
     sectionMap[sec.title] = counts;
   });
+
   grid.innerHTML = CONG_TYPES.map(t => {
     const counts = sectionMap[t.key] || { '반월': 0, '시화': 0 };
     const bw = counts['반월'], sh = counts['시화'];
@@ -451,7 +449,6 @@ return true;
       </div>
       ${avgSStr?`<div style="font-size:9px;color:var(--muted);padding-left:31px;margin-bottom:2px">${avgSStr}</div>`:''}` : '';
 
-    // 셀 테두리 색: 가장 혼잡한 쪽 기준
     const worstPct = showB && showS ? Math.max(pctB, pctS) : showB ? pctB : pctS;
     const borderColor = worstPct >= 100 ? '#fca5a5' : worstPct >= 60 ? '#fcd34d' : '#d1fae5';
 
@@ -466,15 +463,22 @@ return true;
 
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):''; }
 function isMonoDigit(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4&&d.split('').every(c=>c===d[0]); }
+
+// ★ 수정: 6자리 HHMMSS 형식 파싱 추가
 function fmtTime(raw){
   if(raw==null) return '';
   const s0=String(raw).trim(); if(!s0) return '';
+  // HH:MM:SS 또는 HH:MM 형식
   const m=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
   if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
   const d=s0.replace(/\D/g,'');
+  // 6자리 HHMMSS → HH:MM
+  if(d.length>=6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+  // 4자리 HHMM → HH:MM
   if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
   return s0;
 }
+
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
 function stripeClass(c){ return String(c||'').toLowerCase().includes('00ff00')?'green':'cyan'; }
 const collapseMap=(()=>{ try{ return JSON.parse(localStorage.getItem(LS.collapse)||'{}'); }catch(_){return{};} })();
@@ -504,19 +508,34 @@ function isOvernightEntry(inT, outT){
   return outM < inM;
 }
 const WORK_START_MIN = 6 * 60;
+
+// ★ 수정: raw 타입도 overnight 처리 포함
 function effectiveDurMin(inT, outT, type){
-  if(type !== 'product') return diffMin(inT, outT);
   const inM = timeToMin(inT), outM = timeToMin(outT);
   if(inM == null || outM == null) return null;
-  if(outM < inM){
+
+  if(type === 'product'){
+    if(outM < inM){
+      // overnight 입차: 전날 입차 → 당일 출차
+      if(outM <= WORK_START_MIN) return null;
+      return outM - WORK_START_MIN;
+    }
     if(outM <= WORK_START_MIN) return null;
-    return outM - WORK_START_MIN;
+    const effectiveIn = inM < WORK_START_MIN ? WORK_START_MIN : inM;
+    const dur = outM - effectiveIn;
+    return dur > 0 ? dur : null;
   }
-  if(outM <= WORK_START_MIN) return null;
-  const effectiveIn = inM < WORK_START_MIN ? WORK_START_MIN : inM;
-  const dur = outM - effectiveIn;
+
+  // ★ raw/sub/container: overnight 처리 추가 (자정 넘김 보정)
+  if(outM < inM){
+    // 자정을 넘긴 케이스: 1440 + outM - inM
+    const dur = 1440 + outM - inM;
+    return dur > 0 && dur <= 1440 ? dur : null;
+  }
+  const dur = outM - inM;
   return dur > 0 ? dur : null;
 }
+
 function todayKST(){
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -548,6 +567,74 @@ function dateToDowLabel(dateStr){
   const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
   const dd = String(d.getUTCDate()).padStart(2, '0');
   return `${dow[d.getUTCDay()]}(${mm}/${dd})`;
+}
+
+// ═══ 부자재 이력 캐시 ═══
+let __subHistoryMap = {}; // { "1234": { items:[{itemnm,avgDur,lastDate}] } }
+let __empavgMap = {};     // { "17140": "폐합성수지" } — EMPAVG코드→품목명
+let __subHistoryLoaded = false;
+
+async function fetchSubHistory(carnums) {
+  if(!carnums||carnums.length===0) return;
+  const nums = carnums.map(c=>last4(c)).filter(Boolean);
+  if(!nums.length) return;
+  try{
+    const res = await api({action:'get_sub_history', carnums: nums.join(',')});
+    if(res && res.ok){
+      if(res.byCar)    Object.assign(__subHistoryMap, res.byCar);
+      if(res.empavgMap) Object.assign(__empavgMap, res.empavgMap);
+      __subHistoryLoaded = true;
+      applySubHistoryToDOM();
+    }
+  }catch(e){}
+}
+
+
+// 렌더 후 DOM에 품목+예상출차 갱신 (fetchSubHistory 완료 후 호출)
+function applySubHistoryToDOM(){
+  // data-sub-car 속성 가진 td 찾아서 품목 갱신
+  document.querySelectorAll('[data-sub-car]').forEach(el=>{
+    const car4 = el.dataset.subCar;
+    const hist = __subHistoryMap[car4];
+    const td = el.closest('td');
+    if(!td) return;
+    if(hist && hist.items && hist.items.length){
+      td.innerHTML = hist.items.map(it=>
+        `<div style="margin:1px 0"><span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#ede9fe;color:#7c3aed;font-weight:600;font-size:11px" title="${it.avgDur?'평균 '+it.avgDur+'분':''}">${it.itemnm}</span></div>`
+      ).join('');
+    } else {
+      el.textContent = '신규';
+      el.style.color = '#dc2626';
+      el.style.fontWeight = '600';
+    }
+  });
+
+  // ★ 예상 출차 셀도 갱신 — data-sub-est 속성으로 찾기
+  document.querySelectorAll('[data-sub-est]').forEach(td=>{
+    const car4 = td.dataset.subEst;
+    const inMin = parseInt(td.dataset.inMin||'');
+    const hist = __subHistoryMap[car4];
+    if(!hist || !hist.items || isNaN(inMin)) return;
+
+    const empavgCode = td.dataset.empavg||'';
+    const currentItemNm = empavgCode ? (__empavgMap[empavgCode]||null) : null;
+    const matched = currentItemNm ? hist.items.find(it=>it.itemnm===currentItemNm) : null;
+    const avgDurSub = matched ? matched.avgDur : (hist.items[0] ? hist.items[0].avgDur : null);
+    if(!avgDurSub) return;
+
+    const nowMin = nowKSTMin();
+    const estMin = inMin + avgDurSub;
+    const remainMin = estMin - nowMin;
+    if(remainMin > 0){
+      const estH = Math.floor(estMin/60)%24;
+      const estM = estMin%60;
+      const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
+      td.innerHTML = `<span style="font-weight:600;color:#7c3aed;font-size:11px">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후·이력</span>`;
+    } else {
+      const overMin = Math.abs(remainMin);
+      td.innerHTML = `<span style="font-weight:600;color:#E24B4A;font-size:11px">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span>`;
+    }
+  });
 }
 
 // ═══ 감시 차량 ═══
@@ -616,59 +703,177 @@ function render(data){
   const q=(document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
   const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
   const LEFT=['제품 상차중','원료 하차중','원료 대기'];
-const RIGHT=['부자재 입차중','컨테이너 입차중'];
+  const RIGHT=['부자재 입차중','컨테이너 입차중'];
   const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
   const allCars=[];
+
   const buildSec=sec=>{
     let rows=[];
     sec.groups.forEach(g=>{
       if(plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화'))
-        rows.push(...g.rows.filter(r=>!isMonoDigit(r.car)).map(r=>({...r,plant:g.plant})));
+        rows.push(...g.rows.filter(r=>{
+          const d=String(r.car||'').replace(/\D/g,'');
+          return d.length===4 && !isMonoDigit(r.car);
+        }).map(r=>({...r,plant:g.plant})));
     });
     rows.forEach(r=>allCars.push(r.car));
     if(q) rows=rows.filter(r=>{ const m=isFour?last4(r.car)===dqq:String(r.car).includes(q); if(m)__searchCount++; return m; });
     const collapsed=collapseMap[sec.title];
     let seq=1;
+
+    // 섹션별 타입 매핑
+    const TYPE_FOR_SEC = {
+      '제품 상차중':'product',
+      '원료 하차중':'raw',
+      '원료 대기':'raw',
+      '부자재 입차중':'sub',
+      '컨테이너 입차중':'container'
+    };
+
     const rowsHTML=rows.length?rows.map((r,i)=>{
       const sep=(plantSel==='all'&&i>0&&rows[i-1].plant!==r.plant);
       if(sep) seq=1;
       const watched=last4(r.car)&&watchList[last4(r.car)]!==undefined;
-      // 예상 출차: 입차시간 + 평균 체류시간, 2시간(120분) 초과 체류는 표시 안 함
-      const TYPE_FOR_SEC = {'제품 상차중':'product','원료 하차중':'raw','원료 대기':'raw','부자재 입차중':'sub','컨테이너 입차중':'container'};
+
       const secType = TYPE_FOR_SEC[sec.title]||'product';
       const avgDurForRow = __avgDurMap[`${secType}_${r.plant}`];
       const inMinForRow = timeToMin(fmtTime(r.time));
       const nowMinForRow = nowKSTMin();
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
-const threshold = avgDurForRow || 120; // 평균 없으면 120분 폴백
-  const isAbnormal = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
+      const threshold = avgDurForRow || (secType==='raw' ? 60 : 120); // ★ 원료 기본 60분
+
+      // ★ 원료 대기는 이상체류 체크 제외
+      const isAbnormal = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
+
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
-      if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
-        
+
+      // 제품/원료 예상 출차 표시
+      const showEstOut = (sec.title==='제품 상차중' || sec.title==='원료 하차중');
+      if(showEstOut && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
         const estMin = inMinForRow + threshold;
         const remainMin = estMin - nowMinForRow;
         if(remainMin > 0){
-          const estStr = `${String(Math.floor(estMin/60)%24).padStart(2,'0')}:${String(estMin%60).padStart(2,'0')}`;
+          const estH = Math.floor(estMin/60)%24;
+          const estM = estMin%60;
+          const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
           estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#0C447C">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후</span></td>`;
         } else {
           const overMin = Math.abs(remainMin);
           estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
         }
-      } else if(isAbnormal){
+      }
+      // ★ 원료 대기: 예상 입차 (러프 추정 — 평균 하차 시간 기반)
+      else if(sec.title==='원료 대기'){
+        // 현재 하차중 대수
+        const rawSec = __lastData&&__lastData.sections&&__lastData.sections.find(s=>s.title==='원료 하차중');
+        const rawNowCount = rawSec ? rawSec.groups
+          .filter(g=>plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화'))
+          .reduce((sum,g)=>sum+g.rows.filter(rr=>!isMonoDigit(rr.car)).length, 0) : 0;
+        const capaRaw = r.plant==='반월' ? (CAPA_MAP['반월']['원료 하차중']||5) : (CAPA_MAP['시화']['원료 하차중']||10);
+        const avgDurRaw = __avgDurMap[`raw_${r.plant}`] || 60;
+        const freeSlots = Math.max(0, capaRaw - rawNowCount);
+        // 대기 행 중 이 차량의 순번(같은 공장 기준)
+        const waitingRowsSamePlant = rows.filter(rr=>rr.plant===r.plant);
+        const myWaitIdx = waitingRowsSamePlant.indexOf(r); // 0-based
+        if(freeSlots > myWaitIdx){
+          // 빈 자리 있음 → 곧 입차 가능
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#059669">곧 입차</span><br><span style="color:var(--muted);font-size:10px">자리 있음</span></td>`;
+        } else {
+          // 몇 번째 차량이 나가야 하는지 계산
+          const waitTurns = myWaitIdx - freeSlots + 1;
+          const estWaitMin = Math.round(waitTurns * avgDurRaw * 0.5); // 절반 주기로 러프 추정
+          const estEntryMin = nowMinForRow + estWaitMin;
+          const estH = Math.floor(estEntryMin/60)%24;
+          const estM = estEntryMin%60;
+          const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#78350f">${estStr}</span><br><span style="color:var(--muted);font-size:10px">약 ${estWaitMin}분 후·참고</span></td>`;
+        }
+      }
+      else if(isAbnormal){
         const elapsed = elapsedForRow!=null&&elapsedForRow>0 ? elapsedForRow : null;
         const elapsedStr = elapsed ? `${Math.floor(elapsed/60)>0?Math.floor(elapsed/60)+'h ':''}${elapsed%60}m` : '';
-        estTd = `<td style="font-size:11px"><span style="color:var(--color-text-secondary)">이상체류${elapsedStr?' · '+elapsedStr:''}</span></td>`;
+        estTd = `<td style="font-size:11px"><span style="color:var(--muted)">이상체류${elapsedStr?' · '+elapsedStr:''}</span></td>`;
       }
-      const isOver120 = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow>120||elapsedForRow<0);
-const plantClass = r.plant==='반월' ? 'bw-row' : 'sh-row';
-return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
-<td>${seq++}</td>
+
+      // ★ 부자재: estTd + 마지막 열 품목 이력
+      const isSub = sec.title==='부자재 입차중';
+      const car4 = last4(r.car);
+      const subHist = isSub ? (__subHistoryMap[car4] || null) : null;
+
+      // EMPAVG로 현재 품목명 실시간 조회
+      const empavgCode = isSub ? String(r.empavg||'').trim() : '';
+      const currentItemNm = empavgCode ? (__empavgMap[empavgCode] || null) : null;
+
+      // 부자재 예상 출차 — 이력 로드 완료 전엔 경과시간, 완료 후엔 applySubHistoryToDOM이 교체
+      if(isSub && inMinForRow!=null){
+        let avgDurSub = null;
+        if(__subHistoryLoaded && subHist && subHist.items){
+          const matched = currentItemNm
+            ? subHist.items.find(it=>it.itemnm===currentItemNm)
+            : null;
+          avgDurSub = matched ? matched.avgDur : (subHist.items[0] ? subHist.items[0].avgDur : null);
+        }
+        if(avgDurSub && elapsedForRow!=null && elapsedForRow>=0){
+          const estMin = inMinForRow + avgDurSub;
+          const remainMin = estMin - nowMinForRow;
+          if(remainMin > 0){
+            const estH = Math.floor(estMin/60)%24;
+            const estM = estMin%60;
+            const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
+            estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#7c3aed">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후·이력</span></td>`;
+          } else {
+            const overMin = Math.abs(remainMin);
+            estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
+          }
+        } else {
+          // 이력 미로드 또는 avgDur 없음 — 나중에 applySubHistoryToDOM이 교체할 자리 확보
+          const elStr = (elapsedForRow!=null&&elapsedForRow>=0)
+            ? `${Math.floor(elapsedForRow/60)>0?Math.floor(elapsedForRow/60)+'h ':''}${elapsedForRow%60}m 경과`
+            : '—';
+          estTd = `<td data-sub-est="${car4}" data-in-min="${inMinForRow}" data-empavg="${empavgCode}" style="font-size:11px;color:var(--muted);line-height:1.4">${elStr}</td>`;
+        }
+      }
+
+      // 품목 뱃지 셀
+      // 현재 품목(EMPAVG기반) + 이력 품목 합쳐서 표시
+      let subItemInner;
+      if(!isSub){
+        subItemInner = null;
+      } else {
+        const histItems = (subHist && subHist.items) ? subHist.items : [];
+        if(!__subHistoryLoaded){
+          // 아직 로딩 중
+          subItemInner = `<span data-sub-car="${car4}" style="color:#9ca3af;font-weight:600;font-size:11px">…</span>`;
+        } else if(currentItemNm || histItems.length){
+          // 현재 품목 뱃지 (EMPAVG 기반) — 파란색으로 구분
+          const currentBadge = currentItemNm
+            ? `<div style="margin:1px 0"><span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:11px">▶ ${currentItemNm}</span></div>`
+            : '';
+          // 이력 품목 뱃지
+          const histBadges = histItems
+            .filter(it=> it.itemnm !== currentItemNm)
+            .map(it=>`<div style="margin:1px 0"><span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#ede9fe;color:#7c3aed;font-weight:600;font-size:11px" title="${it.avgDur?'평균 '+it.avgDur+'분':''}">${it.itemnm}</span></div>`)
+            .join('');
+          subItemInner = currentBadge + histBadges || `<span style="color:#dc2626;font-weight:600;font-size:11px">신규</span>`;
+        } else {
+          subItemInner = `<span style="color:#dc2626;font-weight:600;font-size:11px">신규</span>`;
+        }
+      }
+      const subItemTd = isSub
+        ? `<td style="text-align:left;vertical-align:middle;padding:4px 6px">${subItemInner}</td>`
+        : '';
+
+      const plantClass = r.plant==='반월' ? 'bw-row' : 'sh-row';
+      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
+        <td>${seq++}</td>
         <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
-        <td>${fmtTime(r.time)}</td>${estTd}
-        <td style="color:#185FA5;font-size:12px">${r.totwei?Number(String(r.totwei).replace(/[^\d.]/g,'')).toLocaleString()+'kg':'—'}</td>
+        <td>${fmtTime(r.time)}</td>
+        ${estTd}
+        ${isSub ? subItemTd : `<td style="color:#185FA5;font-size:12px">${r.totwei?Number(String(r.totwei).replace(/[^\d.]/g,'')).toLocaleString()+'kg':'—'}</td>`}
       </tr>`;
     }).join(''):'<tr><td colspan="5" class="empty">(데이터 없음)</td></tr>';
-const bc=rows.filter(r=>{
+
+    const bc=rows.filter(r=>{
       if(r.plant!=='반월') return false;
       if(sec.title!=='제품 상차중') return true;
       const inM=timeToMin(fmtTime(r.time));
@@ -688,11 +893,13 @@ const bc=rows.filter(r=>{
       const elapsed=nowKSTMin()-inM;
       return !(elapsed<0||elapsed>threshold);
     }).length;
-    const capaB=CAPA_MAP['반월'][sec.title];
-    const capaS=CAPA_MAP['시화'][sec.title];
-    const pctB=capaB?Math.round(bc/capaB*100):null;
-    const pctS=capaS?Math.round(sc/capaS*100):null;
+
     const summaryStr=`반월 ${bc} · 시화 ${sc}`;
+
+    // 컬럼 헤더
+    const estColHeader = sec.title==='원료 대기' ? '예상 입차' : '예상 출차';
+    const lastColHeader = sec.title==='부자재 입차중' ? '이력품목' : '입차중량';
+
     return `<article class="card">
       <div class="stripe ${stripeClass(sec.color)}"></div>
       <div class="head"><h3>${sec.title}</h3>
@@ -706,15 +913,23 @@ const bc=rows.filter(r=>{
       </div>
       <div class="summary">총 ${rows.length} · ${summaryStr}</div>
       <div class="body" style="${collapsed?'display:none':''}">
-        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:68px">${sec.title==='원료 대기'?'예상 입차':'예상 출차'}</th><th style="width:70px">입차중량</th></tr></thead>
+        <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:68px">${estColHeader}</th><th style="width:70px">${lastColHeader}</th></tr></thead>
         <tbody>${rowsHTML}</tbody></table>
       </div>
     </article>`;
   };
+
   elSections.innerHTML=`
     <div class="col">${LEFT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>
     <div class="col">${RIGHT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>`;
   syncWatch(allCars);
+
+  // ★ 부자재 차량 이력 조회 (백그라운드)
+  const subSec = data.sections.find(s=>s.title==='부자재 입차중');
+  if(subSec){
+    const subCars = subSec.groups.flatMap(g=>g.rows.map(r=>r.car)).filter(c=>!isMonoDigit(c));
+    if(subCars.length > 0) fetchSubHistory(subCars);
+  }
 
   // ★ 혼잡도 패널 렌더 (입차 조회 탭에서만)
   if(document.getElementById('btnViewLive').classList.contains('active')){
@@ -725,9 +940,7 @@ const bc=rows.filter(r=>{
   const badge=document.getElementById('searchSummary');
   if(q) badge.style.display='inline-block';
   else badge.style.display='none';
-  // 건수는 히스토리 로드 후 updateSearchBadge()로 갱신
 
-  // 차량 검색 통합 패널 — 현재 위치 갱신
   updateCarSearchPanel(isFour ? dqq : null, data);
 }
 
@@ -745,7 +958,6 @@ function updateCarSearchPanel(carNum4, liveData){
 
   if(!carNum4){ panel.style.display='none'; return; }
 
-  // 현재 입차 중인 항목 수집
   const found=[];
   if(liveData&&liveData.sections){
     liveData.sections.forEach(sec=>{
@@ -757,7 +969,7 @@ function updateCarSearchPanel(carNum4, liveData){
     });
   }
   titleEl.textContent=`차량 ${carNum4}`;
-  locEl.style.display='none'; // 위치 별도 표시 제거 — 히스토리에 통합
+  locEl.style.display='none';
 
   const isAnalytic=document.getElementById('btnViewAnalytic').classList.contains('active');
   if(!isAnalytic){
@@ -766,7 +978,6 @@ function updateCarSearchPanel(carNum4, liveData){
     const allKey=`all_${__anFrom}_${__anTo}`;
     const showHist=()=>{
       const html=buildHistoryRows(carNum4, found);
-      // 건수 계산
       const allKey2=`all_${__anFrom}_${__anTo}`;
       const cached=__anCache[allKey2];
       let totalCount=0;
@@ -787,7 +998,6 @@ function updateCarSearchPanel(carNum4, liveData){
       if(html){
         histEl.innerHTML=html;
       } else if(found.length){
-        // 히스토리 없어도 현재 입차중 항목은 직접 렌더
         const TYPE_COLOR2={product:'#06b6d4',raw:'#22c55e',sub:'#f97316',container:'#a855f7'};
         const TYPE_LABEL2={product:'제품',raw:'원료',sub:'부자재',container:'컨테이너'};
         const SEC_TYPE2={'제품 상차중':'product','원료 하차중':'raw','원료 대기':'raw','부자재 입차중':'sub','컨테이너 입차중':'container'};
@@ -842,7 +1052,6 @@ function buildHistoryRows(carNum4, liveFound){
   if(!rows.length) return '';
   rows.sort((a,b)=>{
     if(a.date!==b.date) return a.date<b.date?-1:1;
-    // 출차 시간 오름차순. 미출차(outtime 없음)는 맨 뒤.
     const aOut = timeToMin(a.outtime), bOut = timeToMin(b.outtime);
     if(aOut==null&&bOut==null) return 0;
     if(aOut==null) return 1;
@@ -851,7 +1060,6 @@ function buildHistoryRows(carNum4, liveFound){
   });
   const byDate={};
   rows.forEach(r=>{ if(!byDate[r.date]) byDate[r.date]=[]; byDate[r.date].push(r); });
-  // 현재 입차중 항목을 오늘 날짜 맨 아래에 추가
   const todayStr=todayKST();
   const liveRows=(liveFound||[]).map(f=>{
     const SEC_TYPE={'제품 상차중':'product','원료 하차중':'raw','원료 대기':'raw','부자재 입차중':'sub','컨테이너 입차중':'container'};
@@ -1053,7 +1261,6 @@ function applyPreset(preset){
   if(preset==='today'){ __anFrom=today; __anTo=today; }
   else if(preset==='week'){ __anFrom=thisWeekMonday(); __anTo=today; }
   else if(preset==='lastweek'){ const r=lastWeekRange(); __anFrom=r.from; __anTo=r.to; }
-  // 기간 바뀌면 all_ 캐시 무효화 — 히스토리가 이전 기간 데이터 섞이는 현상 방지
   Object.keys(__anCache).filter(k=>k.startsWith('all_')).forEach(k=>delete __anCache[k]);
   syncPeriodUI();
 }
@@ -1120,37 +1327,13 @@ async function loadAnalytic(type,force=false){
           const results=await Promise.all(types.map(tp=>api({action:'get_weigh_cache',type:tp,dateFrom:__anFrom,dateTo:__anTo})));
           __anCache[cacheKey]={mode:'all-daily',types,data:Object.fromEntries(types.map((tp,i)=>[tp,results[i]]))};
         }
-     } else if(isMultiDay){
-  if(__anType==='raw'){
-    const [summaryData, weighData] = await Promise.all([
-      api({action:'weekly_summary', type:'raw', dateFrom:__anFrom, dateTo:__anTo}),
-      api({action:'get_weigh_cache', type:'raw', dateFrom:__anFrom, dateTo:__anTo}),
-    ]);
-    const dates2 = summaryData.daily ? summaryData.daily.map(d => d.date) : [];
-    const bwByDate = {}, shByDate = {};
-    (weighData.banwol || []).forEach(r => {
-      const raw = String(r.WEIDAT || '');
-      const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
-      if(!bwByDate[d]) bwByDate[d]=[];
-      bwByDate[d].push(r);
-    });
-    (weighData.sihwa || []).forEach(r => {
-      const raw = String(r.WEIDAT || '');
-      const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
-      if(!shByDate[d]) shByDate[d]=[];
-      shByDate[d].push(r);
-    });
-    dates2.forEach(dt => {
-      const k = `raw_${dt}_${dt}`;
-      if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
-    });
-    __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
-  } else {
+      } else if(isMultiDay){
+        // ★ raw도 weekly_summary 대신 get_weigh_cache 직접 사용 (INTIME/OUTIME 포함)
         const [summaryData, weighData] = await Promise.all([
           api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
           api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
         ]);
-        const dates2 = summaryData.daily.map(d => d.date);
+        const dates2 = summaryData.daily ? summaryData.daily.map(d => d.date) : [];
         const bwByDate = {}, shByDate = {};
         (weighData.banwol || []).forEach(r => {
           const raw = String(r.WEIDAT || '');
@@ -1169,7 +1352,6 @@ async function loadAnalytic(type,force=false){
           if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
         });
         __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
-        }
       } else {
         const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
         __anCache[cacheKey] = { mode:'daily', data };
@@ -1192,7 +1374,6 @@ async function loadAllTypesForSearch(){
   const allKey=`all_${__anFrom}_${__anTo}`;
 
   if(isMultiDay){
-    // 멀티일: all_ 있고 모든 타입 날짜별 캐시도 있으면 스킵
     if(__anCache[allKey]) return;
     const dates=[]; let cur=new Date(__anFrom+'T00:00:00'); const end=new Date(__anTo+'T00:00:00');
     while(cur<=end){ dates.push(cur.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})); cur=new Date(cur.getTime()+86400000); }
@@ -1207,14 +1388,11 @@ async function loadAllTypesForSearch(){
     ));
     __anCache[allKey]={mode:'all-weekly',types,dates,perDate:allResults};
   } else {
-    // 단일일: 타입별 캐시 각각 확인 — 하나라도 없으면 새로 받고 all_ 재조합
-    // (all_ 이미 있어도 개별 캐시가 비어있을 수 있으므로 항상 타입별로 체크)
     const dataByType={};
     await Promise.all(types.map(async tp=>{
       const k=`${tp}_${__anFrom}_${__anTo}`;
       if(__anCache[k]&&__anCache[k].data&&
          (__anCache[k].data.banwol||__anCache[k].data.sihwa)){
-        // 실제 데이터가 있는 캐시만 재사용
         dataByType[tp]=__anCache[k].data;
       } else {
         const d=await api({action:'get_weigh_cache',type:tp,dateFrom:__anFrom,dateTo:__anTo});
@@ -1281,12 +1459,9 @@ function renderCarHistoryAll(carNum4){
       const color=TYPE_COLOR[r.type]||'#6366f1';
       const detail=(r.type==='sub'||r.type==='container')&&r.itemnm?` · ${r.itemnm}`:'';
       const sil=r.silwei?` · ${r.silwei.toLocaleString()}kg`:'';
-      // 히스토리 카드: overnight 여부와 무관하게 실제 체류 계산
-      // effectiveDurMin이 null 반환(overnight+새벽출차)이면 단순 diffMin으로 폴백해서 표시
       const dur=(()=>{
         let d=effectiveDurMin(r.intime,r.outtime,r.type);
         if((d==null||d<=0)&&r.intime&&r.outtime){
-          // 전날입차 케이스: 다음날 출차시간까지 걸린 시간 (자정 넘김 고려)
           const inM=timeToMin(r.intime), outM=timeToMin(r.outtime);
           if(inM!=null&&outM!=null){
             let raw=outM-inM; if(raw<0) raw+=1440;
@@ -1332,22 +1507,36 @@ function calcCongestionStacked(rowsByDate, plantFilter) {
       const typeKey = r._type || 'product';
       const WORK_SLOT = WORK_START_MIN / 10;
       const isOvernight = outM != null && outM < inM;
-      if (isOvernight) {
-        if (typeKey !== 'product') return;
-        if (outM == null || outM <= WORK_START_MIN) return;
-        const start = WORK_SLOT;
-        const end = Math.ceil(outM / 10);
+
+      if (typeKey === 'product') {
+        if (isOvernight) {
+          if (outM == null || outM <= WORK_START_MIN) return;
+          const start = WORK_SLOT;
+          const end = Math.ceil(outM / 10);
+          for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
+          return;
+        }
+        const rawStart = Math.floor(inM / 10);
+        const start = Math.max(rawStart, WORK_SLOT);
+        const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
+        if (start >= end) return;
+        for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
+      } else {
+        // ★ raw/sub/container: 자정 넘김 처리
+        if (isOvernight) {
+          // 자정 이후 → 144슬롯까지 + 다음날 0슬롯부터 outM
+          const start = Math.floor(inM / 10);
+          for (let s = start; s < SLOTS; s++) { if(stackedTimelines[typeKey]) stackedTimelines[typeKey][s]++; }
+          const end = Math.ceil(outM / 10);
+          for (let s = 0; s < Math.min(end, SLOTS); s++) { if(stackedTimelines[typeKey]) stackedTimelines[typeKey][s]++; }
+          return;
+        }
+        const start = Math.floor(inM / 10);
+        const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
+        if (start >= end) return;
         if (stackedTimelines[typeKey]) {
           for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
         }
-        return;
-      }
-      const rawStart = Math.floor(inM / 10);
-      const start = (typeKey === 'product') ? Math.max(rawStart, WORK_SLOT) : rawStart;
-      const end = outM != null && outM > inM ? Math.ceil(outM / 10) : start + 1;
-      if (start >= end) return;
-      if (stackedTimelines[typeKey]) {
-        for (let s = start; s < Math.min(end, SLOTS); s++) stackedTimelines[typeKey][s]++;
       }
     });
   });
@@ -1383,20 +1572,36 @@ function calcCongestion(rowsByDate, plantFilter, type) {
       if (inM == null) return;
       const isProduct = (type === 'product') || (r._type === 'product');
       const isOvernight = outM != null && outM < inM;
-      if (isOvernight) {
-        if (!isProduct) return;
-        if (outM == null || outM <= WORK_START_MIN) return;
-        const start = WORK_SLOT;
-        const end = Math.ceil(outM / 10);
+
+      if (isProduct) {
+        if (isOvernight) {
+          if (outM == null || outM <= WORK_START_MIN) return;
+          const start = WORK_SLOT;
+          const end = Math.ceil(outM / 10);
+          for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
+          return;
+        }
+        const rawStart = Math.floor(inM / 10);
+        const start = Math.max(rawStart, WORK_SLOT);
+        const nowSlot = Math.floor(nowKSTMin() / 10);
+        const end = outM != null && outM > inM ? Math.ceil(outM / 10) : Math.min(nowSlot + 1, SLOTS);
+        if (start >= end) return;
         for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
-        return;
+      } else {
+        // ★ raw/sub/container overnight 처리
+        if (isOvernight) {
+          const start = Math.floor(inM / 10);
+          for (let s = start; s < SLOTS; s++) timeline[s]++;
+          const end = Math.ceil(outM / 10);
+          for (let s = 0; s < Math.min(end, SLOTS); s++) timeline[s]++;
+          return;
+        }
+        const start = Math.floor(inM / 10);
+        const nowSlot = Math.floor(nowKSTMin() / 10);
+        const end = outM != null && outM > inM ? Math.ceil(outM / 10) : Math.min(nowSlot + 1, SLOTS);
+        if (start >= end) return;
+        for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
       }
-      const rawStart = Math.floor(inM / 10);
-      const start = isProduct ? Math.max(rawStart, WORK_SLOT) : rawStart;
-      const nowSlot = Math.floor(nowKSTMin() / 10);
-      const end = outM != null && outM > inM ? Math.ceil(outM / 10) : Math.min(nowSlot + 1, SLOTS);
-      if (start >= end) return;
-      for (let s = start; s < Math.min(end, SLOTS); s++) timeline[s]++;
     });
     timeline.forEach((v, i) => globalTimeline[i] += v);
     return { date, timeline };
@@ -1533,7 +1738,7 @@ function renderAnalyticAll(cached, plantFilter) {
       <div class="kpi" style="--kc:#6366f1">
         <div class="kpi-label">총 입차 건수</div>
         <div class="kpi-val">${totalRows.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span></div>
-        <div class="kpi-sub">제품+부자재+컨테이너</div>
+        <div class="kpi-sub">제품+원료+부자재+컨테이너</div>
       </div>
       ${congHtml}
     </div>`;
@@ -1548,6 +1753,7 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
   const panel=document.getElementById('analyticPanel');
   panel.innerHTML='';
   const cfg=AN_TYPES.find(t=>t.key===type)||AN_TYPES[0];
+  const isRaw=(type==='raw');
   const daily=data.daily||[]; const today=todayKST();
   const cnt=day=>plantFilter==='banwol'?day.banwol.count:plantFilter==='sihwa'?day.sihwa.count:day.banwol.count+day.sihwa.count;
   const sil=day=>plantFilter==='banwol'?day.banwol.silwei:plantFilter==='sihwa'?day.sihwa.silwei:day.banwol.silwei+day.sihwa.silwei;
@@ -1607,6 +1813,7 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     ? [['합계',wAvgAll,'#378ADD'],['반월',wAvgBw,'#3B82F6'],['시화',wAvgSh,'#10B981']]
     : plantFilter==='banwol'?[['반월',wAvgBw,'#3B82F6']]:[['시화',wAvgSh,'#10B981']];
 
+  // ★ 원료도 체류시간 카드 표시 (isRaw 여부 무관하게 동일하게)
   panel.innerHTML+=`<div class="an-card" style="margin-bottom:14px">
   <div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:10px">일평균 체류시간</div>
   <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:4px">
@@ -1624,7 +1831,7 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       </div>`;
     }).join('')}
   </div>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:14px">출차 완료된 차량 기준 · 전날입차 제외</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:14px">출차 완료된 차량 기준</div>
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
     <div style="font-size:12px;color:var(--muted);font-weight:500">시간대별 혼잡도 (일평균)</div>
     <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:#f0f0f0;color:#888">출차 완료 기준</span>
@@ -1707,7 +1914,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
     </table></div>`
   );
 
-  const isRaw=(type==='raw');
   const isSub=(type==='sub'||type==='container');
   const allRows=rowsByDate.flatMap(({date,rows})=>rows.map(r=>({...r,_date:date})));
   const filteredRows=allRows.filter(r=>plantFilter==='all'||(plantFilter==='banwol'&&r._plant==='반월')||(plantFilter==='sihwa'&&r._plant==='시화'));
@@ -1730,17 +1936,18 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       const overnight=isOvernightEntry(r.INTIME,r.OUTIME);
       const inM=timeToMin(r.INTIME),outM=timeToMin(r.OUTIME);
       const isProduct=(type==='product');
+      // ★ raw: overnight 처리 (제품과 다른 로직)
       const case1=overnight;
-      const case1_earlyOut=overnight&&outM!=null&&outM<=WORK_START_MIN;
-      const case1_noOut=overnight&&outM==null;
+      const case1_earlyOut=isProduct&&overnight&&outM!=null&&outM<=WORK_START_MIN;
+      const case1_noOut=isProduct&&overnight&&outM==null;
       const case2=isProduct&&!overnight&&inM!=null&&outM!=null&&inM<WORK_START_MIN&&outM<=WORK_START_MIN;
       const case3=isProduct&&!overnight&&inM!=null&&inM<WORK_START_MIN&&(outM==null||outM>WORK_START_MIN);
-      const dur=case2?null:effectiveDurMin(r.INTIME,r.OUTIME,type);
+      const dur=case2 ? null : effectiveDurMin(r.INTIME, r.OUTIME, type);
       const durValid=dur!=null&&dur>0&&dur<=480;
       const durWarn=durValid&&dur>=120;
       let durDisplay;
       if(case1_earlyOut||case1_noOut||case2) durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>';
-      else if(case1&&durValid) durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">🌙06↑</span>`;
+      else if(case1&&durValid) durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">🌙야간</span>`;
       else if(case3&&durValid) durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">06↑</span>`;
       else if(!durValid) durDisplay='<span style="color:#f59e0b">?</span>';
       else durDisplay=String(dur);
@@ -1754,7 +1961,7 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
       const silStyle=`style="${plantBg};${border};padding:3px 3px;font-weight:500;color:#185FA5"`;
       const silwei=isRaw?null:Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||null;
       const silTd=isRaw?'':`<td ${silStyle}>${silwei!=null?String(silwei):'-'}</td>`;
-      const inNoteText=case1?'🌙전날':case2?'🌙새벽':case3?'⏰06시':'';
+      const inNoteText=isProduct?(case1?'🌙전날':case2?'🌙새벽':case3?'⏰06시':''):(case1?'🌙야간':'');
       const inNoteSpan=inNoteText?`<br><span style="color:#6366f1;font-size:9px">${inNoteText}</span>`:'';
       const rowNo=r._plant==='반월'?bwNo++:shNo++;
       return `<tr><td ${baseStyle}>${dateToDowLabel(r._date)}</td><td ${baseStyle}>${rowNo}</td><td ${baseStyle}>${String(r.CARNUM||'')}</td>${isSub?`<td ${baseStyle}>${String(r.ITEMNM||'').trim()||'-'}</td>`:''}<td ${baseStyleNW}>${fmtTime(r.INTIME)}${inNoteSpan}</td><td ${baseStyleNW}>${fmtTime(r.OUTIME)}</td><td ${durStyle}>${durDisplay}</td>${silTd}</tr>`;
@@ -1781,10 +1988,6 @@ function renderAnalyticWeekly(data,dates,type,plantFilter){
 }
 
 function renderAnalyticDaily(data,type,plantFilter,searchQ){
-
-  let realtimeHtml = '';
-  // 분석탭에서는 실시간 혼잡도 카드 제거 (입차 조회 탭 상단으로 이동했으므로)
-
   const cfg=AN_TYPES.find(t=>t.key===type)||AN_TYPES[0];
   const isSub=(type==='sub'||type==='container');
   const isRaw=(type==='raw');
@@ -1820,7 +2023,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
   const itemMap={};
   all.forEach(r=>{
-    const nm=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'컨테이너');
+    const nm=isSub?String(r.ITEMNM||'미분류').trim():(type==='product'?'제품':'원료');
     if(!itemMap[nm]) itemMap[nm]={count:0,silwei:0,durSum:0,durCnt:0};
     itemMap[nm].count++;
     itemMap[nm].silwei+=Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0;
@@ -1839,6 +2042,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
 
   const panel=document.getElementById('analyticPanel');
 
+  // ★ 원료도 체류시간 KPI 표시
   const kpiItems = [
     { label:'전체 건수', val:`${all.length}<span style="font-size:14px;font-weight:400">건</span>`, sub:(()=>{ const totalSil=all.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0); return `반월 ${bw.length} · 시화 ${sh.length} &nbsp;|&nbsp; ${totalSil>0?totalSil.toLocaleString()+'kg':'-'}`; })(), color:cfg.dc },
     { label:'평균 체류시간', val:`${avgAll}<span style="font-size:14px;font-weight:400">분</span>`, sub:`반월 ${avgBw}분 · 시화 ${avgSh}분`, color:cfg.dc },
@@ -1999,8 +2203,9 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     const inM=timeToMin(r.INTIME), outM=timeToMin(r.OUTIME);
     const isProduct=(type==='product');
     const case1=overnight;
-    const case1_earlyOut = overnight && outM!=null && outM<=WORK_START_MIN;
-    const case1_noOut = overnight && outM==null;
+    // ★ 제품만 새벽 보정 케이스 적용, raw는 overnight 자체를 야간 처리
+    const case1_earlyOut = isProduct && overnight && outM!=null && outM<=WORK_START_MIN;
+    const case1_noOut = isProduct && overnight && outM==null;
     const case2=isProduct && !overnight && inM!=null && outM!=null && inM<WORK_START_MIN && outM<=WORK_START_MIN;
     const case3=isProduct && !overnight && inM!=null && inM<WORK_START_MIN && (outM==null||outM>WORK_START_MIN);
     const dur=case2 ? null : effectiveDurMin(r.INTIME, r.OUTIME, type);
@@ -2009,7 +2214,8 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     let durDisplay;
     if(case1_earlyOut){ durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>'; }
     else if(case1_noOut){ durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>'; }
-    else if(case1 && durValid){ durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">🌙06↑</span>`; }
+    else if(case1 && durValid && isProduct){ durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">🌙06↑</span>`; }
+    else if(case1 && durValid && !isProduct){ durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">🌙야간</span>`; }
     else if(case2){ durDisplay='<span style="color:#a0aec0;font-size:11px">-</span>'; }
     else if(case3&&durValid){ durDisplay=`${dur}<br><span style="color:#6366f1;font-size:9px">06↑</span>`; }
     else if(!durValid){ durDisplay='<span style="color:#f59e0b" title="체류시간 오류">?</span>'; }
@@ -2021,7 +2227,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     else if(case1) rowStyle=' style="background:#f0f0ff"';
     else if(case3) rowStyle=' style="background:#f0f7ff"';
     if(isDim) rowStyle=' style="opacity:0.25"';
-    const inNoteText=case1?'🌙전날':case2?'🌙새벽':case3?'⏰06시':'';
+    const inNoteText=isProduct?(case1?'🌙전날':case2?'🌙새벽':case3?'⏰06시':''):(case1?'🌙야간':'');
     const inNoteColor=case2?'#94a3b8':'#6366f1';
     const inNoteSpan=inNoteText?`<br><span style="color:${inNoteColor};font-size:9px">${inNoteText}</span>`:'';
     const itemNm=isSub?`<td style="font-size:12px;color:#555">${String(r.ITEMNM||'').trim()||'-'}</td>`:'';
@@ -2047,7 +2253,8 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const shBadge=`<span style="font-size:11px;font-weight:400;padding:1px 8px;border-radius:999px;background:#f0fdf4;color:#3B6D11">시화 ${sh.length}건 (${shSil.toLocaleString()}kg${silLabel})</span>`;
   const plantBadgesArr=(plantFilter==='all')?[bwBadge,shBadge]:(plantFilter==='banwol')?[bwBadge]:[shBadge];
   const plantBadgesRow=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0 0">${plantBadgesArr.join('')}</div>`;
-  const noteRow=(type==='product'||isRaw)?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${type==='product'?'※ 전날 입차 또는 06시 이전 입차는 06:00 기준으로 보정 · 체류시간도 동일 적용':'※ INTIME/OUTIME은 다음주 업데이트 예정'}</div>`:'';
+  // ★ 원료 주석 제거 — INTIME/OUTIME 이제 정상 제공됨
+  const noteRow=(type==='product')?`<div style="font-size:11px;color:var(--muted);margin-top:4px">※ 전날 입차 또는 06시 이전 입차는 06:00 기준으로 보정 · 체류시간도 동일 적용</div>`:'';
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>전체 데이터 (${all.length}건)`,
     `${plantBadgesRow}${noteRow}<div style="max-height:320px;overflow-y:auto;margin-top:8px"><table style="table-layout:fixed;width:100%;font-size:11px;border-collapse:collapse"><thead><tr style="border-bottom:1.5px solid #d1d5db"><th style="width:28px;padding:4px 3px">No</th><th style="width:56px;padding:4px 3px">차량</th>${isSub?'<th style="width:64px;padding:4px 3px">품목</th>':''}<th style="width:52px;padding:4px 3px">입차</th><th style="width:46px;padding:4px 3px">출차</th><th style="width:44px;padding:4px 3px">체류(분)</th>${isRaw?'':`<th style="width:54px;padding:4px 3px;color:#185FA5">실중량(kg)</th>`}</tr></thead><tbody>${tableRows}</tbody></table></div>`
   );
@@ -2080,11 +2287,8 @@ function setTab(tabName){
   elWeighPanel.style.display='none';
   document.getElementById('periodBar').style.display=anActive?'flex':'none';
   document.getElementById('analyticPanel').style.display=anActive?'block':'none';
-  // watchPanelEl은 헤더 안에 통합됨 — 항상 표시
   document.getElementById('searchSummary').style.display='none';
-  // ★ 혼잡도 패널: 입차 조회 탭에서만 표시
   document.getElementById('congPanel').style.display=liveActive?'block':'none';
-  // 검색어 없으면 차량 패널 숨김
   const q=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
   if(!/^\d{4}$/.test(q)) document.getElementById('carSearchPanel').style.display='none';
 }
@@ -2125,7 +2329,6 @@ function doSearch(){
 document.getElementById('searchBtn').addEventListener('click', doSearch);
 document.getElementById('searchInput').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
 document.getElementById('searchInput').addEventListener('input',e=>{
-  // 입력값 비어있으면 즉시 초기화
   if(!(e.target.value||'').trim()){
     localStorage.setItem(LS.q,'');
     document.getElementById('searchSummary').style.display='none';
@@ -2156,7 +2359,7 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   await loadSnapshot();
   
   setInterval(fetchWatch,5*60*1000);
- setInterval(async ()=>{
+  setInterval(async ()=>{
     if(document.hidden) return;
     try{
       const data = await api({action:'snapshot_live'});
@@ -2167,7 +2370,6 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
           render(data);
           return;
         }
-        // 분석탭일 때도 혼잡도 패널은 숨겨져 있으므로 별도 갱신 불필요
       }
     }catch(e){}
   }, 60000);
