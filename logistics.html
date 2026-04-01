@@ -743,7 +743,7 @@ function render(data){
       const threshold = avgDurForRow || (secType==='raw' ? 60 : 120); // ★ 원료 기본 60분
 
       // ★ 원료 대기는 이상체류 체크 제외
-      const isAbnormal = sec.title!=='원료 대기' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
+      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
 
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
 
