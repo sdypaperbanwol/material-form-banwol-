@@ -343,9 +343,11 @@ function calcAvgDurMap(plantFilter){
       const plant = p==='banwol'?'반월':'시화';
 
       // ① 출차완료 차량 체류시간 (상한 120분)
-      const durs = (d[p]||[])
-        .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
-        .filter(v=>v!=null && v>0 && v<=120);
+    const twoHoursAgo = nowKSTMin() - 120;
+const durs = (d[p]||[])
+  .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && outM>=twoHoursAgo; })
+  .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
+  .filter(v=>v!=null && v>0 && v<=120);
 
       const baseAvg = durs.length
         ? Math.round(durs.reduce((s,v)=>s+v,0) / durs.length)
@@ -744,8 +746,8 @@ function render(data){
           // → 단, 자기 자신의 selfEst보다는 늦어야 함
          const nowMin = nowKSTMin();
 const estOut = prevEstOut!=null
-  ? Math.max(Math.max(selfEst, nowMin), prevEstOut + 1)
-  : Math.max(selfEst, nowMin);
+  ? Math.max(selfEst, prevEstOut + avg)
+  : selfEst;
 
 rawQueueEstMap[`${plant}_${r.car}`] = estOut;
 prevEstOut = Math.max(estOut, nowMin);
