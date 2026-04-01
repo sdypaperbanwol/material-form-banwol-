@@ -2205,8 +2205,8 @@ async function loadSnapshot(){
 const data=await api({action:'snapshot_live'});
 if(data&&data.sections&&document.getElementById('btnViewLive').classList.contains('active')){
   __lastData=data;
-  await refreshAvgDurMapAsync();
-  render(data);
+render(data);
+refreshAvgDurMapAsync().then(()=>rerenderCache()).catch(()=>{});
 }
   }catch(e){ console.error('로드 실패:',e); }
   finally{ __fetching=false; }
