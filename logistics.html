@@ -398,7 +398,8 @@ async function refreshAvgDurMapAsync(){
   if(!__anCache[allKey]){
     try{ await loadAllTypesForSearch(); }catch(e){}
   }
-  __avgDurMap=calcAvgDurMap();
+ const pf = document.getElementById('plantFilter')?.value || 'all';
+__avgDurMap=calcAvgDurMap(pf);
 }
 function renderCongPanel(data, plantFilter){
   const grid = document.getElementById('congGrid');
