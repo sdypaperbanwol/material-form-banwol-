@@ -924,9 +924,15 @@ prevEstOut = Math.max(estOut, nowMin);
     const estColHeader = sec.title==='원료 대기' ? '예상 입차' : '예상 출차';
     const lastColHeader = sec.title==='부자재 입차중' ? '이력품목' : '입차중량';
 
-    return `<article class="card">
-      <div class="stripe ${stripeClass(sec.color)}"></div>
-      <div class="head"><h3>${sec.title}</h3>
+    const secDesc = sec.title==='원료 하차중'
+  ? `<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px">· 예상출차: 평균 체류시간 순차 누적</span>`
+  : sec.title==='원료 대기'
+  ? `<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px">· 예상입차: 평균 체류시간 ½ 주기 추정</span>`
+  : '';
+
+return `<article class="card">
+  <div class="stripe ${stripeClass(sec.color)}"></div>
+  <div class="head"><h3>${sec.title}${secDesc}</h3>
         <div class="head-right">
           ${plantSel==='all'?`<span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
             <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#eff6ff;border:1px solid #bfdbfe"></span>반월
