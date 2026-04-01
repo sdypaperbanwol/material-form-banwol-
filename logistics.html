@@ -365,12 +365,43 @@ function calcAvgDurMap(plantFilter){
   const map = {};
   if(!cached || cached.mode!=='all-daily') return map;
   const TYPE_KEYS = ['product','raw','sub','container'];
+  
+  const SEC_TITLE_MAP = {
+    product: '제품 상차중',
+    raw: '원료 하차중',
+    sub: '부자재 입차중',
+    container: '컨테이너 입차중',
+  };
+
   TYPE_KEYS.forEach(tp=>{
     const d = cached.data[tp]||{};
     ['banwol','sihwa'].forEach(p=>{
       const plant = p==='banwol'?'반월':'시화';
+      
+      // ① 출차완료 차량 체류시간
       const durs = (d[p]||[]).map(r=>effectiveDurMin(r.INTIME,r.OUTIME,tp)).filter(v=>v!=null&&v>0&&v<=120);
-      if(durs.length) map[`${tp}_${plant}`] = Math.round(durs.reduce((s,v)=>s+v,0)/durs.length);
+      
+      const baseAvg = durs.length ? Math.round(durs.reduce((s,v)=>s+v,0)/durs.length) : null;
+      
+      // ② 현재 입차중 차량 중 평균 초과한 것만 경과시간 추가
+      const extraDurs = [];
+      if(baseAvg && __lastData && __lastData.sections){
+        const secTitle = SEC_TITLE_MAP[tp];
+        const sec = __lastData.sections.find(s=>s.title===secTitle);
+        if(sec){
+          sec.groups.filter(g=>g.plant===plant).forEach(g=>{
+            g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+              const inM = timeToMin(fmtTime(r.time));
+              if(inM==null) return;
+              const elapsed = nowKSTMin() - inM;
+              if(elapsed > baseAvg) extraDurs.push(elapsed);
+            });
+          });
+        }
+      }
+      
+      const allDurs = [...durs, ...extraDurs];
+      if(allDurs.length) map[`${tp}_${plant}`] = Math.round(allDurs.reduce((s,v)=>s+v,0)/allDurs.length);
     });
   });
   return map;
