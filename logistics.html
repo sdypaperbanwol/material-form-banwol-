@@ -930,9 +930,15 @@ prevEstOut = Math.max(estOut, nowMin);
   ? `<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px">· 예상입차: 평균 체류시간 ½ 주기 추정</span>`
   : '';
 
+const secNote = sec.title==='원료 하차중'
+  ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상출차: 평균 체류시간 순차 누적</div>`
+  : sec.title==='원료 대기'
+  ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상입차: 평균 체류시간 ½ 주기 추정</div>`
+  : '';
+
 return `<article class="card">
   <div class="stripe ${stripeClass(sec.color)}"></div>
-  <div class="head"><h3>${sec.title}${secDesc}</h3>
+  <div class="head"><h3>${sec.title}</h3>
         <div class="head-right">
           ${plantSel==='all'?`<span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
             <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#eff6ff;border:1px solid #bfdbfe"></span>반월
@@ -941,7 +947,7 @@ return `<article class="card">
           <button class="btn" onclick="toggleCard('${encodeURIComponent(sec.title)}',this)">${collapsed?'펼치기':'접기'}</button>
         </div>
       </div>
-      <div class="summary">총 ${rows.length} · ${summaryStr}</div>
+      <div class="summary">총 ${rows.length} · ${summaryStr}</div>${secNote}
       <div class="body" style="${collapsed?'display:none':''}">
         <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:68px">${estColHeader}</th><th style="width:70px">${lastColHeader}</th></tr></thead>
         <tbody>${rowsHTML}</tbody></table>
