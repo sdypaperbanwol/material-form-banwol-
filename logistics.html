@@ -199,6 +199,18 @@
   tbody tr.sh-row td { background:#f0fdf4 !important; }
   tbody tr.bw-row td.cell-hit { background:#fff2cc !important; }
   tbody tr.sh-row td.cell-hit { background:#fff2cc !important; }
+
+  /* ★ 집게차/단설 뱃지 */
+  .car-badge{
+    display:inline-block; font-size:9px; font-weight:700; padding:1px 5px;
+    border-radius:4px; line-height:1.4; margin-top:1px;
+  }
+  .car-badge.crane{
+    background:#fef3c7; color:#92400e; border:1px solid #fcd34d;
+  }
+  .car-badge.danseol{
+    background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd;
+  }
   </style>
 </head>
 <body>
@@ -289,8 +301,45 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwoWKep6xn9cTkriiSvEjyJeJ3TFxeApgr-Xt28ttGZc8YERDFf-cn-ywv23IFaTpYV0A/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbypnHQB7Cfm1NrzhJJ2P7y5X4jKE1dVhn0cBtZdxwFE7XdX0sd4EjBBjlP1wNGKj6lgcg/exec';
 const API_TOKEN    = 'DY_SCALE';
+
+// ★ 단설 거래처 코드 목록
+const DANSEOL_CUSTCDS = new Set(['10637','11588','14593','10223','10633','32764','10676','10884','27118']);
+
+// ★ 집게차 판별 — TOTWEI 28,000kg 이하 (원료 하차중에서만 사용)
+function isCrane(r){
+  // 차량번호 3777은 무조건 집게차
+  if(last4(r.car || r.CARNUM || '') === '3777') return true;
+  
+  const totwei = Number(String(r.totwei || r.TOTWEI || '').replace(/[^\d.]/g,''));
+  const empavg = Number(String(r.empavg || r.EMPAVG || '').replace(/[^\d.]/g,''));
+  
+  // TOTWEI나 EMPAVG 둘 중 하나라도 없으면 판별 불가 (신규 차량 등) → false
+  if(!totwei || !empavg) return false;
+  
+  // 예상 실중량 = TOTWEI - EMPAVG <= 10,000
+  return (totwei - empavg) <= 10000;
+}
+
+// ★ 단설 판별
+function isDanseol(r){
+  const cd = String(r.custcd || r.CUSTCD || '').trim();
+  return cd && DANSEOL_CUSTCDS.has(cd);
+}
+
+// ★ 차량번호 셀 내용 빌더 — 뱃지 포함
+function carCellHtml(car, r, secTitle){
+  const isRaw = (secTitle === '원료 하차중' || secTitle === '원료 대기');
+  const crane  = isRaw && isCrane(r);
+  const danseol = isRaw && isDanseol(r);
+  const badges = [
+    crane   ? '<span class="car-badge crane">집게차</span>'   : '',
+    danseol ? '<span class="car-badge danseol">단설</span>' : '',
+  ].filter(Boolean).join('');
+  if(!badges) return car;
+  return `<div style="line-height:1.3">${car}<br>${badges}</div>`;
+}
 
 const SLOT_LABELS = Array.from({length:144}, (_,i) => {
   const h = Math.floor(i*10/60), m = (i*10)%60;
@@ -321,7 +370,7 @@ function congColorTxt(pct){ return pct >= 100 ? 'cong-danger-txt' : pct >= 60 ? 
 // ═══ 평균 체류시간 캐시 ═══
 let __avgDurMap = {};
 
-// ★ 수정1: calcAvgDurMap — 출차완료 평균 + 현재 초과 차량 경과시간 보정
+// ★ calcAvgDurMap — 집게차/일반 원료 분리
 function calcAvgDurMap(plantFilter){
   const today = todayKST();
   const allKey = `all_${today}_${today}`;
@@ -341,40 +390,77 @@ function calcAvgDurMap(plantFilter){
     const d = cached.data[tp]||{};
     ['banwol','sihwa'].forEach(p=>{
       const plant = p==='banwol'?'반월':'시화';
+      const twoHoursAgo = nowKSTMin() - 120;
 
-      // ① 출차완료 차량 체류시간 (상한 120분)
-    const twoHoursAgo = nowKSTMin() - 120;
-const durs = (d[p]||[])
-  .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && outM>=twoHoursAgo; })
-  .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
-  .filter(v=>v!=null && v>0 && v<=120);
+      const allList = (d[p]||[]);
 
-      const baseAvg = durs.length
-        ? Math.round(durs.reduce((s,v)=>s+v,0) / durs.length)
-        : null;
-
-      // ② 현재 입차중 차량 중 baseAvg 초과한 것만 현재 경과시간을 추가
-      const extraDurs = [];
-      if(baseAvg!=null && __lastData && __lastData.sections){
-        const secTitle = SEC_TITLE_MAP[tp];
-        const sec = __lastData.sections.find(s=>s.title===secTitle);
-        if(sec){
-          sec.groups.filter(g=>g.plant===plant).forEach(g=>{
-            g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
-              const inM = timeToMin(fmtTime(r.time));
-              if(inM==null) return;
-              const elapsed = nowKSTMin() - inM;
-              if(elapsed > baseAvg) extraDurs.push(elapsed);
-            });
+      if(tp === 'raw'){
+        // ★ 집게차/일반 분리
+        ['crane','normal'].forEach(kind=>{
+          const filtered = allList.filter(r=>{
+            const outM = timeToMin(r.OUTIME);
+            if(outM == null || outM < twoHoursAgo) return false;
+            return kind === 'crane' ? isCrane(r) : !isCrane(r);
           });
-        }
-      }
+          const durs = filtered
+            .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
+            .filter(v=>v!=null && v>0 && v<=120);
+          if(durs.length){
+            map[`raw_${kind}_${plant}`] = Math.round(durs.reduce((s,v)=>s+v,0)/durs.length);
+          }
+        });
+        // 전체 평균도 유지 (혼잡도 패널용)
+        const dursAll = allList
+          .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && outM>=twoHoursAgo; })
+          .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
+          .filter(v=>v!=null && v>0 && v<=120);
+        const baseAvg = dursAll.length ? Math.round(dursAll.reduce((s,v)=>s+v,0)/dursAll.length) : null;
 
-      const allDurs = [...durs, ...extraDurs];
-      if(allDurs.length){
-        map[`${tp}_${plant}`] = Math.round(allDurs.reduce((s,v)=>s+v,0) / allDurs.length);
-        if(extraDurs.length){
-          console.log(`[avgDur] ${tp}_${plant}: 출차완료 기준=${baseAvg}분(${durs.length}대) + 초과입차중 ${extraDurs.length}대(${extraDurs.map(v=>v+'분').join(',')}) → 보정평균=${map[`${tp}_${plant}`]}분`);
+        // 초과 입차중 보정
+        const extraDurs = [];
+        if(baseAvg!=null && __lastData && __lastData.sections){
+          const secTitle = SEC_TITLE_MAP[tp];
+          const sec = __lastData.sections.find(s=>s.title===secTitle);
+          if(sec){
+            sec.groups.filter(g=>g.plant===plant).forEach(g=>{
+              g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+                const inM = timeToMin(fmtTime(r.time));
+                if(inM==null) return;
+                const elapsed = nowKSTMin() - inM;
+                if(elapsed > baseAvg) extraDurs.push(elapsed);
+              });
+            });
+          }
+        }
+        const allDurs = [...dursAll, ...extraDurs];
+        if(allDurs.length){
+          map[`raw_${plant}`] = Math.round(allDurs.reduce((s,v)=>s+v,0)/allDurs.length);
+        }
+      } else {
+        const durs = allList
+          .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && outM>=twoHoursAgo; })
+          .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
+          .filter(v=>v!=null && v>0 && v<=120);
+        const baseAvg = durs.length ? Math.round(durs.reduce((s,v)=>s+v,0)/durs.length) : null;
+
+        const extraDurs = [];
+        if(baseAvg!=null && __lastData && __lastData.sections){
+          const secTitle = SEC_TITLE_MAP[tp];
+          const sec = __lastData.sections.find(s=>s.title===secTitle);
+          if(sec){
+            sec.groups.filter(g=>g.plant===plant).forEach(g=>{
+              g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+                const inM = timeToMin(fmtTime(r.time));
+                if(inM==null) return;
+                const elapsed = nowKSTMin() - inM;
+                if(elapsed > baseAvg) extraDurs.push(elapsed);
+              });
+            });
+          }
+        }
+        const allDurs = [...durs, ...extraDurs];
+        if(allDurs.length){
+          map[`${tp}_${plant}`] = Math.round(allDurs.reduce((s,v)=>s+v,0)/allDurs.length);
         }
       }
     });
@@ -400,8 +486,8 @@ async function refreshAvgDurMapAsync(){
   if(!__anCache[allKey]){
     try{ await loadAllTypesForSearch(); }catch(e){}
   }
- const pf = document.getElementById('plantFilter')?.value || 'all';
-__avgDurMap=calcAvgDurMap(pf);
+  const pf = document.getElementById('plantFilter')?.value || 'all';
+  __avgDurMap=calcAvgDurMap(pf);
 }
 function renderCongPanel(data, plantFilter){
   const grid = document.getElementById('congGrid');
@@ -720,37 +806,32 @@ function render(data){
       '컨테이너 입차중':'container'
     };
 
-    // ★ 수정2: 원료 하차중 — 공장별 큐 기반 예상 출차 시각 사전 계산
-    const rawQueueEstMap = {}; // key: `${plant}_${car}` → 예상출차분(절대분)
+    // ★ 원료 하차중 — 집게차/일반 분리 큐 계산
+    const rawQueueEstMap = {};
     if(sec.title === '원료 하차중'){
       ['반월','시화'].forEach(plant=>{
-        const avg = __avgDurMap[`raw_${plant}`] || 60;
+        // 집게차, 일반차 분리
+        ['crane','normal'].forEach(kind=>{
+          const avgKey = `raw_${kind}_${plant}`;
+          const avg = __avgDurMap[avgKey] || (kind === 'crane' ? 30 : 60);
 
-        // 입차시각 기준 오름차순 정렬 (먼저 들어온 차가 먼저 나감)
-        const plantRows = rows
-          .filter(r=>r.plant===plant)
-          .slice()
-          .sort((a,b)=>(timeToMin(fmtTime(a.time))||0)-(timeToMin(fmtTime(b.time))||0));
+          const plantRows = rows
+            .filter(r => r.plant === plant && (kind === 'crane' ? isCrane(r) : !isCrane(r)))
+            .slice()
+            .sort((a,b)=>(timeToMin(fmtTime(a.time))||0)-(timeToMin(fmtTime(b.time))||0));
 
-        let prevEstOut = null;
-        plantRows.forEach(r=>{
-          const inM = timeToMin(fmtTime(r.time));
-          if(inM==null) return;
-
-          // 이 차의 자체 예상 출차 (입차+평균)
-          const selfEst = inM + avg;
-
-          // 앞 차가 나간 후에야 이 차도 나갈 수 있음
-          // 단, 앞 차 예상 출차 + 최소 인터벌(avg의 일부)로 계산
-          // → 앞 차 출차 직후 바로 나온다고 가정 (prevEstOut + 0)
-          // → 단, 자기 자신의 selfEst보다는 늦어야 함
-         const nowMin = nowKSTMin();
-const estOut = prevEstOut!=null
-  ? Math.max(selfEst, prevEstOut + avg)
-  : selfEst;
-
-rawQueueEstMap[`${plant}_${r.car}`] = estOut;
-prevEstOut = Math.max(estOut, nowMin);
+          let prevEstOut = null;
+          plantRows.forEach(r=>{
+            const inM = timeToMin(fmtTime(r.time));
+            if(inM==null) return;
+            const selfEst = inM + avg;
+            const nowMin = nowKSTMin();
+            const estOut = prevEstOut!=null
+              ? Math.max(selfEst, prevEstOut + avg)
+              : selfEst;
+            rawQueueEstMap[`${plant}_${r.car}`] = estOut;
+            prevEstOut = Math.max(estOut, nowMin);
+          });
         });
       });
     }
@@ -767,13 +848,12 @@ prevEstOut = Math.max(estOut, nowMin);
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
       const threshold = avgDurForRow || (secType==='raw' ? 60 : 120);
 
-      // 이상체류: 원료 대기, 원료 하차중 제외
       const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
 
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
 
-      // ★ 수정2: 원료 하차중은 큐 기반 예상 출차
-      if(sec.title==='원료 하차중' && inMinForRow!=null){
+      // ★ 원료 하차중 — 집게차/일반 큐 기반 예상 출차
+     if(sec.title==='원료 하차중' && inMinForRow!=null){
         const queueKey = `${r.plant}_${r.car}`;
         const estMin = rawQueueEstMap[queueKey];
         if(estMin!=null){
@@ -789,7 +869,7 @@ prevEstOut = Math.max(estOut, nowMin);
           }
         }
       }
-      // 제품 예상 출차 (기존 로직)
+      // 제품 예상 출차
       else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
         const estMin = inMinForRow + threshold;
         const remainMin = estMin - nowMinForRow;
@@ -803,7 +883,7 @@ prevEstOut = Math.max(estOut, nowMin);
           estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
         }
       }
-      // 원료 대기: 예상 입차
+      // 원료 대기 예상 입차
       else if(sec.title==='원료 대기'){
         const rawSec = __lastData&&__lastData.sections&&__lastData.sections.find(s=>s.title==='원료 하차중');
         const rawNowCount = rawSec ? rawSec.groups
@@ -890,9 +970,14 @@ prevEstOut = Math.max(estOut, nowMin);
         : '';
 
       const plantClass = r.plant==='반월' ? 'bw-row' : 'sh-row';
+
+      // ★ 차량번호 셀 — 집게차/단설 뱃지
+      const carCellContent = carCellHtml(r.car, r, sec.title);
+      const carCellStyle = isFour&&last4(r.car)===dqq ? 'cell-hit' : '';
+
       return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
         <td>${seq++}</td>
-        <td class="${isFour&&last4(r.car)===dqq?'cell-hit':''}">${r.car}</td>
+        <td class="${carCellStyle}" style="vertical-align:middle">${carCellContent}</td>
         <td>${fmtTime(r.time)}</td>
         ${estTd}
         ${isSub ? subItemTd : `<td style="color:#185FA5;font-size:12px">${r.totwei?Number(String(r.totwei).replace(/[^\d.]/g,'')).toLocaleString()+'kg':'—'}</td>`}
@@ -920,21 +1005,21 @@ prevEstOut = Math.max(estOut, nowMin);
       return !(elapsed<0||elapsed>threshold);
     }).length;
 
-    const summaryStr=`반월 ${bc} · 시화 ${sc}`;
+    // ★ 원료 하차중 summary에 집게차 수 표시
+    let summaryStr = `반월 ${bc} · 시화 ${sc}`;
+    if(sec.title === '원료 하차중'){
+      const craneCount = rows.filter(r=>isCrane(r)).length;
+      if(craneCount > 0) summaryStr += ` · 집게차 ${craneCount}대`;
+    }
+
     const estColHeader = sec.title==='원료 대기' ? '예상 입차' : '예상 출차';
     const lastColHeader = sec.title==='부자재 입차중' ? '이력품목' : '입차중량';
 
-    const secDesc = sec.title==='원료 하차중'
-  ? `<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px">· 예상출차: 평균 체류시간 순차 누적</span>`
-  : sec.title==='원료 대기'
-  ? `<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px">· 예상입차: 평균 체류시간 ½ 주기 추정</span>`
-  : '';
-
-const secNote = sec.title==='원료 하차중'
-  ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상출차: 평균 체류시간 순차 누적</div>`
-  : sec.title==='원료 대기'
-  ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상입차: 평균 체류시간 ½ 주기 추정</div>`
-  : '';
+    const secNote = sec.title==='원료 하차중'
+      ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상출차: 집게차/일반 분리 · 평균 체류시간 순차 누적</div>`
+      : sec.title==='원료 대기'
+      ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상입차: 평균 체류시간 ½ 주기 추정</div>`
+      : '';
 
 return `<article class="card">
   <div class="stripe ${stripeClass(sec.color)}"></div>
@@ -2208,12 +2293,12 @@ async function loadSnapshot(){
   if(__fetching) return; __fetching=true;
   elUpdated.innerHTML='<span class="mini-spinner"></span>업데이트 중…';
   try{
-const data=await api({action:'snapshot_live'});
-if(data&&data.sections&&document.getElementById('btnViewLive').classList.contains('active')){
-  __lastData=data;
-render(data);
-refreshAvgDurMapAsync().then(()=>rerenderCache()).catch(()=>{});
-}
+    const data=await api({action:'snapshot_live'});
+    if(data&&data.sections&&document.getElementById('btnViewLive').classList.contains('active')){
+      __lastData=data;
+      render(data);
+      refreshAvgDurMapAsync().then(()=>rerenderCache()).catch(()=>{});
+    }
   }catch(e){ console.error('로드 실패:',e); }
   finally{ __fetching=false; }
 }
