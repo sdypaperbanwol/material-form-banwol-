@@ -309,16 +309,14 @@ const DANSEOL_CUSTCDS = new Set(['10637','11588','14593','10223','10633','32764'
 
 // ★ 집게차 판별 — TOTWEI 28,000kg 이하 (원료 하차중에서만 사용)
 function isCrane(r){
-  // 차량번호 3777은 무조건 집게차
   if(last4(r.car || r.CARNUM || '') === '3777') return true;
   
   const totwei = Number(String(r.totwei || r.TOTWEI || '').replace(/[^\d.]/g,''));
   const empavg = Number(String(r.empavg || r.EMPAVG || '').replace(/[^\d.]/g,''));
   
-  // TOTWEI나 EMPAVG 둘 중 하나라도 없으면 판별 불가 (신규 차량 등) → false
-  if(!totwei || !empavg) return false;
+  // ★ empavg 없으면 totwei 30톤 미만으로 판별
+  if(!empavg) return totwei > 0 && totwei < 30000;
   
-  // 예상 실중량 = TOTWEI - EMPAVG <= 10,000
   return (totwei - empavg) <= 10000;
 }
 
