@@ -2297,7 +2297,6 @@ async function loadSnapshot(){
     if(data&&data.sections&&document.getElementById('btnViewLive').classList.contains('active')){
       __lastData=data;
       render(data);
-      refreshAvgDurMapAsync().then(()=>rerenderCache()).catch(()=>{});
     }
   }catch(e){ console.error('로드 실패:',e); }
   finally{ __fetching=false; }
@@ -2385,8 +2384,16 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
   const sq=localStorage.getItem(LS.q); if(sq) document.getElementById('searchInput').value=sq;
   initPeriodBarEvents();
-  await fetchWatch();
-  await loadSnapshot();
+
+  // ★ watch + snapshot + avgDurMap 병렬 실행
+  await Promise.all([
+    fetchWatch(),
+    loadSnapshot(),
+    loadAllTypesForSearch().catch(()=>{})
+  ]);
+  const pf = document.getElementById('plantFilter')?.value || 'all';
+  __avgDurMap = calcAvgDurMap(pf);
+  rerenderCache();
 
   setInterval(fetchWatch,5*60*1000);
   setInterval(async ()=>{
