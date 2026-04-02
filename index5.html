@@ -281,24 +281,24 @@
 
   // 로그인 성공 후 공통 처리
   async function proceedAfterLogin(empId, empName) {
-    loginInfo = { empId, empName };
-    document.getElementById('login-section').classList.add('hidden');
-    document.getElementById('form-section').classList.remove('hidden');
-    document.getElementById('title').innerText = "🔎 신청·조사 시스템 (관리자 모드)";
-    document.getElementById('record-buttons').classList.remove('hidden');
-    document.getElementById('loadingOverlay').style.display = 'flex';
+  loginInfo = { empId, empName };
+  document.getElementById('login-section').classList.add('hidden');
+  document.getElementById('form-section').classList.remove('hidden');
+  document.getElementById('title').innerText = "🔎 신청·조사 시스템 (관리자 모드)";
+  document.getElementById('record-buttons').classList.remove('hidden');
+  document.getElementById('loadingOverlay').style.display = 'flex';
 
-    try {
-      zMeta = (await fetch(`${endpoint}?mode=zinfo`).then(r => r.json())) || {};
-    } catch (e) {
-      console.warn('zinfo 로드 실패', e);
-    }
-    loadItems();
-  }
+  // ★ zinfo + 물품목록 병렬 로드
+  const [zMetaResult] = await Promise.allSettled([
+    fetch(`${endpoint}?mode=zinfo`).then(r => r.json()).catch(() => ({})),
+    loadItems()
+  ]);
+  zMeta = zMetaResult.status === 'fulfilled' ? (zMetaResult.value || {}) : {};
+}
 
   // 목록 로드 (기존과 동일)
-  function loadItems() {
-    fetch(endpoint)
+async function loadItems() {
+  return fetch(endpoint)
       .then(res => res.json())
       .then(data => {
         itemData = data;
