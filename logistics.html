@@ -443,21 +443,22 @@ function calcAvgDurMap(plantFilter){
           .filter(v=>v!=null && v>0 && v<=120);
         const baseAvg = durs.length ? Math.round(durs.reduce((s,v)=>s+v,0)/durs.length) : null;
 
-        const extraDurs = [];
-        if(baseAvg!=null && __lastData && __lastData.sections){
-          const secTitle = SEC_TITLE_MAP[tp];
-          const sec = __lastData.sections.find(s=>s.title===secTitle);
-          if(sec){
-            sec.groups.filter(g=>g.plant===plant).forEach(g=>{
-              g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
-                const inM = timeToMin(fmtTime(r.time));
-                if(inM==null) return;
-                const elapsed = nowKSTMin() - inM;
-                if(elapsed > baseAvg) extraDurs.push(elapsed);
-              });
-            });
-          }
-        }
+       const extraDurs = [];
+if(baseAvg!=null && __lastData && __lastData.sections){
+  const secTitle = SEC_TITLE_MAP[tp];
+  const sec = __lastData.sections.find(s=>s.title===secTitle);
+  if(sec){
+    sec.groups.filter(g=>g.plant===plant).forEach(g=>{
+      g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+        const inM = timeToMin(fmtTime(r.time));
+        if(inM==null) return;
+        const elapsed = nowKSTMin() - inM;
+        // ★ 이상체류(평균 2배 초과) 제외
+        if(elapsed > baseAvg && elapsed <= baseAvg * 2) extraDurs.push(elapsed);
+      });
+    });
+  }
+}
         const allDurs = [...durs, ...extraDurs];
         if(allDurs.length){
           map[`${tp}_${plant}`] = Math.round(allDurs.reduce((s,v)=>s+v,0)/allDurs.length);
