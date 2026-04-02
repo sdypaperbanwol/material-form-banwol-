@@ -440,9 +440,9 @@ function calcAvgDurMap(plantFilter){
         }
       } else {
         const durs = allList
-          .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && outM>=twoHoursAgo; })
+         .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && (tp!=='product' ? outM>=twoHoursAgo : true); })
           .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
-          .filter(v=>v!=null && v>0 && v<=120);
+          .filter(v=>v!=null && v>0 && v<=(tp==='product' ? 90 : 120));
         const baseAvg = durs.length ? Math.round(durs.reduce((s,v)=>s+v,0)/durs.length) : null;
 
        const extraDurs = [];
@@ -456,7 +456,8 @@ if(baseAvg!=null && __lastData && __lastData.sections){
         if(inM==null) return;
         const elapsed = nowKSTMin() - inM;
         // ★ 이상체류(평균 2배 초과) 제외
-        if(elapsed > baseAvg && elapsed <= baseAvg * 2) extraDurs.push(elapsed);
+if(tp !== 'product' && elapsed > baseAvg && elapsed <= baseAvg * 2) extraDurs.push(elapsed);
+
       });
     });
   }
@@ -506,7 +507,7 @@ function renderCongPanel(data, plantFilter){
         const inM = timeToMin(fmtTime(r.time));
         if(inM==null) return true;
         const avg = __avgDurMap[`product_${g.plant}`];
-        const threshold = avg ? avg * 2 : 120;
+        const threshold = avg ? (avg + 30) : 150;
         const elapsed = nowKSTMin() - inM;
         if(elapsed<0||elapsed>threshold) return false;
         return true;
@@ -851,7 +852,7 @@ function render(data){
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
       const threshold = avgDurForRow || (secType==='raw' ? 60 : 120);
 
-      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold*2);
+      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30);
 
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
 
@@ -993,7 +994,7 @@ function render(data){
       const inM=timeToMin(fmtTime(r.time));
       if(inM==null) return true;
       const avg=__avgDurMap[`product_반월`];
-      const threshold=avg?avg*2:120;
+      const threshold=avg?(avg+30):150
       const elapsed=nowKSTMin()-inM;
       return !(elapsed<0||elapsed>threshold);
     }).length;
@@ -1003,7 +1004,7 @@ function render(data){
       const inM=timeToMin(fmtTime(r.time));
       if(inM==null) return true;
       const avg=__avgDurMap[`product_시화`];
-      const threshold=avg?avg*2:120;
+      const threshold=avg?(avg+30):150;
       const elapsed=nowKSTMin()-inM;
       return !(elapsed<0||elapsed>threshold);
     }).length;
