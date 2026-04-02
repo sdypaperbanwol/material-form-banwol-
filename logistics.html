@@ -311,6 +311,10 @@ const DANSEOL_CUSTCDS = new Set(['10637','11588','14593','10223','10633','32764'
 function isCrane(r){
   if(last4(r.car || r.CARNUM || '') === '3777') return true;
   
+  // ★ 단설 거래처는 집게차 아님
+  const cd = String(r.custcd || r.CUSTCD || '').trim();
+  if(cd && DANSEOL_CUSTCDS.has(cd)) return false;
+
   const totwei = Number(String(r.totwei || r.TOTWEI || '').replace(/[^\d.]/g,''));
   const empavg = Number(String(r.empavg || r.EMPAVG || '').replace(/[^\d.]/g,''));
   
