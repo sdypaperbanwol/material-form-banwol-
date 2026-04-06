@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출하계획 현황</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 16px; }
+  h2 { font-size: 16px; color: #333; margin-bottom: 12px; }
+  .top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  button { padding: 8px 18px; background: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #357abd; }
+  #info { font-size: 12px; color: #888; }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: white; font-size: 12px; }
+  th { background: #4a90e2; color: white; padding: 8px 6px; text-align: center; white-space: nowrap; }
+  td { padding: 7px 6px; text-align: center; border-bottom: 1px solid #eee; white-space: nowrap; }
+  tr:hover td { background: #f0f7ff; }
+  .red { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>📦 판매출고계획 현황 (제지)</h2>
+<div class="top">
+  <button onclick="load()">조회</button>
+  <span id="info"></span>
+</div>
+<div class="wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>차량번호</th>
+        <th>납품처명</th>
+        <th>출하계획번호</th>
+        <th>도시</th>
+        <th>ROLL수량</th>
+        <th>상차량(kg)</th>
+        <th>피킹상태</th>
+        <th>출고상태</th>
+        <th>주문등록일</th>
+        <th>계획생성자</th>
+        <th>스캔ROLL</th>
+      </tr>
+    </thead>
+    <tbody id="body"></tbody>
+  </table>
+</div>
+
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycby1nEcfymnuq9reAH7j8j18yFEtSAxkHD-F1gs-DtMq__cFvKg-oGhb_xBJi3FwjRet/exec";
+
+function load() {
+  document.getElementById('info').innerText = '조회 중...';
+  document.getElementById('body').innerHTML = '';
+  fetch(GAS_URL)
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('body');
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="padding:20px;color:#aaa;">데이터 없음</td></tr>';
+        document.getElementById('info').innerText = '데이터 없음';
+        return;
+      }
+      data.forEach(row => {
+        tbody.innerHTML += `<tr>
+          <td>${row['차량번호']||''}</td>
+          <td>${row['납품처명']||''}</td>
+          <td>${row['출하계획번호']||''}</td>
+          <td>${row['도시']||''}</td>
+          <td>${row['ROLL수량']||''}</td>
+          <td>${Number(row['상차량(kg)']).toLocaleString()}</td>
+          <td>${row['피킹상태']||''}</td>
+          <td class="red">${row['출고상태']||''}</td>
+          <td>${row['주문등록일']||''}</td>
+          <td>${row['계획생성자']||''}</td>
+          <td>${row['스캔ROLL']||''}</td>
+        </tr>`;
+      });
+      document.getElementById('info').innerText = `총 ${data.length}건 | 업데이트: ${row['업데이트시각']||''}`;
+    })
+    .catch(() => {
+      document.getElementById('info').innerText = '오류: 데이터를 불러올 수 없습니다.';
+    });
+}
+</script>
+</body>
+</html>
