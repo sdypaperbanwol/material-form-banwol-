@@ -352,7 +352,7 @@
 <div class="card" style="margin-bottom:14px">
   <div class="stripe purple"></div>
   <div class="head">
-    <h3>📋 오더현황 (당일)</h3>
+    <h3>📋 오더현황 (미출고)</h3>
     <div class="head-right">
       <span id="orderUpdated" style="font-size:11px;color:var(--muted)"></span>
     </div>
@@ -2676,7 +2676,7 @@ let __orderData = [];
 
 async function loadOrders() {
   try {
-    const res = await fetch('http://localhost:5000/api/orders?_ts=' + Date.now());
+    const res = await fetch(DISPATCH_URL + '?type=orders&_ts=' + Date.now());
     const data = await res.json();
     __orderData = data || [];
     renderOrders();
