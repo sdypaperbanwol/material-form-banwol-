@@ -883,7 +883,9 @@ function render(data){
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
       const threshold = avgDurForRow || (secType==='raw' ? 60 : 120);
 
-      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30);
+      const car4 = last4(r.car);
+      const inShipPlan = window.__shipPlanCars && window.__shipPlanCars.has(car4);
+      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan;
 
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
 
@@ -944,12 +946,11 @@ function render(data){
       else if(isAbnormal){
         const elapsed = elapsedForRow!=null&&elapsedForRow>0 ? elapsedForRow : null;
         const elapsedStr = elapsed ? `${Math.floor(elapsed/60)>0?Math.floor(elapsed/60)+'h ':''}${elapsed%60}m` : '';
-        estTd = `<td style="font-size:11px"><span style="color:var(--muted)">이상체류${elapsedStr?' · '+elapsedStr:''}</span></td>`;
+        estTd = `<td style="font-size:11px"><span style="color:var(--muted)">미배차${elapsedStr?' · '+elapsedStr:''}</span></td>`;
       }
 
       // 부자재
       const isSub = sec.title==='부자재 입차중';
-      const car4 = last4(r.car);
       const subHist = isSub ? (__subHistoryMap[car4] || null) : null;
       const empavgCode = isSub ? String(r.empavg||'').trim() : '';
       const currentItemNm = empavgCode ? (__empavgMap[empavgCode] || null) : null;
@@ -2421,16 +2422,18 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   initPeriodBarEvents();
 
   // ★ watch + snapshot + avgDurMap 병렬 실행
-  await Promise.all([
+await Promise.all([
     fetchWatch(),
     loadSnapshot(),
-    loadAllTypesForSearch().catch(()=>{})
+    loadAllTypesForSearch().catch(()=>{}),
+    loadShipPlan().catch(()=>{})
   ]);
   const pf = document.getElementById('plantFilter')?.value || 'all';
   __avgDurMap = calcAvgDurMap(pf);
   rerenderCache();
 
   setInterval(fetchWatch,5*60*1000);
+  setInterval(loadShipPlan, 5*60*1000);   // ← 이 줄 추가
   setInterval(async ()=>{
     if(document.hidden) return;
     try{
@@ -2487,17 +2490,16 @@ async function loadShipPlan() {
       </tr>`;
     }).join('');
 
-    summary.textContent = `총 ${allRows.length}건 · 반월 ${bwRows.length} · 시화 ${shRows.length}`;
+summary.textContent = `총 ${allRows.length}건 · 반월 ${bwRows.length} · 시화 ${shRows.length}`;
     if (data[0] && data[0]['업데이트시각']) {
       updated.textContent = `${data[0]['업데이트시각']} 기준`;
     }
-  } catch (e) {
-    document.getElementById('shipPlanBody').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
-  }
+    window.__shipPlanCars = new Set(allRows.map(r => String(r['차량번호']||'').replace(/\D/g,'').slice(-4)).filter(Boolean));
+ } catch (e) {
+  console.error('출하계획 오류:', e);
+  document.getElementById('shipPlanBody').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
 }
-
-loadShipPlan();
-setInterval(loadShipPlan, 5 * 60 * 1000);
+}
 </script>
 </body>
 </html>
