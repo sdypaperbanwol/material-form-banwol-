@@ -2414,7 +2414,7 @@ document.getElementById('watchClearBtn').addEventListener('click',async()=>{
 });
 document.getElementById('btnViewLive').addEventListener('click',()=>{setTab('live');rerenderCache();});
 document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab('analytic');loadAnalytic(__anType||'product');});
-
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxcxOwXRKwl9eRmu43HX3aBITrma8MXfKMkbElrxKZ5hdkBtKR_wGfisK-gm0fB2B2T/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2450,7 +2450,7 @@ await Promise.all([
   }, 60000);
 })();
  // ═══ 출하계획 현황 ═══
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxcxOwXRKwl9eRmu43HX3aBITrma8MXfKMkbElrxKZ5hdkBtKR_wGfisK-gm0fB2B2T/exec';
+
 
 async function loadShipPlan() {
   try {
