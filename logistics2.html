@@ -275,7 +275,7 @@
 <section class="card" id="shipPlanPanel" style="margin-bottom:14px">
   <div class="stripe cyan"></div>
   <div class="head">
-    <h3>📦 출하계획 현황 (미처리)</h3>
+    <h3>📦 출하계획 현황</h3>
     <div class="head-right">
       <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
         <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#eff6ff;border:1px solid #bfdbfe"></span>반월
@@ -285,8 +285,8 @@
     </div>
   </div>
   <div class="summary" id="shipPlanSummary">불러오는 중…</div>
-  <div class="body">
-    <table>
+ <div class="body" style="overflow-x:auto">
+    <table style="min-width:400px">
       <thead>
         <tr>
           <th style="width:44px">No</th>
@@ -2479,7 +2479,7 @@ async function loadShipPlan() {
       const scanColor = scanRoll >= rollQty ? 'color:#16a34a;font-weight:700' : scanRoll > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
       return `<tr>
         <td ${style}>${no++}</td>
-        <td ${style}>${r['차량번호'] || ''}</td>
+        <td ${style}>${String(r['차량번호']||'').replace(/\D/g,'').slice(-4)}</td>
         <td ${style} style="${rowBg};${sepBorder}border-bottom:1px solid #eee;text-align:left">${r['납품처명'] || ''}</td>
         <td ${style}>${rollQty}</td>
         <td style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:8px 10px;text-align:center;${scanColor}">${scanRoll}</td>
