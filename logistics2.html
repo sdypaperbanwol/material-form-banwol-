@@ -2538,17 +2538,19 @@ function renderDispatch() {
     try { items = JSON.parse(r['품목목록'] || '[]'); } catch (e) {}
 
     const hasItems = items.length > 0;
-    const itemsHtml = hasItems ? items.map(it =>
-      `<span style="display:inline-block;padding:2px 8px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:600;font-size:11px;margin:1px">${it['품목명']} ${it['ROLL수량'] ? '· ' + it['ROLL수량'] + 'R' : ''}</span>`
-    ).join('') : '<span style="color:#9ca3af;font-size:11px">품목 정보 없음</span>';
+const itemsHtml = hasItems
+  ? items.map(it =>
+      `<div style="padding:2px 0;font-size:12px;font-weight:600;color:#1d4ed8">${it['품목명']} · ${it['ROLL수량']}R</div>`
+    ).join('')
+  : '<span style="color:#9ca3af;font-size:11px">품목 정보 없음</span>';
 
     const detailRow = isExpanded ? `
       <tr>
         <td colspan="6" style="${rowBg}border-bottom:1px solid #e5e7eb;padding:6px 14px;text-align:left">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0">
-            <span style="font-size:11px;color:#6b7280;margin-right:2px">품목:</span>
-            ${itemsHtml}
-          </div>
+         <div style="padding:4px 0">
+  <span style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px">품목:</span>
+  ${itemsHtml}
+</div>
         </td>
       </tr>` : '';
 
