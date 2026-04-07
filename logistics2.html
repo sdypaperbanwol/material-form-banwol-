@@ -276,36 +276,76 @@
 
   <section class="grid" id="weighingPanel" style="display:none"></section>
   <section class="grid" id="sections"></section>
-  <section id="dispatchPanel" style="display:none">
-  <div class="card" style="margin-bottom:14px">
-    <div class="stripe cyan"></div>
-    <div class="head">
-      <h3>🚛 배차 현황</h3>
-      <div class="head-right">
-        <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#eff6ff;border:1px solid #bfdbfe"></span>반월
-          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f0fdf4;border:1px solid #bbf7d0"></span>시화
-        </span>
-        <span id="dispatchUpdated" style="font-size:11px;color:var(--muted)"></span>
+ <section id="dispatchPanel" style="display:none">
+  <div id="dispatchSingleWrap">
+    <div class="card" style="margin-bottom:14px">
+      <div class="stripe cyan"></div>
+      <div class="head">
+        <h3>🚛 배차 현황</h3>
+        <div class="head-right">
+          <span id="dispatchUpdated" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+      </div>
+      <div class="summary" id="dispatchSummary">불러오는 중…</div>
+      <div style="overflow-x:auto">
+        <table style="min-width:480px">
+          <thead>
+            <tr>
+              <th style="width:40px">No</th>
+              <th style="width:80px">차량번호</th>
+              <th>납품처명</th>
+              <th style="width:60px">ROLL수량</th>
+              <th style="width:60px">스캔ROLL</th>
+              <th style="width:64px">계획생성자</th>
+            </tr>
+          </thead>
+          <tbody id="dispatchBody">
+            <tr><td colspan="6" class="empty">불러오는 중…</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="summary" id="dispatchSummary">불러오는 중…</div>
-    <div style="overflow-x:auto">
-      <table style="min-width:480px">
-        <thead>
-          <tr>
-            <th style="width:40px">No</th>
-            <th style="width:80px">차량번호</th>
-            <th>납품처명</th>
-            <th style="width:60px">ROLL수량</th>
-            <th style="width:60px">스캔ROLL</th>
-            <th style="width:64px">계획생성자</th>
-          </tr>
-        </thead>
-        <tbody id="dispatchBody">
-          <tr><td colspan="6" class="empty">불러오는 중…</td></tr>
-        </tbody>
-      </table>
+  </div>
+
+  <!-- 전체 선택 시 양쪽 컬럼 -->
+  <div id="dispatchDualWrap" class="grid" style="display:none">
+    <div class="col">
+      <div class="card">
+        <div class="stripe cyan"></div>
+        <div class="head"><h3>🏭 반월 배차</h3></div>
+        <div class="summary" id="dispatchSummaryBw"></div>
+        <div style="overflow-x:auto">
+          <table style="min-width:260px">
+            <thead><tr>
+              <th style="width:32px">No</th>
+              <th style="width:60px">차량</th>
+              <th>납품처명</th>
+              <th style="width:48px">ROLL</th>
+              <th style="width:48px">스캔</th>
+            </tr></thead>
+            <tbody id="dispatchBodyBw"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="stripe green"></div>
+        <div class="head"><h3>🏭 시화 배차</h3></div>
+        <div class="summary" id="dispatchSummarySh"></div>
+        <div style="overflow-x:auto">
+          <table style="min-width:260px">
+            <thead><tr>
+              <th style="width:32px">No</th>
+              <th style="width:60px">차량</th>
+              <th>납품처명</th>
+              <th style="width:48px">ROLL</th>
+              <th style="width:48px">스캔</th>
+            </tr></thead>
+            <tbody id="dispatchBodySh"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -2483,91 +2523,109 @@ function renderDispatch() {
   const q = (document.getElementById('searchInput').value || '').replace(/\D/g, '').slice(-4);
   const isFour = /^\d{4}$/.test(q);
 
-  let filtered = data.filter(r => {
-    const plant = String(r['사업장'] || '');
-    if (plantSel === 'banwol' && !plant.includes('반월')) return false;
-    if (plantSel === 'sihwa' && !plant.includes('시화')) return false;
+  const filterRow = (r) => {
     if (isFour) {
       const car4 = String(r['차량번호'] || '').replace(/\D/g, '').slice(-4);
       return car4 === q;
     }
     return true;
-  });
+  };
 
-  const bwRows = filtered.filter(r => String(r['사업장'] || '').includes('반월'));
-  const shRows = filtered.filter(r => String(r['사업장'] || '').includes('시화'));
-  const allRows = [...bwRows, ...shRows];
+  const bwRows = data.filter(r => String(r['사업장'] || '').includes('반월') && filterRow(r));
+  const shRows = data.filter(r => String(r['사업장'] || '').includes('시화') && filterRow(r));
 
-  const tbody = document.getElementById('dispatchBody');
-  const summary = document.getElementById('dispatchSummary');
-  const updated = document.getElementById('dispatchUpdated');
+  const isDual = (plantSel === 'all');
+  document.getElementById('dispatchSingleWrap').style.display = isDual ? 'none' : 'block';
+  document.getElementById('dispatchDualWrap').style.display  = isDual ? 'grid' : 'none';
 
-  if (!allRows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
-    summary.textContent = '데이터 없음';
-    return;
+  // 공통 행 빌더
+  function buildRows(rows, tbodyId, summaryId, isDualMode) {
+    const tbody = document.getElementById(tbodyId);
+    const summary = document.getElementById(summaryId);
+    if (!tbody) return;
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
+      if (summary) summary.textContent = '0건';
+      return;
+    }
+    if (summary) summary.textContent = `${rows.length}건`;
+
+    tbody.innerHTML = rows.map((r, i) => {
+      const isSihwa = String(r['사업장'] || '').includes('시화');
+      const rowBg = isDualMode
+        ? (isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff')
+        : (isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff');
+      const base = `style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:center"`;
+      const baseL = `style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:left"`;
+
+      const scanRoll = Number(r['스캔ROLL'] || 0);
+      const rollQty  = Number(r['ROLL수량'] || 0);
+      const scanColor = scanRoll >= rollQty
+        ? 'color:#16a34a;font-weight:700'
+        : scanRoll > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
+
+      const car4 = String(r['차량번호'] || '').replace(/\D/g, '').slice(-4);
+      const planNo = String(r['출하계획번호'] || '');
+      const rowKey = planNo || car4 + '_' + i;
+      const isExpanded = __dispatchExpanded.has(rowKey);
+
+      let items = [];
+      try { items = JSON.parse(r['품목목록'] || '[]'); } catch (e) {}
+      const hasItems = items.length > 0;
+      const itemsHtml = hasItems
+        ? items.map(it => `<div style="padding:2px 0;font-size:12px;font-weight:600;color:#1d4ed8">${it['품목명']} · ${it['ROLL수량']}R</div>`).join('')
+        : '<span style="color:#9ca3af;font-size:11px">품목 정보 없음</span>';
+
+      const detailRow = isExpanded ? `
+        <tr>
+          <td colspan="${isDualMode ? 5 : 6}" style="${rowBg}border-bottom:1px solid #e5e7eb;padding:6px 14px;text-align:left">
+            <div style="padding:4px 0">
+              <span style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px">품목:</span>
+              ${itemsHtml}
+            </div>
+          </td>
+        </tr>` : '';
+
+      const expandIcon = isExpanded ? '▲' : '▼';
+      const expandBtnStyle = hasItems
+        ? 'cursor:pointer;font-size:10px;color:#6366f1;margin-left:4px'
+        : 'font-size:10px;color:#d1d5db;margin-left:4px';
+
+      if (isDualMode) {
+        // 듀얼 모드: 계획생성자 컬럼 없이 5컬럼
+        return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}" onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
+          <td ${base}>${i + 1}</td>
+          <td ${base}>${car4}</td>
+          <td ${baseL}>${r['납품처명'] || ''}${hasItems ? `<span style="${expandBtnStyle}">${expandIcon}</span>` : ''}</td>
+          <td ${base}>${rollQty}</td>
+          <td style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:center;${scanColor}">${scanRoll}</td>
+        </tr>${detailRow}`;
+      } else {
+        return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}" onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
+          <td ${base}>${i + 1}</td>
+          <td ${base}>${car4}</td>
+          <td ${baseL}>${r['납품처명'] || ''}${hasItems ? `<span style="${expandBtnStyle}">${expandIcon}</span>` : ''}</td>
+          <td ${base}>${rollQty}</td>
+          <td style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:center;${scanColor}">${scanRoll}</td>
+          <td ${base}>${r['계획생성자'] || ''}</td>
+        </tr>${detailRow}`;
+      }
+    }).join('');
   }
 
-  summary.textContent = `총 ${allRows.length}건 · 반월 ${bwRows.length} · 시화 ${shRows.length}`;
-  if (data[0] && data[0]['업데이트시각']) {
-    updated.textContent = data[0]['업데이트시각'] + ' 기준';
+  if (isDual) {
+    // 업데이트 시각 (듀얼 헤더 없으므로 따로 표시 안 해도 됨)
+    buildRows(bwRows, 'dispatchBodyBw', 'dispatchSummaryBw', true);
+    buildRows(shRows, 'dispatchBodySh', 'dispatchSummarySh', true);
+  } else {
+    const targetRows = plantSel === 'banwol' ? bwRows : plantSel === 'sihwa' ? shRows : [...bwRows, ...shRows];
+    const summary = document.getElementById('dispatchSummary');
+    const updated = document.getElementById('dispatchUpdated');
+    if (summary) summary.textContent = `총 ${targetRows.length}건 · 반월 ${bwRows.length} · 시화 ${shRows.length}`;
+    if (updated && data[0]?.['업데이트시각']) updated.textContent = data[0]['업데이트시각'] + ' 기준';
+    buildRows(targetRows, 'dispatchBody', null, false);
   }
-
-  let no = 1;
-  tbody.innerHTML = allRows.map((r, i) => {
-    const isSihwa = String(r['사업장'] || '').includes('시화');
-    const isFirstSihwa = i === bwRows.length && shRows.length > 0;
-    const rowBg = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
-    const sepBorder = isFirstSihwa ? 'border-top:2px solid #ff6b6b;' : '';
-    const tdStyle = `style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:8px 10px;text-align:center"`;
-    const tdStyleL = `style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:8px 10px;text-align:left"`;
-
-    const scanRoll = Number(r['스캔ROLL'] || 0);
-    const rollQty = Number(r['ROLL수량'] || 0);
-    const scanColor = scanRoll >= rollQty
-      ? 'color:#16a34a;font-weight:700'
-      : scanRoll > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
-
-    const car4 = String(r['차량번호'] || '').replace(/\D/g, '').slice(-4);
-    const planNo = String(r['출하계획번호'] || '');
-    const rowKey = planNo || car4 + '_' + i;
-    const isExpanded = __dispatchExpanded.has(rowKey);
-
-    // 품목목록 파싱
-    let items = [];
-    try { items = JSON.parse(r['품목목록'] || '[]'); } catch (e) {}
-
-    const hasItems = items.length > 0;
-const itemsHtml = hasItems
-  ? items.map(it =>
-      `<div style="padding:2px 0;font-size:12px;font-weight:600;color:#1d4ed8">${it['품목명']} · ${it['ROLL수량']}R</div>`
-    ).join('')
-  : '<span style="color:#9ca3af;font-size:11px">품목 정보 없음</span>';
-
-    const detailRow = isExpanded ? `
-      <tr>
-        <td colspan="6" style="${rowBg}border-bottom:1px solid #e5e7eb;padding:6px 14px;text-align:left">
-         <div style="padding:4px 0">
-  <span style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px">품목:</span>
-  ${itemsHtml}
-</div>
-        </td>
-      </tr>` : '';
-
-    const expandIcon = isExpanded ? '▲' : '▼';
-    const expandBtnStyle = hasItems
-      ? `cursor:pointer;font-size:10px;color:#6366f1;margin-left:4px`
-      : `font-size:10px;color:#d1d5db;margin-left:4px`;
-
-    return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}" onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
-      <td ${tdStyle}>${no++}</td>
-      <td ${tdStyle}>${car4}</td>
-      <td ${tdStyleL}>${r['납품처명'] || ''}${hasItems ? `<span style="${expandBtnStyle}">${expandIcon}</span>` : ''}</td>
-      <td ${tdStyle}>${rollQty}</td>
-      <td style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:8px 10px;text-align:center;${scanColor}">${scanRoll}</td>
-      <td ${tdStyle}>${r['계획생성자'] || ''}</td>
-    </tr>${detailRow}`;
-  }).join('');
 }
 
 window.dispatchToggle = function(rowKey) {
