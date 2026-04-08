@@ -271,113 +271,55 @@
       <span class="cong-updated" id="congUpdated"></span>
     </div>
     <div class="cong-grid" id="congGrid"></div>
-  </section>
-<!-- 출하계획 현황 패널 -->
-
+    </section> 
   <section class="grid" id="weighingPanel" style="display:none"></section>
   <section class="grid" id="sections"></section>
- <section id="dispatchPanel" style="display:none">
-  <div id="dispatchSingleWrap">
-    <div class="card" style="margin-bottom:14px">
-      <div class="stripe cyan"></div>
-      <div class="head">
-        <h3>🚛 배차 현황</h3>
-        <div class="head-right">
-          <span id="dispatchUpdated" style="font-size:11px;color:var(--muted)"></span>
-        </div>
-      </div>
-      <div class="summary" id="dispatchSummary">불러오는 중…</div>
-      <div style="overflow-x:auto">
-        <table style="min-width:480px">
-          <thead>
-            <tr>
-              <th style="width:40px">No</th>
-              <th style="width:80px">차량번호</th>
-              <th>납품처명</th>
-              <th style="width:60px">ROLL수량</th>
-              <th style="width:60px">스캔ROLL</th>
-              <th style="width:64px">계획생성자</th>
-            </tr>
-          </thead>
-          <tbody id="dispatchBody">
-            <tr><td colspan="6" class="empty">불러오는 중…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 
-  <!-- 전체 선택 시 양쪽 컬럼 -->
-  <div id="dispatchDualWrap" class="grid" style="display:none">
+<section id="dispatchPanel" style="display:none">
+  <div class="grid">
+    <!-- 반월 -->
     <div class="col">
-      <div class="card">
+      <div class="card" style="margin-bottom:14px">
         <div class="stripe cyan"></div>
-        <div class="head"><h3>🏭 반월 배차</h3></div>
+        <div class="head"><h3>🏭 반월 출하현황</h3></div>
         <div class="summary" id="dispatchSummaryBw"></div>
         <div style="overflow-x:auto">
-          <table style="min-width:260px">
+          <table style="min-width:300px">
             <thead><tr>
               <th style="width:32px">No</th>
-              <th style="width:60px">차량</th>
+              <th style="width:32px">구분</th>
+              <th style="width:56px">차량</th>
               <th>납품처명</th>
-              <th style="width:48px">ROLL</th>
-              <th style="width:48px">스캔</th>
-            </tr></thead>
+              <th style="width:48px">주문R</th>
+              <th style="width:48px">상차R</th>
+              </tr></thead>
             <tbody id="dispatchBodyBw"></tbody>
           </table>
         </div>
       </div>
     </div>
+    <!-- 시화 -->
     <div class="col">
-      <div class="card">
+      <div class="card" style="margin-bottom:14px">
         <div class="stripe green"></div>
-        <div class="head"><h3>🏭 시화 배차</h3></div>
+        <div class="head"><h3>🏭 시화 출하현황</h3></div>
         <div class="summary" id="dispatchSummarySh"></div>
         <div style="overflow-x:auto">
-          <table style="min-width:260px">
+          <table style="min-width:300px">
             <thead><tr>
               <th style="width:32px">No</th>
-              <th style="width:60px">차량</th>
+              <th style="width:32px">구분</th>
+              <th style="width:56px">차량</th>
               <th>납품처명</th>
-              <th style="width:48px">ROLL</th>
-              <th style="width:48px">스캔</th>
-            </tr></thead>
+              <th style="width:48px">주문R</th>
+              <th style="width:48px">상차R</th>
+              </tr></thead>
             <tbody id="dispatchBodySh"></tbody>
           </table>
         </div>
       </div>
     </div>
   </div>
-<!-- 오더현황 카드 -->
-<div class="card" style="margin-bottom:14px">
-  <div class="stripe purple"></div>
-  <div class="head">
-    <h3>📋 오더현황 (미출고)</h3>
-    <div class="head-right">
-      <span id="orderUpdated" style="font-size:11px;color:var(--muted)"></span>
-    </div>
-  </div>
-  <div class="summary" id="orderSummary">불러오는 중…</div>
-  <div style="overflow-x:auto">
-    <table style="min-width:480px">
-      <thead>
-        <tr>
-          <th style="width:40px">No</th>
-          <th>거래처명</th>
-          <th style="width:100px">주문번호</th>
-          <th style="width:60px">주문R</th>
-          <th style="width:60px">출고R</th>
-          <th style="width:60px">잔량R</th>
-          <th>비고</th>
-        </tr>
-      </thead>
-      <tbody id="orderBody">
-        <tr><td colspan="7" class="empty">불러오는 중…</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
 </section>
 
   <div class="period-bar" id="periodBar" style="display:none">
@@ -2443,7 +2385,7 @@ document.getElementById('plantFilter').addEventListener('change',e=>{
   const an=document.getElementById('btnViewAnalytic').classList.contains('active');
   if(live) rerenderCache(); else if(an) loadAnalytic(__anType,true);
 const dispActive = document.getElementById('btnViewDispatch').classList.contains('active');
-if(dispActive) renderOrders();
+if(dispActive) renderDispatch();
 });
 function doSearch(){
   const val=document.getElementById('searchInput').value||'';
@@ -2496,7 +2438,7 @@ document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab(
   document.getElementById('btnViewDispatch').addEventListener('click', () => {
 setTab('dispatch');
 loadDispatch();
-loadOrders();
+
 });
 const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxlW-Tg-bOuHUZSAyD2i77KNze4cjv4imoIxuFxC9Dekf-EatZtVvPlpYEj7hFzVFpF/exec';
 // ═══ 초기화 ═══
@@ -2510,8 +2452,7 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxlW-Tg-bOuHUZSAy
     loadSnapshot(),
     loadAllTypesForSearch().catch(()=>{}),
     loadDispatch().catch(()=>{}),
-    loadOrders().catch(()=>{})
-  ]);
+    ]);
   const pf = document.getElementById('plantFilter')?.value || 'all';
   __avgDurMap = calcAvgDurMap(pf);
   rerenderCache();
@@ -2535,131 +2476,124 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxlW-Tg-bOuHUZSAy
   }, 60000);
 })();
 
-  // ═══ 배차 탭 ═══
-const DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxlW-Tg-bOuHUZSAyD2i77KNze4cjv4imoIxuFxC9Dekf-EatZtVvPlpYEj7hFzVFpF/exec';
-let __dispatchData = [];
+// ═══ 배차/오더 통합 탭 ═══
+let __dispatchData = { active: [], completed: [] };
 let __dispatchExpanded = new Set();
 
 async function loadDispatch() {
   try {
-    const res = await fetch(DISPATCH_URL + '?_ts=' + Date.now());
-    const data = await res.json();
-    __dispatchData = data || [];
+    const res = await fetch('http://localhost:5000/api/dispatch?_ts=' + Date.now());
+    __dispatchData = await res.json();
     renderDispatch();
   } catch (e) {
     document.getElementById('dispatchBody').innerHTML =
-      '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
+      '<tr><td colspan="7" class="empty">불러오기 실패 (Python 서버 확인)</td></tr>';
   }
 }
 
-function renderDispatch() {
-  const data = __dispatchData;
+function buildOrderRows(rows, isDim) {
   const plantSel = document.getElementById('plantFilter').value;
-  const q = (document.getElementById('searchInput').value || '').replace(/\D/g, '').slice(-4);
-  const isFour = /^\d{4}$/.test(q);
-
-  const filterRow = (r) => {
-    if (isFour) {
-      const car4 = String(r['차량번호'] || '').replace(/\D/g, '').slice(-4);
-      return car4 === q;
-    }
+  const filtered = rows.filter(r => {
+    const plant = String(r['사업장'] || '');
+    if (plantSel === 'banwol' && !plant.includes('반월')) return false;
+    if (plantSel === 'sihwa' && !plant.includes('시화')) return false;
     return true;
-  };
+  });
 
-  const bwRows = data.filter(r => String(r['사업장'] || '').includes('반월') && filterRow(r));
-  const shRows = data.filter(r => String(r['사업장'] || '').includes('시화') && filterRow(r));
+  if (!filtered.length) return '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
 
-  const isDual = (plantSel === 'all');
-  document.getElementById('dispatchSingleWrap').style.display = isDual ? 'none' : 'block';
-  document.getElementById('dispatchDualWrap').style.display  = isDual ? 'grid' : 'none';
+  return filtered.map((r, i) => {
+    const isSihwa    = String(r['사업장'] || '').includes('시화');
+    const isDispatched = r['배차여부'] === 'Y';
+    const rowBg      = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
+    const opacity    = isDim ? 'opacity:0.6;' : '';
+    const td  = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center"`;
+    const tdL = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:left"`;
 
-  // 공통 행 빌더
-  function buildRows(rows, tbodyId, summaryId, isDualMode) {
-    const tbody = document.getElementById(tbodyId);
-    const summary = document.getElementById(summaryId);
-    if (!tbody) return;
-
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
-      if (summary) summary.textContent = '0건';
-      return;
-    }
-    if (summary) summary.textContent = `${rows.length}건`;
-
-    tbody.innerHTML = rows.map((r, i) => {
-      const isSihwa = String(r['사업장'] || '').includes('시화');
-      const rowBg = isDualMode
-        ? (isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff')
-        : (isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff');
-      const base = `style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:center"`;
-      const baseL = `style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:left"`;
-
-      const scanRoll = Number(r['스캔ROLL'] || 0);
-      const rollQty  = Number(r['ROLL수량'] || 0);
-      const scanColor = scanRoll >= rollQty
+    const 주문R = Number(r['ROLL수량'] || 0);
+    const 상차R = Number(r['상차량'] || 0);
+    const scanColor = isDim
+      ? ''
+      : 상차R >= 주문R && 주문R > 0
         ? 'color:#16a34a;font-weight:700'
-        : scanRoll > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
+        : 상차R > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
 
-      const car4 = String(r['차량번호'] || '').replace(/\D/g, '').slice(-4);
-      const planNo = String(r['출하계획번호'] || '');
-      const rowKey = planNo || car4 + '_' + i;
-      const isExpanded = __dispatchExpanded.has(rowKey);
+    // 배차 구분 뱃지
+const hapjim = r['합짐'] === 'Y'
+  ? `<br><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
+  : '';
 
-      let items = [];
-      try { items = JSON.parse(r['품목목록'] || '[]'); } catch (e) {}
-      const hasItems = items.length > 0;
-      const itemsHtml = hasItems
-        ? items.map(it => `<div style="padding:2px 0;font-size:12px;font-weight:600;color:#1d4ed8">${it['품목명']} · ${it['ROLL수량']}R</div>`).join('')
-        : '<span style="color:#9ca3af;font-size:11px">품목 정보 없음</span>';
+const badge = isDispatched
+  ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">배차</span>${hapjim}`
+  : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#6b7280">대기</span>${hapjim}`;
 
-      const detailRow = isExpanded ? `
-        <tr>
-          <td colspan="${isDualMode ? 5 : 6}" style="${rowBg}border-bottom:1px solid #e5e7eb;padding:6px 14px;text-align:left">
-            <div style="padding:4px 0">
-              <span style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px">품목:</span>
-              ${itemsHtml}
-            </div>
-          </td>
-        </tr>` : '';
+    // 차량번호
+    const car4 = isDispatched
+      ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4)
+      : '—';
 
-      const expandIcon = isExpanded ? '▲' : '▼';
-      const expandBtnStyle = hasItems
-        ? 'cursor:pointer;font-size:10px;color:#6366f1;margin-left:4px'
-        : 'font-size:10px;color:#d1d5db;margin-left:4px';
+    // 품목 펼침
+    const rowKey = String(r['주문번호'] || '') + '_' + i;
+    const isExpanded = __dispatchExpanded.has(rowKey);
+    let items = [];
+    try { items = JSON.parse(r['품목목록'] || '[]'); } catch(e) {}
+    const hasItems = items.length > 0;
 
-      if (isDualMode) {
-        // 듀얼 모드: 계획생성자 컬럼 없이 5컬럼
-        return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}" onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
-          <td ${base}>${i + 1}</td>
-          <td ${base}>${car4}</td>
-          <td ${baseL}>${r['납품처명'] || ''}${hasItems ? `<span style="${expandBtnStyle}">${expandIcon}</span>` : ''}</td>
-          <td ${base}>${rollQty}</td>
-          <td style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:center;${scanColor}">${scanRoll}</td>
-        </tr>${detailRow}`;
-      } else {
-        return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}" onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
-          <td ${base}>${i + 1}</td>
-          <td ${base}>${car4}</td>
-          <td ${baseL}>${r['납품처명'] || ''}${hasItems ? `<span style="${expandBtnStyle}">${expandIcon}</span>` : ''}</td>
-          <td ${base}>${rollQty}</td>
-          <td style="${rowBg};border-bottom:1px solid #eee;padding:8px 10px;text-align:center;${scanColor}">${scanRoll}</td>
-          <td ${base}>${r['계획생성자'] || ''}</td>
-        </tr>${detailRow}`;
-      }
-    }).join('');
+const itemsHtml = hasItems
+  ? items.map(it =>
+      `<div style="padding:2px 0"><span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:600">${it['품목명']} ${it['ROLL수량']}R</span></div>`
+    ).join('')
+  : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
+
+    const detailRow = isExpanded ? `
+      <tr>
+        <td colspan="7" style="${rowBg}${opacity}border-bottom:1px solid #e5e7eb;padding:5px 14px;text-align:left">
+          ${itemsHtml}
+        </td>
+      </tr>` : '';
+
+    const expandIcon = hasItems ? (isExpanded ? ' ▲' : ' ▼') : '';
+
+    return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}"
+              onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
+      <td ${td}>${i + 1}</td>
+      <td ${td}>${badge}</td>
+      <td ${td}>${car4}</td>
+      <td ${tdL}>${r['납품처명'] || ''}${hasItems ? `<span style="color:#6366f1;font-size:10px">${expandIcon}</span>` : ''}</td>
+      <td ${td}>${주문R}</td>
+      <td style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center;${scanColor}">${상차R}</td>
+      </tr>${detailRow}`;
+  }).join('');
+}
+function sortOrders(rows) {
+  // 배차된 것 먼저, 그 다음 미배차
+  return [...rows].sort((a, b) => {
+    const aD = a['배차여부'] === 'Y' ? 0 : 1;
+    const bD = b['배차여부'] === 'Y' ? 0 : 1;
+    return aD - bD;
+  });
+}
+function renderDispatch() {
+  const active = __dispatchData.active || [];
+  const plantSel = document.getElementById('plantFilter').value;
+
+  const bwRows = sortOrders(active.filter(r => String(r['사업장']||'').includes('반월')));
+  const shRows = sortOrders(active.filter(r => String(r['사업장']||'').includes('시화')));
+
+  // 반월
+  if (plantSel !== 'sihwa') {
+    const dispatched = bwRows.filter(r => r['배차여부'] === 'Y').length;
+    document.getElementById('dispatchSummaryBw').textContent =
+      `총 ${bwRows.length}건 · 배차 ${dispatched} · 미배차 ${bwRows.length - dispatched}`;
+    document.getElementById('dispatchBodyBw').innerHTML = buildOrderRows(bwRows, false);
   }
 
-  if (isDual) {
-    // 업데이트 시각 (듀얼 헤더 없으므로 따로 표시 안 해도 됨)
-    buildRows(bwRows, 'dispatchBodyBw', 'dispatchSummaryBw', true);
-    buildRows(shRows, 'dispatchBodySh', 'dispatchSummarySh', true);
-  } else {
-    const targetRows = plantSel === 'banwol' ? bwRows : plantSel === 'sihwa' ? shRows : [...bwRows, ...shRows];
-    const summary = document.getElementById('dispatchSummary');
-    const updated = document.getElementById('dispatchUpdated');
-    if (summary) summary.textContent = `총 ${targetRows.length}건 · 반월 ${bwRows.length} · 시화 ${shRows.length}`;
-    if (updated && data[0]?.['업데이트시각']) updated.textContent = data[0]['업데이트시각'] + ' 기준';
-    buildRows(targetRows, 'dispatchBody', null, false);
+  // 시화
+  if (plantSel !== 'banwol') {
+    const dispatched = shRows.filter(r => r['배차여부'] === 'Y').length;
+    document.getElementById('dispatchSummarySh').textContent =
+      `총 ${shRows.length}건 · 배차 ${dispatched} · 미배차 ${shRows.length - dispatched}`;
+    document.getElementById('dispatchBodySh').innerHTML = buildOrderRows(shRows, false);
   }
 }
 
@@ -2671,75 +2605,8 @@ window.dispatchToggle = function(rowKey) {
   }
   renderDispatch();
 };
-// ═══ 오더현황 ═══
-let __orderData = [];
 
-async function loadOrders() {
-  try {
-    const res = await fetch(DISPATCH_URL + '?type=orders&_ts=' + Date.now());
-    const data = await res.json();
-    __orderData = data || [];
-    renderOrders();
-  } catch (e) {
-    document.getElementById('orderBody').innerHTML =
-      '<tr><td colspan="7" class="empty">불러오기 실패</td></tr>';
-  }
-}
 
-function renderOrders() {
-  const data = __orderData;
-  const plantSel = document.getElementById('plantFilter').value;
-
-  const filtered = data.filter(r => {
-    const plant = String(r['사업장'] || '');
-    if (plantSel === 'banwol' && !plant.includes('반월')) return false;
-    if (plantSel === 'sihwa' && !plant.includes('시화')) return false;
-    return true;
-  });
-
-  const bwRows = filtered.filter(r => String(r['사업장'] || '').includes('반월'));
-  const shRows = filtered.filter(r => String(r['사업장'] || '').includes('시화'));
-  const allRows = [...bwRows, ...shRows];
-
-  const tbody   = document.getElementById('orderBody');
-  const summary = document.getElementById('orderSummary');
-
-  if (!allRows.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">데이터 없음</td></tr>';
-    summary.textContent = '데이터 없음';
-    return;
-  }
-
-  const bwRoll = bwRows.reduce((s, r) => s + Number(r['주문롤수'] || 0), 0);
-  const shRoll = shRows.reduce((s, r) => s + Number(r['주문롤수'] || 0), 0);
-  summary.textContent = `총 ${allRows.length}건 · 반월 ${bwRows.length}건 (${bwRoll}R) · 시화 ${shRows.length}건 (${shRoll}R)`;
-
-  let no = 1;
-  tbody.innerHTML = allRows.map((r, i) => {
-    const isSihwa = String(r['사업장'] || '').includes('시화');
-    const isFirstSihwa = i === bwRows.length && shRows.length > 0;
-    const rowBg = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
-    const sepBorder = isFirstSihwa ? 'border-top:2px solid #ff6b6b;' : '';
-    const td = `style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:7px 10px;text-align:center"`;
-    const tdL = `style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:7px 10px;text-align:left"`;
-
-    const 잔량 = Number(r['잔량롤수'] || 0);
-    const 주문 = Number(r['주문롤수'] || 0);
-    const 잔량Color = 잔량 === 0
-      ? 'color:#16a34a;font-weight:700'
-      : 잔량 < 주문 ? 'color:#f59e0b;font-weight:700' : '';
-
-    return `<tr>
-      <td ${td}>${no++}</td>
-      <td ${tdL}>${r['거래처명'] || ''}</td>
-      <td ${td} style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:7px 10px;text-align:center;font-size:11px;color:#666">${r['주문번호'] || ''}</td>
-      <td ${td}>${주문}</td>
-      <td ${td}>${r['출고롤수'] || 0}</td>
-      <td style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:7px 10px;text-align:center;${잔량Color}">${잔량}</td>
-      <td ${tdL} style="${rowBg};${sepBorder}border-bottom:1px solid #eee;padding:7px 10px;text-align:left;font-size:11px;color:#666">${r['비고'] || ''}</td>
-    </tr>`;
-  }).join('');
-}
 </script>
 </body>
 </html>
