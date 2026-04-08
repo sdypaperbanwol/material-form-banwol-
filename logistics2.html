@@ -2440,7 +2440,8 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxGxQcITZ1ns5w-ZofTo7d3u9UrXO8fg1m3-9Yjb947iVQzpM_E2aU8QQVXiHlgQWZE/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbzJIBxp0CJYNqpQLJ3Us4K4e2MuJ_7XugXniawoQzc9K8K1gecyi53TIocKc9DsHOfH/exec';
+
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2459,7 +2460,6 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxGxQcITZ1ns5w-Zo
 
   setInterval(fetchWatch,5*60*1000);
   setInterval(loadDispatch, 5*60*1000);
-  setInterval(loadOrders, 5*60*1000);
   setInterval(async ()=>{
     if(document.hidden) return;
     try{
@@ -2482,22 +2482,15 @@ let __dispatchExpanded = new Set();
 
 async function loadDispatch() {
   try {
-    // GAS URL 대신 파이썬 Flask 호출
-    const res = await fetch('http://localhost:5000/api/dispatch?_ts=' + Date.now());
-    const data = await res.json();
-    __dispatchData = { active: Array.isArray(data) ? data : (data.active || []) };
+    const res = await fetch(GAS_DISPATCH_URL + '?type=dispatch&_ts=' + Date.now(), {
+      redirect: 'follow'
+    });
+    const raw = await res.json();
+    __dispatchData = { active: Array.isArray(raw) ? raw : [] };
     renderDispatch();
   } catch (e) {
-    // 파이썬 안 켜져있으면 GAS fallback
-    try {
-      const res2 = await fetch('https://script.google.com/macros/s/AKfycbxGxQcITZ1ns5w-ZofTo7d3u9UrXO8fg1m3-9Yjb947iVQzpM_E2aU8QQVXiHlgQWZE/exec?type=dispatch&_ts=' + Date.now());
-      const rows = await res2.json();
-      __dispatchData = { active: Array.isArray(rows) ? rows : (rows.active || []) };
-      renderDispatch();
-    } catch(e2) {
-      document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
-      document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
-    }
+    document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
+    document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
   }
 }
 
