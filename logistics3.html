@@ -2483,14 +2483,18 @@ let __dispatchExpanded = new Set();
 
 async function loadDispatch() {
   try {
-    const [dispRes, invRes] = await Promise.all([
-      fetch(GAS_DISPATCH_URL + '?type=dispatch&_ts=' + Date.now(), { redirect: 'follow' }),
-      fetch(GAS_DISPATCH_URL + '?type=inventory&_ts=' + Date.now(), { redirect: 'follow' }),
-    ]);
+    const dispRes = await fetch(GAS_DISPATCH_URL + '?type=dispatch&_ts=' + Date.now(), { redirect: 'follow' });
     const raw = await dispRes.json();
-    const invRaw = await invRes.json();
     __dispatchData = { active: Array.isArray(raw) ? raw : [] };
-    __inventoryData = Array.isArray(invRaw) ? invRaw : [];
+
+    try {
+      const invRes = await fetch(GAS_DISPATCH_URL + '?type=inventory&_ts=' + Date.now(), { redirect: 'follow' });
+      const invRaw = await invRes.json();
+      __inventoryData = Array.isArray(invRaw) ? invRaw : [];
+    } catch(e) {
+      __inventoryData = [];
+    }
+
     renderDispatch();
   } catch (e) {
     document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
