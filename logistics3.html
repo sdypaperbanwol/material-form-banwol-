@@ -349,6 +349,7 @@
 
 <script>
 const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbypnHQB7Cfm1NrzhJJ2P7y5X4jKE1dVhn0cBtZdxwFE7XdX0sd4EjBBjlP1wNGKj6lgcg/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxNeboD1VQhxFCIOTMrR2HO-v1M4NRMVmeR4yzh4z1YuEE4qdR_EH_d4W2m5lVYFTiB/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -2440,7 +2441,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxGxQcITZ1ns5w-ZofTo7d3u9UrXO8fg1m3-9Yjb947iVQzpM_E2aU8QQVXiHlgQWZE/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxNeboD1VQhxFCIOTMrR2HO-v1M4NRMVmeR4yzh4z1YuEE4qdR_EH_d4W2m5lVYFTiB/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2477,20 +2478,25 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxGxQcITZ1ns5w-Zo
 
 // ═══ 배차/오더 통합 탭 ═══
 let __dispatchData = { active: [], completed: [] };
+let __inventoryData = [];
 let __dispatchExpanded = new Set();
 
 async function loadDispatch() {
   try {
-    const res = await fetch(GAS_DISPATCH_URL + '?type=dispatch&_ts=' + Date.now());
-    const raw = await res.json();
+    const [dispRes, invRes] = await Promise.all([
+      fetch(GAS_DISPATCH_URL + '?type=dispatch&_ts=' + Date.now(), { redirect: 'follow' }),
+      fetch(GAS_DISPATCH_URL + '?type=inventory&_ts=' + Date.now(), { redirect: 'follow' }),
+    ]);
+    const raw = await dispRes.json();
+    const invRaw = await invRes.json();
     __dispatchData = { active: Array.isArray(raw) ? raw : [] };
+    __inventoryData = Array.isArray(invRaw) ? invRaw : [];
     renderDispatch();
   } catch (e) {
     document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
     document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
   }
 }
-
 function buildOrderRows(rows, isDim) {
   const plantSel = document.getElementById('plantFilter').value;
   const filtered = rows.filter(r => {
@@ -2531,7 +2537,69 @@ const badge = isDispatched
     const car4 = isDispatched
       ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4)
       : '—';
+const plant = isSihwa ? '시화' : '반월';
+const PRIMARY_WH   = isSihwa ? '2260' : '9160';  // 본창고
+const orderItems   = items; // 품목목록 배열
 
+// 배차된 오더가 먼저 재고를 소진한다고 가정 → 잔여재고 계산
+function calcRemainingStock(nmItem, plant, orderRows) {
+  const stockMap = {};
+  __inventoryData
+    .filter(iv => iv['사업장'] === plant && iv['품목명'] === nmItem)
+    .forEach(iv => {
+      stockMap[iv['창고코드']] = (stockMap[iv['창고코드']] || 0) + Number(iv['롤수'] || 0);
+    });
+
+  const dispatched = orderRows.filter(o => o['배차여부'] === 'Y');
+  let remaining = { ...stockMap };
+
+  dispatched.forEach(o => {
+    let items = [];
+    try { items = Array.isArray(o['품목목록']) ? o['품목목록'] : JSON.parse(o['품목목록'] || '[]'); } catch(e) {}
+    let need = items
+      .filter(it => it['품목명'] === nmItem)
+      .reduce((s, it) => s + (it['ROLL수량'] || 0), 0);
+    [PRIMARY_WH, ...Object.keys(remaining).filter(k => k !== PRIMARY_WH)].forEach(wh => {
+      if (need <= 0) return;
+      const avail = remaining[wh] || 0;
+      const take  = Math.min(avail, need);
+      remaining[wh] = avail - take;
+      need -= take;
+    });
+  });
+
+  return remaining;
+}
+
+// 이 행의 품목별 재고 안내 생성
+const stockHints = orderItems.map(it => {
+  const allOrders = (__dispatchData.active || []).filter(o => {
+  let oItems = [];
+  try { oItems = Array.isArray(o['품목목록']) ? o['품목목록'] : JSON.parse(o['품목목록'] || '[]'); } catch(e) {}
+  return String(o['사업장'] || '').includes(plant) &&
+         oItems.some(oi => oi['품목명'] === it['품목명']);
+});
+
+const remaining = calcRemainingStock(it['품목명'], plant, allOrders);
+  const primary   = remaining[PRIMARY_WH] || 0;
+  const others    = Object.entries(remaining)
+    .filter(([k, v]) => k !== PRIMARY_WH && v > 0)
+    .map(([k, v]) => {
+      const nm = (__inventoryData.find(iv => iv['창고코드'] === k) || {})['창고명'] || k;
+      return `${nm} ${v}R`;
+    });
+
+  let hint = '';
+  if (primary > 0) {
+    hint = `✅ 본창고 ${primary}R`;
+    if (others.length) hint += ` / 기타: ${others.join(', ')}`;
+  } else if (others.length) {
+    hint = `⚠️ 본창고 없음 → ${others.join(', ')}`;
+  } else {
+    hint = `❌ 재고 없음`;
+  }
+  return `${it['품목명']} ${it['ROLL수량']}R — ${hint}`;
+});
     // 품목 펼침
     const rowKey = String(r['주문번호'] || '') + '_' + i;
     const isExpanded = __dispatchExpanded.has(rowKey);
@@ -2544,9 +2612,12 @@ try {
 const hasItems = items.length > 0;
 
 const itemsHtml = hasItems
-  ? items.map(it =>
-      `<div style="padding:2px 0"><span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:600">${it['품목명']} ${it['ROLL수량']}R</span></div>`
-    ).join('')
+  ? stockHints.map(hint => {
+      const color = hint.startsWith('✅') ? '#15803d'
+                  : hint.startsWith('⚠️') ? '#b45309'
+                  : '#dc2626';
+      return `<div style="padding:2px 0;font-size:11px;color:${color}">${hint}</div>`;
+    }).join('')
   : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
 
     const detailRow = isExpanded ? `
