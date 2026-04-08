@@ -2501,6 +2501,34 @@ async function loadDispatch() {
     document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
   }
 }
+function calcRemainingStock(nmItem, plant, PRIMARY_WH) {
+  const stockMap = {};
+  __inventoryData
+    .filter(iv => iv['사업장'] === plant && iv['품목명'] === nmItem)
+    .forEach(iv => {
+      stockMap[String(iv['창고코드'])] = (stockMap[String(iv['창고코드'])] || 0) + Number(iv['롤수'] || 0);
+    });
+
+  const dispatched = (__dispatchData.active || []).filter(o =>
+    o['배차여부'] === 'Y' && String(o['사업장'] || '').includes(plant)
+  );
+
+  let remaining = { ...stockMap };
+  dispatched.forEach(o => {
+    let oItems = [];
+    try { oItems = Array.isArray(o['품목목록']) ? o['품목목록'] : JSON.parse(o['품목목록'] || '[]'); } catch(e) {}
+    let need = oItems.filter(it => it['품목명'] === nmItem).reduce((s, it) => s + (it['ROLL수량'] || 0), 0);
+    [PRIMARY_WH, ...Object.keys(remaining).filter(k => k !== PRIMARY_WH)].forEach(wh => {
+      if (need <= 0) return;
+      const avail = remaining[wh] || 0;
+      const take = Math.min(avail, need);
+      remaining[wh] = avail - take;
+      need -= take;
+    });
+  });
+  return remaining;
+}
+
 function buildOrderRows(rows, isDim) {
   const plantSel = document.getElementById('plantFilter').value;
   const filtered = rows.filter(r => {
@@ -2513,37 +2541,94 @@ function buildOrderRows(rows, isDim) {
   if (!filtered.length) return '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
 
   return filtered.map((r, i) => {
-    const isSihwa    = String(r['사업장'] || '').includes('시화');
+    const isSihwa = String(r['사업장'] || '').includes('시화');
     const isDispatched = r['배차여부'] === 'Y';
-    const rowBg      = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
-    const opacity    = isDim ? 'opacity:0.6;' : '';
+    const rowBg = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
+    const opacity = isDim ? 'opacity:0.6;' : '';
     const td  = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center"`;
     const tdL = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:left"`;
 
     const 주문R = Number(r['ROLL수량'] || 0);
     const 상차R = Number(r['상차량'] || 0);
-    const scanColor = isDim
-      ? ''
-      : 상차R >= 주문R && 주문R > 0
-        ? 'color:#16a34a;font-weight:700'
-        : 상차R > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
+    const scanColor = isDim ? ''
+      : 상차R >= 주문R && 주문R > 0 ? 'color:#16a34a;font-weight:700'
+      : 상차R > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
 
-    // 배차 구분 뱃지
-const hapjim = r['합짐'] === 'Y'
-  ? `<br><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
-  : '';
+    const hapjim = r['합짐'] === 'Y'
+      ? `<br><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
+      : '';
+    const badge = isDispatched
+      ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">배차</span>${hapjim}`
+      : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#6b7280">대기</span>${hapjim}`;
 
-const badge = isDispatched
-  ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">배차</span>${hapjim}`
-  : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#6b7280">대기</span>${hapjim}`;
+    const car4 = isDispatched ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4) : '—';
 
-    // 차량번호
-    const car4 = isDispatched
-      ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4)
-      : '—';
-const plant = isSihwa ? '시화' : '반월';
-const PRIMARY_WH   = isSihwa ? '2260' : '9160';  // 본창고
-const orderItems   = items; // 품목목록 배열
+    // 품목 파싱
+    let items = [];
+    try {
+      const raw = r['품목목록'];
+      items = Array.isArray(raw) ? raw : JSON.parse(raw || '[]');
+    } catch(e) { items = []; }
+
+    const hasItems = items.length > 0;
+    const plant = isSihwa ? '시화' : '반월';
+    const PRIMARY_WH = isSihwa ? '2260' : '9160';
+
+    // 재고 안내
+    const stockHints = items.map(it => {
+      const remaining = calcRemainingStock(it['품목명'], plant, PRIMARY_WH);
+      const primary = remaining[PRIMARY_WH] || 0;
+      const others = Object.entries(remaining)
+        .filter(([k, v]) => String(k) !== String(PRIMARY_WH) && v > 0)
+        .map(([k, v]) => {
+          const nm = (__inventoryData.find(iv => String(iv['창고코드']) === String(k)) || {})['창고명'] || k;
+          return `${nm} ${v}R`;
+        });
+
+      let hint = '';
+      if (primary > 0) {
+        hint = `✅ 본창고 ${primary}R`;
+        if (others.length) hint += ` / 기타: ${others.join(', ')}`;
+      } else if (others.length) {
+        hint = `⚠️ 본창고 없음 → ${others.join(', ')}`;
+      } else {
+        hint = `❌ 재고 없음`;
+      }
+      return `${it['품목명']} ${it['ROLL수량']}R — ${hint}`;
+    });
+
+    const rowKey = String(r['주문번호'] || '') + '_' + i;
+    const isExpanded = __dispatchExpanded.has(rowKey);
+
+    const itemsHtml = hasItems
+      ? stockHints.map(hint => {
+          const color = hint.startsWith('✅') ? '#15803d'
+                      : hint.startsWith('⚠️') ? '#b45309'
+                      : '#dc2626';
+          return `<div style="padding:2px 0;font-size:11px;color:${color}">${hint}</div>`;
+        }).join('')
+      : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
+
+    const detailRow = isExpanded ? `
+      <tr>
+        <td colspan="6" style="${rowBg}${opacity}border-bottom:1px solid #e5e7eb;padding:5px 14px;text-align:left">
+          ${itemsHtml}
+        </td>
+      </tr>` : '';
+
+    const expandIcon = hasItems ? (isExpanded ? ' ▲' : ' ▼') : '';
+
+    return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}"
+              onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
+      <td ${td}>${i + 1}</td>
+      <td ${td}>${badge}</td>
+      <td ${td}>${car4}</td>
+      <td ${tdL}>${r['납품처명'] || ''}${hasItems ? `<span style="color:#6366f1;font-size:10px">${expandIcon}</span>` : ''}</td>
+      <td ${td}>${주문R}</td>
+      <td style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center;${scanColor}">${상차R}</td>
+    </tr>${detailRow}`;
+  }).join('');
+}
 
 // 배차된 오더가 먼저 재고를 소진한다고 가정 → 잔여재고 계산
 function calcRemainingStock(nmItem, plant, orderRows) {
