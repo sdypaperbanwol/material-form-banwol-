@@ -2440,7 +2440,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxlW-Tg-bOuHUZSAyD2i77KNze4cjv4imoIxuFxC9Dekf-EatZtVvPlpYEj7hFzVFpF/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxGxQcITZ1ns5w-ZofTo7d3u9UrXO8fg1m3-9Yjb947iVQzpM_E2aU8QQVXiHlgQWZE/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2482,12 +2482,22 @@ let __dispatchExpanded = new Set();
 
 async function loadDispatch() {
   try {
+    // GAS URL 대신 파이썬 Flask 호출
     const res = await fetch('http://localhost:5000/api/dispatch?_ts=' + Date.now());
-    __dispatchData = await res.json();
+    const data = await res.json();
+    __dispatchData = { active: Array.isArray(data) ? data : (data.active || []) };
     renderDispatch();
   } catch (e) {
-    document.getElementById('dispatchBody').innerHTML =
-      '<tr><td colspan="7" class="empty">불러오기 실패 (Python 서버 확인)</td></tr>';
+    // 파이썬 안 켜져있으면 GAS fallback
+    try {
+      const res2 = await fetch('https://script.google.com/macros/s/AKfycbxGxQcITZ1ns5w-ZofTo7d3u9UrXO8fg1m3-9Yjb947iVQzpM_E2aU8QQVXiHlgQWZE/exec?type=dispatch&_ts=' + Date.now());
+      const rows = await res2.json();
+      __dispatchData = { active: Array.isArray(rows) ? rows : (rows.active || []) };
+      renderDispatch();
+    } catch(e2) {
+      document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
+      document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
+    }
   }
 }
 
@@ -2535,9 +2545,13 @@ const badge = isDispatched
     // 품목 펼침
     const rowKey = String(r['주문번호'] || '') + '_' + i;
     const isExpanded = __dispatchExpanded.has(rowKey);
-    let items = [];
-    try { items = JSON.parse(r['품목목록'] || '[]'); } catch(e) {}
-    const hasItems = items.length > 0;
+let items = [];
+try {
+  const raw = r['품목목록'];
+  items = Array.isArray(raw) ? raw : JSON.parse(raw || '[]');
+} catch(e) { items = []; }
+
+const hasItems = items.length > 0;
 
 const itemsHtml = hasItems
   ? items.map(it =>
