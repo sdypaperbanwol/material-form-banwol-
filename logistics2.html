@@ -108,7 +108,7 @@
     .grid{ grid-template-columns:1fr 1fr }
     .card{ box-shadow:none; border:1px solid #eee }
   }
-  #analyticPanel{ display:none }
+  #analyticPanel{ display:block }
   .kpi-row{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:14px }
   .kpi{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
     position:relative; overflow:hidden; }
@@ -219,12 +219,11 @@
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
       <div>
         <h1 class="title">공장 내 차량 현황</h1>
-        <p class="subtitle" id="updated" style="margin-top:3px">업데이트 준비 중… · 반월/시화 · 계근</p>
-        <p class="subtitle" style="margin-top:2px;font-size:11px;color:#aaa">매일 05~21시 작동</p>
+<p class="subtitle" id="updated" style="margin-top:3px">업데이트 준비 중…</p>
+<p class="subtitle" id="tabDesc" style="margin-top:2px;font-size:11px;color:#aaa">입차·분석 · 매일 05~21시 자동갱신</p>
       </div>
 <div class="view-toggle" role="tablist" style="flex-shrink:0;margin-top:2px">
-  <button class="tbtn active" id="btnViewLive" role="tab">입차</button>
-  <button class="tbtn" id="btnViewAnalytic" role="tab">분석</button>
+  <button class="tbtn active" id="btnViewLive" role="tab">입차·분석</button>
   <button class="tbtn" id="btnViewDispatch" role="tab">배차</button>
 </div>
     </div>
@@ -262,37 +261,54 @@
     <div id="carSearchHistory" style="padding:10px 16px;font-size:12px"></div>
   </section>
 
-  <section class="cong-panel" id="congPanel">
-    <div class="cong-panel-header">
-      <div class="cong-panel-title">
-        현재 혼잡도
-        <span class="cong-live-badge">● 실시간</span>
-      </div>
-      <span class="cong-updated" id="congUpdated"></span>
+ <section class="cong-panel" id="congPanel">
+  <div class="cong-panel-header">
+    <div class="cong-panel-title">
+      현재 혼잡도
+      <span class="cong-live-badge">● 실시간</span>
     </div>
-    <div class="cong-grid" id="congGrid"></div>
-    </section> 
-  <section class="grid" id="weighingPanel" style="display:none"></section>
-  <section class="grid" id="sections"></section>
+    <span class="cong-updated" id="congUpdated"></span>
+  </div>
+  <div class="cong-grid" id="congGrid" style="cursor:pointer"></div>
+  <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">항목 클릭 시 상세 보기</div>
+</section>
 
-<section id="dispatchPanel" style="display:none">
+  
+<section class="grid" id="weighingPanel" style="display:none"></section>
+  <section class="grid" id="sections" style="display:none"></section>
+  <div class="period-bar" id="periodBar" style="display:none;margin-top:14px">
+    <div class="period-bar-row">
+      <label>기간</label>
+      <div class="period-presets">
+      <button class="pbtn active" data-preset="today">오늘</button>
+<button class="pbtn" data-preset="custom">직접입력</button>
+      </div>
+      <div class="period-custom" id="periodCustom" style="display:none">
+        <input type="month" id="anYearMonth" />
+        <button class="period-apply" id="anApplyBtn">조회</button>
+      </div>
+    </div>
+  </div>
+<section id="analyticPanel" style="display:none"></section>
+ <section id="dispatchPanel" style="display:none">
   <div class="grid">
     <!-- 반월 -->
+    <!-- 반월 -->
     <div class="col">
-      <div class="card" style="margin-bottom:14px">
+          <div class="card">
         <div class="stripe cyan"></div>
         <div class="head"><h3>🏭 반월 출하현황</h3></div>
         <div class="summary" id="dispatchSummaryBw"></div>
-        <div style="overflow-x:auto">
-          <table style="min-width:300px">
-            <thead><tr>
-              <th style="width:32px">No</th>
-              <th style="width:32px">구분</th>
-              <th style="width:56px">차량</th>
-              <th>납품처명</th>
-              <th style="width:48px">주문R</th>
-              <th style="width:48px">상차R</th>
-              </tr></thead>
+       <div style="overflow-x:auto">
+          <table style="width:100%">
+<thead><tr>
+  <th style="width:32px">No</th>
+  <th style="width:44px">구분</th>
+  <th style="width:56px">차량</th>
+  <th>납품처명</th>
+  <th style="width:44px">상차</th>
+  <th style="width:56px">상태</th>
+</tr></thead>
             <tbody id="dispatchBodyBw"></tbody>
           </table>
         </div>
@@ -300,56 +316,34 @@
     </div>
     <!-- 시화 -->
     <div class="col">
-      <div class="card" style="margin-bottom:14px">
+          <div class="card">
         <div class="stripe green"></div>
         <div class="head"><h3>🏭 시화 출하현황</h3></div>
         <div class="summary" id="dispatchSummarySh"></div>
-        <div style="overflow-x:auto">
-          <table style="min-width:300px">
-            <thead><tr>
-              <th style="width:32px">No</th>
-              <th style="width:32px">구분</th>
-              <th style="width:56px">차량</th>
-              <th>납품처명</th>
-              <th style="width:48px">주문R</th>
-              <th style="width:48px">상차R</th>
-              </tr></thead>
+       <div style="overflow-x:auto">
+          <table style="width:100%">
+        <thead><tr>
+  <th style="width:32px">No</th>
+  <th style="width:44px">구분</th>
+  <th style="width:56px">차량</th>
+  <th>납품처명</th>
+  <th style="width:44px">상차</th>
+  <th style="width:56px">상태</th>
+</tr></thead>
             <tbody id="dispatchBodySh"></tbody>
           </table>
         </div>
       </div>
-    </div>
   </div>
+
 </section>
-
-  <div class="period-bar" id="periodBar" style="display:none">
-    <div class="period-bar-row">
-      <label>기간</label>
-      <div class="period-presets">
-        <button class="pbtn active" data-preset="today">오늘</button>
-        <button class="pbtn" data-preset="week">이번주</button>
-        <button class="pbtn" data-preset="lastweek">저번주</button>
-        <button class="pbtn" data-preset="custom">직접입력</button>
-      </div>
-      <div class="period-custom" id="periodCustom" style="display:none">
-        <input type="month" id="anYearMonth" />
-        <button class="period-apply" id="anApplyBtn">조회</button>
-      </div>
-    </div>
-    <div class="period-bar-row">
-      <label>품목</label>
-      <div class="view-toggle" id="anTypeTabs"></div>
-    </div>
-  </div>
-
-  <section id="analyticPanel"></section>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbypnHQB7Cfm1NrzhJJ2P7y5X4jKE1dVhn0cBtZdxwFE7XdX0sd4EjBBjlP1wNGKj6lgcg/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxNeboD1VQhxFCIOTMrR2HO-v1M4NRMVmeR4yzh4z1YuEE4qdR_EH_d4W2m5lVYFTiB/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNLC526hzORn1nIP2aoZQnb6ZQg8jSYEvGg6S8XHC74VLrzopzChf/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -549,18 +543,25 @@ function renderCongPanel(data, plantFilter){
   data.sections.forEach(sec => {
     const counts = { '반월': 0, '시화': 0 };
     sec.groups.forEach(g => {
-      counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
-        if(isMonoDigit(r.car)) return false;
-        if(sec.title!=='제품 상차중') return true;
-        const inM = timeToMin(fmtTime(r.time));
-        if(inM==null) return true;
-        const avg = __avgDurMap[`product_${g.plant}`];
-        const threshold = avg ? (avg + 30) : 150;
-        const elapsed = nowKSTMin() - inM;
-        if(elapsed<0||elapsed>threshold) return false;
-        return true;
-      }).length;
-    });
+  counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
+    if(isMonoDigit(r.car)) return false;
+    if(sec.title!=='제품 상차중') return true;
+    // ★ 미배차 제외
+    const c4 = last4(r.car);
+    const inDisp = (__dispatchData?.active || []).some(o =>
+      o['배차여부'] === 'Y' &&
+      String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+    );
+    if(!inDisp) return false;
+    const inM = timeToMin(fmtTime(r.time));
+    if(inM==null) return true;
+    const avg = __avgDurMap[`product_${g.plant}`];
+    const threshold = avg ? (avg + 30) : 150;
+    const elapsed = nowKSTMin() - inM;
+    if(elapsed<0||elapsed>threshold) return false;
+    return true;
+  }).length;
+});
     sectionMap[sec.title] = counts;
   });
 
@@ -604,6 +605,14 @@ function renderCongPanel(data, plantFilter){
   }).join('');
 
   document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
+  document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
+  const types = ['product','raw','sub','container'];
+  cell.addEventListener('click', () => setTypeTab(types[idx]));
+  cell.style.cursor = 'pointer';
+  cell.style.transition = 'box-shadow .15s, border-color .15s';
+  cell.addEventListener('mouseenter', () => cell.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)');
+  cell.addEventListener('mouseleave', () => cell.style.boxShadow = '');
+});
 }
 
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):d.length>0?d.padStart(4,'0'):''; }
@@ -900,9 +909,21 @@ function render(data){
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
       const threshold = avgDurForRow || (secType==='raw' ? 60 : 120);
 
-      const car4 = last4(r.car);
-      const inShipPlan = window.__shipPlanCars && window.__shipPlanCars.has(car4);
-      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan;
+    const car4 = last4(r.car);
+const inShipPlan = window.__shipPlanCars && window.__shipPlanCars.has(car4);
+
+// ★ 배차탭에 없으면 미배차
+const inDispatch = sec.title === '제품 상차중'
+  ? (__dispatchData?.active || []).some(o =>
+      o['배차여부'] === 'Y' &&
+      String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === car4
+    )
+  : true;
+
+const isUnDispatched = sec.title === '제품 상차중' && !inDispatch;
+
+const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan;
+      
 
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
 
@@ -924,7 +945,10 @@ function render(data){
         }
       }
       // 제품 예상 출차
-      else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
+      else if(sec.title==='제품 상차중' && isUnDispatched){
+  estTd = `<td style="font-size:11px"><span style="color:#aaa">미배차</span></td>`;
+}
+else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
         const estMin = inMinForRow + threshold;
         const remainMin = estMin - nowMinForRow;
         if(remainMin > 0){
@@ -1028,7 +1052,7 @@ function render(data){
       const carCellContent = carCellHtml(r.car, r, sec.title);
       const carCellStyle = isFour&&last4(r.car)===dqq ? 'cell-hit' : '';
 
-      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
+     return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"': isUnDispatched?' style="opacity:0.35;background:#f5f5f5"':''}>
         <td>${seq++}</td>
         <td class="${carCellStyle}" style="vertical-align:middle">${carCellContent}</td>
         <td>${fmtTime(r.time)}</td>
@@ -1037,26 +1061,40 @@ function render(data){
       </tr>`;
     }).join(''):'<tr><td colspan="5" class="empty">(데이터 없음)</td></tr>';
 
-    const bc=rows.filter(r=>{
-      if(r.plant!=='반월') return false;
-      if(sec.title!=='제품 상차중') return true;
-      const inM=timeToMin(fmtTime(r.time));
-      if(inM==null) return true;
-      const avg=__avgDurMap[`product_반월`];
-      const threshold=avg?(avg+30):150
-      const elapsed=nowKSTMin()-inM;
-      return !(elapsed<0||elapsed>threshold);
-    }).length;
-    const sc=rows.filter(r=>{
-      if(r.plant!=='시화') return false;
-      if(sec.title!=='제품 상차중') return true;
-      const inM=timeToMin(fmtTime(r.time));
-      if(inM==null) return true;
-      const avg=__avgDurMap[`product_시화`];
-      const threshold=avg?(avg+30):150;
-      const elapsed=nowKSTMin()-inM;
-      return !(elapsed<0||elapsed>threshold);
-    }).length;
+const sc=rows.filter(r=>{
+  if(r.plant!=='반월') return false;
+  if(sec.title!=='제품 상차중') return true;
+  // ★ 미배차 제외
+  const c4 = last4(r.car);
+  const inDisp = (__dispatchData?.active || []).some(o =>
+    o['배차여부'] === 'Y' &&
+    String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+  );
+  if(!inDisp) return false;
+  const inM=timeToMin(fmtTime(r.time));
+  if(inM==null) return true;
+  const avg=__avgDurMap[`product_반월`];
+  const threshold=avg?(avg+30):150;
+  const elapsed=nowKSTMin()-inM;
+  return !(elapsed<0||elapsed>threshold);
+}).length;
+   const bc=rows.filter(r=>{
+  if(r.plant!=='시화') return false;
+  if(sec.title!=='제품 상차중') return true;
+  // ★ 미배차 제외
+  const c4 = last4(r.car);
+  const inDisp = (__dispatchData?.active || []).some(o =>
+    o['배차여부'] === 'Y' &&
+    String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+  );
+  if(!inDisp) return false;
+  const inM=timeToMin(fmtTime(r.time));
+  if(inM==null) return true;
+  const avg=__avgDurMap[`product_시화`];
+  const threshold=avg?(avg+30):150;
+  const elapsed=nowKSTMin()-inM;
+  return !(elapsed<0||elapsed>threshold);
+}).length;
 
     // ★ 원료 하차중 summary에 집게차 수 표시
     let summaryStr = `반월 ${bc} · 시화 ${sc}`;
@@ -1097,6 +1135,23 @@ return `<article class="card">
     <div class="col">${LEFT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>
     <div class="col">${RIGHT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>`;
   syncWatch(allCars);
+
+  if (__currentTypeTab) {
+    const showMap = {
+      product:   ['제품 상차중'],
+      raw:       ['원료 하차중','원료 대기'],
+      sub:       ['부자재 입차중'],
+      container: ['컨테이너 입차중'],
+    };
+    const show = showMap[__currentTypeTab];
+    if (show && document.getElementById('sections').style.display !== 'none') {
+      document.querySelectorAll('article.card').forEach(card => {
+        const h3 = card.querySelector('h3');
+        if (!h3) return;
+        card.style.display = show.includes(h3.textContent.trim()) ? '' : 'none';
+      });
+    }
+  }
 
   const subSec = data.sections.find(s=>s.title==='부자재 입차중');
   if(subSec){
@@ -1140,7 +1195,7 @@ function updateCarSearchPanel(carNum4, liveData){
   }
   titleEl.textContent=`차량 ${carNum4}`;
   locEl.style.display='none';
-  const isAnalytic=document.getElementById('btnViewAnalytic').classList.contains('active');
+  const isAnalytic=false;
   if(!isAnalytic){
     histEl.innerHTML=`<span style="color:#9ca3af;font-size:12px"><span class="mini-spinner"></span> 히스토리 불러오는 중…</span>`;
     panel.style.display='block';
@@ -1326,11 +1381,11 @@ function renderWeigh(payload){
 }
 
 // ═══ 분석 탭 ═══
+
 let __anCharts={}, __anType='product', __anCache={}, __anPeriod='today';
 let __anFrom=todayKST(), __anTo=todayKST();
 
 const AN_TYPES=[
-  {key:'all',label:'전체',dc:'#6366f1'},
   {key:'product',label:'제품',dc:'#06b6d4'},
   {key:'raw',label:'원료',dc:'#22c55e'},
   {key:'sub',label:'부자재',dc:'#f97316'},
@@ -1421,7 +1476,7 @@ function applyPreset(preset){
   if(preset==='today'){ __anFrom=today; __anTo=today; }
   else if(preset==='week'){ __anFrom=thisWeekMonday(); __anTo=today; }
   else if(preset==='lastweek'){ const r=lastWeekRange(); __anFrom=r.from; __anTo=r.to; }
-  Object.keys(__anCache).filter(k=>k.startsWith('all_')).forEach(k=>delete __anCache[k]);
+
   syncPeriodUI();
 }
 function syncPeriodUI(){
@@ -1446,18 +1501,16 @@ function initPeriodBarEvents(){
     const lastDay=new Date(y,m,0).getDate();
     __anTo=`${y}-${String(m).padStart(2,'0')}-${lastDay}`;
     __anPeriod='custom';
-    Object.keys(__anCache).filter(k=>k.startsWith('all_')).forEach(k=>delete __anCache[k]);
+    
     syncPeriodUI();
     loadAnalytic(__anType,true);
   });
-  document.getElementById('anTypeTabs').addEventListener('click',e=>{
-    const btn=e.target.closest('.tbtn'); if(!btn) return; loadAnalytic(btn.dataset.type,true);
-  });
+
 }
 
 async function loadAnalytic(type,force=false){
   __anType=type||'product';
-  document.getElementById('anTypeTabs').innerHTML=AN_TYPES.map(t=>`<button class="tbtn${t.key===__anType?' active':''}" data-type="${t.key}">${t.label}</button>`).join('');
+  
   syncPeriodUI();
   const panel=document.getElementById('analyticPanel');
   const isMultiDay=__anFrom!==__anTo;
@@ -1466,27 +1519,7 @@ async function loadAnalytic(type,force=false){
   panel.innerHTML=`<div class="an-loading"><span class="mini-spinner"></span> 데이터 불러오는 중…</div>`;
   try{
     if(force||!__anCache[cacheKey]){
-      if(__anType==='all'){
-        const types=['product','raw','sub','container'];
-        if(isMultiDay){
-          const dates=[]; let cur=new Date(__anFrom+'T00:00:00'); const end=new Date(__anTo+'T00:00:00');
-          while(cur<=end){ dates.push(cur.toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'})); cur=new Date(cur.getTime()+86400000); }
-          const allResults=await Promise.all(types.map(tp=>Promise.all([
-            tp==='raw'
-              ? api({action:'get_weigh_cache',type:'raw',dateFrom:__anFrom,dateTo:__anTo})
-              : api({action:'weekly_summary',type:tp,dateFrom:__anFrom,dateTo:__anTo}),
-            ...dates.map(dt=>api({action:'get_weigh_cache',type:tp,dateFrom:dt,dateTo:dt})),
-          ])));
-          types.forEach((tp,ti)=>{
-            const [,...perDate]=allResults[ti];
-            dates.forEach((dt,di)=>{ const k=`${tp}_${dt}_${dt}`; if(!__anCache[k]) __anCache[k]={mode:'daily',data:perDate[di]}; });
-          });
-          __anCache[cacheKey]={mode:'all-weekly',types,dates,summaries:allResults.map(r=>r[0]),perDate:allResults.map(r=>r.slice(1))};
-        } else {
-          const results=await Promise.all(types.map(tp=>api({action:'get_weigh_cache',type:tp,dateFrom:__anFrom,dateTo:__anTo})));
-          __anCache[cacheKey]={mode:'all-daily',types,data:Object.fromEntries(types.map((tp,i)=>[tp,results[i]]))};
-        }
-      } else if(isMultiDay){
+    if(isMultiDay){
         const [summaryData, weighData] = await Promise.all([
           api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
           api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
@@ -1823,58 +1856,7 @@ function drawCongChartStacked(canvasId, datasets, capa) {
   });
 }
 
-function renderAnalyticAll(cached, plantFilter) {
-  const panel = document.getElementById('analyticPanel');
-  destroyCharts();
-  const isDaily = cached.mode === 'all-daily';
-  const types = cached.types || ['product', 'raw', 'sub', 'container'];
-  let rowsByDate = [];
-  if (isDaily) {
-    const allRows = types.flatMap(tp => {
-      const d = cached.data[tp] || {};
-      return [
-        ...(d.banwol || []).map(r => ({ ...r, _plant: '반월', _type: tp })),
-        ...(d.sihwa || []).map(r => ({ ...r, _plant: '시화', _type: tp }))
-      ];
-    });
-    rowsByDate = [{ date: __anFrom, rows: allRows }];
-  } else {
-    rowsByDate = cached.dates.map((dt, di) => {
-      const rows = types.flatMap((tp, ti) => {
-        const d = cached.perDate[ti][di] || {};
-        return [
-          ...(d.banwol || []).map(r => ({ ...r, _plant: '반월', _type: tp })),
-          ...(d.sihwa || []).map(r => ({ ...r, _plant: '시화', _type: tp }))
-        ];
-      });
-      return { date: dt, rows };
-    });
-  }
-  const { datasets, totalTimeline, capa } = calcCongestionStacked(rowsByDate, plantFilter);
-  const peakIdx = totalTimeline.indexOf(Math.max(...totalTimeline));
-  const peakTime = SLOT_LABELS_FULL[peakIdx];
-  const totalRows = rowsByDate.reduce((sum, d) => sum + d.rows.length, 0);
-  const avgAll = rowsByDate.length > 0 ? Math.round(totalRows / rowsByDate.length) : 0;
-  const { peakPct, html: congHtml } = congKpiHtml(totalTimeline, capa);
-  panel.innerHTML = `
-    <div style="margin-bottom:15px;padding:15px;background:#fff;border-radius:12px;border:1px solid #e6e6e6;font-size:13px;line-height:1.6;">
-      📢 <b>분석 요약:</b> 기간 내 총 <b>${totalRows.toLocaleString()}건</b>의 차량이 입차했습니다.<br>
-      가장 혼잡한 시간대는 <b>${peakTime}</b>(혼잡도 ${peakPct}%)이며, 일평균 <b>${avgAll}건</b>이 처리되었습니다.
-    </div>
-    <div class="kpi-row">
-      <div class="kpi" style="--kc:#6366f1">
-        <div class="kpi-label">총 입차 건수</div>
-        <div class="kpi-val">${totalRows.toLocaleString()}<span style="font-size:14px;font-weight:400">건</span></div>
-        <div class="kpi-sub">제품+원료+부자재+컨테이너</div>
-      </div>
-      ${congHtml}
-    </div>`;
-  panel.innerHTML += anCard(
-    `<span class="dot" style="--dc:#6366f1"></span>시간대별 누적 점유 현황`,
-    `<div class="chart-wrap tall"><canvas id="chartCongestion"></canvas></div>`
-  );
-  drawCongChartStacked('chartCongestion', datasets, capa);
-}
+
 
 function renderAnalyticWeekly(data,dates,type,plantFilter){
   const panel=document.getElementById('analyticPanel');
@@ -2363,22 +2345,53 @@ function rerenderCache(){ if(__lastData) render(__lastData); }
 
 // ═══ 탭 전환 ═══
 function setTab(tabName){
-  const liveActive=tabName==='live', anActive=tabName==='analytic', dispActive=tabName==='dispatch';
-  document.getElementById('btnViewLive').classList.toggle('active',liveActive);
-  document.getElementById('btnViewAnalytic').classList.toggle('active',anActive);
-  document.getElementById('btnViewDispatch').classList.toggle('active',dispActive);
-  elSections.style.display=liveActive?'grid':'none';
-  elWeighPanel.style.display='none';
-  document.getElementById('periodBar').style.display=anActive?'flex':'none';
-  document.getElementById('analyticPanel').style.display=anActive?'block':'none';
-  document.getElementById('dispatchPanel').style.display=dispActive?'block':'none';
-  document.getElementById('searchSummary').style.display='none';
-  document.getElementById('congPanel').style.display=liveActive?'block':'none';
-  // ↓ shipPlanPanel 관련 코드 제거됨
+  const liveActive = tabName==='live', dispActive = tabName==='dispatch';
+  document.getElementById('btnViewLive').classList.toggle('active', liveActive);
+  document.getElementById('btnViewDispatch').classList.toggle('active', dispActive);
+  document.getElementById('sections').style.display = liveActive ? 'grid' : 'none';
+  elWeighPanel.style.display = 'none';
+  document.getElementById('periodBar').style.display = 'none';
+  document.getElementById('analyticPanel').style.display = 'none';
+  document.getElementById('dispatchPanel').style.display = dispActive ? 'block' : 'none';
+  document.getElementById('congPanel').style.display = liveActive ? 'block' : 'none';
+  const tabDesc = document.getElementById('tabDesc');
+  if(tabDesc){
+    tabDesc.textContent = liveActive
+      ? '입차·분석 · 매일 05~21시 자동갱신'
+      : '배차 · TMS 연동 · 4~8분 주기 갱신';
+  }
   const q=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
   if(!/^\d{4}$/.test(q)) document.getElementById('carSearchPanel').style.display='none';
 }
+let __currentTypeTab = 'product';
 
+function setTypeTab(type) {
+  __currentTypeTab = type;
+  document.getElementById('sections').style.display = 'grid';
+  document.getElementById('periodBar').style.display = 'flex';
+  document.getElementById('analyticPanel').style.display = 'block';
+
+  const showMap = {
+    product:   ['제품 상차중'],
+    raw:       ['원료 하차중','원료 대기'],
+    sub:       ['부자재 입차중'],
+    container: ['컨테이너 입차중'],
+  };
+  const show = showMap[type];
+
+  // ★ render 먼저 실행해서 카드 DOM 생성 후 필터 적용
+  if (__lastData) {
+    render(__lastData);
+    // render 직후 필터 재적용
+    document.querySelectorAll('article.card').forEach(card => {
+      const h3 = card.querySelector('h3');
+      if (!h3) return;
+      card.style.display = show.includes(h3.textContent.trim()) ? '' : 'none';
+    });
+  }
+
+  loadAnalytic(type, true);
+}
 // ═══ 이벤트 ═══
 document.getElementById('plantFilter').addEventListener('change',e=>{
   localStorage.setItem(LS.plant,e.target.value);
@@ -2392,25 +2405,17 @@ function doSearch(){
   const val=document.getElementById('searchInput').value||'';
   localStorage.setItem(LS.q,val);
   const live=document.getElementById('btnViewLive').classList.contains('active');
-  const an=document.getElementById('btnViewAnalytic').classList.contains('active');
+  const disp=document.getElementById('btnViewDispatch').classList.contains('active');
   const q=val.replace(/\D/g,'').slice(-4);
   const isFour=/^\d{4}$/.test(q);
   if(live){
     rerenderCache();
-  } else if(an){
-    if(!isFour){ document.getElementById('carSearchPanel').style.display='none'; return; }
-    const histEl=document.getElementById('carSearchHistory');
-    updateCarSearchPanel(q, __lastData);
-    const allKey=`all_${__anFrom}_${__anTo}`;
-    const showHist=()=>{
-      const html=buildHistoryRows(q);
-      histEl.innerHTML=html||`<span style="color:#9ca3af">해당 기간 입차 기록 없음</span>`;
-    };
-    if(__anCache[allKey]){ showHist(); }
-    else {
-      histEl.innerHTML=`<span style="color:#9ca3af;font-size:12px"><span class="mini-spinner"></span> 히스토리 불러오는 중…</span>`;
-      loadAllTypesForSearch().then(showHist).catch(()=>{ histEl.innerHTML=''; });
+  } else if(disp){
+    if(!isFour){
+      document.getElementById('carSearchPanel').style.display='none';
+      return;
     }
+    updateCarSearchPanel(q, __lastData);
   }
 }
 document.getElementById('searchBtn').addEventListener('click', doSearch);
@@ -2434,14 +2439,18 @@ document.getElementById('watchClearBtn').addEventListener('click',async()=>{
   try{ await api({action:'clear_watch'}); Object.keys(watchList).forEach(k=>delete watchList[k]); renderWatchTags(); rerenderCache(); showToast('감시 목록 삭제됨'); }
   catch(e){ showToast('오류 발생'); }
 });
-document.getElementById('btnViewLive').addEventListener('click',()=>{setTab('live');rerenderCache();});
-document.getElementById('btnViewAnalytic').addEventListener('click',()=>{setTab('analytic');loadAnalytic(__anType||'product');});
+document.getElementById('btnViewLive').addEventListener('click',()=>{
+  setTab('live');
+  rerenderCache();
+  loadAnalytic(__currentTypeTab === 'all' ? 'product' : __currentTypeTab, false);
+});
+
   document.getElementById('btnViewDispatch').addEventListener('click', () => {
 setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxNeboD1VQhxFCIOTMrR2HO-v1M4NRMVmeR4yzh4z1YuEE4qdR_EH_d4W2m5lVYFTiB/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNLC526hzORn1nIP2aoZQnb6ZQg8jSYEvGg6S8XHC74VLrzopzChf/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2456,7 +2465,8 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxNeboD1VQhxFCIOT
     ]);
   const pf = document.getElementById('plantFilter')?.value || 'all';
   __avgDurMap = calcAvgDurMap(pf);
-  rerenderCache();
+   rerenderCache();
+  
 
   setInterval(fetchWatch,5*60*1000);
   setInterval(loadDispatch, 5*60*1000);
@@ -2478,21 +2488,73 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxNeboD1VQhxFCIOT
 
 // ═══ 배차/오더 통합 탭 ═══
 let __dispatchData = { active: [], completed: [] };
+let __inventoryData = [];
 let __dispatchExpanded = new Set();
 
 async function loadDispatch() {
   try {
-    const res = await fetch(GAS_DISPATCH_URL + '?type=dispatch&_ts=' + Date.now(), {
-      redirect: 'follow'
-    });
-    const raw = await res.json();
+    const dispRes = await fetch(GAS_DISPATCH_URL + '?type=dispatch&_ts=' + Date.now(), { redirect: 'follow' });
+    const raw = await dispRes.json();
     __dispatchData = { active: Array.isArray(raw) ? raw : [] };
+
+    try {
+      const invRes = await fetch(GAS_DISPATCH_URL + '?type=inventory&_ts=' + Date.now(), { redirect: 'follow' });
+      const invRaw = await invRes.json();
+      __inventoryData = Array.isArray(invRaw) ? invRaw : [];
+    } catch(e) {
+      __inventoryData = [];
+    }
+
     renderDispatch();
   } catch (e) {
     document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
     document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
   }
 }
+function itemKeyFromDispatch(nm) {
+  // "K180/1600" → { jijong: "K", pyeongrang: "180", jipok: "1600" }
+  const m = String(nm).match(/^([A-Za-z]+)(\d+)\/(\d+)$/);
+  if (!m) return null;
+  return { jijong: m[1], pyeongrang: m[2], jipok: m[3] };
+}
+
+function calcRemainingStock(nmItem, plant, PRIMARY_WH) {
+  const key = itemKeyFromDispatch(nmItem);
+  const stockMap = {};
+  __inventoryData
+    .filter(iv => {
+      if (!String(iv['사업장']).includes(plant)) return false;
+      if (!key) return iv['품목명'] === nmItem;
+
+      // 지종/평량/지폭 컬럼이 있으면 사용
+      const jijong = String(iv['지종'] || '').trim();
+      const pyeongrang = String(iv['평량'] || '').replace(/[^\d]/g, '');
+      const jipok = String(iv['지폭'] || '').replace(/[^\d]/g, '');
+
+      if (jijong && pyeongrang && jipok) {
+        return jijong === key.jijong &&
+               pyeongrang === key.pyeongrang &&
+               jipok === key.jipok;
+      }
+
+      // 없으면 품목명 "S, 120g/m2, 2300mm" 파싱
+      const nm = String(iv['품목명'] || '');
+      const m = nm.match(/^([A-Za-z]+),\s*(\d+)g\/m2,\s*(\d+)mm$/);
+      if (!m) return false;
+      return m[1] === key.jijong &&
+             m[2] === key.pyeongrang &&
+             m[3] === key.jipok;
+    })
+    .forEach(iv => {
+      stockMap[String(iv['창고코드'])] = (stockMap[String(iv['창고코드'])] || 0) + Number(iv['롤수'] || 0);
+    });
+
+
+  return stockMap;
+}
+
+
+
 
 function buildOrderRows(rows, isDim) {
   const plantSel = document.getElementById('plantFilter').value;
@@ -2502,82 +2564,155 @@ function buildOrderRows(rows, isDim) {
     if (plantSel === 'sihwa' && !plant.includes('시화')) return false;
     return true;
   });
-
   if (!filtered.length) return '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
 
   return filtered.map((r, i) => {
-    const isSihwa    = String(r['사업장'] || '').includes('시화');
+    const isSihwa = String(r['사업장'] || '').includes('시화');
     const isDispatched = r['배차여부'] === 'Y';
-    const rowBg      = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
-    const opacity    = isDim ? 'opacity:0.6;' : '';
+    const rowBg = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
+    const opacity = isDim ? 'opacity:0.6;' : '';
     const td  = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center"`;
     const tdL = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:left"`;
 
     const 주문R = Number(r['ROLL수량'] || 0);
     const 상차R = Number(r['상차량'] || 0);
-    const scanColor = isDim
-      ? ''
-      : 상차R >= 주문R && 주문R > 0
-        ? 'color:#16a34a;font-weight:700'
-        : 상차R > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
+    const scanColor = isDim ? ''
+      : 상차R >= 주문R && 주문R > 0 ? 'color:#16a34a;font-weight:700'
+      : 상차R > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
 
-    // 배차 구분 뱃지
+    const creator = String(r['계획생성자'] || 'TMS');
+const creatorBadge = creator === 'ERP'
+  ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">ERP</span>`
+  : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">TMS</span>`;
+
+// 합짐은 차량 아래로
 const hapjim = r['합짐'] === 'Y'
   ? `<br><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
   : '';
+    const car4 = isDispatched ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4) : '—';
 
-const badge = isDispatched
-  ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">배차</span>${hapjim}`
-  : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#6b7280">대기</span>${hapjim}`;
+    // ★ 계근 상태 확인
+    let arrivalStatus = '';
+    if (isDispatched && car4 && car4 !== '—' && __lastData && __lastData.sections) {
+      const SEC_LABEL = {
+        '제품 상차중':   null,        // 표시 안 함
+        '원료 하차중':   '원료하차',
+        '원료 대기':     '원료대기',
+        '부자재 입차중': '부자재',
+        '컨테이너 입차중': '컨테이너',
+      };
+      for (const sec of __lastData.sections) {
+        const label = SEC_LABEL[sec.title];
+        if (label === undefined || label === null) continue;
+        const found = sec.groups.some(g =>
+          g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car))
+        );
+        if (found) {
+          arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef9c3;color:#854d0e;font-weight:700">${label}</span>`;
+          break;
+        }
+      }
+      if (!arrivalStatus) {
+        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
+      }
+    }
 
-    // 차량번호
-    const car4 = isDispatched
-      ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4)
-      : '—';
+    // ★ 제품 상차중이면 arrivalStatus 비움 (이미 싣는 중이라 표시 불필요)
+// ★ 제품 상차중이면 상차R 기준으로 판단
+if (isDispatched && car4 && __lastData && __lastData.sections) {
+  const prodSec = __lastData.sections.find(s => s.title === '제품 상차중');
+  if (prodSec) {
+    const inProd = prodSec.groups.some(g =>
+      g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car))
+    );
+    if (inProd) {
+      if (상차R > 0) {
+        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700">상차중</span>`;
+      } else {
+        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef9c3;color:#854d0e;font-weight:700">도착</span>`;
+      }
+    }
+  }
+}
 
-    // 품목 펼침
-    const rowKey = String(r['주문번호'] || '') + '_' + i;
+// ★ 추가 — 계근 섹션에 없어도 상차R > 0이면 상차중
+if (!arrivalStatus && isDispatched && 상차R > 0) {
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700">상차중</span>`;
+}
+
+    let items = [];
+    try {
+      const rawItems = r['품목목록'];
+      items = Array.isArray(rawItems) ? rawItems : JSON.parse(rawItems || '[]');
+    } catch(e) { items = []; }
+
+    const hasItems = items.length > 0;
+    const plant = isSihwa ? '시화' : '반월';
+    const PRIMARY_WH = isSihwa ? '2260' : '9160';
+
+    const stockHints = items.map(it => {
+      const remaining = calcRemainingStock(it['품목명'], plant, PRIMARY_WH);
+      const primary = remaining[PRIMARY_WH] || 0;
+      const others = Object.entries(remaining)
+        .filter(([k, v]) => String(k) !== String(PRIMARY_WH) && v > 0)
+        .map(([k, v]) => {
+          const nm = (__inventoryData.find(iv => String(iv['창고코드']) === String(k)) || {})['창고명'] || k;
+          return `${nm} ${v}R`;
+        });
+      let hint = '';
+      if (primary > 0) {
+        hint = `✅ 본창고 ${primary}R`;
+        if (others.length) hint += ` / 기타: ${others.join(', ')}`;
+      } else if (others.length) {
+        hint = `⚠️ 본창고 없음 → ${others.join(', ')}`;
+      } else {
+        hint = `❌ 재고 없음`;
+      }
+      return `${it['품목명']} ${it['ROLL수량']}R — ${hint}`;
+    });
+
+    const rowKey = String(r['주문번호'] || '') + '_' + String(r['차량번호'] || '');
     const isExpanded = __dispatchExpanded.has(rowKey);
-let items = [];
-try {
-  const raw = r['품목목록'];
-  items = Array.isArray(raw) ? raw : JSON.parse(raw || '[]');
-} catch(e) { items = []; }
-
-const hasItems = items.length > 0;
-
-const itemsHtml = hasItems
-  ? items.map(it =>
-      `<div style="padding:2px 0"><span style="display:inline-block;padding:2px 7px;border-radius:4px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:600">${it['품목명']} ${it['ROLL수량']}R</span></div>`
-    ).join('')
-  : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
+    const itemsHtml = hasItems
+      ? stockHints.map(hint => {
+          const color = hint.startsWith('✅') ? '#15803d'
+                      : hint.startsWith('⚠️') ? '#b45309'
+                      : '#dc2626';
+          return `<div style="padding:2px 0;font-size:11px;color:${color}">${hint}</div>`;
+        }).join('')
+      : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
 
     const detailRow = isExpanded ? `
       <tr>
-        <td colspan="7" style="${rowBg}${opacity}border-bottom:1px solid #e5e7eb;padding:5px 14px;text-align:left">
+        <td colspan="6" style="${rowBg}${opacity}border-bottom:1px solid #e5e7eb;padding:5px 14px;text-align:left">
           ${itemsHtml}
         </td>
       </tr>` : '';
-
     const expandIcon = hasItems ? (isExpanded ? ' ▲' : ' ▼') : '';
+
+    // ★ 상차/주문 합산 컬럼
+    const rollCell = `<span style="${scanColor}">${상차R}</span><span style="color:#9ca3af;font-size:10px">/${주문R}</span>`;
 
     return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}"
               onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
       <td ${td}>${i + 1}</td>
-      <td ${td}>${badge}</td>
-      <td ${td}>${car4}</td>
+      <td ${td}>${creatorBadge}</td>
+<td ${td}>${car4}${hapjim}</td>
       <td ${tdL}>${r['납품처명'] || ''}${hasItems ? `<span style="color:#6366f1;font-size:10px">${expandIcon}</span>` : ''}</td>
-      <td ${td}>${주문R}</td>
-      <td style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center;${scanColor}">${상차R}</td>
-      </tr>${detailRow}`;
+      <td ${td}>${rollCell}</td>
+      <td ${td}>${arrivalStatus}</td>
+    </tr>${detailRow}`;
   }).join('');
 }
 function sortOrders(rows) {
-  // 배차된 것 먼저, 그 다음 미배차
   return [...rows].sort((a, b) => {
     const aD = a['배차여부'] === 'Y' ? 0 : 1;
     const bD = b['배차여부'] === 'Y' ? 0 : 1;
-    return aD - bD;
+    if (aD !== bD) return aD - bD;
+    // 같은 배차 그룹 내에서 합짐 먼저
+    const aH = a['합짐'] === 'Y' ? 0 : 1;
+    const bH = b['합짐'] === 'Y' ? 0 : 1;
+    return aH - bH;
   });
 }
 function renderDispatch() {
