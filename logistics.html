@@ -2612,6 +2612,11 @@ if (isDispatched && car4 && __lastData && __lastData.sections) {
   }
 }
 
+// ★ 추가 — 계근 섹션에 없어도 상차R > 0이면 상차중
+if (!arrivalStatus && isDispatched && 상차R > 0) {
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700">상차중</span>`;
+}
+
     let items = [];
     try {
       const rawItems = r['품목목록'];
