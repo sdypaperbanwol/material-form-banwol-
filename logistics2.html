@@ -2643,13 +2643,13 @@ const hapjim = r['합짐'] === 'Y'
     // ★ 계근 상태 확인
     let arrivalStatus = '';
     if (isDispatched && car4 && car4 !== '—' && __lastData && __lastData.sections) {
-      const SEC_LABEL = {
-        '제품 상차중':   null,        // 표시 안 함
-        '원료 하차중':   '원료하차',
-        '원료 대기':     '원료대기',
-        '부자재 입차중': '부자재',
-        '컨테이너 입차중': '컨테이너',
-      };
+     const SEC_LABEL = {
+  '제품 상차중':   null,
+  '원료 하차중':   '원료하차',
+  '원료 대기':     '원료대기',
+  '부자재 입차중': '부자재',
+  '컨테이너 입차중': '컨테이너',
+};
       for (const sec of __lastData.sections) {
         const label = SEC_LABEL[sec.title];
         if (label === undefined || label === null) continue;
@@ -2661,9 +2661,11 @@ const hapjim = r['합짐'] === 'Y'
           break;
         }
       }
-      if (!arrivalStatus) {
-        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
-      }
+if (!isDispatched) {
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#94a3b8;font-weight:600">미배차</span>`;
+} else if (!arrivalStatus) {
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
+}
     }
 
     // ★ 제품 상차중이면 arrivalStatus 비움 (이미 싣는 중이라 표시 불필요)
