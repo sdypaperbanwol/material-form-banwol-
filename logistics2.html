@@ -181,7 +181,7 @@
     border:1px solid var(--line); border-radius:10px; padding:8px 10px;
     transition:box-shadow .15s;
   }
-  .cong-cell:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) }
+  @media(hover:hover){ .cong-cell:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) } }
   .cong-type{ font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; }
   .cong-row{ display:flex; align-items:center; gap:5px; margin-bottom:4px; }
   .cong-row:last-child{ margin-bottom:0 }
@@ -591,17 +591,18 @@ function renderCongPanel(data, plantFilter){
     </div>`;
   }).join('');
 
-  document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
-  document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
+document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
+document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
   const types = ['product','raw','sub','container'];
   cell.addEventListener('click', () => setTypeTab(types[idx]));
   cell.style.cursor = 'pointer';
   cell.style.transition = 'box-shadow .15s, border-color .15s';
-  cell.addEventListener('mouseenter', () => cell.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)');
-  cell.addEventListener('mouseleave', () => cell.style.boxShadow = '');
+  if(!('ontouchstart' in window)){
+    cell.addEventListener('mouseenter', () => cell.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)');
+    cell.addEventListener('mouseleave', () => cell.style.boxShadow = '');
+  }
 });
 }
-
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):d.length>0?d.padStart(4,'0'):''; }
 function isMonoDigit(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4&&d.split('').every(c=>c===d[0]); }
 
@@ -610,9 +611,9 @@ function fmtTime(raw){
   const s0=String(raw).trim(); if(!s0) return '';
   const m=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
   if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
-  const d=s0.replace(/\D/g,'');
-  if(d.length>=6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
-  if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+const d=s0.replace(/\D/g,'').padStart(6,'0');
+if(d.length>=6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
   return s0;
 }
 
@@ -1146,10 +1147,14 @@ return `<article class="card">
     if(subCars.length > 0) fetchSubHistory(subCars);
   }
 
-  if(document.getElementById('btnViewLive').classList.contains('active')){
+ if(document.getElementById('btnViewLive').classList.contains('active')){
+  if(!document.querySelector('#congGrid .cong-cell')){
     renderCongPanel(data, plantSel);
-    refreshAvgDurMap(plantSel);
+  } else {
+    updateCongPanel(data, plantSel);
   }
+  refreshAvgDurMap(plantSel);
+}
 
   const badge=document.getElementById('searchSummary');
   if(q) badge.style.display='inline-block';
@@ -1234,6 +1239,61 @@ function updateCarSearchPanel(carNum4, liveData){
   }
 }
 
+function updateCongPanel(data, plantFilter){
+  if(!data || !data.sections) return;
+  const sectionMap = {};
+  data.sections.forEach(sec => {
+    const counts = { '반월': 0, '시화': 0 };
+    sec.groups.forEach(g => {
+      counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
+        if(isMonoDigit(r.car)) return false;
+        if(sec.title!=='제품 상차중') return true;
+        const c4 = last4(r.car);
+        const inDisp = (__dispatchData?.active || []).some(o =>
+          o['배차여부'] === 'Y' &&
+          String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+        );
+        if(!inDisp) return false;
+        const inM = timeToMin(fmtTime(r.time));
+        if(inM==null) return true;
+        const avg = __avgDurMap[`product_${g.plant}`];
+        const threshold = avg ? (avg + 30) : 150;
+        const elapsed = nowKSTMin() - inM;
+        if(elapsed<0||elapsed>threshold) return false;
+        return true;
+      }).length;
+    });
+    sectionMap[sec.title] = counts;
+  });
+
+  document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
+    const t = CONG_TYPES[idx];
+    if(!t) return;
+    const counts = sectionMap[t.key] || { '반월': 0, '시화': 0 };
+    const bw = counts['반월'], sh = counts['시화'];
+    const pctB = Math.round(bw / t.capaB * 100);
+    const pctS = Math.round(sh / t.capaS * 100);
+    const showB = (plantFilter !== 'sihwa');
+    const showS = (plantFilter !== 'banwol');
+    const worstPct = showB && showS ? Math.max(pctB, pctS) : showB ? pctB : pctS;
+
+    // 바 너비만 업데이트
+    const bars = cell.querySelectorAll('.cong-bar');
+    if(bars[0] && showB) bars[0].style.width = Math.min(pctB,100) + '%';
+    if(bars[showB?1:0] && showS) bars[showB?1:0].style.width = Math.min(pctS,100) + '%';
+
+    // 숫자만 업데이트
+    const nums = cell.querySelectorAll('.cong-num');
+    if(nums[0] && showB) nums[0].textContent = `${bw}/${t.capaB}`;
+    if(nums[showB?1:0] && showS) nums[showB?1:0].textContent = `${sh}/${t.capaS}`;
+
+    // 테두리 색만 업데이트
+    const borderColor = worstPct >= 100 ? '#fca5a5' : worstPct >= 60 ? '#fcd34d' : '#d1fae5';
+    cell.style.borderColor = borderColor;
+  });
+
+  document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
+}
 function buildHistoryRows(carNum4, liveFound){
   const TYPE_LABEL={product:'제품',raw:'원료',sub:'부자재',container:'컨테이너'};
   const TYPE_COLOR={product:'#06b6d4',raw:'#22c55e',sub:'#f97316',container:'#a855f7'};
@@ -2461,10 +2521,15 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNL
       if(data && data.sections){
         __lastData = data;
         elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
-        if(document.getElementById('btnViewLive').classList.contains('active')){
-          render(data);
-          return;
-        }
+       if(document.getElementById('btnViewLive').classList.contains('active')){
+  if(!document.querySelector('#congGrid .cong-cell')){
+    renderCongPanel(data, plantSel);
+  } else {
+    updateCongPanel(data, plantSel);
+  }
+  refreshAvgDurMap(plantSel);
+}
+        
       }
     }catch(e){}
   }, 60000);
