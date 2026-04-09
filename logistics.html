@@ -301,14 +301,14 @@
         <div class="summary" id="dispatchSummaryBw"></div>
        <div style="overflow-x:auto">
           <table style="width:100%">
-            <thead><tr>
-              <th style="width:32px">No</th>
-              <th style="width:32px">구분</th>
-              <th style="width:56px">차량</th>
-              <th>납품처명</th>
-              <th style="width:48px">주문R</th>
-              <th style="width:48px">상차R</th>
-              </tr></thead>
+          <thead><tr>
+  <th style="width:32px">No</th>
+  <th style="width:32px">구분</th>
+  <th style="width:56px">차량</th>
+  <th>납품처명</th>
+  <th style="width:56px">상차/주문</th>
+  <th style="width:56px">상태</th>
+</tr></thead>
             <tbody id="dispatchBodyBw"></tbody>
           </table>
         </div>
@@ -322,14 +322,14 @@
         <div class="summary" id="dispatchSummarySh"></div>
        <div style="overflow-x:auto">
           <table style="width:100%">
-            <thead><tr>
-              <th style="width:32px">No</th>
-              <th style="width:32px">구분</th>
-              <th style="width:56px">차량</th>
-              <th>납품처명</th>
-              <th style="width:48px">주문R</th>
-              <th style="width:48px">상차R</th>
-              </tr></thead>
+           <thead><tr>
+  <th style="width:32px">No</th>
+  <th style="width:32px">구분</th>
+  <th style="width:56px">차량</th>
+  <th>납품처명</th>
+  <th style="width:56px">상차/주문</th>
+  <th style="width:56px">상태</th>
+</tr></thead>
             <tbody id="dispatchBodySh"></tbody>
           </table>
         </div>
@@ -2369,25 +2369,17 @@ function doSearch(){
   const val=document.getElementById('searchInput').value||'';
   localStorage.setItem(LS.q,val);
   const live=document.getElementById('btnViewLive').classList.contains('active');
-  const an = false;
+  const disp=document.getElementById('btnViewDispatch').classList.contains('active');
   const q=val.replace(/\D/g,'').slice(-4);
   const isFour=/^\d{4}$/.test(q);
   if(live){
     rerenderCache();
-  } else if(an){
-    if(!isFour){ document.getElementById('carSearchPanel').style.display='none'; return; }
-    const histEl=document.getElementById('carSearchHistory');
-    updateCarSearchPanel(q, __lastData);
-    const allKey=`all_${__anFrom}_${__anTo}`;
-    const showHist=()=>{
-      const html=buildHistoryRows(q);
-      histEl.innerHTML=html||`<span style="color:#9ca3af">해당 기간 입차 기록 없음</span>`;
-    };
-    if(__anCache[allKey]){ showHist(); }
-    else {
-      histEl.innerHTML=`<span style="color:#9ca3af;font-size:12px"><span class="mini-spinner"></span> 히스토리 불러오는 중…</span>`;
-      loadAllTypesForSearch().then(showHist).catch(()=>{ histEl.innerHTML=''; });
+  } else if(disp){
+    if(!isFour){
+      document.getElementById('carSearchPanel').style.display='none';
+      return;
     }
+    updateCarSearchPanel(q, __lastData);
   }
 }
 document.getElementById('searchBtn').addEventListener('click', doSearch);
@@ -2558,18 +2550,65 @@ function buildOrderRows(rows, isDim) {
     const opacity = isDim ? 'opacity:0.6;' : '';
     const td  = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center"`;
     const tdL = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:left"`;
+
     const 주문R = Number(r['ROLL수량'] || 0);
     const 상차R = Number(r['상차량'] || 0);
     const scanColor = isDim ? ''
       : 상차R >= 주문R && 주문R > 0 ? 'color:#16a34a;font-weight:700'
       : 상차R > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
+
     const hapjim = r['합짐'] === 'Y'
       ? `<br><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
       : '';
     const badge = isDispatched
       ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">배차</span>${hapjim}`
       : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#6b7280">대기</span>${hapjim}`;
+
     const car4 = isDispatched ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4) : '—';
+
+    // ★ 계근 상태 확인
+    let arrivalStatus = '';
+    if (isDispatched && car4 && car4 !== '—' && __lastData && __lastData.sections) {
+      const SEC_LABEL = {
+        '제품 상차중':   null,        // 표시 안 함
+        '원료 하차중':   '원료하차',
+        '원료 대기':     '원료대기',
+        '부자재 입차중': '부자재',
+        '컨테이너 입차중': '컨테이너',
+      };
+      for (const sec of __lastData.sections) {
+        const label = SEC_LABEL[sec.title];
+        if (label === undefined || label === null) continue;
+        const found = sec.groups.some(g =>
+          g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car))
+        );
+        if (found) {
+          arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef9c3;color:#854d0e;font-weight:700">${label}</span>`;
+          break;
+        }
+      }
+      if (!arrivalStatus) {
+        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
+      }
+    }
+
+    // ★ 제품 상차중이면 arrivalStatus 비움 (이미 싣는 중이라 표시 불필요)
+// ★ 제품 상차중이면 상차R 기준으로 판단
+if (isDispatched && car4 && __lastData && __lastData.sections) {
+  const prodSec = __lastData.sections.find(s => s.title === '제품 상차중');
+  if (prodSec) {
+    const inProd = prodSec.groups.some(g =>
+      g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car))
+    );
+    if (inProd) {
+      if (상차R > 0) {
+        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700">상차중</span>`;
+      } else {
+        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef9c3;color:#854d0e;font-weight:700">도착</span>`;
+      }
+    }
+  }
+}
 
     let items = [];
     try {
@@ -2621,14 +2660,17 @@ function buildOrderRows(rows, isDim) {
       </tr>` : '';
     const expandIcon = hasItems ? (isExpanded ? ' ▲' : ' ▼') : '';
 
+    // ★ 상차/주문 합산 컬럼
+    const rollCell = `<span style="${scanColor}">${상차R}</span><span style="color:#9ca3af;font-size:10px">/${주문R}</span>`;
+
     return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}"
               onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
       <td ${td}>${i + 1}</td>
       <td ${td}>${badge}</td>
       <td ${td}>${car4}</td>
       <td ${tdL}>${r['납품처명'] || ''}${hasItems ? `<span style="color:#6366f1;font-size:10px">${expandIcon}</span>` : ''}</td>
-      <td ${td}>${주문R}</td>
-      <td style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center;${scanColor}">${상차R}</td>
+      <td ${td}>${rollCell}</td>
+      <td ${td}>${arrivalStatus}</td>
     </tr>${detailRow}`;
   }).join('');
 }
