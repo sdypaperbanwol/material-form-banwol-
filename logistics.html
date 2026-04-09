@@ -2497,12 +2497,26 @@ function calcRemainingStock(nmItem, plant, PRIMARY_WH) {
     .filter(iv => {
       if (!String(iv['사업장']).includes(plant)) return false;
       if (!key) return iv['품목명'] === nmItem;
-      return String(iv['지종']).trim() === key.jijong &&
-             String(iv['평량']).trim() === key.pyeongrang &&
-             String(iv['지폭']).trim() === key.jipok;
+
+      // 지종/평량/지폭 컬럼이 있으면 사용
+      const jijong = String(iv['지종'] || '').trim();
+      const pyeongrang = String(iv['평량'] || '').replace(/[^\d]/g, '');
+      const jipok = String(iv['지폭'] || '').replace(/[^\d]/g, '');
+
+      if (jijong && pyeongrang && jipok) {
+        return jijong === key.jijong &&
+               pyeongrang === key.pyeongrang &&
+               jipok === key.jipok;
+      }
+
+      // 없으면 품목명 "S, 120g/m2, 2300mm" 파싱
+      const nm = String(iv['품목명'] || '');
+      const m = nm.match(/^([A-Za-z]+),\s*(\d+)g\/m2,\s*(\d+)mm$/);
+      if (!m) return false;
+      return m[1] === key.jijong &&
+             m[2] === key.pyeongrang &&
+             m[3] === key.jipok;
     })
-
-
     .forEach(iv => {
       stockMap[String(iv['창고코드'])] = (stockMap[String(iv['창고코드'])] || 0) + Number(iv['롤수'] || 0);
     });
@@ -2510,7 +2524,6 @@ function calcRemainingStock(nmItem, plant, PRIMARY_WH) {
   const dispatched = (__dispatchData.active || []).filter(o =>
     o['배차여부'] === 'Y' && String(o['사업장'] || '').includes(plant)
   );
-
   let remaining = { ...stockMap };
   dispatched.forEach(o => {
     let oItems = [];
@@ -2541,50 +2554,7 @@ function itemKeyFromDispatch(nm) {
   return { jijong: m[1], pyeongrang: m[2], jipok: m[3] };
 }
 
-function calcRemainingStock(nmItem, plant, PRIMARY_WH) {
-  const key = itemKeyFromDispatch(nmItem);
-  const stockMap = {};
-  __inventoryData
-    .filter(iv => {
-      if (!String(iv['사업장']).includes(plant)) return false;
-      if (!key) return iv['품목명'] === nmItem;
-      return String(iv['지종']).trim() === key.jijong &&
-             String(iv['평량']).trim() === key.pyeongrang &&
-             String(iv['지폭']).trim() === key.jipok;
-    })
 
-
-
-    .filter(iv => {
-      if (!String(iv['사업장']).includes(plant)) return false;
-      if (!key) return iv['품목명'] === nmItem;
-      return String(iv['지종']).trim() === key.jijong &&
-             String(iv['평량']).trim() === key.pyeongrang &&
-             String(iv['지폭']).trim() === key.jipok;
-    })
-
-
-    .forEach(iv => {
-      stockMap[String(iv['창고코드'])] = (stockMap[String(iv['창고코드'])] || 0) + Number(iv['롤수'] || 0);
-    });
-  const dispatched = (__dispatchData.active || []).filter(o =>
-    o['배차여부'] === 'Y' && String(o['사업장'] || '').includes(plant)
-  );
-  let remaining = { ...stockMap };
-  dispatched.forEach(o => {
-    let oItems = [];
-    try { oItems = Array.isArray(o['품목목록']) ? o['품목목록'] : JSON.parse(o['품목목록'] || '[]'); } catch(e) {}
-    let need = oItems.filter(it => it['품목명'] === nmItem).reduce((s, it) => s + (it['ROLL수량'] || 0), 0);
-    [PRIMARY_WH, ...Object.keys(remaining).filter(k => k !== PRIMARY_WH)].forEach(wh => {
-      if (need <= 0) return;
-      const avail = remaining[wh] || 0;
-      const take = Math.min(avail, need);
-      remaining[wh] = avail - take;
-      need -= take;
-    });
-  });
-  return remaining;
-}
 
 function buildOrderRows(rows, isDim) {
   const plantSel = document.getElementById('plantFilter').value;
