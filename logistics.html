@@ -2602,7 +2602,7 @@ function buildOrderRows(rows, isDim) {
       return `${it['품목명']} ${it['ROLL수량']}R — ${hint}`;
     });
 
-    const rowKey = String(r['주문번호'] || '') + '_' + i;
+    const rowKey = String(r['주문번호'] || '') + '_' + String(r['차량번호'] || '');
     const isExpanded = __dispatchExpanded.has(rowKey);
     const itemsHtml = hasItems
       ? stockHints.map(hint => {
@@ -2633,11 +2633,14 @@ function buildOrderRows(rows, isDim) {
   }).join('');
 }
 function sortOrders(rows) {
-  // 배차된 것 먼저, 그 다음 미배차
   return [...rows].sort((a, b) => {
     const aD = a['배차여부'] === 'Y' ? 0 : 1;
     const bD = b['배차여부'] === 'Y' ? 0 : 1;
-    return aD - bD;
+    if (aD !== bD) return aD - bD;
+    // 같은 배차 그룹 내에서 합짐 먼저
+    const aH = a['합짐'] === 'Y' ? 0 : 1;
+    const bH = b['합짐'] === 'Y' ? 0 : 1;
+    return aH - bH;
   });
 }
 function renderDispatch() {
