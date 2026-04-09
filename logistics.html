@@ -902,9 +902,21 @@ function render(data){
       const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
       const threshold = avgDurForRow || (secType==='raw' ? 60 : 120);
 
-      const car4 = last4(r.car);
-      const inShipPlan = window.__shipPlanCars && window.__shipPlanCars.has(car4);
-      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan;
+    const car4 = last4(r.car);
+const inShipPlan = window.__shipPlanCars && window.__shipPlanCars.has(car4);
+
+// ★ 배차탭에 없으면 미배차
+const inDispatch = sec.title === '제품 상차중'
+  ? (__dispatchData?.active || []).some(o =>
+      o['배차여부'] === 'Y' &&
+      String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === car4
+    )
+  : true;
+
+const isUnDispatched = sec.title === '제품 상차중' && !inDispatch;
+
+const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan;
+      
 
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
 
@@ -926,7 +938,10 @@ function render(data){
         }
       }
       // 제품 예상 출차
-      else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
+      else if(sec.title==='제품 상차중' && isUnDispatched){
+  estTd = `<td style="font-size:11px"><span style="color:#aaa">미배차</span></td>`;
+}
+else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
         const estMin = inMinForRow + threshold;
         const remainMin = estMin - nowMinForRow;
         if(remainMin > 0){
@@ -1030,7 +1045,7 @@ function render(data){
       const carCellContent = carCellHtml(r.car, r, sec.title);
       const carCellStyle = isFour&&last4(r.car)===dqq ? 'cell-hit' : '';
 
-      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"':''}>
+     return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"': isUnDispatched?' style="opacity:0.35;background:#f5f5f5"':''}>
         <td>${seq++}</td>
         <td class="${carCellStyle}" style="vertical-align:middle">${carCellContent}</td>
         <td>${fmtTime(r.time)}</td>
