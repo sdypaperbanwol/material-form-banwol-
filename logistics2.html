@@ -2359,11 +2359,6 @@ function setTypeTab(type) {
   const show = showMap[type];
 
   // KPI 셀 선택 표시
-  const typeOrder = ['product','raw','sub','container'];
-  document.querySelectorAll('#congGrid .cong-cell').forEach((c, idx) => {
-    c.style.outline = typeOrder[idx] === type ? '2px solid var(--brand)' : '';
-  });
-
   if (__lastData) {
     render(__lastData);
     document.querySelectorAll('article.card').forEach(card => {
@@ -2372,6 +2367,12 @@ function setTypeTab(type) {
       card.style.display = show.includes(h3.textContent.trim()) ? '' : 'none';
     });
   }
+
+  // KPI 셀 선택 표시
+  const typeOrder = ['product','raw','sub','container'];
+  document.querySelectorAll('#congGrid .cong-cell').forEach((c, idx) => {
+    c.style.outline = typeOrder[idx] === type ? '2px solid var(--brand)' : '';
+  });
 
   loadAnalytic(type, false);
 }
