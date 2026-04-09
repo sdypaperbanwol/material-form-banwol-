@@ -276,20 +276,7 @@
   
 <section class="grid" id="weighingPanel" style="display:none"></section>
   <section class="grid" id="sections" style="display:none"></section>
-  <div class="period-bar" id="periodBar" style="display:none;margin-top:14px">
-    <div class="period-bar-row">
-      <label>기간</label>
-      <div class="period-presets">
-      <button class="pbtn active" data-preset="today">오늘</button>
-<button class="pbtn" data-preset="custom">직접입력</button>
-      </div>
-      <div class="period-custom" id="periodCustom" style="display:none">
-        <input type="month" id="anYearMonth" />
-        <button class="period-apply" id="anApplyBtn">조회</button>
-      </div>
-    </div>
-  </div>
-<section id="analyticPanel" style="display:none"></section>
+  <section id="analyticPanel" style="display:none"></section>
  <section id="dispatchPanel" style="display:none">
   <div class="grid">
     <!-- 반월 -->
@@ -342,7 +329,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbypnHQB7Cfm1NrzhJJ2P7y5X4jKE1dVhn0cBtZdxwFE7XdX0sd4EjBBjlP1wNGKj6lgcg/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxmCdXF04iHyQKYJITM-6FF3QKlfjsLEiBkrdzRsNpLIcLyDYKaQ_oXoUwXDaJ-NjNZ/exec';
 const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNLC526hzORn1nIP2aoZQnb6ZQg8jSYEvGg6S8XHC74VLrzopzChf/exec';
 const API_TOKEN    = 'DY_SCALE';
 
@@ -1382,8 +1369,9 @@ function renderWeigh(payload){
 
 // ═══ 분석 탭 ═══
 
+// ── 기간 관련 변수 초기값 고정 (변경 없이 오늘로 고정)
 let __anCharts={}, __anType='product', __anCache={}, __anPeriod='today';
-let __anFrom=todayKST(), __anTo=todayKST();
+let __anFrom=todayKST(), __anTo=todayKST();  // 그대로 유지 (오늘 고정)
 
 const AN_TYPES=[
   {key:'product',label:'제품',dc:'#06b6d4'},
@@ -1508,56 +1496,37 @@ function initPeriodBarEvents(){
 
 }
 
-async function loadAnalytic(type,force=false){
-  __anType=type||'product';
-  
-  syncPeriodUI();
-  const panel=document.getElementById('analyticPanel');
-  const isMultiDay=__anFrom!==__anTo;
-  const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
+// 전체를 아래로 교체
+async function loadAnalytic(type, force=false){
+  __anType = type || 'product';
+  __anFrom = todayKST();
+  __anTo   = todayKST();
+
+  const panel = document.getElementById('analyticPanel');
+  const cacheKey = `${__anType}_${__anFrom}_${__anTo}`;
   destroyCharts();
-  panel.innerHTML=`<div class="an-loading"><span class="mini-spinner"></span> 데이터 불러오는 중…</div>`;
-  try{
-    if(force||!__anCache[cacheKey]){
-    if(isMultiDay){
-        const [summaryData, weighData] = await Promise.all([
-          api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
-          api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
-        ]);
-        const dates2 = summaryData.daily ? summaryData.daily.map(d => d.date) : [];
-        const bwByDate = {}, shByDate = {};
-        (weighData.banwol || []).forEach(r => {
-          const raw = String(r.WEIDAT || '');
-          const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
-          if(!bwByDate[d]) bwByDate[d]=[];
-          bwByDate[d].push(r);
-        });
-        (weighData.sihwa || []).forEach(r => {
-          const raw = String(r.WEIDAT || '');
-          const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
-          if(!shByDate[d]) shByDate[d]=[];
-          shByDate[d].push(r);
-        });
-        dates2.forEach(dt => {
-          const k = `${__anType}_${dt}_${dt}`;
-          if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
-        });
-        __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
-      } else {
-        const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
-        __anCache[cacheKey] = { mode:'daily', data };
-      }
-    }
-    const plantFilter=document.getElementById('plantFilter').value||'all';
-    const searchQ=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
-    const cached=__anCache[cacheKey];
-    panel.innerHTML='';
-    if(cached.mode==='all-daily'||cached.mode==='all-weekly') renderAnalyticAll(cached,plantFilter);
-    else if(cached.mode==='weekly') renderAnalyticWeekly(cached.data,cached.dates,__anType,plantFilter);
-    else renderAnalyticDaily(cached.data,__anType,plantFilter,searchQ);
-  }catch(e){ panel.innerHTML=`<div class="an-loading">데이터를 불러올 수 없습니다.</div>`; }
+
+  if (!force && __anCache[cacheKey]) {
+    const plantFilter = document.getElementById('plantFilter').value || 'all';
+    const searchQ = (document.getElementById('searchInput').value || '').replace(/\D/g,'').slice(-4);
+    panel.innerHTML = '';
+    renderAnalyticDaily(__anCache[cacheKey].data, __anType, plantFilter, searchQ);
+    return;
+  }
+
+  panel.innerHTML = `<div class="an-loading"><span class="mini-spinner"></span> 데이터 불러오는 중…</div>`;
+  try {
+    const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
+    __anCache[cacheKey] = { mode:'daily', data };
+    const plantFilter = document.getElementById('plantFilter').value || 'all';
+    const searchQ = (document.getElementById('searchInput').value || '').replace(/\D/g,'').slice(-4);
+    panel.innerHTML = '';
+    renderAnalyticDaily(data, __anType, plantFilter, searchQ);
+  } catch(e) {
+    panel.innerHTML = `<div class="an-loading">데이터를 불러올 수 없습니다.</div>`;
+  }
 }
-function refreshAnalytic(){ const k=`${__anType}_${__anFrom}_${__anTo}`; delete __anCache[k]; loadAnalytic(__anType,true); }
+    
 
 async function loadAllTypesForSearch(){
   const types=['product','raw','sub','container'];
@@ -2350,7 +2319,7 @@ function setTab(tabName){
   document.getElementById('btnViewDispatch').classList.toggle('active', dispActive);
   document.getElementById('sections').style.display = liveActive ? 'grid' : 'none';
   elWeighPanel.style.display = 'none';
-  document.getElementById('periodBar').style.display = 'none';
+
   document.getElementById('analyticPanel').style.display = 'none';
   document.getElementById('dispatchPanel').style.display = dispActive ? 'block' : 'none';
   document.getElementById('congPanel').style.display = liveActive ? 'block' : 'none';
@@ -2363,12 +2332,22 @@ function setTab(tabName){
   const q=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
   if(!/^\d{4}$/.test(q)) document.getElementById('carSearchPanel').style.display='none';
 }
-let __currentTypeTab = 'product';
+let __currentTypeTab = null; // 'product' → null로 변경
 
 function setTypeTab(type) {
+  // 같은 타입 다시 클릭하면 닫기
+  if (__currentTypeTab === type) {
+    __currentTypeTab = null;
+    document.getElementById('sections').style.display = 'none';
+
+    document.getElementById('analyticPanel').style.display = 'none';
+    // KPI 셀 선택 해제
+    document.querySelectorAll('#congGrid .cong-cell').forEach(c => c.style.outline = '');
+    return;
+  }
+
   __currentTypeTab = type;
   document.getElementById('sections').style.display = 'grid';
-  document.getElementById('periodBar').style.display = 'flex';
   document.getElementById('analyticPanel').style.display = 'block';
 
   const showMap = {
@@ -2379,10 +2358,14 @@ function setTypeTab(type) {
   };
   const show = showMap[type];
 
-  // ★ render 먼저 실행해서 카드 DOM 생성 후 필터 적용
+  // KPI 셀 선택 표시
+  const typeOrder = ['product','raw','sub','container'];
+  document.querySelectorAll('#congGrid .cong-cell').forEach((c, idx) => {
+    c.style.outline = typeOrder[idx] === type ? '2px solid var(--brand)' : '';
+  });
+
   if (__lastData) {
     render(__lastData);
-    // render 직후 필터 재적용
     document.querySelectorAll('article.card').forEach(card => {
       const h3 = card.querySelector('h3');
       if (!h3) return;
@@ -2390,7 +2373,7 @@ function setTypeTab(type) {
     });
   }
 
-  loadAnalytic(type, true);
+  loadAnalytic(type, false);
 }
 // ═══ 이벤트 ═══
 document.getElementById('plantFilter').addEventListener('change',e=>{
@@ -2455,7 +2438,7 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNL
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
   const sq=localStorage.getItem(LS.q); if(sq) document.getElementById('searchInput').value=sq;
-  initPeriodBarEvents();
+
 
   await Promise.all([
     fetchWatch(),
