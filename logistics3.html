@@ -274,9 +274,23 @@
 </section>
 
   
-  <section class="grid" id="weighingPanel" style="display:none"></section>
+<section class="grid" id="weighingPanel" style="display:none"></section>
   <section class="grid" id="sections" style="display:none"></section>
+  <div class="period-bar" id="periodBar" style="display:none;margin-top:14px">
+    <div class="period-bar-row">
+      <label>기간</label>
+      <div class="period-presets">
+      <button class="pbtn active" data-preset="today">오늘</button>
+<button class="pbtn" data-preset="custom">직접입력</button>
+      </div>
+      <div class="period-custom" id="periodCustom" style="display:none">
+        <input type="month" id="anYearMonth" />
+        <button class="period-apply" id="anApplyBtn">조회</button>
+      </div>
+    </div>
+  </div>
   <section id="analyticPanel" style="display:none"></section>
+</div>
 <section id="dispatchPanel" style="display:none">
   <div class="grid">
     <!-- 반월 -->
@@ -324,21 +338,7 @@
   </div>
 </section>
 
-<div class="period-bar" id="periodBar" style="display:none;margin-top:14px">
-    <div class="period-bar-row">
-      <label>기간</label>
-      <div class="period-presets">
-      <button class="pbtn active" data-preset="today">오늘</button>
-<button class="pbtn" data-preset="custom">직접입력</button>
-      </div>
-      <div class="period-custom" id="periodCustom" style="display:none">
-        <input type="month" id="anYearMonth" />
-        <button class="period-apply" id="anApplyBtn">조회</button>
-      </div>
-    </div>
-</div>
-  <section id="analyticPanel" style="display:block"></section>
-</div>
+
 
 <div class="toast" id="toast"></div>
 
