@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI와 나 – 발표 심사 시스템</title>
-  <style>
+  <title>로딩 중...</title>
+   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -347,18 +347,19 @@
     #toast.error   { background: var(--red); }
 
     /* ── Loading Overlay ── */
-    #loading {
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,.75);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 500;
-      flex-direction: column;
-      gap: 12px;
-    }
-    #loading.show { display: flex; }
+#loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,.75);
+  display: flex;        /* ← none → flex 로 변경 (초기에 보임) */
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  flex-direction: column;
+  gap: 12px;
+}
+#loading.show { display: flex; }
+#loading.hide { display: none; } /* ← 추가 */
     .spinner {
       width: 40px; height: 40px;
       border: 4px solid var(--border);
@@ -408,32 +409,32 @@
   </style>
 </head>
 <body>
-
+<div id="loading"><div class="spinner"></div><span id="loadingMsg">로딩 중...</span></div>
 <!-- Loading -->
-<div id="loading"><div class="spinner"></div><span>저장 중…</span></div>
+
 
 <!-- Toast -->
 <div id="toast"></div>
 
 <!-- Header -->
 <header>
-  <div class="icon">🤖</div>
+  <div class="icon"></div>
   <div>
-    <h1>[2026 AI 미션] "AI와 나" 발표 심사</h1>
-    <p>2026년 4월 14일 오후 2시</p>
+    <h1></h1>
+    <p></p>
   </div>
-  <div class="badge">100점 만점</div>
+  <div class="badge"></div>
 </header>
 
 <!-- ── Login ── -->
 <div id="loginSection">
   <div class="login-card">
-    <div class="big-icon">📋</div>
-    <h2>심사위원 로그인</h2>
-    <p>평가자 성함을 입력하시면<br>개인 심사표가 준비됩니다.</p>
-    <input type="text" id="evaluatorInput" placeholder="예: 홍길동" maxlength="10"
+    <div class="big-icon" id="loginIcon"></div>
+    <h2 id="loginTitle"></h2>
+    <p id="loginDesc"></p>
+    <input type="text" id="evaluatorInput" placeholder="" maxlength="10"
            onkeydown="if(event.key==='Enter') startEval()" />
-    <button class="btn-primary" onclick="startEval()">심사 시작하기 →</button>
+    <button class="btn-primary" id="loginBtn" onclick="startEval()"></button>
   </div>
 </div>
 
@@ -443,18 +444,18 @@
 
     <!-- Top Bar -->
     <div class="top-bar">
-      <h2>📝 발표자 심사표</h2>
+      <h2 id="appTitle"></h2>
       <span class="evaluator-badge" id="evaluatorBadge">평가자: —</span>
-      <button class="btn-logout" onclick="logout()">← 변경</button>
+      <button class="btn-logout" id="logoutBtn" onclick="logout()"></button>
     </div>
 
     <!-- Progress -->
     <div class="progress-wrap">
-      <span>평가 진행률</span>
+      <span id="progressLabel"></span>
       <div class="progress-bar-outer">
         <div class="progress-bar-inner" id="progressBar" style="width:0%"></div>
       </div>
-      <span class="progress-count" id="progressCount">0 / 8</span>
+      <span class="progress-count" id="progressCount">0 / 0</span>
     </div>
 
     <!-- Person Tabs -->
@@ -470,119 +471,88 @@
         </div>
         <div class="total-display">
           <div class="total-num" id="totalScore">0</div>
-          <div class="total-label">/ 100점</div>
+          <div class="total-label" id="totalLabel">/ 100점</div>
         </div>
       </div>
 
       <div class="criteria-list" id="criteriaList"></div>
 
       <div class="comment-wrap">
-        <label>💬 종합 의견</label>
-        <textarea id="commentArea" placeholder="해당 발표자에 대한 종합적인 의견을 작성해주세요."></textarea>
+        <label id="commentLabel"></label>
+        <textarea id="commentArea" placeholder=""></textarea>
       </div>
 
       <div class="submit-area">
-        <button class="btn-save" id="saveBtn" onclick="saveScore()">
-          💾 저장하기
-        </button>
+        <button class="btn-save" id="saveBtn" onclick="saveScore()"></button>
       </div>
     </div>
 
     <!-- Summary -->
     <div id="summarySection">
       <div class="summary-card">
-        <h3>📊 내 평가 현황 (저장된 점수)</h3>
+        <h3 id="summaryTitle"></h3>
         <div style="overflow-x:auto">
           <table class="summary-table" id="summaryTable">
-            <thead>
-              <tr>
-                <th>순번</th><th>성명</th>
-                <th>AI 가치관</th><th>AI 활용성</th>
-                <th>공유·전파</th><th>전달·소통</th><th>혁신·발전</th>
-                <th>총점</th><th>종합 의견</th>
-              </tr>
-            </thead>
+            <thead id="summaryHead"></thead>
             <tbody id="summaryBody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-  </div><!-- /container -->
-</div><!-- /appSection -->
+  </div>
+</div>
 
 <script>
-// ══════════════════════════════════════════
-//  ★ 여기에 GAS 웹앱 URL을 붙여넣으세요 ★
-// ══════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyAPyxj09Epga1hIrHyxfN4gISXRXVsTkq_WpDnQD79ctjGEy3XvjVJTiTnc4g_wJwS/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwno5V02chlc09v3WrBwqUEUtm4uRiTaYUDUMtlw7ChrQMgfKvL1JV7Kl6dUrSLKyds/exec';
 
-// ── 데이터 정의 ──
-const EVALUATEES = [
-  '송송이','이형렬','조정빈','김성연',
-  '이종현','정관현','김동휘','김주환'
-];
-
-const CRITERIA = [
-  {
-    key: 'values',
-    label: '① AI 가치관',
-    desc: '"내가 생각하는 AI"에 대해 본인만의 뚜렷한 정의와 주관이 있는가?',
-    color: '#1a73e8'
-  },
-  {
-    key: 'utilization',
-    label: '② AI 활용성',
-    desc: 'AI를 업무나 일상에 적용한 구체적인 사례와 데이터가 명확한가?',
-    color: '#e37400'
-  },
-  {
-    key: 'sharing',
-    label: '③ 공유 및 전파',
-    desc: '동료들에게 추천한 방법이 실질적인 도움(꿀팁)이 되는 내용인가?',
-    color: '#1e8e3e'
-  },
-  {
-    key: 'delivery',
-    label: '④ 전달 및 소통',
-    desc: '발표 자료가 직관적이며, 질의응답 등에 논리적으로 대응하는가?',
-    color: '#9334e6'
-  },
-  {
-    key: 'innovation',
-    label: '⑤ 혁신 및 발전',
-    desc: '기존 방식을 개선하려는 의지와 향후 발전 가능성이 보이는가?',
-    color: '#d93025'
-  }
-];
-
-// ── 상태 ──
+let EVALUATEES = [];
+let CRITERIA   = [];
 let evaluatorName = '';
 let currentPerson = null;
-let scores = {};      // { 이름: { key: value, ..., comment } }
-let savedFlags = {};  // { 이름: true/false }
+let scores = {};
+let savedFlags = {};
 
 // ══════════════════════════════════════════
 //  로그인
 // ══════════════════════════════════════════
-function startEval() {
+async function startEval() {
   const input = document.getElementById('evaluatorInput').value.trim();
   if (!input) { showToast('성함을 입력해주세요.', 'error'); return; }
+
+  showLoading(true);
+
+  try {
+    const config = await gasPost({ action: 'getConfig' });
+    if (!config.success) {
+      showToast('❌ 설정 로드 실패: ' + config.message, 'error');
+      showLoading(false);
+      return;
+    }
+    EVALUATEES = config.evaluatees;
+    CRITERIA   = config.criteria;
+  } catch(e) {
+    showToast('❌ 설정을 불러오지 못했습니다.', 'error');
+    showLoading(false);
+    return;
+  }
 
   evaluatorName = input;
   document.getElementById('evaluatorBadge').textContent = '평가자: ' + evaluatorName;
   document.getElementById('loginSection').style.display = 'none';
   document.getElementById('appSection').style.display = 'block';
 
-  // 초기화
   EVALUATEES.forEach(name => {
-    scores[name] = { values:0, utilization:0, sharing:0, delivery:0, innovation:0, comment:'' };
+    const entry = { comment: '' };
+    CRITERIA.forEach(c => { entry[c.key] = 0; });
+    scores[name] = entry;
     savedFlags[name] = false;
   });
 
   buildTabs();
   buildCriteriaList();
   loadExistingScores();
+  showLoading(false);
 }
 
 function logout() {
@@ -608,45 +578,40 @@ function buildTabs() {
     btn.onclick = () => selectPerson(name, idx);
     container.appendChild(btn);
   });
-  // 첫 번째 탭 자동 선택
   selectPerson(EVALUATEES[0], 0);
 }
 
 function selectPerson(name, idx) {
   currentPerson = name;
-
-  // 탭 활성화
   document.querySelectorAll('.person-tab').forEach(t => t.classList.remove('active'));
   const activeTab = document.getElementById('tab_' + idx);
   if (activeTab) activeTab.classList.add('active');
 
-  // 카드 업데이트
   document.getElementById('cardAvatar').textContent = name.charAt(0);
   document.getElementById('cardName').textContent = name;
-  document.getElementById('cardSub').textContent =
-    (idx + 1) + '번 발표자 | 각 항목 0~20점';
+  const scoreInfo = CRITERIA.map(c => `${c.label} 0~${c.maxPts}점`).join(' / ');
+document.getElementById('cardSub').textContent = (idx + 1) + '번 | ' + scoreInfo;
 
-  // 슬라이더 & 코멘트 값 복원
   const s = scores[name];
-  CRITERIA.forEach(c => {
-    const slider = document.getElementById('slider_' + c.key);
-    if (slider) {
-      slider.value = s[c.key];
-      document.getElementById('display_' + c.key).textContent = s[c.key] + '점';
-      updateSliderColor(slider);
-    }
-  });
+ CRITERIA.forEach(c => {
+  const slider = document.getElementById('slider_' + c.key);
+  if (slider) {
+    slider.value = s[c.key];
+    document.getElementById('num_' + c.key).value = s[c.key]; // ✅ 추가
+    document.getElementById('display_' + c.key).textContent = s[c.key] + '점';
+    updateSliderColor(slider);
+  }
+});
   document.getElementById('commentArea').value = s.comment || '';
   updateTotal();
 }
 
 // ══════════════════════════════════════════
-//  평가 항목 슬라이더 생성
+//  슬라이더
 // ══════════════════════════════════════════
 function buildCriteriaList() {
   const container = document.getElementById('criteriaList');
   container.innerHTML = '';
-
   CRITERIA.forEach(c => {
     const item = document.createElement('div');
     item.className = 'criteria-item';
@@ -659,33 +624,61 @@ function buildCriteriaList() {
       <div class="c-desc">${c.desc}</div>
       <div class="slider-wrap">
         <span>0</span>
-        <input type="range" id="slider_${c.key}" min="0" max="20" value="0" step="1"
+        <input type="range" id="slider_${c.key}" min="0" max="${c.maxPts}" value="0" step="1"
                oninput="onSliderChange('${c.key}', this)" />
-        <span>20</span>
+        <span>${c.maxPts}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+        <span style="font-size:.8rem; color:var(--gray);">직접 입력:</span>
+        <input type="number" id="num_${c.key}" min="0" max="${c.maxPts}" value="0"
+               style="width:100px; padding:8px 12px; border:2px solid var(--border);
+                      border-radius:8px; font-size:1.1rem; font-weight:700;
+                      text-align:center; outline:none; font-family:inherit;"
+               oninput="onNumChange('${c.key}', this)"
+               onfocus="this.style.borderColor='var(--blue)'"
+               onblur="this.style.borderColor='var(--border)'" />
+        <span style="font-size:.85rem; color:var(--gray);">/ ${c.maxPts}점</span>
       </div>`;
     container.appendChild(item);
   });
 }
+function onNumChange(key, input) {
+  let val = parseInt(input.value) || 0;
+  const max = parseInt(input.max);
 
+  // 범위 초과 보정
+  if (val < 0) val = 0;
+  if (val > max) val = max;
+  input.value = val;
+
+  // 슬라이더 동기화
+  const slider = document.getElementById('slider_' + key);
+  slider.value = val;
+  updateSliderColor(slider);
+
+  if (currentPerson) scores[currentPerson][key] = val;
+  document.getElementById('display_' + key).textContent = val + '점';
+  updateTotal();
+}
 function onSliderChange(key, slider) {
   const val = parseInt(slider.value);
   document.getElementById('display_' + key).textContent = val + '점';
+  document.getElementById('num_' + key).value = val; // ✅ 추가
   if (currentPerson) scores[currentPerson][key] = val;
   updateSliderColor(slider);
   updateTotal();
 }
 
 function updateSliderColor(slider) {
-  const pct = (slider.value / 20) * 100;
-  slider.style.background =
-    `linear-gradient(to right, #1a73e8 ${pct}%, #dadce0 ${pct}%)`;
+  const max = parseInt(slider.max) || 20;
+  const pct = (slider.value / max) * 100;
+  slider.style.background = `linear-gradient(to right, #1a73e8 ${pct}%, #dadce0 ${pct}%)`;
 }
 
 function updateTotal() {
   if (!currentPerson) return;
   const s = scores[currentPerson];
-  const total = (s.values||0) + (s.utilization||0) + (s.sharing||0) +
-                (s.delivery||0) + (s.innovation||0);
+  const total = CRITERIA.reduce((sum, c) => sum + (s[c.key] || 0), 0);
   document.getElementById('totalScore').textContent = total;
 }
 
@@ -694,12 +687,10 @@ function updateTotal() {
 // ══════════════════════════════════════════
 async function saveScore() {
   if (!currentPerson) { showToast('발표자를 선택해주세요.', 'error'); return; }
-
-  // 코멘트 현재 값 동기화
   scores[currentPerson].comment = document.getElementById('commentArea').value;
 
   const s = scores[currentPerson];
-  const total = (s.values||0)+(s.utilization||0)+(s.sharing||0)+(s.delivery||0)+(s.innovation||0);
+  const total = CRITERIA.reduce((sum, c) => sum + (s[c.key] || 0), 0);
 
   showLoading(true);
   const saveBtn = document.getElementById('saveBtn');
@@ -713,7 +704,6 @@ async function saveScore() {
       scores:        s,
       comment:       s.comment
     });
-
     if (res.success) {
       savedFlags[currentPerson] = true;
       markTabDone(currentPerson);
@@ -749,7 +739,6 @@ async function loadExistingScores() {
       });
       updateProgress();
       updateSummaryTable();
-      // 현재 탭 값 다시 렌더링
       if (currentPerson) {
         const idx = EVALUATEES.indexOf(currentPerson);
         selectPerson(currentPerson, idx);
@@ -758,9 +747,7 @@ async function loadExistingScores() {
         showToast('이전에 저장된 점수를 불러왔습니다.', 'success');
       }
     }
-  } catch (e) {
-    // 조용히 실패 (최초 접속 시 정상)
-  }
+  } catch (e) {}
 }
 
 // ══════════════════════════════════════════
@@ -775,53 +762,48 @@ function markTabDone(name) {
 function updateProgress() {
   const done = Object.values(savedFlags).filter(Boolean).length;
   const total = EVALUATEES.length;
-  const pct = (done / total) * 100;
-  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressBar').style.width = (done / total * 100) + '%';
   document.getElementById('progressCount').textContent = done + ' / ' + total;
 }
 
 function updateSummaryTable() {
+  // 헤더 동적 생성
+  const thead = document.getElementById('summaryHead');
+  thead.innerHTML = '<tr><th>순번</th><th>성명</th>' +
+    CRITERIA.map(c => `<th>${c.label}</th>`).join('') +
+    '<th>총점</th><th>종합 의견</th></tr>';
+
   const tbody = document.getElementById('summaryBody');
   tbody.innerHTML = '';
   EVALUATEES.forEach((name, idx) => {
     const s = scores[name];
     if (!savedFlags[name]) return;
-    const total = (s.values||0)+(s.utilization||0)+(s.sharing||0)+(s.delivery||0)+(s.innovation||0);
+    const total = CRITERIA.reduce((sum, c) => sum + (s[c.key] || 0), 0);
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${idx+1}</td>
-      <td><strong>${name}</strong></td>
-      <td>${s.values||0}</td>
-      <td>${s.utilization||0}</td>
-      <td>${s.sharing||0}</td>
-      <td>${s.delivery||0}</td>
-      <td>${s.innovation||0}</td>
-      <td class="total-score">${total}</td>
-      <td style="text-align:left;font-size:.8rem">${s.comment||'—'}</td>`;
+    tr.innerHTML = `<td>${idx+1}</td><td><strong>${name}</strong></td>` +
+      CRITERIA.map(c => `<td>${s[c.key] || 0}</td>`).join('') +
+      `<td class="total-score">${total}</td>
+       <td style="text-align:left;font-size:.8rem">${s.comment || '—'}</td>`;
     tbody.appendChild(tr);
   });
 }
 
 // ══════════════════════════════════════════
-//  GAS 통신 (JSONP 방식 – CORS 우회)
+//  GAS 통신 (JSONP)
 // ══════════════════════════════════════════
 function gasPost(data) {
   return new Promise((resolve, reject) => {
     const callbackName = 'cb_' + Date.now();
     const script = document.createElement('script');
-
-    // JSONP 콜백
     window[callbackName] = (res) => {
       delete window[callbackName];
       document.body.removeChild(script);
       resolve(res);
     };
-
     const params = new URLSearchParams({
       callback: callbackName,
       payload:  JSON.stringify(data)
     });
-
     script.src = GAS_URL + '?' + params.toString();
     script.onerror = () => {
       delete window[callbackName];
@@ -844,9 +826,61 @@ function showToast(msg, type = '') {
 }
 
 // ── Loading ──
-function showLoading(show) {
-  document.getElementById('loading').classList.toggle('show', show);
+function showLoading(show, msg = '저장 중…') {
+  const el = document.getElementById('loading');
+  document.getElementById('loadingMsg').textContent = msg;
+  if (show) {
+    el.classList.remove('hide');
+    el.classList.add('show');
+  } else {
+    el.classList.remove('show');
+    el.classList.add('hide');
+  }
 }
+
+// ══════════════════════════════════════════
+//  페이지 로드 시 UI 전체 초기화
+// ══════════════════════════════════════════
+(async function initUI() {
+  // 페이지 열리자마자 스피너 이미 보임 (CSS 기본값 flex)
+  try {
+    const config = await gasPost({ action: 'getConfig' });
+    if (!config.success) {
+      showLoading(false);
+      return;
+    }
+    const m = config.meta || {};
+
+    // 헤더
+    document.querySelector('header .icon').textContent    = m.icon     || '🤖';
+    document.querySelector('header h1').textContent       = m.title    || '';
+    document.querySelector('header p').textContent        = m.subtitle || '';
+    document.querySelector('header .badge').textContent   = m.maxScore || '';
+    document.title = m.title || 'AI 발표 심사';
+
+    // 로그인 카드
+    document.getElementById('loginIcon').textContent      = m.loginIcon        || '📋';
+    document.getElementById('loginTitle').textContent     = m.loginTitle       || '로그인';
+    document.getElementById('loginDesc').innerHTML        = (m.loginDesc || '').replace(/\n/g, '<br>');
+    document.getElementById('evaluatorInput').placeholder = m.loginPlaceholder || '이름 입력';
+    document.getElementById('loginBtn').textContent       = m.loginBtn         || '시작 →';
+
+    // 앱 화면
+    document.getElementById('appTitle').textContent          = m.appTitle          || '심사표';
+    document.getElementById('logoutBtn').textContent         = m.logoutBtn         || '← 변경';
+    document.getElementById('progressLabel').textContent     = m.progressLabel     || '진행률';
+    document.getElementById('commentLabel').textContent      = m.commentLabel      || '종합 의견';
+    document.getElementById('commentArea').placeholder       = m.commentPlaceholder|| '';
+    document.getElementById('saveBtn').textContent           = m.saveBtn           || '저장';
+    document.getElementById('summaryTitle').textContent      = m.summaryTitle      || '평가 현황';
+    document.getElementById('totalLabel').textContent        = '/ ' + (m.maxScore  || '100점');
+
+ } catch(e) {
+    console.warn('UI 초기화 실패:', e);
+  } finally {
+    showLoading(false); // ← 완료되면 스피너 숨김
+  }
+})();
 </script>
 </body>
 </html>
