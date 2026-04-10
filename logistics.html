@@ -2513,6 +2513,7 @@ if(!__avgDurMap || Object.keys(__avgDurMap).length === 0){
   await loadAllTypesForSearch().catch(()=>{});
   __avgDurMap = calcAvgDurMap(pf);
 }
+await loadDispatch().catch(()=>{});
 rerenderCache();
   
 
