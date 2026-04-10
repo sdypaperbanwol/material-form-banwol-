@@ -793,25 +793,32 @@ function updateSummaryTable() {
 // ══════════════════════════════════════════
 function gasPost(data) {
   return new Promise((resolve, reject) => {
-    const callbackName = 'cb_' + Date.now();
-    const script = document.createElement('script');
+    const timeout = setTimeout(() => reject(new Error('타임아웃')), 15000);
+    const callbackName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    
     window[callbackName] = (res) => {
+      clearTimeout(timeout);
       delete window[callbackName];
-      document.body.removeChild(script);
+      const s = document.getElementById('__gas_' + callbackName);
+      if (s) s.remove();
       resolve(res);
     };
+
     const params = new URLSearchParams({
       callback: callbackName,
-      payload:  JSON.stringify(data)
+      payload: JSON.stringify(data)
     });
+
+    const script = document.createElement('script');
+    script.id = '__gas_' + callbackName;
     script.src = GAS_URL + '?' + params.toString();
     script.onerror = () => {
+      clearTimeout(timeout);
       delete window[callbackName];
-      document.body.removeChild(script);
+      script.remove();
       reject(new Error('스크립트 로드 실패'));
     };
-    document.body.appendChild(script);
-    setTimeout(() => reject(new Error('타임아웃')), 15000);
+    document.head.appendChild(script); // ✅ body 대신 head에 삽입
   });
 }
 
