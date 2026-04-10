@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI와 나 – 발표 심사 시스템</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:    #1a73e8;
+      --blue-lt: #e8f0fe;
+      --green:   #1e8e3e;
+      --red:     #d93025;
+      --gray:    #5f6368;
+      --border:  #dadce0;
+      --bg:      #f8f9fa;
+      --white:   #ffffff;
+      --shadow:  0 2px 10px rgba(0,0,0,.12);
+    }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: #202124;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--blue);
+      color: var(--white);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header .icon { font-size: 2rem; }
+    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -.3px; }
+    header p  { font-size: .82rem; opacity: .85; margin-top: 2px; }
+    header .badge {
+      margin-left: auto;
+      background: rgba(255,255,255,.2);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .78rem;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+    /* ── Login Card ── */
+    #loginSection {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 80px);
+    }
+    .login-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 48px 40px;
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    .login-card .big-icon { font-size: 3.5rem; margin-bottom: 12px; }
+    .login-card h2 { font-size: 1.4rem; margin-bottom: 6px; }
+    .login-card p  { color: var(--gray); font-size: .9rem; margin-bottom: 28px; }
+    .login-card input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: border .2s;
+      margin-bottom: 16px;
+    }
+    .login-card input:focus { border-color: var(--blue); }
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      background: var(--blue);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+    .btn-primary:hover  { background: #1557b0; }
+    .btn-primary:active { transform: scale(.98); }
+
+    /* ── Main App ── */
+    #appSection { display: none; }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .top-bar h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      flex: 1;
+    }
+    .evaluator-badge {
+      background: var(--blue-lt);
+      color: var(--blue);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .btn-logout {
+      padding: 6px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85rem;
+      color: var(--gray);
+    }
+    .btn-logout:hover { background: var(--bg); }
+
+    /* ── Progress Bar ── */
+    .progress-wrap {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .progress-wrap span { font-size: .85rem; color: var(--gray); white-space: nowrap; }
+    .progress-bar-outer {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      background: var(--green);
+      border-radius: 4px;
+      transition: width .4s ease;
+    }
+    .progress-count { font-weight: 700; color: var(--green); font-size: .9rem; }
+
+    /* ── Person Tabs ── */
+    .person-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .person-tab {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: 2px solid var(--border);
+      background: var(--white);
+      cursor: pointer;
+      font-size: .88rem;
+      font-weight: 500;
+      transition: all .2s;
+      position: relative;
+    }
+    .person-tab:hover { border-color: var(--blue); color: var(--blue); }
+    .person-tab.active {
+      background: var(--blue);
+      color: var(--white);
+      border-color: var(--blue);
+    }
+    .person-tab.done::after {
+      content: '✓';
+      position: absolute;
+      top: -6px; right: -6px;
+      background: var(--green);
+      color: var(--white);
+      border-radius: 50%;
+      width: 18px; height: 18px;
+      font-size: .65rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    /* ── Score Card ── */
+    .score-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .score-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--blue-lt);
+    }
+    .score-card-header .avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .score-card-header h3 { font-size: 1.2rem; }
+    .score-card-header p  { font-size: .82rem; color: var(--gray); }
+    .total-display {
+      margin-left: auto;
+      text-align: center;
+    }
+    .total-display .total-num {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--blue);
+      line-height: 1;
+    }
+    .total-display .total-label { font-size: .75rem; color: var(--gray); }
+
+    /* ── Criteria Rows ── */
+    .criteria-list { display: flex; flex-direction: column; gap: 16px; }
+    .criteria-item {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px 20px;
+      border-left: 4px solid var(--blue);
+    }
+    .criteria-item .c-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .criteria-item .c-label { font-weight: 600; font-size: .95rem; }
+    .criteria-item .c-score-display {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--blue);
+      min-width: 60px;
+      text-align: right;
+    }
+    .criteria-item .c-desc { font-size: .8rem; color: var(--gray); margin-bottom: 12px; }
+
+    /* ── Slider ── */
+    .slider-wrap { display: flex; align-items: center; gap: 10px; }
+    .slider-wrap span { font-size: .78rem; color: var(--gray); white-space: nowrap; }
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--blue);
+      cursor: pointer;
+      border: 2px solid var(--white);
+      box-shadow: 0 2px 4px rgba(0,0,0,.2);
+    }
+
+    /* ── Comment ── */
+    .comment-wrap { margin-top: 20px; }
+    .comment-wrap label { font-weight: 600; font-size: .9rem; display: block; margin-bottom: 8px; }
+    .comment-wrap textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: .9rem;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border .2s;
+      font-family: inherit;
+    }
+    .comment-wrap textarea:focus { border-color: var(--blue); }
+
+    /* ── Submit Button ── */
+    .submit-area {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-save {
+      padding: 11px 28px;
+      background: var(--green);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-save:hover  { background: #157034; }
+    .btn-save:active { transform: scale(.97); }
+    .btn-save:disabled { background: var(--gray); cursor: not-allowed; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 32px; right: 32px;
+      background: #323232;
+      color: var(--white);
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-size: .9rem;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .3s, transform .3s;
+      z-index: 999;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { background: var(--green); }
+    #toast.error   { background: var(--red); }
+
+    /* ── Loading Overlay ── */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #loading.show { display: flex; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Summary Section ── */
+    #summarySection { margin-top: 12px; }
+    .summary-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .summary-card h3 { font-size: 1rem; margin-bottom: 16px; color: var(--gray); }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .85rem;
+    }
+    .summary-table th {
+      background: var(--blue-lt);
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+    .summary-table td {
+      padding: 7px 10px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .summary-table tr:nth-child(even) td { background: var(--bg); }
+    .total-score { font-weight: 700; color: var(--blue); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      header { padding: 14px 16px; }
+      .container { padding: 16px 12px; }
+      .score-card { padding: 18px 14px; }
+      .criteria-item { padding: 12px 14px; }
+      #toast { left: 16px; right: 16px; bottom: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading"><div class="spinner"></div><span>저장 중…</span></div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Header -->
+<header>
+  <div class="icon">🤖</div>
+  <div>
+    <h1>[2026 AI 미션] "AI와 나" 발표 심사</h1>
+    <p>2026년 4월 14일 오후 2시</p>
+  </div>
+  <div class="badge">100점 만점</div>
+</header>
+
+<!-- ── Login ── -->
+<div id="loginSection">
+  <div class="login-card">
+    <div class="big-icon">📋</div>
+    <h2>심사위원 로그인</h2>
+    <p>평가자 성함을 입력하시면<br>개인 심사표가 준비됩니다.</p>
+    <input type="text" id="evaluatorInput" placeholder="예: 홍길동" maxlength="10"
+           onkeydown="if(event.key==='Enter') startEval()" />
+    <button class="btn-primary" onclick="startEval()">심사 시작하기 →</button>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="appSection">
+  <div class="container">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h2>📝 발표자 심사표</h2>
+      <span class="evaluator-badge" id="evaluatorBadge">평가자: —</span>
+      <button class="btn-logout" onclick="logout()">← 변경</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap">
+      <span>평가 진행률</span>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progressBar" style="width:0%"></div>
+      </div>
+      <span class="progress-count" id="progressCount">0 / 8</span>
+    </div>
+
+    <!-- Person Tabs -->
+    <div class="person-tabs" id="personTabs"></div>
+
+    <!-- Score Card -->
+    <div class="score-card" id="scoreCard">
+      <div class="score-card-header">
+        <div class="avatar" id="cardAvatar">?</div>
+        <div>
+          <h3 id="cardName">발표자를 선택하세요</h3>
+          <p id="cardSub">위 탭에서 발표자를 선택하면 평가를 시작합니다</p>
+        </div>
+        <div class="total-display">
+          <div class="total-num" id="totalScore">0</div>
+          <div class="total-label">/ 100점</div>
+        </div>
+      </div>
+
+      <div class="criteria-list" id="criteriaList"></div>
+
+      <div class="comment-wrap">
+        <label>💬 종합 의견</label>
+        <textarea id="commentArea" placeholder="해당 발표자에 대한 종합적인 의견을 작성해주세요."></textarea>
+      </div>
+
+      <div class="submit-area">
+        <button class="btn-save" id="saveBtn" onclick="saveScore()">
+          💾 저장하기
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div id="summarySection">
+      <div class="summary-card">
+        <h3>📊 내 평가 현황 (저장된 점수)</h3>
+        <div style="overflow-x:auto">
+          <table class="summary-table" id="summaryTable">
+            <thead>
+              <tr>
+                <th>순번</th><th>성명</th>
+                <th>AI 가치관</th><th>AI 활용성</th>
+                <th>공유·전파</th><th>전달·소통</th><th>혁신·발전</th>
+                <th>총점</th><th>종합 의견</th>
+              </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /appSection -->
+
+<script>
+// ══════════════════════════════════════════
+//  ★ 여기에 GAS 웹앱 URL을 붙여넣으세요 ★
+// ══════════════════════════════════════════
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyAPyxj09Epga1hIrHyxfN4gISXRXVsTkq_WpDnQD79ctjGEy3XvjVJTiTnc4g_wJwS/exec';
+
+// ── 데이터 정의 ──
+const EVALUATEES = [
+  '송송이','이형렬','조정빈','김성연',
+  '이종현','정관현','김동휘','김주환'
+];
+
+const CRITERIA = [
+  {
+    key: 'values',
+    label: '① AI 가치관',
+    desc: '"내가 생각하는 AI"에 대해 본인만의 뚜렷한 정의와 주관이 있는가?',
+    color: '#1a73e8'
+  },
+  {
+    key: 'utilization',
+    label: '② AI 활용성',
+    desc: 'AI를 업무나 일상에 적용한 구체적인 사례와 데이터가 명확한가?',
+    color: '#e37400'
+  },
+  {
+    key: 'sharing',
+    label: '③ 공유 및 전파',
+    desc: '동료들에게 추천한 방법이 실질적인 도움(꿀팁)이 되는 내용인가?',
+    color: '#1e8e3e'
+  },
+  {
+    key: 'delivery',
+    label: '④ 전달 및 소통',
+    desc: '발표 자료가 직관적이며, 질의응답 등에 논리적으로 대응하는가?',
+    color: '#9334e6'
+  },
+  {
+    key: 'innovation',
+    label: '⑤ 혁신 및 발전',
+    desc: '기존 방식을 개선하려는 의지와 향후 발전 가능성이 보이는가?',
+    color: '#d93025'
+  }
+];
+
+// ── 상태 ──
+let evaluatorName = '';
+let currentPerson = null;
+let scores = {};      // { 이름: { key: value, ..., comment } }
+let savedFlags = {};  // { 이름: true/false }
+
+// ══════════════════════════════════════════
+//  로그인
+// ══════════════════════════════════════════
+function startEval() {
+  const input = document.getElementById('evaluatorInput').value.trim();
+  if (!input) { showToast('성함을 입력해주세요.', 'error'); return; }
+
+  evaluatorName = input;
+  document.getElementById('evaluatorBadge').textContent = '평가자: ' + evaluatorName;
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('appSection').style.display = 'block';
+
+  // 초기화
+  EVALUATEES.forEach(name => {
+    scores[name] = { values:0, utilization:0, sharing:0, delivery:0, innovation:0, comment:'' };
+    savedFlags[name] = false;
+  });
+
+  buildTabs();
+  buildCriteriaList();
+  loadExistingScores();
+}
+
+function logout() {
+  evaluatorName = '';
+  currentPerson = null;
+  scores = {}; savedFlags = {};
+  document.getElementById('evaluatorInput').value = '';
+  document.getElementById('appSection').style.display = 'none';
+  document.getElementById('loginSection').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════
+//  탭 생성
+// ══════════════════════════════════════════
+function buildTabs() {
+  const container = document.getElementById('personTabs');
+  container.innerHTML = '';
+  EVALUATEES.forEach((name, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'person-tab';
+    btn.id = 'tab_' + idx;
+    btn.textContent = name;
+    btn.onclick = () => selectPerson(name, idx);
+    container.appendChild(btn);
+  });
+  // 첫 번째 탭 자동 선택
+  selectPerson(EVALUATEES[0], 0);
+}
+
+function selectPerson(name, idx) {
+  currentPerson = name;
+
+  // 탭 활성화
+  document.querySelectorAll('.person-tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.getElementById('tab_' + idx);
+  if (activeTab) activeTab.classList.add('active');
+
+  // 카드 업데이트
+  document.getElementById('cardAvatar').textContent = name.charAt(0);
+  document.getElementById('cardName').textContent = name;
+  document.getElementById('cardSub').textContent =
+    (idx + 1) + '번 발표자 | 각 항목 0~20점';
+
+  // 슬라이더 & 코멘트 값 복원
+  const s = scores[name];
+  CRITERIA.forEach(c => {
+    const slider = document.getElementById('slider_' + c.key);
+    if (slider) {
+      slider.value = s[c.key];
+      document.getElementById('display_' + c.key).textContent = s[c.key] + '점';
+      updateSliderColor(slider);
+    }
+  });
+  document.getElementById('commentArea').value = s.comment || '';
+  updateTotal();
+}
+
+// ══════════════════════════════════════════
+//  평가 항목 슬라이더 생성
+// ══════════════════════════════════════════
+function buildCriteriaList() {
+  const container = document.getElementById('criteriaList');
+  container.innerHTML = '';
+
+  CRITERIA.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'criteria-item';
+    item.style.borderLeftColor = c.color;
+    item.innerHTML = `
+      <div class="c-header">
+        <span class="c-label">${c.label}</span>
+        <span class="c-score-display" id="display_${c.key}">0점</span>
+      </div>
+      <div class="c-desc">${c.desc}</div>
+      <div class="slider-wrap">
+        <span>0</span>
+        <input type="range" id="slider_${c.key}" min="0" max="20" value="0" step="1"
+               oninput="onSliderChange('${c.key}', this)" />
+        <span>20</span>
+      </div>`;
+    container.appendChild(item);
+  });
+}
+
+function onSliderChange(key, slider) {
+  const val = parseInt(slider.value);
+  document.getElementById('display_' + key).textContent = val + '점';
+  if (currentPerson) scores[currentPerson][key] = val;
+  updateSliderColor(slider);
+  updateTotal();
+}
+
+function updateSliderColor(slider) {
+  const pct = (slider.value / 20) * 100;
+  slider.style.background =
+    `linear-gradient(to right, #1a73e8 ${pct}%, #dadce0 ${pct}%)`;
+}
+
+function updateTotal() {
+  if (!currentPerson) return;
+  const s = scores[currentPerson];
+  const total = (s.values||0) + (s.utilization||0) + (s.sharing||0) +
+                (s.delivery||0) + (s.innovation||0);
+  document.getElementById('totalScore').textContent = total;
+}
+
+// ══════════════════════════════════════════
+//  저장
+// ══════════════════════════════════════════
+async function saveScore() {
+  if (!currentPerson) { showToast('발표자를 선택해주세요.', 'error'); return; }
+
+  // 코멘트 현재 값 동기화
+  scores[currentPerson].comment = document.getElementById('commentArea').value;
+
+  const s = scores[currentPerson];
+  const total = (s.values||0)+(s.utilization||0)+(s.sharing||0)+(s.delivery||0)+(s.innovation||0);
+
+  showLoading(true);
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+
+  try {
+    const res = await gasPost({
+      action:        'submitScore',
+      evaluatorName: evaluatorName,
+      evaluateeName: currentPerson,
+      scores:        s,
+      comment:       s.comment
+    });
+
+    if (res.success) {
+      savedFlags[currentPerson] = true;
+      markTabDone(currentPerson);
+      updateProgress();
+      updateSummaryTable();
+      showToast('✅ ' + currentPerson + ' 점수 저장 완료! (총 ' + total + '점)', 'success');
+    } else {
+      showToast('❌ 오류: ' + res.message, 'error');
+    }
+  } catch (err) {
+    showToast('❌ 네트워크 오류: ' + err.message, 'error');
+  }
+
+  showLoading(false);
+  saveBtn.disabled = false;
+}
+
+// ══════════════════════════════════════════
+//  기존 점수 불러오기
+// ══════════════════════════════════════════
+async function loadExistingScores() {
+  try {
+    const res = await gasPost({ action: 'getScores', evaluatorName });
+    if (res.success && res.data) {
+      Object.entries(res.data).forEach(([name, data]) => {
+        if (scores[name]) {
+          scores[name] = { ...data };
+          if (data.total > 0) {
+            savedFlags[name] = true;
+            markTabDone(name);
+          }
+        }
+      });
+      updateProgress();
+      updateSummaryTable();
+      // 현재 탭 값 다시 렌더링
+      if (currentPerson) {
+        const idx = EVALUATEES.indexOf(currentPerson);
+        selectPerson(currentPerson, idx);
+      }
+      if (Object.values(savedFlags).some(v => v)) {
+        showToast('이전에 저장된 점수를 불러왔습니다.', 'success');
+      }
+    }
+  } catch (e) {
+    // 조용히 실패 (최초 접속 시 정상)
+  }
+}
+
+// ══════════════════════════════════════════
+//  UI 헬퍼
+// ══════════════════════════════════════════
+function markTabDone(name) {
+  const idx = EVALUATEES.indexOf(name);
+  const tab = document.getElementById('tab_' + idx);
+  if (tab) tab.classList.add('done');
+}
+
+function updateProgress() {
+  const done = Object.values(savedFlags).filter(Boolean).length;
+  const total = EVALUATEES.length;
+  const pct = (done / total) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = done + ' / ' + total;
+}
+
+function updateSummaryTable() {
+  const tbody = document.getElementById('summaryBody');
+  tbody.innerHTML = '';
+  EVALUATEES.forEach((name, idx) => {
+    const s = scores[name];
+    if (!savedFlags[name]) return;
+    const total = (s.values||0)+(s.utilization||0)+(s.sharing||0)+(s.delivery||0)+(s.innovation||0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td><strong>${name}</strong></td>
+      <td>${s.values||0}</td>
+      <td>${s.utilization||0}</td>
+      <td>${s.sharing||0}</td>
+      <td>${s.delivery||0}</td>
+      <td>${s.innovation||0}</td>
+      <td class="total-score">${total}</td>
+      <td style="text-align:left;font-size:.8rem">${s.comment||'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════════
+//  GAS 통신 (JSONP 방식 – CORS 우회)
+// ══════════════════════════════════════════
+function gasPost(data) {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'cb_' + Date.now();
+    const script = document.createElement('script');
+
+    // JSONP 콜백
+    window[callbackName] = (res) => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      resolve(res);
+    };
+
+    const params = new URLSearchParams({
+      callback: callbackName,
+      payload:  JSON.stringify(data)
+    });
+
+    script.src = GAS_URL + '?' + params.toString();
+    script.onerror = () => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      reject(new Error('스크립트 로드 실패'));
+    };
+    document.body.appendChild(script);
+    setTimeout(() => reject(new Error('타임아웃')), 15000);
+  });
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+}
+
+// ── Loading ──
+function showLoading(show) {
+  document.getElementById('loading').classList.toggle('show', show);
+}
+</script>
+</body>
+</html>
