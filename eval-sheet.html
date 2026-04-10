@@ -25,29 +25,85 @@
       min-height: 100vh;
     }
 
-    /* ── Header ── */
-    header {
-      background: var(--blue);
-      color: var(--white);
-      padding: 20px 32px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    header .icon { font-size: 2rem; }
-    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -.3px; }
-    header p  { font-size: .82rem; opacity: .85; margin-top: 2px; }
-    header .badge {
-      margin-left: auto;
-      background: rgba(255,255,255,.2);
-      border-radius: 20px;
-      padding: 4px 14px;
-      font-size: .78rem;
-    }
+/* ── Header (파란 띠 영역을 본문 너비로 제한) ── */
+header {
+  /* 배경을 투명하게 하고 그림자를 제거합니다 */
+  background: transparent;
+  box-shadow: none;
+
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  /* 상단 여백을 살짝 주어 공중에 떠 있는 느낌을 줄 수도 있습니다 (선택사항) */
+  padding-top: 10px; 
+}
+
+/* ── Header 내부 (실제 파란색 박스) ── */
+.header-content {
+  width: 100%;
+  max-width: 1100px;
+  
+  background: var(--blue);
+  box-shadow: var(--shadow);
+  border-radius: 12px;
+  
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box; 
+
+  /* 🔥 이 줄을 추가하세요! */
+  color: var(--white); 
+}
+
+/* ── 내부 요소들 크기 및 위치 조정 ── */
+header .icon { 
+  font-size: 2.5rem; /* 작아진 아이콘 크기 키움 */
+  flex-shrink: 0;
+}
+
+/* 제목 영역이 중간에서 가능한 넓게 차지하게 설정 */
+.header-text {
+  flex: 1;
+  min-width: 0; /* 텍스트가 넘쳐도 레이아웃 보존 */
+}
+
+header h1 { 
+  font-size: 1.3rem; /* 크기 살짝 조정 */
+  font-weight: 700; 
+  margin: 0;
+  word-break: keep-all;
+  line-height: 1.2;
+}
+
+header p { 
+  font-size: .85rem; 
+  opacity: .85; 
+  margin-top: 2px; 
+}
+
+header .badge {
+  /* margin-left: auto 대신, 부모 flex 구조에서 오른쪽 끝으로 밀기 */
+  background: rgba(255,255,255,.2);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: .85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 모바일 대응: 모바일에서는 꽉 차게 보이도록 유지 */
+@media (max-width: 1100px) {
+  header { padding-top: 0; }
+  .header-content { border-radius: 0; }
+}
+
+@media (max-width: 600px) {
+  .header-content { padding: 14px 16px; gap: 10px; }
+  header .icon { font-size: 2rem; }
+  header h1 { font-size: 1.1rem; }
+}
 
     /* ── Layout ── */
     .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
@@ -418,12 +474,10 @@
 
 <!-- Header -->
 <header>
-  <div class="icon"></div>
-  <div>
-    <h1></h1>
-    <p></p>
-  </div>
-  <div class="badge"></div>
+  <div class="header-content">
+    <div class="icon"></div> <div class="header-text">
+      <h1></h1> <p></p>  </div>
+    <div class="badge"></div> </div>
 </header>
 
 <!-- ── Login ── -->
