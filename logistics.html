@@ -2483,8 +2483,9 @@ document.getElementById('watchClearBtn').addEventListener('click',async()=>{
   try{ await api({action:'clear_watch'}); Object.keys(watchList).forEach(k=>delete watchList[k]); renderWatchTags(); rerenderCache(); showToast('감시 목록 삭제됨'); }
   catch(e){ showToast('오류 발생'); }
 });
-document.getElementById('btnViewLive').addEventListener('click',()=>{
+document.getElementById('btnViewLive').addEventListener('click', async ()=>{
   setTab('live');
+  await loadDispatch().catch(()=>{});
   rerenderCache();
   loadAnalytic(__currentTypeTab === 'all' ? 'product' : __currentTypeTab, false);
 });
