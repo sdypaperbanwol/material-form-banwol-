@@ -2502,14 +2502,14 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNL
 
 
   await Promise.all([
-    fetchWatch(),
-    loadSnapshot(),
-    loadAllTypesForSearch().catch(()=>{}),
-    loadDispatch().catch(()=>{}),
-    ]);
-  const pf = document.getElementById('plantFilter')?.value || 'all';
-  __avgDurMap = calcAvgDurMap(pf);
-   rerenderCache();
+  fetchWatch(),
+  loadSnapshot(),
+  loadDispatch().catch(()=>{}),
+]);
+await loadAllTypesForSearch().catch(()=>{});
+const pf = document.getElementById('plantFilter')?.value || 'all';
+__avgDurMap = calcAvgDurMap(pf);
+rerenderCache();
   
 
   setInterval(fetchWatch,5*60*1000);
