@@ -329,7 +329,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzbUTY7DJL1PeoMk0rNLdi0UJI9oJpU24WU6oojYbk7Efx57sAwJWvrIorCgbPSLBvTWA/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbz292KXZXpdfFf_a8Ihz0l-lRrJ4PmQ4KUfVL79CA9PD498pMqJsYuzILvE5L3yDjlt6A/exec';
 const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNLC526hzORn1nIP2aoZQnb6ZQg8jSYEvGg6S8XHC74VLrzopzChf/exec';
 const API_TOKEN    = 'DY_SCALE';
 
@@ -2501,14 +2501,18 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNL
   const sq=localStorage.getItem(LS.q); if(sq) document.getElementById('searchInput').value=sq;
 
 
-  await Promise.all([
+await Promise.all([
   fetchWatch(),
   loadSnapshot(),
+  loadAllTypesForSearch().catch(()=>{}),
   loadDispatch().catch(()=>{}),
 ]);
-await loadAllTypesForSearch().catch(()=>{});
 const pf = document.getElementById('plantFilter')?.value || 'all';
 __avgDurMap = calcAvgDurMap(pf);
+if(!__avgDurMap || Object.keys(__avgDurMap).length === 0){
+  await loadAllTypesForSearch().catch(()=>{});
+  __avgDurMap = calcAvgDurMap(pf);
+}
 rerenderCache();
   
 
@@ -2687,8 +2691,11 @@ if (isDispatched && car4 && __lastData && __lastData.sections) {
 }
 
 // ★ 추가 — 계근 섹션에 없어도 상차R > 0이면 상차중
-if (!arrivalStatus && isDispatched && 상차R > 0) {
-  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700">상차중</span>`;
+if (isDispatched && 상차R > 0) {
+  const label = (주문R > 0 && 상차R >= 주문R) ? '상차완료' : '상차중';
+  const bg = (주문R > 0 && 상차R >= 주문R) ? '#dbeafe' : '#dcfce7';
+  const color = (주문R > 0 && 상차R >= 주문R) ? '#1d4ed8' : '#15803d';
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${bg};color:${color};font-weight:700">${label}</span>`;
 }
 
     let items = [];
