@@ -597,8 +597,8 @@ function selectPerson(name, idx) {
 
   document.getElementById('cardAvatar').textContent = name.charAt(0);
   document.getElementById('cardName').textContent = name;
-  const scoreInfo = CRITERIA.map(c => `${c.label} 0~${c.maxPts}점`).join(' / ');
-document.getElementById('cardSub').textContent = (idx + 1) + '번 | ' + scoreInfo;
+ const scoreInfo = CRITERIA.map(c => `${c.label}: 0~${c.maxPts}점`).join('<br>'); // '/' 대신 <br> 사용
+document.getElementById('cardSub').innerHTML = `<strong>${idx + 1}번 발표자</strong><br>${scoreInfo}`;
 
   const s = scores[name];
  CRITERIA.forEach(c => {
