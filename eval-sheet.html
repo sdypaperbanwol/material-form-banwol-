@@ -504,7 +504,7 @@
 </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwno5V02chlc09v3WrBwqUEUtm4uRiTaYUDUMtlw7ChrQMgfKvL1JV7Kl6dUrSLKyds/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDsJ9uixWOPfbTN2v_qieVIWkygaGBty4FGhW5YDBJvEIwSnjD3g2Sfwf4lV8xhNUU/exec';
 
 let EVALUATEES = [];
 let CRITERIA   = [];
@@ -512,7 +512,8 @@ let evaluatorName = '';
 let currentPerson = null;
 let scores = {};
 let savedFlags = {};
-
+let cachedConfig = null;
+  
 // ══════════════════════════════════════════
 //  로그인
 // ══════════════════════════════════════════
@@ -522,20 +523,27 @@ async function startEval() {
 
   showLoading(true);
 
-  try {
-    const config = await gasPost({ action: 'getConfig' });
-    if (!config.success) {
-      showToast('❌ 설정 로드 실패: ' + config.message, 'error');
+  let config = cachedConfig;
+  if (!config) {
+    try {
+      config = await gasPost({ action: 'getConfig' });
+      if (config.success) cachedConfig = config;
+    } catch(e) {
+      showToast('❌ 설정을 불러오지 못했습니다.', 'error');
       showLoading(false);
       return;
     }
-    EVALUATEES = config.evaluatees;
-    CRITERIA   = config.criteria;
-  } catch(e) {
-    showToast('❌ 설정을 불러오지 못했습니다.', 'error');
+  }
+
+  if (!config || !config.success) {
+    showToast('❌ 설정 로드 실패: ' + (config?.message || ''), 'error');
     showLoading(false);
     return;
   }
+
+  // ✅ 여기가 핵심 — 캐시든 신규든 항상 세팅
+  EVALUATEES = config.evaluatees;
+  CRITERIA   = config.criteria;
 
   evaluatorName = input;
   document.getElementById('evaluatorBadge').textContent = '평가자: ' + evaluatorName;
@@ -791,35 +799,14 @@ function updateSummaryTable() {
 // ══════════════════════════════════════════
 //  GAS 통신 (JSONP)
 // ══════════════════════════════════════════
-function gasPost(data) {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('타임아웃')), 15000);
-    const callbackName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    
-    window[callbackName] = (res) => {
-      clearTimeout(timeout);
-      delete window[callbackName];
-      const s = document.getElementById('__gas_' + callbackName);
-      if (s) s.remove();
-      resolve(res);
-    };
-
-    const params = new URLSearchParams({
-      callback: callbackName,
-      payload: JSON.stringify(data)
+function gasPost(data, retries = 2) {
+  const url = GAS_URL + '?payload=' + encodeURIComponent(JSON.stringify(data));
+  return fetch(url)
+    .then(r => r.json())
+    .catch(err => {
+      if (retries > 0) return gasPost(data, retries - 1);
+      throw err;
     });
-
-    const script = document.createElement('script');
-    script.id = '__gas_' + callbackName;
-    script.src = GAS_URL + '?' + params.toString();
-    script.onerror = () => {
-      clearTimeout(timeout);
-      delete window[callbackName];
-      script.remove();
-      reject(new Error('스크립트 로드 실패'));
-    };
-    document.head.appendChild(script); // ✅ body 대신 head에 삽입
-  });
 }
 
 // ── Toast ──
@@ -849,63 +836,59 @@ function showLoading(show, msg = '저장 중…') {
 //  페이지 로드 시 UI 전체 초기화
 // ══════════════════════════════════════════
 (async function initUI() {
-  // 페이지 열리자마자 스피너 이미 보임 (CSS 기본값 flex)
   try {
     const config = await gasPost({ action: 'getConfig' });
-    if (!config.success) {
-      showLoading(false);
-      return;
+    if (config.success) {
+      cachedConfig = config;          // ✅ 캐싱
+      EVALUATEES = config.evaluatees; // ✅ 전역 세팅
+      CRITERIA   = config.criteria;   // ✅ 전역 세팅
     }
-    const m = config.meta || {};
 
-    // 헤더
+    const m = (config.success && config.meta) ? config.meta : {};
+
     document.querySelector('header .icon').textContent    = m.icon     || '🤖';
-    document.querySelector('header h1').textContent       = m.title    || '';
+    document.querySelector('header h1').textContent       = m.title    || 'AI 발표 심사';
     document.querySelector('header p').textContent        = m.subtitle || '';
     document.querySelector('header .badge').textContent   = m.maxScore || '';
     document.title = m.title || 'AI 발표 심사';
 
-    // 로그인 카드
     document.getElementById('loginIcon').textContent      = m.loginIcon        || '📋';
-    document.getElementById('loginTitle').textContent     = m.loginTitle       || '로그인';
-    document.getElementById('loginDesc').innerHTML        = (m.loginDesc || '').replace(/\n/g, '<br>');
-    document.getElementById('evaluatorInput').placeholder = m.loginPlaceholder || '이름 입력';
-    document.getElementById('loginBtn').textContent       = m.loginBtn         || '시작 →';
+    document.getElementById('loginTitle').textContent     = m.loginTitle       || '심사위원 로그인';
+    document.getElementById('loginDesc').innerHTML        = (m.loginDesc || '평가자 성함을 입력하시면<br>개인 심사표가 준비됩니다.').replace(/\n/g, '<br>');
+    document.getElementById('evaluatorInput').placeholder = m.loginPlaceholder || '예: 홍길동';
+    document.getElementById('loginBtn').textContent       = m.loginBtn         || '심사 시작하기 →';
 
-    // 앱 화면
-    document.getElementById('appTitle').textContent          = m.appTitle          || '심사표';
-    document.getElementById('logoutBtn').textContent         = m.logoutBtn         || '← 변경';
-    document.getElementById('progressLabel').textContent     = m.progressLabel     || '진행률';
-    document.getElementById('commentLabel').textContent      = m.commentLabel      || '종합 의견';
-    document.getElementById('commentArea').placeholder       = m.commentPlaceholder|| '';
-    document.getElementById('saveBtn').textContent           = m.saveBtn           || '저장';
-    document.getElementById('summaryTitle').textContent      = m.summaryTitle      || '평가 현황';
-    document.getElementById('totalLabel').textContent        = '/ ' + (m.maxScore  || '100점');
-
+    document.getElementById('appTitle').textContent       = m.appTitle          || '📝 발표자 심사표';
+    document.getElementById('logoutBtn').textContent      = m.logoutBtn         || '← 변경';
+    document.getElementById('progressLabel').textContent  = m.progressLabel     || '평가 진행률';
+    document.getElementById('commentLabel').textContent   = m.commentLabel      || '💬 종합 의견';
+    document.getElementById('commentArea').placeholder    = m.commentPlaceholder|| '';
+    document.getElementById('saveBtn').textContent        = m.saveBtn           || '💾 저장하기';
+    document.getElementById('summaryTitle').textContent   = m.summaryTitle      || '📊 내 평가 현황';
+    document.getElementById('totalLabel').textContent     = '/ ' + (m.maxScore  || '100점');
 
   } catch(e) {
-  console.warn('UI 초기화 실패:', e);
-  // 실패해도 기본값으로 UI 표시
-  document.querySelector('header .icon').textContent    = '🤖';
-  document.querySelector('header h1').textContent       = 'AI 발표 심사';
-  document.querySelector('header p').textContent        = '';
-  document.querySelector('header .badge').textContent   = '만점';
-  document.title = 'AI 발표 심사';
-  document.getElementById('loginIcon').textContent      = '📋';
-  document.getElementById('loginTitle').textContent     = '심사위원 로그인';
-  document.getElementById('loginDesc').innerHTML        = '평가자 성함을 입력하시면<br>개인 심사표가 준비됩니다.';
-  document.getElementById('evaluatorInput').placeholder = '예: 홍길동';
-  document.getElementById('loginBtn').textContent       = '심사 시작하기 →';
-  document.getElementById('appTitle').textContent       = '📝 발표자 심사표';
-  document.getElementById('logoutBtn').textContent      = '← 변경';
-  document.getElementById('progressLabel').textContent  = '평가 진행률';
-  document.getElementById('commentLabel').textContent   = '💬 종합 의견';
-  document.getElementById('saveBtn').textContent        = '💾 저장하기';
-  document.getElementById('summaryTitle').textContent   = '📊 내 평가 현황';
-  document.getElementById('totalLabel').textContent     = '/ 100점';
-} finally {
-  showLoading(false);
-}
+    console.warn('UI 초기화 실패:', e);
+    document.querySelector('header .icon').textContent    = '🤖';
+    document.querySelector('header h1').textContent       = 'AI 발표 심사';
+    document.querySelector('header p').textContent        = '';
+    document.querySelector('header .badge').textContent   = '만점';
+    document.title = 'AI 발표 심사';
+    document.getElementById('loginIcon').textContent      = '📋';
+    document.getElementById('loginTitle').textContent     = '심사위원 로그인';
+    document.getElementById('loginDesc').innerHTML        = '평가자 성함을 입력하시면<br>개인 심사표가 준비됩니다.';
+    document.getElementById('evaluatorInput').placeholder = '예: 홍길동';
+    document.getElementById('loginBtn').textContent       = '심사 시작하기 →';
+    document.getElementById('appTitle').textContent       = '📝 발표자 심사표';
+    document.getElementById('logoutBtn').textContent      = '← 변경';
+    document.getElementById('progressLabel').textContent  = '평가 진행률';
+    document.getElementById('commentLabel').textContent   = '💬 종합 의견';
+    document.getElementById('saveBtn').textContent        = '💾 저장하기';
+    document.getElementById('summaryTitle').textContent   = '📊 내 평가 현황';
+    document.getElementById('totalLabel').textContent     = '/ 100점';
+  } finally {
+    showLoading(false);
+  }
 })();
 </script>
 </body>
