@@ -1085,7 +1085,7 @@ const sc=rows.filter(r=>{
 }).length;
 
     // ★ 원료 하차중 summary에 집게차 수 표시
-    let summaryStr = `반월 ${bc} · 시화 ${sc}`;
+    let summaryStr = `반월 ${sc} · 시화 ${bc}`;
     if(sec.title === '원료 하차중'){
       const craneCount = rows.filter(r=>isCrane(r)).length;
       if(craneCount > 0) summaryStr += ` · 집게차 ${craneCount}대`;
@@ -1111,7 +1111,7 @@ return `<article class="card">
           <button class="btn" onclick="toggleCard('${encodeURIComponent(sec.title)}',this)">${collapsed?'펼치기':'접기'}</button>
         </div>
       </div>
-      <div class="summary">총 ${rows.length} · ${summaryStr}</div>${secNote}
+     <div class="summary">총 ${sc+bc} · ${summaryStr}</div>${secNote}
       <div class="body" style="${collapsed?'display:none':''}">
         <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:68px">${estColHeader}</th><th style="width:70px">${lastColHeader}</th></tr></thead>
         <tbody>${rowsHTML}</tbody></table>
