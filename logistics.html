@@ -181,7 +181,7 @@
     border:1px solid var(--line); border-radius:10px; padding:8px 10px;
     transition:box-shadow .15s;
   }
-  .cong-cell:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) }
+  @media(hover:hover){ .cong-cell:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) } }
   .cong-type{ font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; }
   .cong-row{ display:flex; align-items:center; gap:5px; margin-bottom:4px; }
   .cong-row:last-child{ margin-bottom:0 }
@@ -276,20 +276,7 @@
   
 <section class="grid" id="weighingPanel" style="display:none"></section>
   <section class="grid" id="sections" style="display:none"></section>
-  <div class="period-bar" id="periodBar" style="display:none;margin-top:14px">
-    <div class="period-bar-row">
-      <label>기간</label>
-      <div class="period-presets">
-      <button class="pbtn active" data-preset="today">오늘</button>
-<button class="pbtn" data-preset="custom">직접입력</button>
-      </div>
-      <div class="period-custom" id="periodCustom" style="display:none">
-        <input type="month" id="anYearMonth" />
-        <button class="period-apply" id="anApplyBtn">조회</button>
-      </div>
-    </div>
-  </div>
-<section id="analyticPanel" style="display:none"></section>
+  <section id="analyticPanel" style="display:none"></section>
  <section id="dispatchPanel" style="display:none">
   <div class="grid">
     <!-- 반월 -->
@@ -342,7 +329,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbypnHQB7Cfm1NrzhJJ2P7y5X4jKE1dVhn0cBtZdxwFE7XdX0sd4EjBBjlP1wNGKj6lgcg/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxbjkrFABdMZcbHtBrjrqWkaIUaeRSKGdQC34PG2x8caXSS-2gcArKdwu4u5WH3ITxiHg/exec';
 const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNLC526hzORn1nIP2aoZQnb6ZQg8jSYEvGg6S8XHC74VLrzopzChf/exec';
 const API_TOKEN    = 'DY_SCALE';
 
@@ -543,18 +530,25 @@ function renderCongPanel(data, plantFilter){
   data.sections.forEach(sec => {
     const counts = { '반월': 0, '시화': 0 };
     sec.groups.forEach(g => {
-      counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
-        if(isMonoDigit(r.car)) return false;
-        if(sec.title!=='제품 상차중') return true;
-        const inM = timeToMin(fmtTime(r.time));
-        if(inM==null) return true;
-        const avg = __avgDurMap[`product_${g.plant}`];
-        const threshold = avg ? (avg + 30) : 150;
-        const elapsed = nowKSTMin() - inM;
-        if(elapsed<0||elapsed>threshold) return false;
-        return true;
-      }).length;
-    });
+  counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
+    if(isMonoDigit(r.car)) return false;
+    if(sec.title!=='제품 상차중') return true;
+    // ★ 미배차 제외
+    const c4 = last4(r.car);
+    const inDisp = (__dispatchData?.active || []).some(o =>
+      o['배차여부'] === 'Y' &&
+      String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+    );
+    if(!inDisp) return false;
+    const inM = timeToMin(fmtTime(r.time));
+    if(inM==null) return true;
+    const avg = __avgDurMap[`product_${g.plant}`];
+    const threshold = avg ? (avg + 30) : 150;
+    const elapsed = nowKSTMin() - inM;
+    if(elapsed<0||elapsed>threshold) return false;
+    return true;
+  }).length;
+});
     sectionMap[sec.title] = counts;
   });
 
@@ -597,17 +591,18 @@ function renderCongPanel(data, plantFilter){
     </div>`;
   }).join('');
 
-  document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
-  document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
+document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
+document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
   const types = ['product','raw','sub','container'];
   cell.addEventListener('click', () => setTypeTab(types[idx]));
   cell.style.cursor = 'pointer';
   cell.style.transition = 'box-shadow .15s, border-color .15s';
-  cell.addEventListener('mouseenter', () => cell.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)');
-  cell.addEventListener('mouseleave', () => cell.style.boxShadow = '');
+  if(!('ontouchstart' in window)){
+    cell.addEventListener('mouseenter', () => cell.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)');
+    cell.addEventListener('mouseleave', () => cell.style.boxShadow = '');
+  }
 });
 }
-
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):d.length>0?d.padStart(4,'0'):''; }
 function isMonoDigit(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4&&d.split('').every(c=>c===d[0]); }
 
@@ -616,9 +611,9 @@ function fmtTime(raw){
   const s0=String(raw).trim(); if(!s0) return '';
   const m=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
   if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
-  const d=s0.replace(/\D/g,'');
-  if(d.length>=6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
-  if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+const d=s0.replace(/\D/g,'').padStart(6,'0');
+if(d.length>=6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
   return s0;
 }
 
@@ -1054,29 +1049,43 @@ else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && el
       </tr>`;
     }).join(''):'<tr><td colspan="5" class="empty">(데이터 없음)</td></tr>';
 
-    const bc=rows.filter(r=>{
-      if(r.plant!=='반월') return false;
-      if(sec.title!=='제품 상차중') return true;
-      const inM=timeToMin(fmtTime(r.time));
-      if(inM==null) return true;
-      const avg=__avgDurMap[`product_반월`];
-      const threshold=avg?(avg+30):150
-      const elapsed=nowKSTMin()-inM;
-      return !(elapsed<0||elapsed>threshold);
-    }).length;
-    const sc=rows.filter(r=>{
-      if(r.plant!=='시화') return false;
-      if(sec.title!=='제품 상차중') return true;
-      const inM=timeToMin(fmtTime(r.time));
-      if(inM==null) return true;
-      const avg=__avgDurMap[`product_시화`];
-      const threshold=avg?(avg+30):150;
-      const elapsed=nowKSTMin()-inM;
-      return !(elapsed<0||elapsed>threshold);
-    }).length;
+const sc=rows.filter(r=>{
+  if(r.plant!=='반월') return false;
+  if(sec.title!=='제품 상차중') return true;
+  // ★ 미배차 제외
+  const c4 = last4(r.car);
+  const inDisp = (__dispatchData?.active || []).some(o =>
+    o['배차여부'] === 'Y' &&
+    String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+  );
+  if(!inDisp) return false;
+  const inM=timeToMin(fmtTime(r.time));
+  if(inM==null) return true;
+  const avg=__avgDurMap[`product_반월`];
+  const threshold=avg?(avg+30):150;
+  const elapsed=nowKSTMin()-inM;
+  return !(elapsed<0||elapsed>threshold);
+}).length;
+   const bc=rows.filter(r=>{
+  if(r.plant!=='시화') return false;
+  if(sec.title!=='제품 상차중') return true;
+  // ★ 미배차 제외
+  const c4 = last4(r.car);
+  const inDisp = (__dispatchData?.active || []).some(o =>
+    o['배차여부'] === 'Y' &&
+    String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+  );
+  if(!inDisp) return false;
+  const inM=timeToMin(fmtTime(r.time));
+  if(inM==null) return true;
+  const avg=__avgDurMap[`product_시화`];
+  const threshold=avg?(avg+30):150;
+  const elapsed=nowKSTMin()-inM;
+  return !(elapsed<0||elapsed>threshold);
+}).length;
 
     // ★ 원료 하차중 summary에 집게차 수 표시
-    let summaryStr = `반월 ${bc} · 시화 ${sc}`;
+    let summaryStr = `반월 ${sc} · 시화 ${bc}`;
     if(sec.title === '원료 하차중'){
       const craneCount = rows.filter(r=>isCrane(r)).length;
       if(craneCount > 0) summaryStr += ` · 집게차 ${craneCount}대`;
@@ -1102,7 +1111,7 @@ return `<article class="card">
           <button class="btn" onclick="toggleCard('${encodeURIComponent(sec.title)}',this)">${collapsed?'펼치기':'접기'}</button>
         </div>
       </div>
-      <div class="summary">총 ${rows.length} · ${summaryStr}</div>${secNote}
+     <div class="summary">총 ${sc+bc} · ${summaryStr}</div>${secNote}
       <div class="body" style="${collapsed?'display:none':''}">
         <table><thead><tr><th style="width:44px">No</th><th style="width:96px">차량</th><th style="width:74px">${sec.title==='원료 대기'?'등록':'입차'}</th><th style="width:68px">${estColHeader}</th><th style="width:70px">${lastColHeader}</th></tr></thead>
         <tbody>${rowsHTML}</tbody></table>
@@ -1138,10 +1147,14 @@ return `<article class="card">
     if(subCars.length > 0) fetchSubHistory(subCars);
   }
 
-  if(document.getElementById('btnViewLive').classList.contains('active')){
+ if(document.getElementById('btnViewLive').classList.contains('active')){
+  if(!document.querySelector('#congGrid .cong-cell')){
     renderCongPanel(data, plantSel);
-    refreshAvgDurMap(plantSel);
+  } else {
+    updateCongPanel(data, plantSel);
   }
+  refreshAvgDurMap(plantSel);
+}
 
   const badge=document.getElementById('searchSummary');
   if(q) badge.style.display='inline-block';
@@ -1226,6 +1239,61 @@ function updateCarSearchPanel(carNum4, liveData){
   }
 }
 
+function updateCongPanel(data, plantFilter){
+  if(!data || !data.sections) return;
+  const sectionMap = {};
+  data.sections.forEach(sec => {
+    const counts = { '반월': 0, '시화': 0 };
+    sec.groups.forEach(g => {
+      counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
+        if(isMonoDigit(r.car)) return false;
+        if(sec.title!=='제품 상차중') return true;
+        const c4 = last4(r.car);
+        const inDisp = (__dispatchData?.active || []).some(o =>
+          o['배차여부'] === 'Y' &&
+          String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+        );
+        if(!inDisp) return false;
+        const inM = timeToMin(fmtTime(r.time));
+        if(inM==null) return true;
+        const avg = __avgDurMap[`product_${g.plant}`];
+        const threshold = avg ? (avg + 30) : 150;
+        const elapsed = nowKSTMin() - inM;
+        if(elapsed<0||elapsed>threshold) return false;
+        return true;
+      }).length;
+    });
+    sectionMap[sec.title] = counts;
+  });
+
+  document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
+    const t = CONG_TYPES[idx];
+    if(!t) return;
+    const counts = sectionMap[t.key] || { '반월': 0, '시화': 0 };
+    const bw = counts['반월'], sh = counts['시화'];
+    const pctB = Math.round(bw / t.capaB * 100);
+    const pctS = Math.round(sh / t.capaS * 100);
+    const showB = (plantFilter !== 'sihwa');
+    const showS = (plantFilter !== 'banwol');
+    const worstPct = showB && showS ? Math.max(pctB, pctS) : showB ? pctB : pctS;
+
+    // 바 너비만 업데이트
+    const bars = cell.querySelectorAll('.cong-bar');
+    if(bars[0] && showB) bars[0].style.width = Math.min(pctB,100) + '%';
+    if(bars[showB?1:0] && showS) bars[showB?1:0].style.width = Math.min(pctS,100) + '%';
+
+    // 숫자만 업데이트
+    const nums = cell.querySelectorAll('.cong-num');
+    if(nums[0] && showB) nums[0].textContent = `${bw}/${t.capaB}`;
+    if(nums[showB?1:0] && showS) nums[showB?1:0].textContent = `${sh}/${t.capaS}`;
+
+    // 테두리 색만 업데이트
+    const borderColor = worstPct >= 100 ? '#fca5a5' : worstPct >= 60 ? '#fcd34d' : '#d1fae5';
+    cell.style.borderColor = borderColor;
+  });
+
+  document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
+}
 function buildHistoryRows(carNum4, liveFound){
   const TYPE_LABEL={product:'제품',raw:'원료',sub:'부자재',container:'컨테이너'};
   const TYPE_COLOR={product:'#06b6d4',raw:'#22c55e',sub:'#f97316',container:'#a855f7'};
@@ -1361,8 +1429,9 @@ function renderWeigh(payload){
 
 // ═══ 분석 탭 ═══
 
+// ── 기간 관련 변수 초기값 고정 (변경 없이 오늘로 고정)
 let __anCharts={}, __anType='product', __anCache={}, __anPeriod='today';
-let __anFrom=todayKST(), __anTo=todayKST();
+let __anFrom=todayKST(), __anTo=todayKST();  // 그대로 유지 (오늘 고정)
 
 const AN_TYPES=[
   {key:'product',label:'제품',dc:'#06b6d4'},
@@ -1487,56 +1556,37 @@ function initPeriodBarEvents(){
 
 }
 
-async function loadAnalytic(type,force=false){
-  __anType=type||'product';
-  
-  syncPeriodUI();
-  const panel=document.getElementById('analyticPanel');
-  const isMultiDay=__anFrom!==__anTo;
-  const cacheKey=`${__anType}_${__anFrom}_${__anTo}`;
+// 전체를 아래로 교체
+async function loadAnalytic(type, force=false){
+  __anType = type || 'product';
+  __anFrom = todayKST();
+  __anTo   = todayKST();
+
+  const panel = document.getElementById('analyticPanel');
+  const cacheKey = `${__anType}_${__anFrom}_${__anTo}`;
   destroyCharts();
-  panel.innerHTML=`<div class="an-loading"><span class="mini-spinner"></span> 데이터 불러오는 중…</div>`;
-  try{
-    if(force||!__anCache[cacheKey]){
-    if(isMultiDay){
-        const [summaryData, weighData] = await Promise.all([
-          api({action:'weekly_summary', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
-          api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo}),
-        ]);
-        const dates2 = summaryData.daily ? summaryData.daily.map(d => d.date) : [];
-        const bwByDate = {}, shByDate = {};
-        (weighData.banwol || []).forEach(r => {
-          const raw = String(r.WEIDAT || '');
-          const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
-          if(!bwByDate[d]) bwByDate[d]=[];
-          bwByDate[d].push(r);
-        });
-        (weighData.sihwa || []).forEach(r => {
-          const raw = String(r.WEIDAT || '');
-          const d = raw.length === 8 ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : raw;
-          if(!shByDate[d]) shByDate[d]=[];
-          shByDate[d].push(r);
-        });
-        dates2.forEach(dt => {
-          const k = `${__anType}_${dt}_${dt}`;
-          if(!__anCache[k]) __anCache[k] = { mode:'daily', data:{ banwol: bwByDate[dt]||[], sihwa: shByDate[dt]||[] } };
-        });
-        __anCache[cacheKey] = { mode:'weekly', data:summaryData, dates:dates2 };
-      } else {
-        const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
-        __anCache[cacheKey] = { mode:'daily', data };
-      }
-    }
-    const plantFilter=document.getElementById('plantFilter').value||'all';
-    const searchQ=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
-    const cached=__anCache[cacheKey];
-    panel.innerHTML='';
-    if(cached.mode==='all-daily'||cached.mode==='all-weekly') renderAnalyticAll(cached,plantFilter);
-    else if(cached.mode==='weekly') renderAnalyticWeekly(cached.data,cached.dates,__anType,plantFilter);
-    else renderAnalyticDaily(cached.data,__anType,plantFilter,searchQ);
-  }catch(e){ panel.innerHTML=`<div class="an-loading">데이터를 불러올 수 없습니다.</div>`; }
+
+  if (!force && __anCache[cacheKey]) {
+    const plantFilter = document.getElementById('plantFilter').value || 'all';
+    const searchQ = (document.getElementById('searchInput').value || '').replace(/\D/g,'').slice(-4);
+    panel.innerHTML = '';
+    renderAnalyticDaily(__anCache[cacheKey].data, __anType, plantFilter, searchQ);
+    return;
+  }
+
+  panel.innerHTML = `<div class="an-loading"><span class="mini-spinner"></span> 데이터 불러오는 중…</div>`;
+  try {
+    const data = await api({action:'get_weigh_cache', type:__anType, dateFrom:__anFrom, dateTo:__anTo});
+    __anCache[cacheKey] = { mode:'daily', data };
+    const plantFilter = document.getElementById('plantFilter').value || 'all';
+    const searchQ = (document.getElementById('searchInput').value || '').replace(/\D/g,'').slice(-4);
+    panel.innerHTML = '';
+    renderAnalyticDaily(data, __anType, plantFilter, searchQ);
+  } catch(e) {
+    panel.innerHTML = `<div class="an-loading">데이터를 불러올 수 없습니다.</div>`;
+  }
 }
-function refreshAnalytic(){ const k=`${__anType}_${__anFrom}_${__anTo}`; delete __anCache[k]; loadAnalytic(__anType,true); }
+    
 
 async function loadAllTypesForSearch(){
   const types=['product','raw','sub','container'];
@@ -2329,7 +2379,7 @@ function setTab(tabName){
   document.getElementById('btnViewDispatch').classList.toggle('active', dispActive);
   document.getElementById('sections').style.display = liveActive ? 'grid' : 'none';
   elWeighPanel.style.display = 'none';
-  document.getElementById('periodBar').style.display = 'none';
+
   document.getElementById('analyticPanel').style.display = 'none';
   document.getElementById('dispatchPanel').style.display = dispActive ? 'block' : 'none';
   document.getElementById('congPanel').style.display = liveActive ? 'block' : 'none';
@@ -2342,12 +2392,22 @@ function setTab(tabName){
   const q=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
   if(!/^\d{4}$/.test(q)) document.getElementById('carSearchPanel').style.display='none';
 }
-let __currentTypeTab = 'product';
+let __currentTypeTab = null; // 'product' → null로 변경
 
 function setTypeTab(type) {
+  // 같은 타입 다시 클릭하면 닫기
+  if (__currentTypeTab === type) {
+    __currentTypeTab = null;
+    document.getElementById('sections').style.display = 'none';
+
+    document.getElementById('analyticPanel').style.display = 'none';
+    // KPI 셀 선택 해제
+    document.querySelectorAll('#congGrid .cong-cell').forEach(c => c.style.outline = '');
+    return;
+  }
+
   __currentTypeTab = type;
   document.getElementById('sections').style.display = 'grid';
-  document.getElementById('periodBar').style.display = 'flex';
   document.getElementById('analyticPanel').style.display = 'block';
 
   const showMap = {
@@ -2358,10 +2418,9 @@ function setTypeTab(type) {
   };
   const show = showMap[type];
 
-  // ★ render 먼저 실행해서 카드 DOM 생성 후 필터 적용
+  // KPI 셀 선택 표시
   if (__lastData) {
     render(__lastData);
-    // render 직후 필터 재적용
     document.querySelectorAll('article.card').forEach(card => {
       const h3 = card.querySelector('h3');
       if (!h3) return;
@@ -2369,7 +2428,13 @@ function setTypeTab(type) {
     });
   }
 
-  loadAnalytic(type, true);
+  // KPI 셀 선택 표시
+  const typeOrder = ['product','raw','sub','container'];
+  document.querySelectorAll('#congGrid .cong-cell').forEach((c, idx) => {
+    c.style.outline = typeOrder[idx] === type ? '2px solid var(--brand)' : '';
+  });
+
+  loadAnalytic(type, false);
 }
 // ═══ 이벤트 ═══
 document.getElementById('plantFilter').addEventListener('change',e=>{
@@ -2434,17 +2499,21 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNL
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
   const sq=localStorage.getItem(LS.q); if(sq) document.getElementById('searchInput').value=sq;
-  initPeriodBarEvents();
 
-  await Promise.all([
-    fetchWatch(),
-    loadSnapshot(),
-    loadAllTypesForSearch().catch(()=>{}),
-    loadDispatch().catch(()=>{}),
-    ]);
-  const pf = document.getElementById('plantFilter')?.value || 'all';
+
+await Promise.all([
+  fetchWatch(),
+  loadSnapshot(),
+  loadAllTypesForSearch().catch(()=>{}),
+  loadDispatch().catch(()=>{}),
+]);
+const pf = document.getElementById('plantFilter')?.value || 'all';
+__avgDurMap = calcAvgDurMap(pf);
+if(!__avgDurMap || Object.keys(__avgDurMap).length === 0){
+  await loadAllTypesForSearch().catch(()=>{});
   __avgDurMap = calcAvgDurMap(pf);
-   rerenderCache();
+}
+rerenderCache();
   
 
   setInterval(fetchWatch,5*60*1000);
@@ -2456,10 +2525,15 @@ const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbymagZMu9N-5qRuNL
       if(data && data.sections){
         __lastData = data;
         elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
-        if(document.getElementById('btnViewLive').classList.contains('active')){
-          render(data);
-          return;
-        }
+       if(document.getElementById('btnViewLive').classList.contains('active')){
+  if(!document.querySelector('#congGrid .cong-cell')){
+    renderCongPanel(data, plantSel);
+  } else {
+    updateCongPanel(data, plantSel);
+  }
+  refreshAvgDurMap(plantSel);
+}
+        
       }
     }catch(e){}
   }, 60000);
@@ -2532,19 +2606,6 @@ function calcRemainingStock(nmItem, plant, PRIMARY_WH) {
   return stockMap;
 }
 
-function itemKeyFromDispatch(nm) {
-  // "K180/1600" → { jijong: "K", pyeongrang: "180", jipok: "1600" }
-  const m = String(nm).match(/^([A-Za-z]+)(\d+)\/(\d+)$/);
-  if (!m) return null;
-  return { jijong: m[1], pyeongrang: m[2], jipok: m[3] };
-}
-
-function itemKeyFromDispatch(nm) {
-  // "K180/1600" → { jijong: "K", pyeongrang: "180", jipok: "1600" }
-  const m = String(nm).match(/^([A-Za-z]+)(\d+)\/(\d+)$/);
-  if (!m) return null;
-  return { jijong: m[1], pyeongrang: m[2], jipok: m[3] };
-}
 
 
 
@@ -2586,13 +2647,13 @@ const hapjim = r['합짐'] === 'Y'
     // ★ 계근 상태 확인
     let arrivalStatus = '';
     if (isDispatched && car4 && car4 !== '—' && __lastData && __lastData.sections) {
-      const SEC_LABEL = {
-        '제품 상차중':   null,        // 표시 안 함
-        '원료 하차중':   '원료하차',
-        '원료 대기':     '원료대기',
-        '부자재 입차중': '부자재',
-        '컨테이너 입차중': '컨테이너',
-      };
+     const SEC_LABEL = {
+  '제품 상차중':   null,
+  '원료 하차중':   '원료하차',
+  '원료 대기':     '원료대기',
+  '부자재 입차중': '부자재',
+  '컨테이너 입차중': '컨테이너',
+};
       for (const sec of __lastData.sections) {
         const label = SEC_LABEL[sec.title];
         if (label === undefined || label === null) continue;
@@ -2604,9 +2665,11 @@ const hapjim = r['합짐'] === 'Y'
           break;
         }
       }
-      if (!arrivalStatus) {
-        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
-      }
+if (!isDispatched) {
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#94a3b8;font-weight:600">미배차</span>`;
+} else if (!arrivalStatus) {
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
+}
     }
 
     // ★ 제품 상차중이면 arrivalStatus 비움 (이미 싣는 중이라 표시 불필요)
@@ -2628,8 +2691,11 @@ if (isDispatched && car4 && __lastData && __lastData.sections) {
 }
 
 // ★ 추가 — 계근 섹션에 없어도 상차R > 0이면 상차중
-if (!arrivalStatus && isDispatched && 상차R > 0) {
-  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700">상차중</span>`;
+if (isDispatched && 상차R > 0) {
+  const label = (주문R > 0 && 상차R >= 주문R) ? '상차완료' : '상차중';
+  const bg = (주문R > 0 && 상차R >= 주문R) ? '#dbeafe' : '#dcfce7';
+  const color = (주문R > 0 && 상차R >= 주문R) ? '#1d4ed8' : '#15803d';
+  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${bg};color:${color};font-weight:700">${label}</span>`;
 }
 
     let items = [];
