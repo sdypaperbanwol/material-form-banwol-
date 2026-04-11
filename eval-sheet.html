@@ -849,11 +849,11 @@ function gasPost(data) {
     const callbackName = 'cb_' + Date.now();
     const script = document.createElement('script');
 
-    window[callbackName] = (res) => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      resolve(res);
-    };
+window[callbackName] = (res) => {
+  delete window[callbackName];
+  if (script.parentNode) script.parentNode.removeChild(script);
+  resolve(res);
+};
 
     const params = new URLSearchParams({
       callback: callbackName,
@@ -861,12 +861,12 @@ function gasPost(data) {
     });
 
     script.src = GAS_URL + '?' + params.toString();
-    script.onerror = () => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      reject(new Error('스크립트 로드 실패'));
-    };
-    document.body.appendChild(script);
+script.onerror = () => {
+  delete window[callbackName];
+  if (script.parentNode) script.parentNode.removeChild(script);
+  reject(new Error('스크립트 로드 실패'));
+};
+    document.head.appendChild(script);
     setTimeout(() => reject(new Error('타임아웃')), 15000);
   });
 }
