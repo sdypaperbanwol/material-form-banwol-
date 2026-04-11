@@ -27,8 +27,8 @@
     }
 
 header {
-  background: transparent;
-  box-shadow: none;
+  background: var(--blue);
+  box-shadow: var(--shadow);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -39,10 +39,7 @@ header {
 .header-inner {
   width: 100%;
   max-width: 1100px;
-  background: var(--blue);
   color: var(--white);
-  box-shadow: var(--shadow);
-  border-radius: 0 0 12px 12px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -399,7 +396,7 @@ header .badge {
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Summary Section ── */
-    #summarySection { margin-top: 12px; }
+    #summarySection { margin-top: 12px; margin-bottom: 48px; }
     .summary-card {
       background: var(--white);
       border-radius: 16px;
