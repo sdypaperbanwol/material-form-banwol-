@@ -30,7 +30,7 @@
 header {
   background: transparent;
   box-shadow: none;
-  position: sticky;
+  position: static;
   top: 0;
   z-index: 100;
   display: flex;
@@ -54,16 +54,13 @@ header {
 .header-colorbar {
   width: 100%;
   max-width: 1100px;
-  height: 8px;
+  height: 20px;
   display: flex;
   border-radius: 0 0 12px 12px;
   overflow: hidden;
   box-shadow: var(--shadow);
 }
-.header-colorbar {
-  height: 4px;
-  display: flex;
-}
+
 .header-colorbar .bar-green  { flex: 3; background: var(--green); }
 .header-colorbar .bar-yellow { flex: 1; background: var(--yellow); }
 .header-colorbar .bar-navy   { flex: 3; background: #0f2744; }
