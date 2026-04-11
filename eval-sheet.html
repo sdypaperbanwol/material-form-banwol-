@@ -884,7 +884,7 @@ function gasPost(data, retries = 2) {
         reject(new Error('스크립트 로드 실패'));
       }
     };
-    document.head.appendChild(script);
+    document.body.appendChild(script);
   });
 }
 
