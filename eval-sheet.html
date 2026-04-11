@@ -937,13 +937,13 @@ function showLoading(show, msg = '저장 중…') {
 (async function initUI() {
   try {
     const config = await gasPost({ action: 'getConfig' });
-    if (config.success) {
-      cachedConfig = config;          // ✅ 캐싱
-      EVALUATEES = config.evaluatees; // ✅ 전역 세팅
-      CRITERIA   = config.criteria;   // ✅ 전역 세팅
-    }
-
-    const m = config.meta || {};
+// 수정
+if (config.success) {
+  cachedConfig = config;
+  EVALUATEES = config.evaluatees;
+  CRITERIA   = config.criteria;
+}
+const m = (config.success && config.meta) ? config.meta : {};
 window._meta = m; // 나중에 startEval에서 쓰기 위해 저장
 
     document.querySelector('header .icon').textContent    = m.icon     || '🤖';
