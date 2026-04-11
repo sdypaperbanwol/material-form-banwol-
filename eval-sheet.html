@@ -479,7 +479,22 @@ header .badge {
       <h1></h1> <p></p>  </div>
     <div class="badge"></div> </div>
 </header>
-
+<!-- ── 안내 모달 ── -->
+<div id="infoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+     z-index:600; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:16px; padding:36px 32px; max-width:420px;
+              width:90%; box-shadow:0 4px 24px rgba(0,0,0,.2); text-align:center;">
+    <div style="font-size:2rem; margin-bottom:12px;">📋</div>
+    <h2 id="modalTitle" style="font-size:1.2rem; font-weight:700; margin-bottom:16px;"></h2>
+    <p id="modalContent" style="font-size:.9rem; color:var(--gray); line-height:1.7;
+       margin-bottom:24px; white-space:pre-line;"></p>
+    <button onclick="confirmModal()"
+      style="width:100%; padding:13px; background:var(--blue); color:#fff;
+             border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer;">
+      확인, 시작하기
+    </button>
+  </div>
+</div>
 <!-- ── Login ── -->
 <div id="loginSection">
   <div class="login-card">
@@ -558,7 +573,7 @@ header .badge {
 </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxECVgjjrt2SlbbwAYamFW3d3M_xCdq0LaxQ40XJlt0xSrBhKdHcVmJ9IcPpkDJh_bT/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxHc4qMB0nOvVFbgFoxtS0vYh_8DN0lUnO9YBqUqKhvwCbDOzLVAN9VnayrK7f11vR-/exec';
 
 let EVALUATEES = [];
 let CRITERIA   = [];
@@ -575,47 +590,41 @@ async function startEval() {
   const input = document.getElementById('evaluatorInput').value.trim();
   if (!input) { showToast('성함을 입력해주세요.', 'error'); return; }
 
-  showLoading(true);
-
-  let config = cachedConfig;
-  if (!config) {
+  // initUI에서 이미 로드했으면 재사용, 없으면 다시 fetch
+  if (EVALUATEES.length === 0 || CRITERIA.length === 0) {
+    showLoading(true);
     try {
-      config = await gasPost({ action: 'getConfig' });
-      if (config.success) cachedConfig = config;
+      const config = await gasPost({ action: 'getConfig' });
+      if (!config.success) {
+        showToast('❌ 설정 로드 실패: ' + config.message, 'error');
+        showLoading(false);
+        return;
+      }
+      EVALUATEES = config.evaluatees;
+      CRITERIA   = config.criteria;
+      window._meta = config.meta || {};
     } catch(e) {
       showToast('❌ 설정을 불러오지 못했습니다.', 'error');
       showLoading(false);
       return;
     }
-  }
-
-  if (!config || !config.success) {
-    showToast('❌ 설정 로드 실패: ' + (config?.message || ''), 'error');
     showLoading(false);
-    return;
   }
-
-  // ✅ 여기가 핵심 — 캐시든 신규든 항상 세팅
-  EVALUATEES = config.evaluatees;
-  CRITERIA   = config.criteria;
 
   evaluatorName = input;
-  document.getElementById('evaluatorBadge').textContent = '평가자: ' + evaluatorName;
-  document.getElementById('loginSection').style.display = 'none';
-  document.getElementById('appSection').style.display = 'block';
 
-  EVALUATEES.forEach(name => {
-    const entry = { comment: '' };
-    CRITERIA.forEach(c => { entry[c.key] = 0; });
-    scores[name] = entry;
-    savedFlags[name] = false;
-  });
-
-  buildTabs();
-  buildCriteriaList();
-  loadExistingScores();
-  showLoading(false);
+  // 모달 있으면 표시, 없으면 바로 시작
+  const modalContent = window._meta && window._meta.modalContent;
+  if (modalContent) {
+    document.getElementById('modalTitle').textContent   = window._meta.modalTitle || '심사 안내';
+    document.getElementById('modalContent').textContent = modalContent;
+    document.getElementById('infoModal').style.display  = 'flex';
+  } else {
+    _startApp();
+  }
 }
+
+
 
 function logout() {
   evaluatorName = '';
@@ -854,13 +863,47 @@ function updateSummaryTable() {
 //  GAS 통신 (JSONP)
 // ══════════════════════════════════════════
 function gasPost(data, retries = 2) {
-  const url = GAS_URL + '?payload=' + encodeURIComponent(JSON.stringify(data));
-  return fetch(url)
-    .then(r => r.json())
-    .catch(err => {
-      if (retries > 0) return gasPost(data, retries - 1);
-      throw err;
+  return new Promise((resolve, reject) => {
+    const callbackName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const timer = setTimeout(() => {
+      delete window[callbackName];
+      const s = document.getElementById('__gas_' + callbackName);
+      if (s) s.remove();
+      if (retries > 0) {
+        gasPost(data, retries - 1).then(resolve).catch(reject);
+      } else {
+        reject(new Error('타임아웃'));
+      }
+    }, 8000);
+
+    window[callbackName] = (res) => {
+      clearTimeout(timer);
+      delete window[callbackName];
+      const s = document.getElementById('__gas_' + callbackName);
+      if (s) s.remove();
+      resolve(res);
+    };
+
+    const params = new URLSearchParams({
+      callback: callbackName,
+      payload: JSON.stringify(data)
     });
+
+    const script = document.createElement('script');
+    script.id = '__gas_' + callbackName;
+    script.src = GAS_URL + '?' + params.toString();
+    script.onerror = () => {
+      clearTimeout(timer);
+      delete window[callbackName];
+      script.remove();
+      if (retries > 0) {
+        gasPost(data, retries - 1).then(resolve).catch(reject);
+      } else {
+        reject(new Error('스크립트 로드 실패'));
+      }
+    };
+    document.head.appendChild(script);
+  });
 }
 
 // ── Toast ──
@@ -872,7 +915,27 @@ function showToast(msg, type = '') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.className = ''; }, 3500);
 }
+function confirmModal() {
+  document.getElementById('infoModal').style.display = 'none';
+  _startApp();
+}
 
+function _startApp() {
+  document.getElementById('evaluatorBadge').textContent = '평가자: ' + evaluatorName;
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('appSection').style.display = 'block';
+
+  EVALUATEES.forEach(name => {
+    const entry = { comment: '' };
+    CRITERIA.forEach(c => { entry[c.key] = 0; });
+    scores[name] = entry;
+    savedFlags[name] = false;
+  });
+
+  buildTabs();
+  buildCriteriaList();
+  loadExistingScores();
+}
 // ── Loading ──
 function showLoading(show, msg = '저장 중…') {
   const el = document.getElementById('loading');
@@ -898,7 +961,8 @@ function showLoading(show, msg = '저장 중…') {
       CRITERIA   = config.criteria;   // ✅ 전역 세팅
     }
 
-    const m = (config.success && config.meta) ? config.meta : {};
+    const m = config.meta || {};
+window._meta = m; // 나중에 startEval에서 쓰기 위해 저장
 
     document.querySelector('header .icon').textContent    = m.icon     || '🤖';
     document.querySelector('header h1').textContent       = m.title    || 'AI 발표 심사';
