@@ -871,35 +871,7 @@ function gasPost(data) {
   });
 }
 
-    window[callbackName] = (res) => {
-      clearTimeout(timer);
-      delete window[callbackName];
-      const s = document.getElementById('__gas_' + callbackName);
-      if (s) s.remove();
-      resolve(res);
-    };
-
-    const params = new URLSearchParams({
-      callback: callbackName,
-      payload: JSON.stringify(data)
-    });
-
-    const script = document.createElement('script');
-    script.id = '__gas_' + callbackName;
-    script.src = GAS_URL + '?' + params.toString();
-    script.onerror = () => {
-      clearTimeout(timer);
-      delete window[callbackName];
-      script.remove();
-      if (retries > 0) {
-        gasPost(data, retries - 1).then(resolve).catch(reject);
-      } else {
-        reject(new Error('스크립트 로드 실패'));
-      }
-    };
-    document.body.appendChild(script);
-  });
-}
+ 
 
 // ── Toast ──
 let toastTimer;
