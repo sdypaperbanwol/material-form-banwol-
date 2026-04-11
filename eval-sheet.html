@@ -844,19 +844,32 @@ function updateSummaryTable() {
 // ══════════════════════════════════════════
 //  GAS 통신 (JSONP)
 // ══════════════════════════════════════════
-function gasPost(data, retries = 2) {
+function gasPost(data) {
   return new Promise((resolve, reject) => {
-    const callbackName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const timer = setTimeout(() => {
+    const callbackName = 'cb_' + Date.now();
+    const script = document.createElement('script');
+
+    window[callbackName] = (res) => {
       delete window[callbackName];
-      const s = document.getElementById('__gas_' + callbackName);
-      if (s) s.remove();
-      if (retries > 0) {
-        gasPost(data, retries - 1).then(resolve).catch(reject);
-      } else {
-        reject(new Error('타임아웃'));
-      }
-    }, 20000);
+      document.body.removeChild(script);
+      resolve(res);
+    };
+
+    const params = new URLSearchParams({
+      callback: callbackName,
+      payload: JSON.stringify(data)
+    });
+
+    script.src = GAS_URL + '?' + params.toString();
+    script.onerror = () => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      reject(new Error('스크립트 로드 실패'));
+    };
+    document.body.appendChild(script);
+    setTimeout(() => reject(new Error('타임아웃')), 15000);
+  });
+}
 
     window[callbackName] = (res) => {
       clearTimeout(timer);
