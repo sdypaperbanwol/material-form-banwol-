@@ -857,7 +857,7 @@ function gasPost(data, retries = 2) {
       } else {
         reject(new Error('타임아웃'));
       }
-    }, 8000);
+    }, 20000);
 
     window[callbackName] = (res) => {
       clearTimeout(timer);
