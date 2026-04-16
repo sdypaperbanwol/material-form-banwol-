@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>외부 작업 계획서</title>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --accent: #e8a020;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --border: #d0d8e4;
+    --text: #1e2a38;
+    --muted: #6b7a8d;
+    --success: #2a7a4b;
+    --error: #c0392b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 16px; color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  header h1 { font-size: 17px; font-weight: 700; }
+  header p  { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+  .container {
+    max-width: 680px;
+    margin: 28px auto;
+    padding: 0 16px 60px;
+  }
+
+  .steps {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .step { display: flex; align-items: center; gap: 7px; flex: 1; }
+
+  .step-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--muted);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .step-label { font-size: 12px; color: var(--muted); transition: all 0.3s; }
+  .step.active .step-num  { background: var(--primary); color: white; }
+  .step.active .step-label{ color: var(--primary); font-weight: 600; }
+  .step.done   .step-num  { background: var(--success); color: white; }
+  .step-line { flex: 0.4; height: 2px; background: var(--border); margin: 0 4px; transition: background 0.3s; }
+  .step.done + .step-line { background: var(--success); }
+
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    padding: 24px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--bg);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    width: 4px; height: 16px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    display: block;
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  label .req { color: var(--error); margin-left: 2px; }
+  label .auto-tag {
+    background: #e8f0fb;
+    color: var(--primary);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26,58,92,0.08);
+  }
+
+  input:disabled, textarea:disabled, select:disabled {
+    background: #f0f4f8;
+    color: #9aa5b4;
+    cursor: not-allowed;
+    border-color: var(--border);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a8d' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-color: white;
+    padding-right: 36px;
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  .date-range { display: flex; align-items: center; gap: 8px; }
+  .date-range input { flex: 1; }
+  .date-sep { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+
+  .otp-row { display: flex; gap: 8px; }
+  .otp-row input { flex: 1; }
+
+  .btn-otp {
+    padding: 10px 14px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-otp:hover    { background: #0f2640; }
+  .btn-otp:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  .otp-verify-row {
+    display: none;
+    margin-top: 10px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .otp-verify-row.show { display: flex; }
+
+  .otp-verify-row input {
+    letter-spacing: 6px;
+    font-size: 20px; font-weight: 700;
+    text-align: center;
+    max-width: 150px;
+  }
+
+  .timer { font-size: 12px; color: var(--error); font-weight: 600; min-width: 36px; }
+
+  .verified-badge {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #e8f5ee;
+    border: 1.5px solid #2a7a4b;
+    color: var(--success);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    margin-top: 8px;
+  }
+
+  .verified-badge.show { display: flex; }
+
+  .otp-error {
+    display: none;
+    color: var(--error);
+    font-size: 13px;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 15px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s;
+  }
+
+  .btn-submit:hover    { background: #0f2640; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .btn-submit:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .alert { padding: 11px 15px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .alert.show    { display: block; }
+  .alert.error   { background: #fdecea; border: 1px solid #f5c6c2; color: var(--error); }
+  .alert.success { background: #e8f5ee; border: 1px solid #a8d5b8; color: var(--success); }
+  .alert.info    { background: #e8f0fb; border: 1px solid #b8cef0; color: var(--primary); }
+
+  .complete-screen { display: none; text-align: center; padding: 32px 16px; }
+  .complete-screen.show { display: block; }
+
+  .complete-icon {
+    width: 68px; height: 68px;
+    background: var(--success);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 30px;
+  }
+
+  .complete-screen h2 { font-size: 20px; color: var(--primary); margin-bottom: 6px; }
+  .complete-screen p  { color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+
+  .doc-id {
+    display: inline-block;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 17px; font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1px;
+    margin: 14px 0;
+  }
+
+  .btn-pdf {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+    padding: 12px 26px;
+    background: var(--accent);
+    color: var(--primary);
+    border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; text-decoration: none;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+
+  .btn-pdf:hover { background: #d4911a; transform: translateY(-1px); }
+
+  .spinner {
+    width: 17px; height: 17px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+
+  .spinner.show { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .notice {
+    background: #fff8e6;
+    border: 1px solid #f0d080;
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 12px; color: #7a5c00;
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 999;
+  }
+
+  .loading-overlay.show { display: flex; }
+
+  .loading-box {
+    background: white;
+    border-radius: 12px;
+    padding: 28px 36px;
+    text-align: center;
+    font-size: 14px; color: var(--primary); font-weight: 600;
+  }
+
+  .loading-box .big-spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 14px;
+  }
+
+  @media (max-width: 480px) {
+    .form-row { grid-template-columns: 1fr; }
+    .card { padding: 18px; }
+    .date-range { flex-direction: column; gap: 6px; }
+    .date-sep { display: none; }
+    .otp-verify-row input { max-width: 120px; font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="big-spinner"></div>
+    <div id="loading-text">로딩 중...</div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">大</div>
+  <div>
+    <h1>외부 작업 계획서</h1>
+    <p id="header-sub">대양그룹</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="steps">
+    <div class="step active" id="step1"><div class="step-num">1</div><div class="step-label">본인인증</div></div>
+    <div class="step-line"></div>
+    <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">작업정보</div></div>
+    <div class="step-line"></div>
+    <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">제출완료</div></div>
+  </div>
+
+  <div id="alert" class="alert"></div>
+
+  <!-- STEP 1 -->
+  <div id="section-auth">
+    <div class="notice">
+      📋 작성자 본인 확인을 위해 이름과 휴대폰 번호를 입력해주세요.<br>
+      사전 등록된 작업자만 인증이 가능합니다. 미등록 시 안전담당자에게 문의하세요.
+    </div>
+
+    <div class="card">
+      <div class="card-title">사업장 선택</div>
+      <div class="form-group">
+        <label>사업장 <span class="req">*</span></label>
+        <select id="site-select">
+          <option value="">-- 사업장을 선택하세요 --</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">본인 확인</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>이름 <span class="req">*</span></label>
+          <input type="text" id="auth-name" placeholder="홍길동">
+        </div>
+        <div class="form-group">
+          <label>휴대폰 번호 <span class="req">*</span></label>
+          <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>인증번호</label>
+        <div class="otp-row">
+          <input type="text" id="otp-placeholder" placeholder="이름과 번호 입력 후 발송" disabled>
+          <button class="btn-otp" id="btn-send-otp" onclick="sendOtp()">인증번호 발송</button>
+        </div>
+        <div class="otp-verify-row" id="otp-verify-row">
+          <input type="text" id="otp-input" placeholder="000000" maxlength="6"
+                 inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+          <button class="btn-otp" id="btn-verify-otp" onclick="verifyOtp()">확인</button>
+          <span class="timer" id="timer"></span>
+        </div>
+        <div class="otp-error" id="otp-error"></div>
+        <div class="verified-badge" id="verified-badge">✅ 본인 인증 완료</div>
+      </div>
+
+      <button class="btn-submit" id="btn-next" onclick="goToStep2()" disabled>
+        다음 단계 →
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="section-form" style="display:none">
+
+    <div class="card">
+      <div class="card-title">작성자 정보</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>작성자명 <span class="auto-tag">자동입력</span></label>
+          <input type="text" id="workerName" disabled>
+        </div>
+        <div class="form-group">
+          <label>업체명 <span class="auto-tag">자동입력</span></label>
+          <input type="text" id="company" disabled>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>연락처 <span class="auto-tag">자동입력</span></label>
+        <input type="text" id="contact" disabled>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">작업 정보</div>
+
+      <div class="form-group">
+        <label>작업명 <span class="req">*</span></label>
+        <input type="text" id="workName" placeholder="예: 전기 배선 교체 작업">
+      </div>
+
+      <div class="form-group">
+        <label>작업 장소 <span class="req">*</span></label>
+        <input type="text" id="workLocation" placeholder="예: A동 2층 기계실">
+      </div>
+
+      <div class="form-group">
+        <label>작업 기간 <span class="req">*</span></label>
+        <div class="date-range">
+          <input type="date" id="workStartDate">
+          <span class="date-sep">~</span>
+          <input type="date" id="workEndDate">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>작업 인원 <span class="req">*</span></label>
+        <input type="number" id="workerCount" placeholder="0" min="1" max="999"
+               inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      </div>
+
+      <div class="form-group">
+        <label>작업 내용 <span class="req">*</span></label>
+        <textarea id="workDetail" placeholder="작업 내용을 구체적으로 작성해주세요."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>안전 조치 사항</label>
+        <textarea id="safetyMeasure" placeholder="작업 전 안전 조치 사항을 작성해주세요."></textarea>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btn-submit" onclick="submitForm()">
+      <span id="submit-text">작업계획서 제출</span>
+      <div class="spinner" id="submit-spinner"></div>
+    </button>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="section-complete" class="complete-screen">
+    <div class="complete-icon">✓</div>
+    <h2>제출 완료</h2>
+    <p>작업계획서가 정상적으로 접수되었습니다.</p>
+    <p style="font-size:12px;color:#999;margin-top:4px;">안전담당자에게 자동 통보됩니다.</p>
+    <div class="doc-id" id="result-docid">-</div>
+    <br>
+    <a class="btn-pdf" id="btn-pdf" href="#" target="_blank">📄 PDF 다운로드</a>
+  </div>
+
+</div>
+
+<script>
+  // ★ GAS 독립형 웹앱 URL로 교체
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxJcDIfIh96esn9bWtDD4iBboXomwgwe71g3r9tpe3Hd_0gP1-BcFlVfkXi84dL6-cN/exec';
+
+  let verifiedPhone   = null;
+  let verifiedName    = null;
+  let verifiedCompany = null;
+  let authToken       = null;
+  let timerInterval   = null;
+
+  // ── 초기 로드 ─────────────────────────────
+  window.addEventListener('load', async () => {
+    showLoading('설정 불러오는 중...');
+    try {
+      const res = await gasCall({ action: 'getConfig' });
+      if (!res.ok) throw new Error(res.message);
+
+      const sel = document.getElementById('site-select');
+      res.sites.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.name;
+        opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      showAlert('설정 로드 실패: ' + e.message, 'error');
+    } finally {
+      hideLoading();
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('workStartDate').value = today;
+    document.getElementById('workEndDate').value   = today;
+  });
+
+  // ── 전화번호 자동 하이픈 ──────────────────
+  document.getElementById('phone').addEventListener('input', function() {
+    let v = this.value.replace(/\D/g, '');
+    if (v.length <= 3)       this.value = v;
+    else if (v.length <= 7)  this.value = v.slice(0,3) + '-' + v.slice(3);
+    else                     this.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7,11);
+  });
+
+  // 시작일 변경 시 종료일 최솟값
+  document.getElementById('workStartDate').addEventListener('change', function() {
+    const endEl = document.getElementById('workEndDate');
+    endEl.min = this.value;
+    if (endEl.value < this.value) endEl.value = this.value;
+  });
+
+  // ── OTP 발송 ─────────────────────────────
+  async function sendOtp() {
+    const name  = document.getElementById('auth-name').value.trim();
+    const phone = document.getElementById('phone').value.replace(/-/g, '');
+    const site  = document.getElementById('site-select').value;
+
+    if (!site)  { showAlert('사업장을 선택해주세요.', 'error'); return; }
+    if (!name)  { showAlert('이름을 입력해주세요.', 'error'); return; }
+    if (!/^01[0-9]{8,9}$/.test(phone)) { showAlert('올바른 휴대폰 번호를 입력해주세요.', 'error'); return; }
+
+    const btn = document.getElementById('btn-send-otp');
+    btn.disabled = true;
+    btn.textContent = '확인 중...';
+    clearOtpError();
+
+    try {
+      const check = await gasCall({ action: 'checkRoster', name, phone });
+      if (!check.ok) throw new Error(check.message);
+
+      verifiedName    = name;
+      verifiedCompany = check.company;
+
+      const res = await gasCall({ action: 'sendOtp', phone });
+      if (!res.ok) throw new Error(res.message);
+
+      showAlert('인증번호가 발송되었습니다. (3분 이내 입력)', 'info');
+      document.getElementById('otp-verify-row').classList.add('show');
+      document.getElementById('otp-input').focus();
+      startTimer(180);
+      btn.textContent = '재발송';
+      setTimeout(() => { btn.disabled = false; }, 30000);
+    } catch (e) {
+      showAlert(e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '인증번호 발송';
+    }
+  }
+
+  // ── OTP 검증 ─────────────────────────────
+  async function verifyOtp() {
+    const phone = document.getElementById('phone').value.replace(/-/g, '');
+    const otp   = document.getElementById('otp-input').value;
+    if (otp.length !== 6) { showOtpError('6자리 인증번호를 입력해주세요.'); return; }
+
+    const btn = document.getElementById('btn-verify-otp');
+    btn.disabled = true;
+    btn.textContent = '확인 중...';
+    clearOtpError();
+
+    try {
+      const res = await gasCall({ action: 'verifyOtp', phone, otp });
+      if (!res.ok) throw new Error(res.message);
+
+      verifiedPhone = phone;
+      authToken     = res.token;
+
+      clearInterval(timerInterval);
+      document.getElementById('otp-verify-row').classList.remove('show');
+      document.getElementById('verified-badge').classList.add('show');
+      document.getElementById('btn-send-otp').disabled = true;
+      document.getElementById('phone').disabled         = true;
+      document.getElementById('auth-name').disabled     = true;
+      document.getElementById('site-select').disabled   = true;
+      document.getElementById('btn-next').disabled      = false;
+
+      showAlert('본인 인증이 완료되었습니다.', 'success');
+      setStep(1, 'done');
+    } catch (e) {
+      showOtpError(e.message);
+      btn.disabled = false;
+      btn.textContent = '확인';
+      document.getElementById('otp-input').value = '';
+      document.getElementById('otp-input').focus();
+    }
+  }
+
+  // ── Step 2 이동 ───────────────────────────
+  function goToStep2() {
+    if (!verifiedPhone) return;
+
+    const phoneFmt = verifiedPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    document.getElementById('workerName').value = verifiedName;
+    document.getElementById('company').value    = verifiedCompany;
+    document.getElementById('contact').value    = phoneFmt;
+
+    document.getElementById('section-auth').style.display = 'none';
+    document.getElementById('section-form').style.display = 'block';
+    document.getElementById('header-sub').textContent = document.getElementById('site-select').value;
+
+    setStep(2, 'active');
+    hideAlert();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── 폼 제출 ───────────────────────────────
+  async function submitForm() {
+    const required = [
+      ['workName',     '작업명'],
+      ['workLocation', '작업 장소'],
+      ['workStartDate','작업 시작일'],
+      ['workEndDate',  '작업 종료일'],
+      ['workerCount',  '작업 인원'],
+      ['workDetail',   '작업 내용'],
+    ];
+
+    for (const [id, label] of required) {
+      if (!document.getElementById(id).value.trim()) {
+        showAlert(`${label}을(를) 입력해주세요.`, 'error');
+        document.getElementById(id).focus();
+        return;
+      }
+    }
+
+    const siteName = document.getElementById('site-select').value;
+    const formData = {
+      workerName:    verifiedName,
+      company:       verifiedCompany,
+      workName:      document.getElementById('workName').value.trim(),
+      workLocation:  document.getElementById('workLocation').value.trim(),
+      workStartDate: document.getElementById('workStartDate').value,
+      workEndDate:   document.getElementById('workEndDate').value,
+      workerCount:   document.getElementById('workerCount').value,
+      workDetail:    document.getElementById('workDetail').value.trim(),
+      safetyMeasure: document.getElementById('safetyMeasure').value.trim(),
+    };
+
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    document.getElementById('submit-text').textContent = '제출 중...';
+    document.getElementById('submit-spinner').classList.add('show');
+
+    try {
+      const res = await gasCall({ action: 'submitForm', phone: verifiedPhone, token: authToken, siteName, formData });
+      if (!res.ok) throw new Error(res.message);
+
+      document.getElementById('section-form').style.display = 'none';
+      document.getElementById('section-complete').classList.add('show');
+      document.getElementById('result-docid').textContent = res.docId;
+      document.getElementById('btn-pdf').href = res.pdfUrl;
+      setStep(3, 'active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      showAlert(e.message, 'error');
+      btn.disabled = false;
+      document.getElementById('submit-text').textContent = '작업계획서 제출';
+      document.getElementById('submit-spinner').classList.remove('show');
+    }
+  }
+
+  // ── 공통 유틸 ─────────────────────────────
+  async function gasCall(params) {
+    const res  = await fetch(GAS_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify(params) });
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('GAS 응답 파싱 실패:', text);
+      throw new Error('서버 응답 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
+  function startTimer(seconds) {
+    clearInterval(timerInterval);
+    const el = document.getElementById('timer');
+    let remaining = seconds;
+    timerInterval = setInterval(() => {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      if (--remaining < 0) { clearInterval(timerInterval); el.textContent = '만료'; }
+    }, 1000);
+  }
+
+  function setStep(num, state) {
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById('step' + i);
+      el.className = 'step';
+      if (i < num)      el.classList.add('done');
+      else if (i === num) el.classList.add(state);
+    }
+  }
+
+  function showAlert(msg, type) {
+    const el = document.getElementById('alert');
+    el.textContent = msg;
+    el.className = `alert show ${type}`;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideAlert() { document.getElementById('alert').className = 'alert'; }
+
+  function showOtpError(msg) {
+    const el = document.getElementById('otp-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function clearOtpError() {
+    const el = document.getElementById('otp-error');
+    el.textContent = '';
+    el.style.display = 'none';
+  }
+
+  function showLoading(text) {
+    document.getElementById('loading-text').textContent = text;
+    document.getElementById('loading-overlay').classList.add('show');
+  }
+
+  function hideLoading() {
+    document.getElementById('loading-overlay').classList.remove('show');
+  }
+</script>
+</body>
+</html>
