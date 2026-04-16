@@ -591,7 +591,7 @@
       verifiedName    = name;
       verifiedCompany = check.company;
 
-      const res = await gasCall({ action: 'sendOtp', phone });
+      const res = await gasCall({ action: 'sendOtp', phone, siteName: site });
       if (!res.ok) throw new Error(res.message);
 
       showAlert('인증번호가 발송되었습니다. (3분 이내 입력)', 'info');
@@ -619,7 +619,7 @@
     clearOtpError();
 
     try {
-      const res = await gasCall({ action: 'verifyOtp', phone, otp });
+      const res = await gasCall({ action: 'verifyOtp', phone, otp,  });
       if (!res.ok) throw new Error(res.message);
 
       verifiedPhone = phone;
