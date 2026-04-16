@@ -689,7 +689,7 @@
 // ============================================================
 // GAS 웹앱 URL — 배포 후 여기에 입력
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz6aLqDNqbbj6sSqPztZrh1Yrn7lWd3gxTivm-4iQa0KbSO8WnTFknapQd_qp6keHDa/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbysEOgTRzI0ydhVbYKHqCzYPctj3BlPX9lHsLr_DK8p1b-2DAe5ZeXNmB5VQ11iY_c9/exec';
 
 // ============================================================
 // 앱 상태
@@ -1010,15 +1010,11 @@ async function submitForm() {
 // GAS POST helper
 // ============================================================
 async function gasPost(params) {
-  if (GAS_URL === 'YOUR_GAS_WEBAPP_URL_HERE') {
-    // 개발 모드 - 더미 응답
+  if (GAS_URL === 'https://script.google.com/macros/s/AKfycbysEOgTRzI0ydhVbYKHqCzYPctj3BlPX9lHsLr_DK8p1b-2DAe5ZeXNmB5VQ11iY_c9/exec') {
     return dummyResponse(params);
   }
-  const res  = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
+  const qs  = new URLSearchParams({ payload: JSON.stringify(params) });
+  const res = await fetch(`${GAS_URL}?${qs}`, { method: 'GET' });
   const data = await res.json();
   if (!data.ok) throw new Error(data.message || '서버 오류');
   return data;
