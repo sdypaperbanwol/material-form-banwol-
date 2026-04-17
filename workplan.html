@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 // GAS 웹앱 URL — 배포 후 여기에 입력
 // ============================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxJ3zhhsS-2nPWyCQ1tk8DkwfNs2KWVrLNfZYG2ybfJCh1ZBpM-qYscyKb4MjHHdM5p/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzSBc6_LOgeVdvgNJF3_Dtwi_gopJFYdTfTrDaWL4gckrOWPiZeaukKjG8sJHDb68M/exec';
 
 // ============================================================
 // 앱 상태
@@ -989,8 +989,8 @@ async function submitForm() {
     workEndDate:   document.getElementById('workEndDate').value,
     workerCount:   document.getElementById('workerCount').value,
     workDetail:    document.getElementById('workDetail').value.trim(),
-    workTypes:     workTypes.join(', '),
-    safetyMeasure: measures.join(', '),
+    workTypes:     workTypes.join(','),
+    safetyMeasure: measures.join(','),
     safetyChecks:  JSON.stringify(safetyChecks),
   };
 
