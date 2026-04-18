@@ -910,7 +910,7 @@ const inDispatch = sec.title === '제품 상차중'
 
 const isUnDispatched = sec.title === '제품 상차중' && !inDispatch;
 
-const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan;
+const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan && !inDispatch;
       
 
       let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
