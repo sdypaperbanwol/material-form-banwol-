@@ -329,8 +329,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxjmtXhrjUNX6qW8SJXdp9c1CjM20Rmjkb3ZghdTqRIXDGKIqvtkqbWQ5ZkxGhBD-hm/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxjmtXhrjUNX6qW8SJXdp9c1CjM20Rmjkb3ZghdTqRIXDGKIqvtkqbWQ5ZkxGhBD-hm/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxCqZ7WK2fzamV04v52y1xXNtQsW1EHPqOwMHMTNNwF-y7taw92yZprMADNrCcwLz1h/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxCqZ7WK2fzamV04v52y1xXNtQsW1EHPqOwMHMTNNwF-y7taw92yZprMADNrCcwLz1h/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -2495,7 +2495,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxjmtXhrjUNX6qW8SJXdp9c1CjM20Rmjkb3ZghdTqRIXDGKIqvtkqbWQ5ZkxGhBD-hm/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxCqZ7WK2fzamV04v52y1xXNtQsW1EHPqOwMHMTNNwF-y7taw92yZprMADNrCcwLz1h/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2560,7 +2560,8 @@ async function loadDispatch() {
       __inventoryData = [];
     }
 
-    renderDispatch();
+   renderDispatch();
+    rerenderCache();
   } catch (e) {
     document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
     document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
