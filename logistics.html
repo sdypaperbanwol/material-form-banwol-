@@ -545,8 +545,9 @@ function renderCongPanel(data, plantFilter){
     const avg = __avgDurMap[`product_${g.plant}`];
     const threshold = avg ? (avg + 30) : 150;
     const elapsed = nowKSTMin() - inM;
-    if(elapsed<0||elapsed>threshold) return false;
-    return true;
+   if(elapsed<0) return false;
+if(elapsed>threshold && !inDisp) return false;
+return true;
   }).length;
 });
     sectionMap[sec.title] = counts;
@@ -1259,8 +1260,9 @@ function updateCongPanel(data, plantFilter){
         const avg = __avgDurMap[`product_${g.plant}`];
         const threshold = avg ? (avg + 30) : 150;
         const elapsed = nowKSTMin() - inM;
-        if(elapsed<0||elapsed>threshold) return false;
-        return true;
+        if(elapsed<0) return false;
+if(elapsed>threshold && !inDisp) return false;
+return true;
       }).length;
     });
     sectionMap[sec.title] = counts;
