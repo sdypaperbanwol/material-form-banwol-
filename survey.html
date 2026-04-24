@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>신청 시스템</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #2563EB; --primary-light: #EFF6FF;
+  --border: #E5E7EB; --border-focus: #93C5FD;
+  --text: #111827; --text-muted: #6B7280;
+  --bg: #F9FAFB; --white: #ffffff;
+  --danger: #DC2626; --danger-light: #FEF2F2;
+  --success: #16A34A; --success-light: #F0FDF4;
+  --warn: #D97706; --warn-light: #FFFBEB;
+  --radius: 10px;
+}
+body { font-family: -apple-system,'Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; justify-content:center; padding:2rem 1rem 4rem; }
+.container { width:100%; max-width:520px; }
+
+/* 헤더 */
+.page-header { margin-bottom:1.75rem; }
+.page-title { font-size:22px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.page-sub { font-size:13px; color:var(--text-muted); }
+
+/* 단계 표시 */
+.steps { display:flex; align-items:center; margin-bottom:1.75rem; }
+.step { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); flex:1; }
+.step.active { color:var(--primary); font-weight:600; }
+.step.done { color:var(--success); }
+.step-dot { width:20px; height:20px; border-radius:50%; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+.step.active .step-dot { border-color:var(--primary); background:var(--primary); color:#fff; }
+.step.done .step-dot { border-color:var(--success); background:var(--success); color:#fff; }
+.step-line { flex:1; height:1px; background:var(--border); margin:0 3px; }
+
+/* 카드 */
+.card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:1rem; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+.card-title { font-size:14px; font-weight:600; margin-bottom:1rem; color:var(--text); }
+
+/* 설문 목록 */
+.survey-list { display:flex; flex-direction:column; gap:10px; margin-bottom:1.25rem; }
+.survey-item {
+  background:var(--white);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  padding:1rem 1.25rem;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  transition:border-color .15s, background .15s;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);
+}
+.survey-item:hover { border-color:var(--primary); background:var(--primary-light); }
+.survey-item-info {}
+.survey-item-title { font-size:16px; font-weight:600; color:var(--text); margin-bottom:3px; }
+.survey-item-meta { font-size:12px; color:var(--text-muted); }
+.survey-item-arrow { font-size:18px; color:var(--text-muted); flex-shrink:0; margin-left:12px; }
+
+/* 폼 */
+.field { margin-bottom:.875rem; }
+.field:last-child { margin-bottom:0; }
+label { font-size:13px; color:var(--text-muted); display:block; margin-bottom:5px; font-weight:500; }
+input[type="text"], input[type="tel"] {
+  width:100%; padding:10px 13px;
+  border:1px solid var(--border); border-radius:8px;
+  font-size:15px; color:var(--text); background:var(--white);
+  outline:none; transition:border-color .15s;
+}
+input:focus { border-color:var(--border-focus); box-shadow:0 0 0 3px rgba(147,197,253,.25); }
+input.error { border-color:var(--danger); }
+.field-err { font-size:12px; color:var(--danger); margin-top:4px; display:none; }
+.row-2 { display:flex; gap:8px; }
+.row-2 input { flex:1; }
+
+/* 버튼 */
+.btn { padding:11px 18px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; border:none; transition:opacity .15s,transform .1s; display:inline-flex; align-items:center; justify-content:center; gap:7px; }
+.btn:active { transform:scale(.98); }
+.btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover:not(:disabled) { background:#1D4ED8; }
+.btn-outline { background:#fff; border:1px solid var(--border); color:var(--text); }
+.btn-outline:hover:not(:disabled) { background:var(--bg); }
+.btn-full { width:100%; padding:13px; font-size:15px; }
+.btn-sm { padding:8px 14px; font-size:13px; }
+
+/* 스피너 */
+.spinner { width:16px; height:16px; border:2.5px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; flex-shrink:0; }
+.spinner-dark { border-color:rgba(0,0,0,.15); border-top-color:var(--primary); }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* 전체화면 로딩 오버레이 */
+.overlay {
+  position:fixed; inset:0;
+  background:rgba(255,255,255,.88);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:14px; z-index:999;
+  backdrop-filter:blur(2px);
+}
+.overlay.hidden { display:none; }
+.overlay-spinner { width:40px; height:40px; border:4px solid #E5E7EB; border-top-color:var(--primary); border-radius:50%; animation:spin .75s linear infinite; }
+.overlay-msg { font-size:14px; color:var(--text-muted); font-weight:500; }
+
+/* OTP 타이머 */
+.otp-timer { font-size:12px; color:var(--warn); margin-top:5px; min-height:16px; }
+
+/* 카운터 바 */
+.counter-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg); margin-bottom:1rem; }
+.counter-label { font-size:13px; color:var(--text-muted); }
+.counter-nums { display:flex; align-items:baseline; gap:3px; }
+.counter-num { font-size:22px; font-weight:700; color:var(--text); }
+.counter-max { font-size:13px; color:var(--text-muted); }
+.counter-bar.warn { border-color:#FCD34D; background:var(--warn-light); }
+.counter-bar.warn .counter-num { color:var(--warn); }
+.counter-bar.full { border-color:#FCA5A5; background:var(--danger-light); }
+.counter-bar.full .counter-num { color:var(--danger); }
+
+/* 품목 카드 */
+.item-card { border:1px solid var(--border); border-radius:var(--radius); margin-bottom:.625rem; overflow:hidden; transition:border-color .15s; }
+.item-card.selected { border-color:var(--primary); border-width:1.5px; }
+.item-header { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; user-select:none; }
+.item-header:hover { background:var(--bg); }
+input[type="checkbox"] { width:17px; height:17px; accent-color:var(--primary); cursor:pointer; flex-shrink:0; }
+.item-name { font-size:15px; font-weight:500; flex:1; }
+.badge { font-size:11px; color:var(--text-muted); background:var(--bg); padding:2px 8px; border-radius:20px; border:1px solid var(--border); white-space:nowrap; }
+.badge-blue { background:#EFF6FF; border-color:#BFDBFE; color:#1D4ED8; }
+.item-detail { border-top:1px solid var(--border); padding:12px 14px; background:#FAFBFF; display:none; }
+.item-card.selected .item-detail { display:block; }
+.detail-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.detail-row:last-child { margin-bottom:0; }
+.detail-label { font-size:13px; color:var(--text-muted); width:44px; flex-shrink:0; }
+select { flex:1; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--white); color:var(--text); outline:none; }
+select:focus { border-color:var(--border-focus); }
+.qty-ctrl { display:flex; align-items:center; gap:8px; }
+.qty-btn { width:30px; height:30px; border:1px solid var(--border); border-radius:7px; background:var(--white); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text); transition:background .1s; user-select:none; }
+.qty-btn:hover { background:var(--bg); }
+.qty-val { width:28px; text-align:center; font-size:15px; font-weight:700; }
+.qty-max { font-size:12px; color:var(--text-muted); }
+
+/* 요약 */
+.summary-card { background:var(--success-light); border:1px solid #BBF7D0; border-radius:var(--radius); padding:12px 14px; margin-bottom:1rem; display:none; }
+.summary-title { font-size:12px; color:var(--success); font-weight:700; margin-bottom:6px; }
+.summary-row { display:flex; justify-content:space-between; font-size:14px; padding:3px 0; }
+
+/* 알림 */
+.alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:.75rem; display:none; }
+.alert-error { background:var(--danger-light); color:var(--danger); border:1px solid #FCA5A5; }
+.alert-warn { background:var(--warn-light); color:var(--warn); border:1px solid #FCD34D; }
+
+/* 완료 화면 */
+.done-wrap { text-align:center; padding:2.5rem 0 1rem; }
+.done-icon { width:68px; height:68px; background:var(--success-light); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto 1.25rem; border:2px solid #BBF7D0; }
+.done-title { font-size:20px; font-weight:700; margin-bottom:6px; }
+.done-sub { font-size:14px; color:var(--text-muted); margin-bottom:1.75rem; }
+
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<!-- 전체화면 로딩 오버레이 -->
+<div class="overlay" id="overlay">
+  <div class="overlay-spinner"></div>
+  <p class="overlay-msg" id="overlayMsg">불러오는 중...</p>
+</div>
+
+<div class="container">
+  <div class="page-header">
+    <p class="page-title">📋 신청 시스템</p>
+    <p class="page-sub" id="pageSub">설문을 선택해주세요</p>
+  </div>
+
+  <!-- 단계 -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="stepEl1"><div class="step-dot">1</div><span>설문선택</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="stepEl2"><div class="step-dot">2</div><span>본인확인</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="stepEl3"><div class="step-dot">3</div><span>OTP인증</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="stepEl4"><div class="step-dot">4</div><span>신청</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="stepEl5"><div class="step-dot">5</div><span>완료</span></div>
+  </div>
+
+  <!-- STEP 1: 설문 선택 -->
+  <div id="step1">
+    <div class="survey-list" id="surveyList">
+      <!-- 로딩 중 스켈레톤 -->
+      <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:14px">설문 목록 불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- STEP 2: 본인 확인 -->
+  <div id="step2" class="hidden">
+    <div class="card">
+      <p class="card-title" id="step2Title">직원 정보 입력</p>
+      <div class="field">
+        <label>이름</label>
+        <input type="text" id="inName" placeholder="홍길동" maxlength="20" inputmode="text">
+        <p class="field-err" id="errName">이름을 입력해주세요.</p>
+      </div>
+      <div class="field">
+        <label>휴대전화번호</label>
+        <input type="tel" id="inPhone" placeholder="010-0000-0000" maxlength="13" inputmode="numeric">
+        <p class="field-err" id="errPhone">올바른 전화번호를 입력해주세요.</p>
+      </div>
+      <div id="alertStep2" class="alert alert-error"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" style="flex:1" onclick="goStep(1)">← 이전</button>
+      <button class="btn btn-primary" style="flex:2" id="btnSendOtp" onclick="sendOtp()">인증번호 받기</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: OTP -->
+  <div id="step3" class="hidden">
+    <div class="card">
+      <p class="card-title">인증번호 입력</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">
+        <b id="otpPhoneLabel" style="color:var(--text)"></b>로 6자리 인증번호를 발송했습니다.
+      </p>
+      <div class="field">
+        <label>인증번호</label>
+        <div class="row-2">
+          <input type="tel" id="inOtp" placeholder="000000" maxlength="6" inputmode="numeric">
+          <button class="btn btn-outline btn-sm" onclick="resendOtp()">재발송</button>
+        </div>
+        <p class="otp-timer" id="otpTimer"></p>
+      </div>
+      <div id="alertStep3" class="alert alert-error"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" style="flex:1" onclick="goStep(2)">← 이전</button>
+      <button class="btn btn-primary" style="flex:2" id="btnVerify" onclick="verifyOtp()">확인</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: 품목 선택 -->
+  <div id="step4" class="hidden">
+    <div class="counter-bar" id="counterBar">
+      <span class="counter-label">선택 수량</span>
+      <div class="counter-nums">
+        <span class="counter-num" id="totalCount">0</span>
+        <span class="counter-max" id="totalMax">/ 4</span>
+      </div>
+    </div>
+    <div id="itemList"></div>
+    <div class="summary-card" id="summaryCard">
+      <p class="summary-title">신청 내역 확인</p>
+      <div id="summaryRows"></div>
+    </div>
+    <div id="alertStep4" class="alert alert-warn"></div>
+    <button class="btn btn-primary btn-full" id="btnSubmit" onclick="submitOrder()" disabled>신청 완료</button>
+  </div>
+
+  <!-- STEP 5: 완료 -->
+  <div id="step5" class="hidden">
+    <div class="done-wrap">
+      <div class="done-icon">✓</div>
+      <p class="done-title">신청 완료!</p>
+      <p class="done-sub" id="doneSub"></p>
+      <div id="doneDetail"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxUTYBgF03Yz5F-GRf--E3rNdYQ6s6GM1e_71pMh0x3G5yCKek4k3khNmUJWZuIJpW5jw/exec';
+
+let CONFIG        = null;
+let selectedSurvey = null;  // 선택된 설문 객체
+let verifiedName  = '';
+let verifiedPhone = '';
+let otpTimer      = null;
+let otpExpiry     = 0;
+let itemState     = {};     // { [itemName]: {checked, size, qty} }
+
+// ==========================================
+// 초기화
+// ==========================================
+window.addEventListener('DOMContentLoaded', async () => {
+  showOverlay('설문 목록 불러오는 중...');
+  try {
+    const data = await gasGet({ action: 'getConfig' });
+    if (!data.ok) throw new Error(data.msg);
+    CONFIG = data;
+    renderSurveyList();
+  } catch(e) {
+    document.getElementById('surveyList').innerHTML =
+      `<div style="text-align:center;padding:2rem;color:var(--danger)">오류: ${e.message}</div>`;
+  } finally {
+    hideOverlay();
+  }
+});
+
+// ==========================================
+// 설문 목록 렌더링
+// ==========================================
+function renderSurveyList() {
+  const el = document.getElementById('surveyList');
+  if (!CONFIG.surveys.length) {
+    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted)">현재 진행 중인 신청이 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = CONFIG.surveys.map(sv => `
+    <div class="survey-item" onclick="selectSurvey('${esc(sv.sheetName)}')">
+      <div class="survey-item-info">
+        <p class="survey-item-title">${sv.title}</p>
+        <p class="survey-item-meta">품목 ${sv.items.length}종 · 최대 ${sv.totalLimit}개 선택</p>
+      </div>
+      <span class="survey-item-arrow">›</span>
+    </div>
+  `).join('');
+}
+
+function selectSurvey(sheetName) {
+  selectedSurvey = CONFIG.surveys.find(s => s.sheetName === sheetName);
+  document.getElementById('step2Title').textContent = `「${selectedSurvey.title}」 신청`;
+  goStep(2);
+}
+
+// ==========================================
+// 단계 이동
+// ==========================================
+function goStep(n) {
+  [1,2,3,4,5].forEach(i => {
+    document.getElementById('step'+i).classList.toggle('hidden', i !== n);
+    const el = document.getElementById('stepEl'+i);
+    el.className = 'step';
+    if (i < n)  el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  });
+  if (n === 4) renderItems();
+}
+
+// ==========================================
+// 이름 입력 제한 (한글/영문만)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  const inName = document.getElementById('inName');
+  inName.addEventListener('input', () => {
+    inName.value = inName.value.replace(/[^가-힣a-zA-Z\s]/g, '');
+  });
+
+  const inPhone = document.getElementById('inPhone');
+  inPhone.addEventListener('input', () => {
+    let v = inPhone.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length >= 8) v = v.replace(/(\d{3})(\d{4})(\d{0,4})/, '$1-$2-$3');
+    else if (v.length >= 4) v = v.replace(/(\d{3})(\d{0,4})/, '$1-$2');
+    inPhone.value = v;
+  });
+
+  const inOtp = document.getElementById('inOtp');
+  inOtp.addEventListener('input', () => {
+    inOtp.value = inOtp.value.replace(/\D/g, '').slice(0, 6);
+  });
+});
+
+// ==========================================
+// STEP 2 → OTP 발송
+// ==========================================
+async function sendOtp() {
+  const name  = document.getElementById('inName').value.trim();
+  const phone = document.getElementById('inPhone').value.trim();
+  let valid   = true;
+
+  if (!name) {
+    document.getElementById('errName').style.display = 'block';
+    document.getElementById('inName').classList.add('error');
+    valid = false;
+  } else {
+    document.getElementById('errName').style.display = 'none';
+    document.getElementById('inName').classList.remove('error');
+  }
+
+  const phoneClean = phone.replace(/\D/g, '');
+  if (!phoneClean || phoneClean.length < 10) {
+    document.getElementById('errPhone').style.display = 'block';
+    document.getElementById('inPhone').classList.add('error');
+    valid = false;
+  } else {
+    document.getElementById('errPhone').style.display = 'none';
+    document.getElementById('inPhone').classList.remove('error');
+  }
+
+  if (!valid) return;
+
+  showOverlay('인증번호 발송 중...');
+  try {
+    const res = await gasGet({
+      action:    'sendOtp',
+      name,
+      phone,
+      sheetName: selectedSurvey.sheetName,
+    });
+    if (!res.ok) throw new Error(res.msg);
+
+    verifiedName  = name;
+    verifiedPhone = phone;
+    document.getElementById('otpPhoneLabel').textContent = maskPhone(phone);
+    startOtpTimer(180);
+    goStep(3);
+  } catch(e) {
+    showAlert('alertStep2', e.message);
+  } finally {
+    hideOverlay();
+  }
+}
+
+function resendOtp() {
+  clearInterval(otpTimer);
+  goStep(2);
+  setTimeout(sendOtp, 50);
+}
+
+// ==========================================
+// STEP 3 → OTP 검증
+// ==========================================
+async function verifyOtp() {
+  const otp = document.getElementById('inOtp').value.trim();
+  if (otp.length !== 6) { showAlert('alertStep3', '6자리 인증번호를 입력해주세요.'); return; }
+
+  showOverlay('인증 확인 중...');
+  try {
+    const res = await gasGet({ action: 'verifyOtp', phone: verifiedPhone, otp });
+    if (!res.ok) throw new Error(res.msg);
+    clearInterval(otpTimer);
+    goStep(4);
+  } catch(e) {
+    showAlert('alertStep3', e.message);
+  } finally {
+    hideOverlay();
+  }
+}
+
+// ==========================================
+// STEP 4 → 품목 렌더링
+// ==========================================
+function renderItems() {
+  const sv = selectedSurvey;
+  document.getElementById('totalMax').textContent = '/ ' + sv.totalLimit;
+
+  // 상태 초기화 (처음 진입 시)
+  if (!Object.keys(itemState).length) {
+    sv.items.forEach(it => {
+      itemState[it.name] = { checked: false, size: it.sizes[0] || '', qty: 1 };
+    });
+  }
+
+  const list = document.getElementById('itemList');
+  list.innerHTML = sv.items.map(it => {
+    const s        = itemState[it.name];
+    const hasSizes = it.sizes && it.sizes.length > 0;
+    return `
+    <div class="item-card${s.checked ? ' selected' : ''}" id="card_${esc(it.name)}">
+      <div class="item-header" onclick="toggleItem('${esc(it.name)}')">
+        <input type="checkbox" id="chk_${esc(it.name)}" ${s.checked?'checked':''} onclick="event.stopPropagation();toggleItem('${esc(it.name)}')">
+        <span class="item-name">${it.name}</span>
+        ${hasSizes ? `<span class="badge">${it.sizes[0]}~${it.sizes[it.sizes.length-1]}</span>` : ''}
+        <span class="badge badge-blue">최대 ${it.maxQty}개</span>
+      </div>
+      <div class="item-detail">
+        ${hasSizes ? `
+        <div class="detail-row">
+          <span class="detail-label">사이즈</span>
+          <select onchange="itemState['${esc(it.name)}'].size=this.value;updateSummary()">
+            ${it.sizes.map(sz=>`<option value="${sz}"${sz===s.size?' selected':''}>${sz}</option>`).join('')}
+          </select>
+        </div>` : ''}
+        <div class="detail-row">
+          <span class="detail-label">수량</span>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="changeQty('${esc(it.name)}',-1)">−</button>
+            <span class="qty-val" id="qty_${esc(it.name)}">${s.qty}</span>
+            <button class="qty-btn" onclick="changeQty('${esc(it.name)}',1)">+</button>
+          </div>
+          <span class="qty-max">최대 ${it.maxQty}개</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateCounter();
+  updateSummary();
+}
+
+function toggleItem(name) {
+  const sv    = selectedSurvey;
+  const s     = itemState[name];
+  const total = getTotal();
+  if (!s.checked && total >= sv.totalLimit) {
+    showAlert4(`총 ${sv.totalLimit}개를 초과할 수 없습니다.`); return;
+  }
+  s.checked = !s.checked;
+  if (!s.checked) s.qty = 1;
+  document.getElementById('card_' + name).className = 'item-card' + (s.checked ? ' selected' : '');
+  document.getElementById('chk_' + name).checked = s.checked;
+  updateCounter();
+  updateSummary();
+}
+
+function changeQty(name, delta) {
+  const sv    = selectedSurvey;
+  const cfg   = sv.items.find(it => it.name === name);
+  const s     = itemState[name];
+  const total = getTotal();
+  const newQ  = s.qty + delta;
+  if (newQ < 1) return;
+  if (newQ > cfg.maxQty) { showAlert4(`${name} 최대 ${cfg.maxQty}개까지 신청 가능합니다.`); return; }
+  if (delta > 0 && total >= sv.totalLimit) { showAlert4(`총 ${sv.totalLimit}개를 초과할 수 없습니다.`); return; }
+  s.qty = newQ;
+  document.getElementById('qty_' + name).textContent = newQ;
+  updateCounter();
+  updateSummary();
+}
+
+function getTotal() {
+  return Object.values(itemState).reduce((sum, s) => sum + (s.checked ? s.qty : 0), 0);
+}
+
+function updateCounter() {
+  const sv    = selectedSurvey;
+  const total = getTotal();
+  const bar   = document.getElementById('counterBar');
+  document.getElementById('totalCount').textContent = total;
+  bar.className = 'counter-bar';
+  if (total >= sv.totalLimit) bar.classList.add('full');
+  else if (total >= sv.totalLimit - 1) bar.classList.add('warn');
+  document.getElementById('btnSubmit').disabled = total === 0;
+}
+
+function updateSummary() {
+  const sv       = selectedSurvey;
+  const rows     = document.getElementById('summaryRows');
+  const card     = document.getElementById('summaryCard');
+  const selected = sv.items.filter(it => itemState[it.name]?.checked);
+  if (!selected.length) { card.style.display='none'; return; }
+  card.style.display = 'block';
+  rows.innerHTML = selected.map(it => {
+    const s = itemState[it.name];
+    return `<div class="summary-row"><span>${it.name}</span><span style="font-weight:600">${s.size ? s.size+' × ' : ''}${s.qty}개</span></div>`;
+  }).join('');
+}
+
+// ==========================================
+// 신청 제출
+// ==========================================
+async function submitOrder() {
+  const sv     = selectedSurvey;
+  const orders = sv.items
+    .filter(it => itemState[it.name]?.checked)
+    .map(it => ({ item: it.name, size: itemState[it.name].size || '-', qty: itemState[it.name].qty }));
+
+  if (!orders.length) return;
+
+  showOverlay('신청서 제출 중...');
+  try {
+    const res = await gasGet({
+      action:    'submitOrder',
+      sheetName: sv.sheetName,
+      name:      verifiedName,
+      phone:     verifiedPhone,
+      orders,
+    });
+    if (!res.ok) throw new Error(res.msg);
+
+    document.getElementById('doneSub').textContent =
+      `${verifiedName}님의 「${sv.title}」 신청이 접수되었습니다. 확인 문자를 확인해주세요.`;
+    document.getElementById('doneDetail').innerHTML =
+      `<div class="summary-card" style="display:block;margin-top:0">
+        <p class="summary-title">신청 내역</p>
+        ${orders.map(o=>`<div class="summary-row"><span>${o.item}</span><span>${o.size!=='-'?o.size+' × ':''}${o.qty}개</span></div>`).join('')}
+      </div>`;
+    goStep(5);
+  } catch(e) {
+    showAlert4(e.message);
+  } finally {
+    hideOverlay();
+  }
+}
+
+// ==========================================
+// 공통 유틸
+// ==========================================
+async function gasGet(params) {
+  const url = new URL(GAS_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, typeof v==='object'?JSON.stringify(v):v));
+  const res = await fetch(url.toString());
+  return res.json();
+}
+
+function showOverlay(msg) {
+  document.getElementById('overlayMsg').textContent = msg || '처리 중...';
+  document.getElementById('overlay').classList.remove('hidden');
+}
+function hideOverlay() {
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+function showAlert(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function showAlert4(msg) {
+  const el = document.getElementById('alertStep4');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display='none'; }, 2500);
+}
+
+function startOtpTimer(seconds) {
+  otpExpiry = Date.now() + seconds * 1000;
+  clearInterval(otpTimer);
+  otpTimer = setInterval(() => {
+    const left = Math.max(0, Math.round((otpExpiry - Date.now()) / 1000));
+    const m = Math.floor(left/60).toString().padStart(2,'0');
+    const s = (left%60).toString().padStart(2,'0');
+    document.getElementById('otpTimer').textContent = left > 0
+      ? `남은 시간: ${m}:${s}`
+      : '인증 시간이 만료되었습니다. 재발송해 주세요.';
+    if (left === 0) clearInterval(otpTimer);
+  }, 1000);
+}
+
+function maskPhone(p) { return p.replace(/(\d{3})-?(\d{3,4})-?(\d{4})/, '$1-****-$3'); }
+function esc(s) { return (s||'').replace(/['"]/g, '_'); }
+</script>
+</body>
+</html>
