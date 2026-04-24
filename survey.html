@@ -337,11 +337,21 @@ function goStep(n) {
 }
 
 // ==========================================
-// 이름 입력 제한 (한글/영문만)
+// 입력 제한
+// 한글은 IME 조합 중에 input 이벤트로 건드리면
+// 두 번 눌러야 입력되는 현상 발생 →
+// composing 중에는 필터링 건너뜀
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   const inName = document.getElementById('inName');
+  let composing = false;
+  inName.addEventListener('compositionstart', () => { composing = true; });
+  inName.addEventListener('compositionend', () => {
+    composing = false;
+    inName.value = inName.value.replace(/[^가-힣a-zA-Z\s]/g, '');
+  });
   inName.addEventListener('input', () => {
+    if (composing) return;  // 조합 중엔 건드리지 않음
     inName.value = inName.value.replace(/[^가-힣a-zA-Z\s]/g, '');
   });
 
