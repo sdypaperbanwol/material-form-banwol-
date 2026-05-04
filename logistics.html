@@ -2859,17 +2859,21 @@ async function checkCooldown() {
     }
   } catch(e) {}
 }
+let __cooldownTimer = null;
+
 function startCooldown(sec) {
   const btn = document.getElementById('refreshRequestBtn');
   const msg = document.getElementById('refreshCooldownMsg');
+  if (__cooldownTimer) clearInterval(__cooldownTimer);
   let remain = sec;
-  const tick = setInterval(() => {
+  __cooldownTimer = setInterval(() => {
     remain--;
     msg.textContent = `재요청까지 ${remain}초`;
     if (remain <= 0) {
-      clearInterval(tick);
+      clearInterval(__cooldownTimer);
+      __cooldownTimer = null;
       btn.disabled = false;
-      btn.textContent = '🔄 즉시 조회 요청';
+      btn.textContent = '🔄 조회 요청';
       msg.textContent = '';
     }
   }, 1000);
