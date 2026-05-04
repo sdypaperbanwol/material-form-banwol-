@@ -2839,16 +2839,20 @@ async function requestFetch() {
       redirect: 'follow'  // ← 이거 추가
     });
     const data = await res.json();
-    if (data.ok) {
-      btn.textContent = '✅ 요청됨';
-      msg.textContent = '30초 내 갱신됩니다';
-      startCooldown(data.remainSec || 180);
-    } else if (data.cooldown) {
-      btn.disabled = false;
-      btn.textContent = '🔄 즉시 조회 요청';
-      msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
-      startCooldown(data.remainSec);
-    }
+if (data.ok) {
+  btn.textContent = '✅ 요청됨';
+  msg.textContent = '30초 내 갱신됩니다';
+  startCooldown(data.remainSec || 180);
+  setTimeout(() => {
+    loadDispatch();
+    loadSnapshot();
+  }, 35000);
+} else if (data.cooldown) {
+  btn.disabled = false;
+  btn.textContent = '🔄 즉시 조회 요청';
+  msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
+  startCooldown(data.remainSec);
+}
   } catch(e) {
     btn.disabled = false;
     btn.textContent = '🔄 즉시 조회 요청';
