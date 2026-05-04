@@ -339,8 +339,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbx39J_AhLGYEO7Oxyxp085uGccVHZ9KIsQs8hs3XFGJyFYcbx_LXI1ty_aFtqt2gEVh/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbx39J_AhLGYEO7Oxyxp085uGccVHZ9KIsQs8hs3XFGJyFYcbx_LXI1ty_aFtqt2gEVh/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbz7UA0eKxHTkiezpHLpSSk7SjznM_0kLg67frEnJbR5RxxLCr79WJle00Z6AbQoJfvw/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbz7UA0eKxHTkiezpHLpSSk7SjznM_0kLg67frEnJbR5RxxLCr79WJle00Z6AbQoJfvw/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -2507,7 +2507,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbx39J_AhLGYEO7Oxyxp085uGccVHZ9KIsQs8hs3XFGJyFYcbx_LXI1ty_aFtqt2gEVh/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbz7UA0eKxHTkiezpHLpSSk7SjznM_0kLg67frEnJbR5RxxLCr79WJle00Z6AbQoJfvw/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2551,6 +2551,7 @@ rerenderCache();
       }
     }catch(e){}
   }, 60000);
+  checkCooldown(); // ★ 여기에 추가
 })();
 
 // ═══ 배차/오더 통합 탭 ═══
@@ -2827,27 +2828,32 @@ async function requestFetch() {
   btn.disabled = true;
   btn.textContent = '요청 중…';
   try {
-    const res = await fetch(GAS_DISPATCH_URL, {
+    await fetch(GAS_DISPATCH_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify({ type: 'fetchRequest' })
     });
-    const data = await res.json();
-    if (data.ok) {
-      btn.textContent = '✅ 요청됨';
-      msg.textContent = '30초 내 갱신됩니다';
-      startCooldown(180); // 3분
-    } else if (data.cooldown) {
-      btn.textContent = '🔄 즉시 조회 요청';
-      btn.disabled = false;
-      msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
-    }
+    // no-cors라 응답 못 읽음 → 일단 성공으로 처리
+    btn.textContent = '✅ 요청됨';
+    msg.textContent = '30초 내 갱신됩니다';
+    startCooldown(180);
   } catch(e) {
     btn.textContent = '🔄 즉시 조회 요청';
     btn.disabled = false;
     msg.textContent = '오류 발생';
   }
 }
-
+async function checkCooldown() {
+  try {
+    const res = await fetch(GAS_DISPATCH_URL + '?type=checkCooldown&_ts=' + Date.now());
+    const data = await res.json();
+    if (data.remainSec > 0) {
+      document.getElementById('refreshRequestBtn').disabled = true;
+      document.getElementById('refreshRequestBtn').textContent = '✅ 요청됨';
+      startCooldown(data.remainSec);
+    }
+  } catch(e) {}
+}
 function startCooldown(sec) {
   const btn = document.getElementById('refreshRequestBtn');
   const msg = document.getElementById('refreshCooldownMsg');
