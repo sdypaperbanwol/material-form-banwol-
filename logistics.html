@@ -2399,7 +2399,7 @@ function setTab(tabName){
   if(tabDesc){
     tabDesc.textContent = liveActive
       ? '입차·분석 자동갱신'
-      : '배차 · TMS 연동 · 4~8분 주기 갱신';
+      : '배차 · TMS 연동';
   }
   const q=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
   if(!/^\d{4}$/.test(q)) document.getElementById('carSearchPanel').style.display='none';
