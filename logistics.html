@@ -339,8 +339,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbynoEHSZBA3JN_MyyxN3EfiVDo79q3-usND16qmJjcx3iBOpjiOPMc-mUpZ2y5Ay16J/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbynoEHSZBA3JN_MyyxN3EfiVDo79q3-usND16qmJjcx3iBOpjiOPMc-mUpZ2y5Ay16J/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxkacnFWgtJ5TmKn2LTL4cUf2tPO8SHXh6JsEL4tQLkvnuVayuuIYdgTTwf97VGIN95/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxkacnFWgtJ5TmKn2LTL4cUf2tPO8SHXh6JsEL4tQLkvnuVayuuIYdgTTwf97VGIN95/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -2507,7 +2507,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbynoEHSZBA3JN_MyyxN3EfiVDo79q3-usND16qmJjcx3iBOpjiOPMc-mUpZ2y5Ay16J/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxkacnFWgtJ5TmKn2LTL4cUf2tPO8SHXh6JsEL4tQLkvnuVayuuIYdgTTwf97VGIN95/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2828,7 +2828,9 @@ async function requestFetch() {
   btn.disabled = true;
   btn.textContent = '요청 중…';
   try {
-    const res = await fetch(GAS_DISPATCH_URL + '?type=fetchRequest&_ts=' + Date.now());
+    const res = await fetch(GAS_DISPATCH_URL + '?type=fetchRequest&_ts=' + Date.now(), {
+      redirect: 'follow'  // ← 이거 추가
+    });
     const data = await res.json();
     if (data.ok) {
       btn.textContent = '✅ 요청됨';
