@@ -339,8 +339,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbz7UA0eKxHTkiezpHLpSSk7SjznM_0kLg67frEnJbR5RxxLCr79WJle00Z6AbQoJfvw/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbz7UA0eKxHTkiezpHLpSSk7SjznM_0kLg67frEnJbR5RxxLCr79WJle00Z6AbQoJfvw/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxotemgSdaU7gQyQjaRYMeOOplfxCIOqEFm0f4wZA7HRYSEzO2v7y4zrUemYBSHwt6c/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxotemgSdaU7gQyQjaRYMeOOplfxCIOqEFm0f4wZA7HRYSEzO2v7y4zrUemYBSHwt6c/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -2507,7 +2507,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbz7UA0eKxHTkiezpHLpSSk7SjznM_0kLg67frEnJbR5RxxLCr79WJle00Z6AbQoJfvw/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxotemgSdaU7gQyQjaRYMeOOplfxCIOqEFm0f4wZA7HRYSEzO2v7y4zrUemYBSHwt6c/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2828,18 +2828,21 @@ async function requestFetch() {
   btn.disabled = true;
   btn.textContent = '요청 중…';
   try {
-    await fetch(GAS_DISPATCH_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ type: 'fetchRequest' })
-    });
-    // no-cors라 응답 못 읽음 → 일단 성공으로 처리
-    btn.textContent = '✅ 요청됨';
-    msg.textContent = '30초 내 갱신됩니다';
-    startCooldown(180);
+    const res = await fetch(GAS_DISPATCH_URL + '?type=fetchRequest&_ts=' + Date.now());
+    const data = await res.json();
+    if (data.ok) {
+      btn.textContent = '✅ 요청됨';
+      msg.textContent = '30초 내 갱신됩니다';
+      startCooldown(data.remainSec || 180);
+    } else if (data.cooldown) {
+      btn.disabled = false;
+      btn.textContent = '🔄 즉시 조회 요청';
+      msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
+      startCooldown(data.remainSec);
+    }
   } catch(e) {
-    btn.textContent = '🔄 즉시 조회 요청';
     btn.disabled = false;
+    btn.textContent = '🔄 즉시 조회 요청';
     msg.textContent = '오류 발생';
   }
 }
