@@ -2903,7 +2903,6 @@ async function waitForCompletion(requestedAt, elapsed = 0) {
 const data = await api({ type: 'checkCooldown' });
     if (data.remainSec > 0) {
       document.getElementById('refreshRequestBtn').disabled = true;
-      document.getElementById('refreshRequestBtn').textContent = '✅ 요청됨';
       startCooldown(data.remainSec);
     }
   } catch(e) {}
