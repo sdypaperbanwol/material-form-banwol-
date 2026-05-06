@@ -339,8 +339,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbw96Ab2mTfTXNVeaaQq0TXR1feIvL2OyWXRW2ZYtsLy-FUW0vbd48HW8h6An2erHQLe/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbw96Ab2mTfTXNVeaaQq0TXR1feIvL2OyWXRW2ZYtsLy-FUW0vbd48HW8h6An2erHQLe/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbxQZH_2O5iszUmgkMTXltIRU5yhlIsYEBDdzidGZPHNzCSBnfKC7mO7FTzz9jVBwn-R/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbxQZH_2O5iszUmgkMTXltIRU5yhlIsYEBDdzidGZPHNzCSBnfKC7mO7FTzz9jVBwn-R/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -2507,7 +2507,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbw96Ab2mTfTXNVeaaQq0TXR1feIvL2OyWXRW2ZYtsLy-FUW0vbd48HW8h6An2erHQLe/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbxQZH_2O5iszUmgkMTXltIRU5yhlIsYEBDdzidGZPHNzCSBnfKC7mO7FTzz9jVBwn-R/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2823,7 +2823,6 @@ window.dispatchToggle = function(rowKey) {
 };
 
 async function requestFetch() {
-    // ★ 업무시간 외 비활성화
   const kst = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
   const hour = kst.getHours();
   if (hour < 5 || hour >= 19) {
@@ -2834,69 +2833,77 @@ async function requestFetch() {
   const msg = document.getElementById('refreshCooldownMsg');
   btn.disabled = true;
   btn.textContent = '요청 중…';
+
   try {
-    const res = await fetch(GAS_DISPATCH_URL + '?type=fetchRequest&_ts=' + Date.now(), {
-      redirect: 'follow'  // ← 이거 추가
-    });
+    const res = await fetch(GAS_DISPATCH_URL + '?type=fetchRequest&_ts=' + Date.now(), { redirect: 'follow' });
     const data = await res.json();
-if (data.ok) {
-  btn.textContent = '✅ 요청됨';
-  msg.textContent = '30초 내 갱신됩니다';
-  startCooldown(data.remainSec || 180);
-  setTimeout(() => {
-    loadDispatch();
-    loadSnapshot();
-  }, 35000);
-} else if (data.cooldown) {
-  btn.disabled = false;
-  btn.textContent = '🔄 즉시 조회 요청';
-  msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
-  startCooldown(data.remainSec);
-}
+
+    if (data.ok) {
+      // ★ 요청 직전 타임스탬프 저장
+      const requestedAt = Date.now();
+      btn.textContent = '⏳ Python 대기중…';
+      msg.textContent = '조회 요청됨 · 완료 감지 중';
+      startCooldown(data.remainSec || 180);
+
+      // ★ 완료 폴링 시작
+      waitForCompletion(requestedAt);
+
+    } else if (data.cooldown) {
+      btn.disabled = false;
+      btn.textContent = '🔄 조회 요청';
+      msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
+      startCooldown(data.remainSec);
+    }
   } catch(e) {
     btn.disabled = false;
-    btn.textContent = '🔄 즉시 조회 요청';
+    btn.textContent = '🔄 조회 요청';
     msg.textContent = '오류 발생';
   }
 }
-async function checkCooldown() {
-  // ★ 업무시간 외면 버튼 비활성화
-  const kst = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
-  const hour = kst.getHours();
-  if (hour < 5 || hour >= 19) {
-    document.getElementById('refreshRequestBtn').disabled = true;
-    document.getElementById('refreshCooldownMsg').textContent = '업무시간 외 (05:00~19:00)';
+
+// ★ 완료 감지 폴링
+let __waitTimer = null;
+async function waitForCompletion(requestedAt, elapsed = 0) {
+  const MAX_WAIT = 90; // 최대 90초 대기
+  const INTERVAL = 5;  // 5초마다 체크
+
+  if (elapsed >= MAX_WAIT) {
+    const msg = document.getElementById('refreshCooldownMsg');
+    msg.textContent = '시간 초과 · 수동으로 확인하세요';
     return;
   }
 
-  try {
-    const res = await fetch(GAS_DISPATCH_URL + '?type=checkCooldown&_ts=' + Date.now());
-    const data = await res.json();
-    if (data.remainSec > 0) {
-      document.getElementById('refreshRequestBtn').disabled = true;
-      document.getElementById('refreshRequestBtn').textContent = '✅ 요청됨';
-      startCooldown(data.remainSec);
-    }
-  } catch(e) {}
-}
-let __cooldownTimer = null;
+  __waitTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(GAS_DISPATCH_URL + '?type=checkCompleted&_ts=' + Date.now());
+      const data = await res.json();
+      const completedTs = data.completedTs || 0;
 
-function startCooldown(sec) {
-  const btn = document.getElementById('refreshRequestBtn');
-  const msg = document.getElementById('refreshCooldownMsg');
-  if (__cooldownTimer) clearInterval(__cooldownTimer);
-  let remain = sec;
-  __cooldownTimer = setInterval(() => {
-    remain--;
-    msg.textContent = `재요청까지 ${remain}초`;
-    if (remain <= 0) {
-      clearInterval(__cooldownTimer);
-      __cooldownTimer = null;
-      btn.disabled = false;
-      btn.textContent = '🔄 조회 요청';
-      msg.textContent = '';
+      if (completedTs > requestedAt) {
+        // ★ 실제 완료 감지됨
+        const btn = document.getElementById('refreshRequestBtn');
+        const msg = document.getElementById('refreshCooldownMsg');
+        msg.textContent = '✅ 갱신 완료! 데이터 불러오는 중…';
+
+        // 데이터 갱신
+        await Promise.all([loadDispatch(), loadSnapshot()]);
+        await loadAllTypesForSearch().catch(() => {});
+        rerenderCache();
+
+        msg.textContent = '✅ 갱신 완료';
+        setTimeout(() => { msg.textContent = ''; }, 3000);
+
+      } else {
+        // 아직 미완료 — 남은 시간 표시하며 재폴링
+        const remain = MAX_WAIT - elapsed;
+        const msg = document.getElementById('refreshCooldownMsg');
+        // cooldown 메시지는 startCooldown이 관리하므로 덮어쓰지 않음
+        waitForCompletion(requestedAt, elapsed + INTERVAL);
+      }
+    } catch(e) {
+      waitForCompletion(requestedAt, elapsed + INTERVAL);
     }
-  }, 1000);
+  }, INTERVAL * 1000);
 }
 </script>
 </body>
