@@ -2835,8 +2835,7 @@ async function requestFetch() {
   btn.textContent = '요청 중…';
 
   try {
-    const res = await fetch(GAS_DISPATCH_URL + '?type=fetchRequest&_ts=' + Date.now(), { redirect: 'follow' });
-    const data = await res.json();
+    const data = await api({ type: 'fetchRequest' });
 
     if (data.ok) {
       // ★ 요청 직전 타임스탬프 저장
@@ -2875,8 +2874,7 @@ async function waitForCompletion(requestedAt, elapsed = 0) {
 
   __waitTimer = setTimeout(async () => {
     try {
-      const res = await fetch(GAS_DISPATCH_URL + '?type=checkCompleted&_ts=' + Date.now());
-      const data = await res.json();
+      const data = await api({ type: 'checkCompleted' });
       const completedTs = data.completedTs || 0;
 
       if (completedTs > requestedAt) {
@@ -2913,8 +2911,7 @@ async function waitForCompletion(requestedAt, elapsed = 0) {
     return;
   }
   try {
-    const res = await fetch(GAS_DISPATCH_URL + '?type=checkCooldown&_ts=' + Date.now(), { redirect: 'follow' });
-    const data = await res.json();
+const data = await api({ type: 'checkCooldown' });
     if (data.remainSec > 0) {
       document.getElementById('refreshRequestBtn').disabled = true;
       document.getElementById('refreshRequestBtn').textContent = '✅ 요청됨';
