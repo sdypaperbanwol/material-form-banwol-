@@ -2839,18 +2839,32 @@ async function requestFetch() {
     const data = await api({ type: 'fetchRequest' });
 
  if (data.ok) {
+  const requestedAt = Date.now();
   btn.textContent = '⏳ 대기중…';
-  msg.textContent = '약 60초 후 갱신됩니다';
+  msg.textContent = '조회 요청됨…';
   startCooldown(data.remainSec || 180);
-  
-  setTimeout(async () => {
-    await Promise.all([loadDispatch(), loadSnapshot()]);
-    await loadAllTypesForSearch().catch(() => {});
-    rerenderCache();
-    btn.textContent = '🔄 조회 요청';
-    msg.textContent = '✅ 갱신 완료';
-    setTimeout(() => { msg.textContent = ''; }, 3000);
-  }, 60000);
+
+  const pollTimer = setInterval(async () => {
+    try {
+      const res = await api({ type: 'checkCompleted' });
+      const completedTs = res.completedTs || 0;
+      if (completedTs > requestedAt) {
+        clearInterval(pollTimer);
+        await Promise.all([loadDispatch(), loadSnapshot()]);
+        await loadAllTypesForSearch().catch(() => {});
+        rerenderCache();
+        msg.textContent = '✅ 조회 완료';
+        setTimeout(() => { msg.textContent = ''; }, 3000);
+      }
+    } catch(e) {}
+  }, 5000);
+
+  setTimeout(() => {
+    clearInterval(pollTimer);
+    if (msg.textContent !== '✅ 조회 완료') {
+      msg.textContent = 'Python 미실행 상태인지 확인하세요';
+    }
+  }, 90000);
 
 } else if (data.cooldown) {
   btn.disabled = false;
