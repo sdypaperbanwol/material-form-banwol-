@@ -2551,7 +2551,7 @@ rerenderCache();
       }
     }catch(e){}
   }, 60000);
-  checkCooldown(); // ★ 여기에 추가
+  setTimeout(() => checkCooldown(), 0);
 })();
 
 // ═══ 배차/오더 통합 탭 ═══
