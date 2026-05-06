@@ -2837,27 +2837,31 @@ async function requestFetch() {
   try {
     const data = await api({ type: 'fetchRequest' });
 
-    if (data.ok) {
-      // ★ 요청 직전 타임스탬프 저장
-      const requestedAt = Date.now();
-      btn.textContent = '⏳ Python 대기중…';
-      msg.textContent = '조회 요청됨 · 완료 감지 중';
-      startCooldown(data.remainSec || 180);
-
-      // ★ 완료 폴링 시작
-      waitForCompletion(requestedAt);
-
-    } else if (data.cooldown) {
-      btn.disabled = false;
-      btn.textContent = '🔄 조회 요청';
-      msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
-      startCooldown(data.remainSec);
-    }
-  } catch(e) {
-    btn.disabled = false;
+ if (data.ok) {
+  btn.textContent = '⏳ 대기중…';
+  msg.textContent = '약 60초 후 갱신됩니다';
+  startCooldown(data.remainSec || 180);
+  
+  setTimeout(async () => {
+    await Promise.all([loadDispatch(), loadSnapshot()]);
+    await loadAllTypesForSearch().catch(() => {});
+    rerenderCache();
     btn.textContent = '🔄 조회 요청';
-    msg.textContent = '오류 발생';
-  }
+    msg.textContent = '✅ 갱신 완료';
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  }, 60000);
+
+} else if (data.cooldown) {
+  btn.disabled = false;
+  btn.textContent = '🔄 조회 요청';
+  msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
+  startCooldown(data.remainSec);
+}
+} catch(e) {
+  btn.disabled = false;
+  btn.textContent = '🔄 조회 요청';
+  msg.textContent = '오류 발생';
+}
 }
 
 // ★ 완료 감지 폴링
