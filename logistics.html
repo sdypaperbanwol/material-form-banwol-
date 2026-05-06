@@ -2833,50 +2833,20 @@ async function requestFetch() {
   const btn = document.getElementById('refreshRequestBtn');
   const msg = document.getElementById('refreshCooldownMsg');
   btn.disabled = true;
-  btn.textContent = '요청 중…';
+  btn.textContent = '✅ 요청 완료';
 
   try {
     const data = await api({ type: 'fetchRequest' });
-
- if (data.ok) {
-  const requestedAt = Date.now();
-  btn.textContent = '⏳ 대기중…';
-  msg.textContent = '조회 요청됨…';
-  startCooldown(data.remainSec || 180);
-
-  const pollTimer = setInterval(async () => {
-    try {
-      const res = await api({ type: 'checkCompleted' });
-      const completedTs = res.completedTs || 0;
-      if (completedTs > requestedAt) {
-        clearInterval(pollTimer);
-        await Promise.all([loadDispatch(), loadSnapshot()]);
-        await loadAllTypesForSearch().catch(() => {});
-        rerenderCache();
-        msg.textContent = '✅ 조회 완료';
-        setTimeout(() => { msg.textContent = ''; }, 3000);
-      }
-    } catch(e) {}
-  }, 5000);
-
-  setTimeout(() => {
-    clearInterval(pollTimer);
-    if (msg.textContent !== '✅ 조회 완료') {
-      msg.textContent = 'Python 미실행 상태인지 확인하세요';
+    if (data.ok) {
+      startCooldown(data.remainSec || 180);
+    } else if (data.cooldown) {
+      startCooldown(data.remainSec);
     }
-  }, 90000);
-
-} else if (data.cooldown) {
-  btn.disabled = false;
-  btn.textContent = '🔄 조회 요청';
-  msg.textContent = `재요청까지 ${data.remainSec}초 남음`;
-  startCooldown(data.remainSec);
-}
-} catch(e) {
-  btn.disabled = false;
-  btn.textContent = '🔄 조회 요청';
-  msg.textContent = '오류 발생';
-}
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '🔄 조회 요청';
+    msg.textContent = '오류 발생';
+  }
 }
 
 // ★ 완료 감지 폴링
