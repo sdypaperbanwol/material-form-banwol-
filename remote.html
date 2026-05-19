@@ -69,27 +69,36 @@
 
   .pc-name {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: #111;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
 
   .pc-meta {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 3px;
   }
 
-  .pc-id {
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .meta-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    width: 22px;
+    flex-shrink: 0;
+  }
+
+  .meta-val {
     font-size: 12px;
-    color: #6b7280;
+    color: #374151;
     font-family: monospace;
     letter-spacing: 0.03em;
-  }
-
-  .pc-pw {
-    font-size: 12px;
-    color: #9ca3af;
   }
 
   .btn-connect {
@@ -173,8 +182,14 @@
     <div class="pc-info">
       <div class="pc-name">계근대</div>
       <div class="pc-meta">
-        <span class="pc-id">299 413 060</span>
-        <span class="pc-pw">qwer@123</span>
+        <div class="meta-row">
+          <span class="meta-label">ID</span>
+          <span class="meta-val">299 413 060</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">PW</span>
+          <span class="meta-val">qwer@123</span>
+        </div>
       </div>
     </div>
     <button class="btn-connect" onclick="connect('299413060', '본공장 계근대')">
@@ -189,8 +204,14 @@
     <div class="pc-info">
       <div class="pc-name">TMS</div>
       <div class="pc-meta">
-        <span class="pc-id">288 849 885</span>
-        <span class="pc-pw">qwer@123</span>
+        <div class="meta-row">
+          <span class="meta-label">ID</span>
+          <span class="meta-val">288 849 885</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">PW</span>
+          <span class="meta-val">qwer@123</span>
+        </div>
       </div>
     </div>
     <button class="btn-connect" onclick="connect('288849885', '본공장 TMS')">
@@ -207,8 +228,14 @@
     <div class="pc-info">
       <div class="pc-name">계근대</div>
       <div class="pc-meta">
-        <span class="pc-id">288 833 052</span>
-        <span class="pc-pw">qwer@123</span>
+        <div class="meta-row">
+          <span class="meta-label">ID</span>
+          <span class="meta-val">288 833 052</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">PW</span>
+          <span class="meta-val">qwer@123</span>
+        </div>
       </div>
     </div>
     <button class="btn-connect" onclick="connect('288833052', '2공장 계근대')">
@@ -223,8 +250,14 @@
     <div class="pc-info">
       <div class="pc-name">TMS</div>
       <div class="pc-meta">
-        <span class="pc-id">152 295 554</span>
-        <span class="pc-pw">qwer@123</span>
+        <div class="meta-row">
+          <span class="meta-label">ID</span>
+          <span class="meta-val">152 295 554</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">PW</span>
+          <span class="meta-val">qwer@123</span>
+        </div>
       </div>
     </div>
     <button class="btn-connect" onclick="connect('152295554', '2공장 TMS')">
@@ -238,7 +271,7 @@
   <div class="notice">
     <b>접속 방법</b><br>
     버튼 클릭 → ID 자동복사 + web.hoptodesk.com 열림<br>
-    입력창에 붙여넣기(Ctrl+V / 길게눌러 붙여넣기) → Connect → 비밀번호 입력
+    입력창에 붙여넣기(Ctrl+V / 모바일: 길게눌러 붙여넣기) → Connect → PW 입력
   </div>
 
 </div>
@@ -250,7 +283,7 @@
     navigator.clipboard.writeText(id).then(() => {
       showToast('✓ ' + name + ' ID 복사됨 — 붙여넣기 후 Connect');
     }).catch(() => {
-      showToast('ID: ' + id + ' — 직접 입력하세요');
+      window.prompt('ID를 복사하세요', id);
     });
     setTimeout(() => window.open('https://web.hoptodesk.com', '_blank'), 300);
   }
