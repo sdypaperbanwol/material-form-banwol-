@@ -97,6 +97,7 @@ async function load() {
             <span class="tag">📦 ${row.grade || row.product}</span>
             <span class="tag">📱 ${row.phone}</span>
             ${row.memo ? `<span class="tag">📝 ${row.memo}</span>` : ''}
+            <span class="tag" style="color:#aaa;">🕐 ${String(row.date).slice(0,16)}</span>
           </div>
         </div>
         <button class="btn-call" onclick="call(this, ${row.rowIndex}, '${row.phone}', '${row.vendorName}', '${row.carnum||''}', '${row.grade||row.product}')">호출</button>
