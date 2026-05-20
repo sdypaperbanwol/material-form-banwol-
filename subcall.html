@@ -6,8 +6,19 @@
 <title>입차 호출</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Malgun Gothic', sans-serif; background: #eaf4ee; min-height: 100vh; padding: 16px; }
+  body { font-family: 'Malgun Gothic', sans-serif; background: #eaf4ee; min-height: 100vh; padding: 16px 16px 130px; }
   .wrap { max-width: 560px; margin: 0 auto; }
+
+  /* 수신자 섹션 하단 고정 */
+  .receiver-fixed {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #eaf4ee;
+    padding: 8px 16px 12px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    z-index: 50;
+  }
+  .receiver-fixed .wrap { margin: 0 auto; }
 
   .header { background: #2c7a4b; color: #fff; padding: 14px 16px; border-radius: 8px 8px 0 0; font-size: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
   .btn-refresh { background: rgba(255,255,255,0.25); border: none; color: #fff; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit; }
@@ -50,7 +61,7 @@
   /* 호출 버튼 - 세로 꽉 채움 */
   .btn-call {
     padding: 0 18px;
-    background: #2c7a4b;
+    background: #e07b20;
     color: #fff;
     border: none;
     border-radius: 6px;
@@ -62,7 +73,7 @@
     align-self: stretch;
     min-width: 60px;
   }
-  .btn-call:hover { background: #1e5c36; }
+  .btn-call:hover { background: #c06010; }
   .btn-call:disabled { background: #ccc; cursor: not-allowed; }
 
   .empty { text-align: center; color: #aaa; padding: 40px 16px; font-size: 14px; }
@@ -101,20 +112,24 @@
   </div>
 </div>
 
-<!-- 수신자 관리 -->
-<div class="wrap" style="margin-top:12px;">
-  <div class="header" style="border-radius:8px 8px 0 0;background:#4a6fa5;">
-    🔔 등록 알림 수신자
-  </div>
-  <div style="background:#fff;border-radius:0 0 8px 8px;padding:14px;">
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <input type="tel" id="newPhone" placeholder="010-0000-0000" maxlength="13"
-        oninput="fmtPhone(this)"
-        style="flex:1;padding:8px 10px;border:1px solid #ccc;border-radius:4px;font-size:14px;font-family:inherit;"
-      >
-      <button onclick="addReceiver()" style="padding:8px 16px;background:#4a6fa5;color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap;">추가</button>
+<!-- 수신자 관리 - 하단 고정 -->
+<div class="receiver-fixed">
+  <div class="wrap">
+    <div class="header" style="border-radius:8px 8px 0 0;background:#4a6fa5;padding:10px 14px;font-size:13px;">
+      🔔 등록 알림 수신자
+      <button onclick="toggleReceiver()" id="btnToggle"
+        style="background:rgba(255,255,255,0.25);border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit;">▲ 접기</button>
     </div>
-    <div id="receiverList"><div class="loading"><div class="spin"></div></div></div>
+    <div id="receiverPanel" style="background:#fff;border-radius:0 0 8px 8px;padding:10px 14px;">
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="tel" id="newPhone" placeholder="010-0000-0000" maxlength="13"
+          oninput="fmtPhone(this)"
+          style="flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:4px;font-size:14px;font-family:inherit;"
+        >
+        <button onclick="addReceiver()" style="padding:7px 14px;background:#4a6fa5;color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap;">추가</button>
+      </div>
+      <div id="receiverList"><div class="loading"><div class="spin"></div></div></div>
+    </div>
   </div>
 </div>
 
@@ -124,6 +139,24 @@
 const GAS = 'https://script.google.com/macros/s/AKfycbzwqT58dzzjYS6C3u-1GkPSLYmjVBrTRFjZnrrqMMuvUwta17FwL9lsv-HuBFmVFsb3/exec';
 
 window.onload = () => { load(); loadReceivers(); };
+
+// 자동 새로고침: 30초마다
+setInterval(load, 30000);
+
+// 수신자 패널 접기/펼치기
+function toggleReceiver() {
+  const panel = document.getElementById('receiverPanel');
+  const btn   = document.getElementById('btnToggle');
+  if (panel.style.display === 'none') {
+    panel.style.display = '';
+    btn.textContent = '▲ 접기';
+    document.body.style.paddingBottom = '130px';
+  } else {
+    panel.style.display = 'none';
+    btn.textContent = '▼ 펼치기';
+    document.body.style.paddingBottom = '48px';
+  }
+}
 
 async function load() {
   const el = document.getElementById('list');
