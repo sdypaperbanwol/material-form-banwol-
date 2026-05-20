@@ -77,7 +77,7 @@
 
 <div class="toast" id="toast"></div>
 <script>
-const GAS = 'https://script.google.com/macros/s/AKfycbxMJoWJNWeUJtrqaPTSPl18o6NwzcjJdcniQs-wNbwsFYPG3RTwwREa2-WteeVelIio/exec';
+const GAS = 'https://script.google.com/macros/s/AKfycbzLNfYTXMcSNVCoXM5MIkxBELw80b2AmzfkWWvaDHLHeoA9Rwya4v9umjnNB4zJMgU_/exec';
 
 window.onload = () => { load(); loadReceivers(); };
 
@@ -97,7 +97,7 @@ async function load() {
             <span class="tag">📦 ${row.grade || row.product}</span>
             <span class="tag">📱 ${row.phone}</span>
             ${row.memo ? `<span class="tag">📝 ${row.memo}</span>` : ''}
-            <span class="tag" style="color:#aaa;">🕐 ${String(row.date).slice(0,16)}</span>
+            ${row.date ? `<span class="tag" style="color:#aaa;">🕐 ${row.date}</span>` : ''}
           </div>
         </div>
         <button class="btn-call" onclick="call(this, ${row.rowIndex}, '${row.phone}', '${row.vendorName}', '${row.carnum||''}', '${row.grade||row.product}')">호출</button>
