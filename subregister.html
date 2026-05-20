@@ -391,9 +391,8 @@ async function saveData() {
 
   if (!vendorName) { showToast('거래처를 선택하세요', 'error'); return; }
   if (!gradeName)  { showToast('품목을 선택하세요', 'error'); return; }
-  if (!carnum)     { showToast('차량번호를 입력하세요', 'error'); return; }
-  if (!phone)      { showToast('핸드폰 번호를 입력하세요', 'error'); return; }
-
+  if (!/^\d{4}$/.test(carnum)) { showToast('차량번호 4자리를 입력하세요', 'error'); return; }
+  if (!/^010\d{8}$/.test(phone.replace(/-/g,''))) { showToast('올바른 핸드폰 번호를 입력하세요', 'error'); return; }
   const btn = document.getElementById('btnSave');
   btn.disabled = true; btn.textContent = '등록 중...';
 
