@@ -7,19 +7,61 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Malgun Gothic', sans-serif; background: #eaf4ee; min-height: 100vh; padding: 16px; }
+  .wrap { max-width: 560px; margin: 0 auto; }
+
   .header { background: #2c7a4b; color: #fff; padding: 14px 16px; border-radius: 8px 8px 0 0; font-size: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
   .btn-refresh { background: rgba(255,255,255,0.25); border: none; color: #fff; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit; }
-  .wrap { max-width: 560px; margin: 0 auto; }
+
   .list { background: #fff; border-radius: 0 0 8px 8px; min-height: 100px; }
 
-  .item { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #f0f0f0; gap: 12px; }
+  /* 카드 아이템 */
+  .item {
+    display: flex;
+    align-items: stretch;
+    padding: 14px;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 12px;
+  }
   .item:last-child { border-bottom: none; }
-  .info { flex: 1; }
-  .vendor { font-size: 14px; font-weight: bold; color: #1a1a1a; }
-  .tags { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-  .tag { font-size: 11px; background: #eef6f1; color: #2c7a4b; padding: 2px 8px; border-radius: 10px; }
-  .tag.car { background: #eef2ff; color: #3a6ea5; }
-  .btn-call { padding: 7px 16px; background: #2c7a4b; color: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; font-family: inherit; }
+
+  .info { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+
+  /* 품목명 - 가장 크게, 상단 */
+  .grade-name {
+    font-size: 17px;
+    font-weight: bold;
+    color: #1a1a1a;
+  }
+
+  /* 나머지 4줄 정보 */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    color: #333;
+  }
+  .row-icon { font-size: 15px; }
+  .row-label { color: #888; font-size: 12px; min-width: 28px; }
+  .row-val { font-size: 14px; color: #222; }
+  .row-val.car { color: #3a6ea5; font-weight: bold; font-size: 15px; }
+  .row-val.time { color: #999; font-size: 13px; }
+
+  /* 호출 버튼 - 세로 꽉 채움 */
+  .btn-call {
+    padding: 0 18px;
+    background: #2c7a4b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    align-self: stretch;
+    min-width: 60px;
+  }
   .btn-call:hover { background: #1e5c36; }
   .btn-call:disabled { background: #ccc; cursor: not-allowed; }
 
@@ -58,6 +100,7 @@
     <div class="loading"><div class="spin"></div>불러오는 중...</div>
   </div>
 </div>
+
 <!-- 수신자 관리 -->
 <div class="wrap" style="margin-top:12px;">
   <div class="header" style="border-radius:8px 8px 0 0;background:#4a6fa5;">
@@ -76,6 +119,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
 <script>
 const GAS = 'https://script.google.com/macros/s/AKfycbzwqT58dzzjYS6C3u-1GkPSLYmjVBrTRFjZnrrqMMuvUwta17FwL9lsv-HuBFmVFsb3/exec';
 
@@ -88,20 +132,33 @@ async function load() {
     const r = await fetch(GAS + '?action=list');
     const d = await r.json();
     if (!d.rows?.length) { el.innerHTML = '<div class="empty">대기 중인 항목 없음</div>'; return; }
-    el.innerHTML = d.rows.map(row => `
+    el.innerHTML = d.rows.map(row => {
+      const carnum   = row.carnum  || '';
+      const vendor   = row.vendorName || '';
+      const phone    = row.phone   || '';
+      const grade    = row.grade   || row.product || '';
+      const memo     = row.memo    || '';
+      const dateStr  = row.date    ? String(row.date).slice(0,16) : '';
+      const safeVendor = vendor.replace(/'/g, "\\'");
+      const safeGrade  = grade.replace(/'/g, "\\'");
+      const safeCar    = carnum.replace(/'/g, "\\'");
+
+      return `
       <div class="item" id="item-${row.rowIndex}">
         <div class="info">
-          <div class="vendor">${row.vendorName}</div>
-          <div class="tags">
-            ${row.carnum ? `<span class="tag car">🚛 ${row.carnum}</span>` : ''}
-            <span class="tag">📦 ${row.grade || row.product}</span>
-            <span class="tag">📱 ${row.phone}</span>
-            ${row.memo ? `<span class="tag">📝 ${row.memo}</span>` : ''}
-            ${row.date && !String(row.date).includes('1899') && !String(row.date).includes('T') ? `<span class="tag" style="color:#aaa;">🕐 ${row.date}</span>` : ''}
-          </div>
+          <div class="grade-name">${grade || '-'}</div>
+          ${carnum ? `<div class="row"><span class="row-icon">🚛</span><span class="row-val car">${carnum}</span></div>` : ''}
+          <div class="row"><span class="row-icon">🏢</span><span class="row-val">${vendor}</span></div>
+          <div class="row"><span class="row-icon">📱</span><span class="row-val">${phone}</span></div>
+          ${dateStr ? `<div class="row"><span class="row-icon">🕐</span><span class="row-val time">${dateStr}</span></div>` : ''}
+          ${memo ? `<div class="row"><span class="row-icon">📝</span><span class="row-val time">${memo}</span></div>` : ''}
         </div>
-        <button class="btn-call" onclick="call(this, ${row.rowIndex}, '${row.phone}', '${row.vendorName}', '${row.carnum||''}', '${row.grade||row.product}')">호출</button>
-      </div>`).join('');
+        <button class="btn-call"
+          onclick="call(this, ${row.rowIndex}, '${phone}', '${safeVendor}', '${safeCar}', '${safeGrade}')">
+          호출
+        </button>
+      </div>`;
+    }).join('');
   } catch(e) {
     el.innerHTML = '<div class="empty" style="color:#c0392b">로드 실패</div>';
   }
@@ -118,7 +175,6 @@ async function call(btn, rowIndex, phone, vendorName, carnum, grade) {
     const d = await r.json();
     if (d.status === 'ok') {
       toast('호출 완료!', 'ok');
-      // 해당 항목 제거
       document.getElementById(`item-${rowIndex}`)?.remove();
       if (!document.querySelector('.item')) {
         document.getElementById('list').innerHTML = '<div class="empty">대기 중인 항목 없음</div>';
