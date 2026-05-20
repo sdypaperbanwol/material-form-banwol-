@@ -50,7 +50,36 @@
   .toast.success { background: #27ae60; }
   .toast.error { background: #e74c3c; }
   .loading-text { color: #888; font-size: 13px; text-align: center; padding: 20px; }
+
+  .wait-section { border-top: 1px solid #eee; padding: 14px 20px; }
+  .wait-header { font-size: 13px; font-weight: bold; color: #555; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .btn-reload { background: none; border: 1px solid #ccc; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px; color: #666; margin-left: auto; }
+  .btn-reload:hover { background: #f5f5f5; }
+  .wait-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; gap: 8px; }
+  .wait-item:last-child { border-bottom: none; }
+  .wait-car { font-size: 13px; font-weight: bold; color: #3a6ea5; min-width: 36px; }
+  .wait-vendor { font-size: 13px; color: #333; flex: 1; }
+  .wait-grade { font-size: 11px; color: #888; background: #f0f4f8; padding: 2px 7px; border-radius: 10px; }
+  .wait-time { font-size: 11px; color: #aaa; white-space: nowrap; }
+  .wait-empty { text-align: center; color: #bbb; font-size: 13px; padding: 16px; }
+  .wait-loading { display: flex; justify-content: center; padding: 16px; }
+  .spin { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #3a6ea5; border-radius: 50%; animation: spin 0.7s linear infinite; }
 </style>
+<script>
+// 모바일 체크
+(function() {
+  const ua = navigator.userAgent.toLowerCase();
+  const isMobile = /android|iphone|ipad|ipod|mobile|tablet/.test(ua);
+  if (!isMobile) {
+    document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Malgun Gothic',sans-serif;background:#f0f2f5;text-align:center;padding:20px;">
+        <div style="font-size:48px;margin-bottom:16px;">📵</div>
+        <div style="font-size:18px;font-weight:bold;color:#333;margin-bottom:8px;">모바일에서만 접속 가능합니다</div>
+        <div style="font-size:13px;color:#888;">스마트폰으로 접속해 주세요</div>
+      </div>`;
+  }
+})();
+</script>
 </head>
 <body>
 
@@ -85,6 +114,15 @@
     </div>
     <button class="btn-save" id="btnSave" onclick="saveData()">등록</button>
   </div>
+
+  <!-- 대기 목록 -->
+  <div class="wait-section">
+    <div class="wait-header">
+      ⏳ 대기 중 <span id="waitCount"></span>
+      <button class="btn-reload" onclick="loadList()">↺</button>
+    </div>
+    <div id="waitList"><div class="wait-loading"><div class="spin"></div></div></div>
+  </div>
 </div>
 
 <!-- 거래처 팝업 -->
@@ -113,7 +151,32 @@ let allVendors = [];
 
 window.onload = async () => {
   await loadGrades();
+  await loadList();
 };
+
+async function loadList() {
+  const el = document.getElementById('waitList');
+  const countEl = document.getElementById('waitCount');
+  try {
+    const r = await fetch(GAS_URL + '?action=list');
+    const d = await r.json();
+    const rows = d.rows || [];
+    countEl.textContent = rows.length ? `(${rows.length})` : '';
+    if (!rows.length) {
+      el.innerHTML = '<div class="wait-empty">대기 중인 항목 없음</div>';
+      return;
+    }
+    el.innerHTML = rows.map(row => `
+      <div class="wait-item">
+        <span class="wait-car">${row.carnum || '-'}</span>
+        <span class="wait-vendor">${row.vendorName}</span>
+        <span class="wait-grade">${row.grade || row.product}</span>
+        <span class="wait-time">${String(row.date).slice(0,16)}</span>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="wait-empty">로드 실패</div>';
+  }
+}
 
 // 품목(등급) 로드
 async function loadGrades() {
@@ -229,6 +292,7 @@ async function saveData() {
       document.getElementById('carnum').value = '';
       document.getElementById('phone').value = '';
       document.getElementById('memo').value = '';
+      await loadList();
     } else {
       showToast('저장 실패: ' + (result.message || ''), 'error');
     }
