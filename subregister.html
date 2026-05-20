@@ -62,6 +62,11 @@
   .wait-grade { font-size: 11px; color: #888; background: #f0f4f8; padding: 2px 7px; border-radius: 10px; }
   .wait-time { font-size: 11px; color: #aaa; white-space: nowrap; }
   .wait-empty { text-align: center; color: #bbb; font-size: 13px; padding: 16px; }
+  .btn-del { background: none; border: 1px solid #e0a0a0; color: #c0392b; border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+  .btn-del:hover { background: #ffeaea; }
+  .otp-row { display: flex; gap: 6px; padding: 6px 0 8px; align-items: center; }
+  .btn-otp-confirm { padding: 5px 12px; background: #3a6ea5; color: #fff; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .btn-otp-cancel { padding: 5px 10px; background: #eee; color: #555; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
   .wait-loading { display: flex; justify-content: center; padding: 16px; }
   .spin { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #3a6ea5; border-radius: 50%; animation: spin 0.7s linear infinite; }
 </style>
@@ -144,7 +149,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxFIIlFaLwDw9Cd93Kas67DJ16u37UUb937kEjC2uJRWMHVQsNJeD-S73-i8B6H98-3/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbysTo7JrGWxXQ9XGp32XFMAwDoAD62tvz3gklo9shf0D4Lolkxgrcz4WvaLa1D6OtQZ/exec';
 const SCALE_BASE = 'https://scale.dygroup.co.kr:8443/banwol/admin';
 
 let allVendors = [];
@@ -167,11 +172,18 @@ async function loadList() {
       return;
     }
     el.innerHTML = rows.map(row => `
-      <div class="wait-item">
+      <div class="wait-item" id="wi-${row.rowIndex}">
         <span class="wait-car">${row.carnum || '-'}</span>
         <span class="wait-vendor">${row.vendorName}</span>
         <span class="wait-grade">${row.grade || row.product}</span>
         <span class="wait-time">${String(row.date).slice(0,16)}</span>
+        <button class="btn-del" onclick="requestDelete(${row.rowIndex}, '${row.phone}')">삭제</button>
+      </div>
+      <div class="otp-row" id="otp-${row.rowIndex}" style="display:none;">
+        <input type="number" id="otp-input-${row.rowIndex}" placeholder="인증번호 6자리" maxlength="6"
+          style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">
+        <button class="btn-otp-confirm" onclick="confirmDelete(${row.rowIndex}, '${row.phone}')">확인</button>
+        <button class="btn-otp-cancel" onclick="cancelDelete(${row.rowIndex})">취소</button>
       </div>`).join('');
   } catch(e) {
     el.innerHTML = '<div class="wait-empty">로드 실패</div>';
@@ -301,6 +313,55 @@ async function saveData() {
   } finally {
     btn.disabled = false; btn.textContent = '등록';
   }
+}
+
+async function requestDelete(rowIndex, phone) {
+  const btn = document.querySelector(`#wi-${rowIndex} .btn-del`);
+  btn.disabled = true; btn.textContent = '발송중...';
+  try {
+    const r = await fetch(`${GAS_URL}?action=sendOtp&phone=${encodeURIComponent(phone)}&rowIndex=${rowIndex}`);
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById(`otp-${rowIndex}`).style.display = 'flex';
+      showToast('인증번호를 발송했습니다', 'success');
+      btn.textContent = '재발송';
+      btn.disabled = false;
+    } else {
+      showToast('발송 실패: ' + (d.message||''), 'error');
+      btn.textContent = '삭제'; btn.disabled = false;
+    }
+  } catch(e) {
+    showToast('오류: ' + e.message, 'error');
+    btn.textContent = '삭제'; btn.disabled = false;
+  }
+}
+
+async function confirmDelete(rowIndex, phone) {
+  const otp = document.getElementById(`otp-input-${rowIndex}`).value.trim();
+  if (otp.length !== 6) { showToast('6자리 입력하세요', 'error'); return; }
+  try {
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteRow', rowIndex, otp, phone })
+    });
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById(`wi-${rowIndex}`)?.remove();
+      document.getElementById(`otp-${rowIndex}`)?.remove();
+      showToast('삭제되었습니다', 'success');
+      await loadList();
+    } else {
+      showToast(d.message || '인증 실패', 'error');
+    }
+  } catch(e) {
+    showToast('오류: ' + e.message, 'error');
+  }
+}
+
+function cancelDelete(rowIndex) {
+  document.getElementById(`otp-${rowIndex}`).style.display = 'none';
+  const btn = document.querySelector(`#wi-${rowIndex} .btn-del`);
+  if (btn) { btn.textContent = '삭제'; btn.disabled = false; }
 }
 
 function showToast(msg, type='') {
