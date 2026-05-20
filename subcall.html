@@ -33,6 +33,20 @@
   .toast.ok { background: #2c7a4b; }
   .toast.err { background: #c0392b; }
 </style>
+<script>
+(function() {
+  const ua = navigator.userAgent.toLowerCase();
+  const isMobile = /android|iphone|ipad|ipod|mobile|tablet/.test(ua);
+  if (!isMobile) {
+    document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Malgun Gothic',sans-serif;background:#eaf4ee;text-align:center;padding:20px;">
+        <div style="font-size:48px;margin-bottom:16px;">📵</div>
+        <div style="font-size:18px;font-weight:bold;color:#333;margin-bottom:8px;">모바일에서만 접속 가능합니다</div>
+        <div style="font-size:13px;color:#888;">스마트폰으로 접속해 주세요</div>
+      </div>`;
+  }
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -44,11 +58,28 @@
     <div class="loading"><div class="spin"></div>불러오는 중...</div>
   </div>
 </div>
+<!-- 수신자 관리 -->
+<div class="wrap" style="margin-top:12px;">
+  <div class="header" style="border-radius:8px 8px 0 0;background:#4a6fa5;">
+    🔔 등록 알림 수신자
+  </div>
+  <div style="background:#fff;border-radius:0 0 8px 8px;padding:14px;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="tel" id="newPhone" placeholder="010-0000-0000" maxlength="13"
+        oninput="fmtPhone(this)"
+        style="flex:1;padding:8px 10px;border:1px solid #ccc;border-radius:4px;font-size:14px;font-family:inherit;"
+      >
+      <button onclick="addReceiver()" style="padding:8px 16px;background:#4a6fa5;color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap;">추가</button>
+    </div>
+    <div id="receiverList"><div class="loading"><div class="spin"></div></div></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
-const GAS = 'https://script.google.com/macros/s/AKfycbx10jUWT96NstU_bSnWPk-rRmPrYGpctuKOmi73sVKX9aiyDVnI_DM2lTR8penEU61x/exec';
+const GAS = 'https://script.google.com/macros/s/AKfycbzfv6ZV7XpZNQSmUs_poXHK-VlaOiayWeZ8q-MNfpiDrwaYL6-fJWZAgjpk1k0F53gq/exec';
 
-window.onload = load;
+window.onload = () => { load(); loadReceivers(); };
 
 async function load() {
   const el = document.getElementById('list');
@@ -99,6 +130,62 @@ async function call(btn, rowIndex, phone, vendorName, carnum, grade) {
     toast('오류: ' + e.message, 'err');
     btn.disabled = false; btn.textContent = '호출';
   }
+}
+
+// ── 수신자 관리
+async function loadReceivers() {
+  const el = document.getElementById('receiverList');
+  try {
+    const r = await fetch(GAS + '?action=getReceivers');
+    const d = await r.json();
+    const list = d.receivers || [];
+    if (!list.length) {
+      el.innerHTML = '<div style="color:#bbb;font-size:13px;text-align:center;padding:12px;">등록된 수신자 없음</div>';
+      return;
+    }
+    el.innerHTML = list.map((p, i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5;" id="recv-${i}">
+        <span style="font-size:14px;">${p}</span>
+        <button onclick="removeReceiver('${p}')" style="background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;padding:0 4px;">×</button>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:#e74c3c;font-size:13px;text-align:center;padding:12px;">로드 실패</div>';
+  }
+}
+
+async function addReceiver() {
+  const input = document.getElementById('newPhone');
+  const phone = input.value.trim();
+  if (phone.length < 10) { toast('번호를 확인하세요', 'err'); return; }
+  try {
+    const r = await fetch(GAS, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'addReceiver', phone })
+    });
+    const d = await r.json();
+    if (d.status === 'ok') { input.value = ''; loadReceivers(); toast('추가됨', 'ok'); }
+    else toast('실패: ' + (d.message||''), 'err');
+  } catch(e) { toast('오류', 'err'); }
+}
+
+async function removeReceiver(phone) {
+  if (!confirm(`${phone} 삭제할까요?`)) return;
+  try {
+    const r = await fetch(GAS, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'removeReceiver', phone })
+    });
+    const d = await r.json();
+    if (d.status === 'ok') { loadReceivers(); toast('삭제됨', 'ok'); }
+    else toast('실패', 'err');
+  } catch(e) { toast('오류', 'err'); }
+}
+
+function fmtPhone(input) {
+  let v = input.value.replace(/\D/g,'');
+  if (v.length <= 3) input.value = v;
+  else if (v.length <= 7) input.value = v.slice(0,3)+'-'+v.slice(3);
+  else input.value = v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7,11);
 }
 
 function toast(msg, type) {
