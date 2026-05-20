@@ -6,39 +6,60 @@
 <title>부자재 입고 등록</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background: #f0f2f5; min-height: 100vh; padding: 24px 16px; color: #333; }
-  .container { max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
-  .header { background: #3a6ea5; color: #fff; padding: 16px 20px; font-size: 15px; font-weight: bold; }
-  .form-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  label { font-size: 12px; color: #666; font-weight: bold; }
+  body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background: #edf1f7; min-height: 100vh; padding: 20px 16px; color: #333; }
+  .container { max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+
+  /* 헤더 */
+  .header { background: #3a6ea5; color: #fff; padding: 20px 20px 18px; }
+  .header-title { font-size: 17px; font-weight: bold; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 3px; }
+
+  .form-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  /* 라벨 */
+  label { font-size: 13px; color: #444; font-weight: bold; }
+
   input[type="text"], input[type="tel"], textarea {
-    border: 1px solid #d0d0d0; border-radius: 4px; padding: 8px 10px;
+    border: 1px solid #d8dde6; border-radius: 8px; padding: 10px 12px;
     font-size: 14px; font-family: inherit; color: #333; background: #fff; width: 100%; outline: none;
+    transition: border-color 0.15s;
   }
-  input:focus, textarea:focus { border-color: #3a6ea5; }
-  textarea { resize: vertical; min-height: 72px; }
+  input:focus, textarea:focus { border-color: #3a6ea5; background: #fafcff; }
+  textarea { resize: vertical; min-height: 68px; }
 
-  /* 거래처 / 품목 공통 선택 행 */
+  /* 선택 행 - outline 버튼 */
   .select-row { display: flex; gap: 8px; align-items: center; }
-  .select-row input { flex: 1; background: #f7f7f7; cursor: pointer; }
-  .btn-popup { white-space: nowrap; padding: 8px 14px; background: #5a8ac6; color: #fff; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; }
-  .btn-popup:hover { background: #3a6ea5; }
+  .select-row input { flex: 1; background: #f7f9fc; cursor: pointer; color: #555; }
+  .btn-popup {
+    white-space: nowrap; padding: 10px 14px;
+    background: #fff; color: #3a6ea5;
+    border: 1.5px solid #3a6ea5; border-radius: 8px;
+    font-size: 13px; font-weight: bold; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-popup:hover { background: #eef4ff; }
 
-  .btn-save { width: 100%; padding: 12px; background: #3a6ea5; color: #fff; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 4px; }
+  /* 등록 버튼 - solid, 크고 둥글게 */
+  .btn-save {
+    width: 100%; padding: 14px; background: #3a6ea5; color: #fff;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: bold;
+    cursor: pointer; margin-top: 4px; letter-spacing: 0.5px;
+    transition: background 0.15s;
+  }
   .btn-save:hover { background: #2d5a8a; }
-  .btn-save:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-save:disabled { background: #b0b8c8; cursor: not-allowed; }
 
   /* 팝업 공통 */
-  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
   .overlay.active { display: flex; }
-  .popup { background: #fff; border-radius: 6px; width: 340px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden; }
-  .popup-header { background: #3a6ea5; color: #fff; padding: 12px 16px; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+  .popup { background: #fff; border-radius: 10px; width: 340px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,0.18); overflow: hidden; }
+  .popup-header { background: #3a6ea5; color: #fff; padding: 13px 16px; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
   .popup-close { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
   .popup-search { padding: 10px 12px; border-bottom: 1px solid #eee; }
-  .popup-search input { width: 100%; padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+  .popup-search input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; }
   .popup-list { overflow-y: auto; flex: 1; }
-  .popup-item { padding: 9px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+  .popup-item { padding: 10px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
   .popup-item:hover { background: #eef4ff; }
   .popup-item.pinned { color: #3a6ea5; font-weight: bold; background: #f0f6ff; }
   .popup-item.pinned:hover { background: #ddeeff; }
@@ -56,20 +77,26 @@
   .loading-text { color: #888; font-size: 13px; text-align: center; padding: 20px; }
 
   /* 대기 목록 */
-  .wait-section { border-top: 1px solid #eee; padding: 14px 20px; }
-  .wait-header { font-size: 13px; font-weight: bold; color: #555; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .wait-section { background: #f7f9fc; border-top: 1px solid #e8ecf2; padding: 14px 16px 16px; }
+  .wait-header { font-size: 13px; font-weight: bold; color: #555; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .wait-count-badge { background: #3a6ea5; color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: bold; }
   .btn-reload { background: none; border: 1px solid #ccc; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px; color: #666; margin-left: auto; }
-  .btn-reload:hover { background: #f5f5f5; }
-  .wait-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; gap: 8px; }
-  .wait-item:last-child { border-bottom: none; }
-  .wait-car { font-size: 13px; font-weight: bold; color: #3a6ea5; min-width: 36px; }
-  .wait-vendor { font-size: 13px; color: #333; flex: 1; }
-  .wait-grade { font-size: 11px; color: #888; background: #f0f4f8; padding: 2px 7px; border-radius: 10px; }
-  .wait-time { font-size: 11px; color: #aaa; white-space: nowrap; }
-  .wait-empty { text-align: center; color: #bbb; font-size: 13px; padding: 16px; }
-  .btn-del { background: none; border: 1px solid #e0a0a0; color: #c0392b; border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+  .btn-reload:hover { background: #eee; }
+
+  /* 대기 카드 */
+  .wait-card { background: #fff; border: 1px solid #e4e9f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .wait-card:last-child { margin-bottom: 0; }
+  .wait-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .wait-grade-name { font-size: 14px; font-weight: bold; color: #222; }
+  .wait-car-badge { font-size: 12px; font-weight: bold; color: #3a6ea5; background: #eef4ff; padding: 2px 8px; border-radius: 6px; }
+  .wait-card-info { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+  .wait-vendor-name { font-size: 13px; color: #444; }
+  .wait-time { font-size: 11px; color: #aaa; }
+  .wait-empty { text-align: center; color: #bbb; font-size: 13px; padding: 20px; }
+
+  .btn-del { background: none; border: 1px solid #e0a0a0; color: #c0392b; border-radius: 4px; padding: 3px 9px; font-size: 11px; cursor: pointer; white-space: nowrap; }
   .btn-del:hover { background: #ffeaea; }
-  .otp-row { display: flex; gap: 6px; padding: 6px 0 8px; align-items: center; }
+  .otp-row { display: flex; gap: 6px; padding: 8px 0 2px; align-items: center; }
   .btn-otp-confirm { padding: 5px 12px; background: #3a6ea5; color: #fff; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
   .btn-otp-cancel { padding: 5px 10px; background: #eee; color: #555; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
   .wait-loading { display: flex; justify-content: center; padding: 16px; }
@@ -81,7 +108,7 @@
   const isMobile = /android|iphone|ipad|ipod|mobile|tablet/.test(ua);
   if (!isMobile) {
     document.body.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Malgun Gothic',sans-serif;background:#f0f2f5;text-align:center;padding:20px;">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Malgun Gothic',sans-serif;background:#edf1f7;text-align:center;padding:20px;">
         <div style="font-size:48px;margin-bottom:16px;">📵</div>
         <div style="font-size:18px;font-weight:bold;color:#333;margin-bottom:8px;">모바일에서만 접속 가능합니다</div>
         <div style="font-size:13px;color:#888;">스마트폰으로 접속해 주세요</div>
@@ -93,7 +120,10 @@
 <body>
 
 <div class="container">
-  <div class="header">📋 부자재 입고 등록</div>
+  <div class="header">
+    <div class="header-title">부자재 입고 등록</div>
+    <div class="header-sub">반월공장 부자재 차량 사전 등록</div>
+  </div>
   <div class="form-body">
 
     <div class="field">
@@ -134,8 +164,8 @@
 
   <div class="wait-section">
     <div class="wait-header">
-      ⏳ 대기 중 <span id="waitCount"></span>
-      <button class="btn-reload" onclick="loadList()">↺</button>
+      대기 중 <span id="waitCount"></span>
+      <button class="btn-reload" onclick="loadList()">↺ 새로고침</button>
     </div>
     <div id="waitList"><div class="wait-loading"><div class="spin"></div></div></div>
   </div>
@@ -179,7 +209,6 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzwqT58dzzjYS6C3u-1GkPSLYmjVBrTRFjZnrrqMMuvUwta17FwL9lsv-HuBFmVFsb3/exec';
 const SCALE_BASE = 'https://scale.dygroup.co.kr:8443/banwol/admin';
 
-// 맨 위 고정할 품목명 목록
 const PINNED_GRADES = ['폐합성수지'];
 
 let allVendors = [];
@@ -198,18 +227,26 @@ async function loadList() {
     const r = await fetch(GAS_URL + '?action=list');
     const d = await r.json();
     const rows = d.rows || [];
-    countEl.textContent = rows.length ? `(${rows.length})` : '';
+    countEl.innerHTML = rows.length
+      ? `<span class="wait-count-badge">${rows.length}</span>`
+      : '';
     if (!rows.length) {
       el.innerHTML = '<div class="wait-empty">대기 중인 항목 없음</div>';
       return;
     }
     el.innerHTML = rows.map(row => `
-      <div class="wait-item" id="wi-${row.rowIndex}">
-        <span class="wait-car">${row.carnum || '-'}</span>
-        <span class="wait-vendor">${row.vendorName}</span>
-        <span class="wait-grade">${row.grade || row.product}</span>
-        <span class="wait-time">${String(row.date).slice(0,16)}</span>
-        <button class="btn-del" onclick="requestDelete(${row.rowIndex}, '${row.phone}')">삭제</button>
+      <div class="wait-card" id="wi-${row.rowIndex}">
+        <div class="wait-card-top">
+          <span class="wait-grade-name">${row.grade || row.product || '-'}</span>
+          ${row.carnum ? `<span class="wait-car-badge">${row.carnum}</span>` : ''}
+        </div>
+        <div class="wait-card-info">
+          <span class="wait-vendor-name">${row.vendorName}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="wait-time">${String(row.date).slice(0,16)}</span>
+            <button class="btn-del" onclick="requestDelete(${row.rowIndex}, '${row.phone}')">삭제</button>
+          </div>
+        </div>
       </div>
       <div class="otp-row" id="otp-${row.rowIndex}" style="display:none;">
         <input type="number" id="otp-input-${row.rowIndex}" placeholder="인증번호 6자리" maxlength="6"
@@ -233,7 +270,6 @@ async function loadGrades() {
       code: String(g.RCODEX ?? g.code ?? g),
       name: String(g.NMCODX ?? g.name ?? g)
     }));
-    // 폐합성수지 상단 고정: pinned 먼저, 나머지는 원래 순서
     allGrades = sortWithPinned(allGrades);
   } catch(e) {
     allGrades = [];
@@ -277,8 +313,7 @@ function renderGrades(list) {
 function filterGrades() {
   const q = document.getElementById('gradeSearch').value.trim();
   if (!q) { renderGrades(allGrades); return; }
-  const filtered = allGrades.filter(g => g.name.includes(q) || g.code.includes(q));
-  renderGrades(filtered);
+  renderGrades(allGrades.filter(g => g.name.includes(q) || g.code.includes(q)));
 }
 
 function selectGrade(code, name) {
@@ -452,7 +487,6 @@ function showToast(msg, type='') {
   setTimeout(() => { t.className = 'toast'; }, 2500);
 }
 
-// 팝업 외부 클릭 시 닫기
 document.getElementById('vendorOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeVendorPopup();
 });
