@@ -2725,59 +2725,65 @@ if (isDispatched && 상차R > 0) {
     const plant = isSihwa ? '시화' : '반월';
     const PRIMARY_WH = isSihwa ? '2260' : '9160';
 
-    const stockHints = items.map(it => {
-      const remaining = calcRemainingStock(it['품목명'], plant, PRIMARY_WH);
-      const primary = remaining[PRIMARY_WH] || 0;
-      const others = Object.entries(remaining)
-        .filter(([k, v]) => String(k) !== String(PRIMARY_WH) && v > 0)
-        .map(([k, v]) => {
-          const nm = (__inventoryData.find(iv => String(iv['창고코드']) === String(k)) || {})['창고명'] || k;
-          return `${nm} ${v}R`;
-        });
-      let hint = '';
-      if (primary > 0) {
-        hint = `✅ 본창고 ${primary}R`;
-        if (others.length) hint += ` / 기타: ${others.join(', ')}`;
-      } else if (others.length) {
-        hint = `⚠️ 본창고 없음 → ${others.join(', ')}`;
-      } else {
-        hint = `❌ 재고 없음`;
-      }
-      return `${it['품목명']} ${it['ROLL수량']}R — ${hint}`;
+const stockHints = items.map(it => {
+  const remaining = calcRemainingStock(it['품목명'], plant, PRIMARY_WH);
+  const primary = remaining[PRIMARY_WH] || 0;
+  const ordered = it['ROLL수량'] || 0;
+  const picked = it['상차량'] || 0;
+  const others = Object.entries(remaining)
+    .filter(([k, v]) => String(k) !== String(PRIMARY_WH) && v > 0)
+    .map(([k, v]) => {
+      const nm = (__inventoryData.find(iv => String(iv['창고코드']) === String(k)) || {})['창고명'] || k;
+      return `${nm} ${v}R`;
     });
+  let stockStr = '';
+  if (primary > 0) {
+    stockStr = `✅ 본창고 ${primary}R`;
+    if (others.length) stockStr += ` / 기타: ${others.join(', ')}`;
+  } else if (others.length) {
+    stockStr = `⚠️ 본창고 없음 → ${others.join(', ')}`;
+  } else {
+    stockStr = `❌ 재고 없음`;
+  }
+  const pct = ordered > 0 ? Math.round(picked / ordered * 100) : 0;
+  const barFilled = Math.round(pct / 100 * 6);
+  const bar = '█'.repeat(barFilled) + '░'.repeat(6 - barFilled);
+  const pickStr = `${bar} ${picked}/${ordered}R`;
+  return { text: `${it['품목명']} ${pickStr}  ${stockStr}`, picked, ordered, stockStr };
+});
 
-    const rowKey = String(r['주문번호'] || '') + '_' + String(r['차량번호'] || '');
-    const isExpanded = __dispatchExpanded.has(rowKey);
-    const itemsHtml = hasItems
-      ? stockHints.map(hint => {
-          const color = hint.startsWith('✅') ? '#15803d'
-                      : hint.startsWith('⚠️') ? '#b45309'
-                      : '#dc2626';
-          return `<div style="padding:2px 0;font-size:11px;color:${color}">${hint}</div>`;
-        }).join('')
-      : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
+const rowKey = String(r['주문번호'] || '') + '_' + String(r['차량번호'] || '');
+const isExpanded = __dispatchExpanded.has(rowKey);
+const itemsHtml = hasItems
+  ? stockHints.map(h => {
+      const color = h.picked >= h.ordered && h.ordered > 0 ? '#1d4ed8'
+                  : h.stockStr.startsWith('✅') ? '#15803d'
+                  : h.stockStr.startsWith('⚠️') ? '#b45309'
+                  : '#dc2626';
+      return `<div style="padding:2px 0;font-size:11px;color:${color};font-family:monospace">${h.text}</div>`;
+    }).join('')
+  : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
 
-    const detailRow = isExpanded ? `
-      <tr>
-        <td colspan="6" style="${rowBg}${opacity}border-bottom:1px solid #e5e7eb;padding:5px 14px;text-align:left">
-          ${itemsHtml}
-        </td>
-      </tr>` : '';
-    const expandIcon = hasItems ? (isExpanded ? ' ▲' : ' ▼') : '';
+const detailRow = isExpanded ? `
+  <tr>
+    <td colspan="6" style="${rowBg}${opacity}border-bottom:1px solid #e5e7eb;padding:5px 14px;text-align:left">
+      ${itemsHtml}
+    </td>
+  </tr>` : '';
 
-    // ★ 상차/주문 합산 컬럼
-    const rollCell = `<span style="${scanColor}">${상차R}</span><span style="color:#9ca3af;font-size:10px">/${주문R}</span>`;
+const expandIcon = hasItems ? (isExpanded ? ' ▲' : ' ▼') : '';
+const rollCell = `<span style="${scanColor}">${상차R}</span><span style="color:#9ca3af;font-size:10px">/${주문R}</span>`;
 
-    return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}"
-              onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
-      <td ${td}>${i + 1}</td>
-      <td ${td}>${creatorBadge}</td>
-<td ${td}>${car4}${hapjim}</td>
-      <td ${tdL}>${r['납품처명'] || ''}${hasItems ? `<span style="color:#6366f1;font-size:10px">${expandIcon}</span>` : ''}</td>
-      <td ${td}>${rollCell}</td>
-      <td ${td}>${arrivalStatus}</td>
-    </tr>${detailRow}`;
-  }).join('');
+return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}"
+          onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
+  <td ${td}>${i + 1}</td>
+  <td ${td}>${creatorBadge}</td>
+  <td ${td}>${car4}${hapjim}</td>
+  <td ${tdL}>${r['납품처명'] || ''}${hasItems ? `<span style="color:#6366f1;font-size:10px">${expandIcon}</span>` : ''}</td>
+  <td ${td}>${rollCell}</td>
+  <td ${td}>${arrivalStatus}</td>
+</tr>${detailRow}`;
+}).join('');
 }
 function sortOrders(rows) {
   return [...rows].sort((a, b) => {
