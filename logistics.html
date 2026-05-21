@@ -2576,10 +2576,11 @@ async function loadDispatch() {
 
    renderDispatch();
     rerenderCache();
-  } catch (e) {
+ } catch (e) {
+    console.error('loadDispatch 에러:', e);
     document.getElementById('dispatchBodyBw').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
     document.getElementById('dispatchBodySh').innerHTML = '<tr><td colspan="6" class="empty">불러오기 실패</td></tr>';
-  }
+}
 }
 function itemKeyFromDispatch(nm) {
   // "K180/1600" → { jijong: "K", pyeongrang: "180", jipok: "1600" }
@@ -2766,7 +2767,7 @@ const itemsHtml = hasItems
                        : h.stockStr.startsWith('⚠️') ? '#b45309'
                        : '#dc2626';
       return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:11px;font-family:monospace">
-        <span style="color:var(--color-text-secondary);min-width:90px">${h.text.split(' ')[0]}</span>
+        <span style="color:var(--color-text-secondary);min-width:90px">${h.nmItem}</span>
         ${bar}
         <span style="color:${pickColor};font-weight:500">${h.picked}/${h.ordered}R</span>
         <span style="color:var(--color-text-secondary)">—</span>
