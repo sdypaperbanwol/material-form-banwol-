@@ -2749,18 +2749,29 @@ const stockHints = items.map(it => {
   const barFilled = Math.round(pct / 100 * 6);
   const bar = '█'.repeat(barFilled) + '░'.repeat(6 - barFilled);
   const pickStr = `${bar} ${picked}/${ordered}R`;
-  return { text: `${it['품목명']} ${pickStr}  ${stockStr}`, picked, ordered, stockStr };
+  return { nmItem: it['품목명'], picked, ordered, stockStr };
 });
 
 const rowKey = String(r['주문번호'] || '') + '_' + String(r['차량번호'] || '');
 const isExpanded = __dispatchExpanded.has(rowKey);
 const itemsHtml = hasItems
   ? stockHints.map(h => {
-      const color = h.picked >= h.ordered && h.ordered > 0 ? '#1d4ed8'
-                  : h.stockStr.startsWith('✅') ? '#15803d'
-                  : h.stockStr.startsWith('⚠️') ? '#b45309'
-                  : '#dc2626';
-      return `<div style="padding:2px 0;font-size:11px;color:${color};font-family:monospace">${h.text}</div>`;
+      const barColor = h.picked >= h.ordered && h.ordered > 0 ? '#1d4ed8'
+                     : h.picked > 0 ? '#f59e0b'
+                     : '#9ca3af';
+      const barFilled = h.ordered > 0 ? Math.round(h.picked / h.ordered * 6) : 0;
+      const bar = `<span style="color:${barColor};letter-spacing:1px">${'█'.repeat(barFilled)}${'░'.repeat(6 - barFilled)}</span>`;
+      const pickColor = barColor;
+      const stockColor = h.stockStr.startsWith('✅') ? '#15803d'
+                       : h.stockStr.startsWith('⚠️') ? '#b45309'
+                       : '#dc2626';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:11px;font-family:monospace">
+        <span style="color:var(--color-text-secondary);min-width:90px">${h.text.split(' ')[0]}</span>
+        ${bar}
+        <span style="color:${pickColor};font-weight:500">${h.picked}/${h.ordered}R</span>
+        <span style="color:var(--color-text-secondary)">—</span>
+        <span style="color:${stockColor}">${h.stockStr}</span>
+      </div>`;
     }).join('')
   : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
 
