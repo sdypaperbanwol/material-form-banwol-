@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>공장 내 차량 현황</title>
+  <link rel="icon" href="data:,">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+  :root{
+    --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
+    --cyan:#00FFFF; --green:#00FF00; --badge:#eef3ff;
+    --brand:#0f62fe; --radius:16px; --shadow:0 6px 18px rgba(0,0,0,.05);
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif; }
+  .wrap{ max-width:980px; margin:24px auto; padding:0 16px 60px; }
+  .header{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; }
+  .title{ margin:0; font-size:20px; letter-spacing:-.2px }
+  .subtitle{ margin:4px 0 0 0; color:var(--muted); font-size:12.5px; display:flex; align-items:center; gap:6px }
+  .mini-spinner{ display:inline-block; width:12px; height:12px; border:2px solid #cfd8ff;
+    border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+  .badges{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px }
+  .badge{ background:var(--badge); border:1px solid #d9e2ff; border-radius:999px; padding:3px 8px; font-size:12px }
+  .toolbar{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap }
+  .btn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:8px 12px; font-size:13px; cursor:pointer; }
+  .btn:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) }
+  .input,.select{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; font-size:13px; width:100%; box-sizing:border-box }
+  .select{ width:auto }
+  .view-toggle{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden }
+  .view-toggle .tbtn{ border:0; background:#fff; padding:8px 12px; font-size:13px; cursor:pointer }
+  .view-toggle .tbtn+.tbtn{ border-left:1px solid var(--line) }
+  .view-toggle .tbtn.active{ background:var(--brand); color:#fff }
+  .grid{ display:grid; grid-template-columns:1fr; gap:14px }
+  .col{ display:grid; gap:14px }
+  @media(min-width:900px){ .grid{ grid-template-columns:1fr 1fr } }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden; }
+  .stripe{ height:4px }
+  .stripe.cyan{ background:var(--cyan) }
+  .stripe.green{ background:var(--green) }
+  .stripe.purple{ background:#a855f7 }
+  .stripe.orange{ background:#f97316 }
+  .card .head{ padding:16px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:8px }
+  .card .head h3{ margin:0; font-size:15px }
+  .head-right{ display:flex; align-items:center; gap:8px }
+  .summary{ padding:8px 14px; color:var(--muted); border-bottom:1px solid var(--line); font-size:12.5px }
+  table{ width:100%; border-collapse:separate; border-spacing:0 }
+  thead th{ position:sticky; top:0; background:#fafbfd; border-bottom:1px solid var(--line);
+    color:#333; font-weight:600; z-index:10; }
+  th,td{ padding:8px 10px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  tbody tr:nth-child(odd){ background:#fcfcfe }
+  tbody td{ border-bottom:1px solid #f1f1f4 }
+  .empty{ padding:18px 14px; color:var(--muted) }
+  tbody tr.plant-sep td{ border-top:2px solid #ff6b6b }
+  td.cell-hit{ background:#fff2cc !important }
+  .badge.search-pill{ background:#eef3ff; border:1px solid #d9e2ff; border-radius:999px; padding:4px 8px; font-size:12px }
+  tbody tr.watch-hit td{ background:#d4edda !important; font-weight:600; }
+  tbody tr.watch-hit:nth-child(odd) td{ background:#c3e6cb !important; }
+  .watch-panel{ background:var(--card); border:1px solid #d9e2ff; border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:14px 16px; margin-bottom:14px; border-left:4px solid var(--brand); }
+  .watch-panel-title{ font-size:13px; font-weight:600; color:#333; margin:0 0 10px 0;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .watch-panel-title .hint{ font-size:11.5px; color:var(--muted); font-weight:normal;
+    background:#f0f3f7; border-radius:6px; padding:2px 7px; }
+  .watch-input-row{ display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .watch-input{ border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:7px 10px; font-size:14px; width:110px; letter-spacing:2px; text-align:center; font-weight:600; }
+  .watch-input:focus{ outline:none; border-color:var(--brand); box-shadow:0 0 0 2px rgba(15,98,254,.12) }
+  .watch-add-btn{ appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff;
+    border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600; }
+  .watch-add-btn:hover{ background:#0353e9 }
+  .watch-clear-btn{ appearance:none; border:1px solid #ddd; background:#fff; color:#888;
+    border-radius:10px; padding:7px 10px; font-size:12px; cursor:pointer; }
+  .watch-tags-row{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:28px; }
+  .watch-empty-hint{ color:var(--muted); font-size:12.5px }
+  .watch-tag{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px 4px 8px;
+    border-radius:999px; font-size:13px; border:1.5px solid; font-weight:600; transition:transform .1s; }
+  .watch-tag.found{ background:#d4edda; border-color:#82c89a; color:#155724; }
+  .watch-tag.not-found{ background:#f8d7da; border-color:#f1a8ae; color:#721c24; }
+  .watch-tag.pending{ background:#fff3cd; border-color:#ffc107; color:#856404; }
+  .watch-tag .tag-status{ font-size:11px; font-weight:normal; opacity:.8 }
+  .watch-tag .remove-btn{ background:none; border:none; padding:0; cursor:pointer;
+    font-size:14px; line-height:1; opacity:.5; margin-left:2px; }
+  .watch-tag .remove-btn:hover{ opacity:1 }
+  @keyframes watchPulse{
+    0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(40,167,69,.6) }
+    50%{ transform:scale(1.08); box-shadow:0 0 0 6px rgba(40,167,69,0) }
+    100%{ transform:scale(1); }
+  }
+  .watch-tag.pulse{ animation:watchPulse .5s ease-out }
+  .toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#111; color:#fff;
+    padding:8px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:10000; font-size:13px; }
+  .toast.show{ opacity:1 }
+  @media print{
+    body{ background:#fff }
+    .btn,.toast,.toolbar,.watch-panel{ display:none }
+    .wrap{ max-width:1000px; margin:0; padding:0 }
+    .grid{ grid-template-columns:1fr 1fr }
+    .card{ box-shadow:none; border:1px solid #eee }
+  }
+  #analyticPanel{ display:block }
+  .kpi-row{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:14px }
+  .kpi{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+    position:relative; overflow:hidden; }
+  .kpi::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--kc,#0f62fe) }
+  .kpi-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px }
+  .kpi-val{ font-size:22px; font-weight:700; line-height:1.1 }
+  .kpi-sub{ font-size:11px; color:var(--muted); margin-top:2px }
+  .an-card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden; padding:16px 18px; margin-bottom:14px; }
+  .an-card h4{ margin:0 0 12px; font-size:14px; color:#444; display:flex; align-items:center; gap:6px }
+  .an-card h4 .dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--dc,#0f62fe) }
+  .an-card h4 .an-collapse-btn{ margin-left:auto; flex-shrink:0; appearance:none; border:1px solid var(--line);
+    background:#fff; border-radius:8px; padding:2px 8px; font-size:11px; cursor:pointer; color:var(--muted); }
+  .an-card h4 .an-collapse-btn:hover{ background:#f3f4f6 }
+  .an-card-body.collapsed{ display:none }
+  .chart-wrap{ position:relative; height:200px }
+  .chart-wrap.tall{ height:240px }
+  .an-loading{ text-align:center; padding:40px; color:var(--muted); font-size:13px }
+  .period-bar{
+    display:flex; flex-direction:column; gap:8px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:12px 16px; margin-bottom:14px;
+  }
+  .period-bar-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .period-bar label{ font-size:12px; color:var(--muted); flex-shrink:0; min-width:28px }
+  .period-presets{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; flex-shrink:0 }
+  .period-presets .pbtn{ border:0; background:#fff; padding:7px 13px; font-size:13px; cursor:pointer }
+  .period-presets .pbtn+.pbtn{ border-left:1px solid var(--line) }
+  .period-presets .pbtn.active{ background:var(--brand); color:#fff }
+  .period-custom{ display:flex; align-items:center; gap:6px; flex-wrap:wrap }
+  .period-custom input[type=date]{
+    border:1px solid var(--line); background:#fff; border-radius:10px;
+    padding:6px 10px; font-size:13px; color:var(--ink);
+  }
+  .period-custom input[type=date]:focus{ outline:none; border-color:var(--brand) }
+  .period-sep{ color:var(--muted); font-size:12px }
+  .period-apply{ appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff;
+    border-radius:10px; padding:7px 14px; font-size:13px; cursor:pointer; }
+  .period-apply:hover{ background:#0353e9 }
+  .period-badge{ font-size:12px; color:var(--muted); background:#f5f5f5; border-radius:6px; padding:3px 8px; margin-left:auto }
+  .diff-badge{ display:inline-block; font-size:11px; font-weight:600; border-radius:999px; padding:1px 7px; margin-left:5px; }
+  .diff-badge.up{ background:#dcfce7; color:#15803d }
+  .diff-badge.down{ background:#fee2e2; color:#b91c1c }
+  .diff-badge.flat{ background:#f3f4f6; color:#6b7280 }
+  .dow-table td, .dow-table th{ padding:6px 10px; font-size:13px }
+  .dow-table td.today-col{ background:#eff6ff; font-weight:700 }
+  .dow-table tr:hover td{ background:#f8faff }
+  .cong-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:12px 16px; margin-bottom:14px;
+  }
+  .cong-panel-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .cong-panel-title{
+    font-size:13px; font-weight:600; color:#333;
+    display:flex; align-items:center; gap:6px;
+  }
+  .cong-live-badge{
+    font-size:11px; padding:2px 8px; border-radius:999px;
+    background:#fee2e2; color:#b91c1c;
+  }
+  .cong-updated{ font-size:11px; color:var(--muted); }
+  .cong-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+  }
+  @media(max-width:600px){ .cong-grid{ grid-template-columns:repeat(2,1fr); } }
+  .cong-cell{
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px;
+    transition:box-shadow .15s;
+  }
+  @media(hover:hover){ .cong-cell:hover{ box-shadow:0 2px 8px rgba(0,0,0,.06) } }
+  .cong-type{ font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; }
+  .cong-row{ display:flex; align-items:center; gap:5px; margin-bottom:4px; }
+  .cong-row:last-child{ margin-bottom:0 }
+  .cong-plant{ font-size:10px; color:var(--muted); width:28px; flex-shrink:0; }
+  .cong-bar-wrap{ flex:1; height:6px; border-radius:99px; background:#ebebeb; overflow:hidden; }
+  .cong-bar{ height:100%; border-radius:99px; transition:width .4s ease; }
+  .cong-num{ font-size:10px; font-weight:600; min-width:28px; text-align:right; }
+  .cong-ok   { background:#639922 }
+  .cong-warn { background:#EF9F27 }
+  .cong-danger{ background:#E24B4A }
+  .cong-ok-txt   { color:#3B6D11 }
+  .cong-warn-txt { color:#854F0B }
+  .cong-danger-txt{ color:#A32D2D }
+  tbody tr.bw-row td { background:#eff6ff !important; }
+  tbody tr.sh-row td { background:#f0fdf4 !important; }
+  tbody tr.bw-row td.cell-hit { background:#fff2cc !important; }
+  tbody tr.sh-row td.cell-hit { background:#fff2cc !important; }
+  .car-badge{
+    display:inline-block; font-size:9px; font-weight:700; padding:1px 5px;
+    border-radius:4px; line-height:1.4; margin-top:1px;
+  }
+  .car-badge.crane{
+    background:#fef3c7; color:#92400e; border:1px solid #fcd34d;
+  }
+  .car-badge.danseol{
+    background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd;
+  }
+  #watchPanelEl { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div>
+        <h1 class="title">공장 내 차량 현황</h1>
+        <p class="subtitle" id="updated" style="margin-top:3px">업데이트 준비 중…</p>
+        <p class="subtitle" id="tabDesc" style="margin-top:2px;font-size:11px;color:#aaa">입차·분석</p>
+      </div>
+      <div class="view-toggle" role="tablist" style="flex-shrink:0;margin-top:2px">
+        <button class="tbtn active" id="btnViewLive" role="tab">입차·분석</button>
+        <button class="tbtn" id="btnViewDispatch" role="tab">배차</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:7px;margin-top:12px;align-items:center">
+      <select id="plantFilter" class="select" style="flex:0 0 90px;width:90px;min-width:0">
+        <option value="all">전체</option>
+        <option value="banwol">반월</option>
+        <option value="sihwa">시화</option>
+      </select>
+      <input id="searchInput" class="input" placeholder="0000" maxlength="4" inputmode="numeric" style="width:72px;flex:0 0 72px;min-width:0;letter-spacing:2px;text-align:center;font-weight:600" />
+      <button class="watch-add-btn" id="searchBtn" style="flex-shrink:0">검색</button>
+      <span id="searchSummary" class="badge search-pill" style="display:none;flex-shrink:0"></span>
+    </div>
+
+    <div id="refreshBtnWrap" style="margin-top:10px; display:none">
+      <button id="refreshRequestBtn" class="watch-add-btn" style="background:#1a56db;border:none;padding:8px 16px;font-size:13px" onclick="requestFetch()">
+        🔄 조회 요청
+      </button>
+      <span id="refreshCooldownMsg" style="font-size:12px;color:var(--muted);margin-left:8px"></span>
+    </div>
+
+    <div id="watchPanelEl" style="margin-top:8px">
+      <div style="display:flex;gap:7px;align-items:center">
+        <span class="select" style="display:inline-flex;align-items:center;justify-content:center;width:90px;flex:0 0 90px;color:#555;white-space:nowrap;cursor:default">감시 차량</span>
+        <span class="badge" id="watchCountBadge" style="display:none;flex-shrink:0"></span>
+        <input type="text" id="watchInput" placeholder="0000" maxlength="4" inputmode="numeric"
+          style="width:72px;flex:0 0 72px;padding:7px 6px;font-size:13px;letter-spacing:2px;text-align:center;font-weight:600;border:1px solid var(--line);border-radius:10px;background:#fff" />
+        <button class="watch-add-btn" id="watchAddBtn" style="flex-shrink:0">등록</button>
+        <button class="watch-clear-btn" id="watchClearBtn" style="flex-shrink:0">삭제</button>
+      </div>
+      <div class="watch-tags-row" id="watchTagsRow" style="margin-top:6px">
+        <span class="watch-empty-hint"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="carSearchPanel" style="display:none;background:#fff;border:1px solid #bfdbfe;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.05);margin-bottom:14px;overflow:hidden">
+    <div style="padding:11px 16px;border-bottom:1px solid #e0eaff;background:#eff6ff;display:flex;align-items:center;gap:8px">
+      <span style="font-size:14px">🔍</span>
+      <span style="font-size:13px;font-weight:700;color:#1e40af" id="carSearchTitle"></span>
+    </div>
+    <div id="carSearchLocation" style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f1f1f4;color:#374151"></div>
+    <div id="carSearchHistory" style="padding:10px 16px;font-size:12px"></div>
+  </section>
+
+  <section class="cong-panel" id="congPanel">
+    <div class="cong-panel-header">
+      <div class="cong-panel-title">
+        현재 혼잡도
+        <span class="cong-live-badge">● 실시간</span>
+      </div>
+      <span class="cong-updated" id="congUpdated"></span>
+    </div>
+    <div class="cong-grid" id="congGrid" style="cursor:pointer"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">항목 클릭 시 상세 보기</div>
+  </section>
+
+  <section class="grid" id="weighingPanel" style="display:none"></section>
+  <section class="grid" id="sections" style="display:none"></section>
+  <section id="analyticPanel" style="display:none"></section>
+
+  <section id="dispatchPanel" style="display:none">
+    <div class="grid">
+      <div class="col">
+        <div class="card">
+          <div class="stripe cyan"></div>
+          <div class="head"><h3>🏭 반월 출하현황</h3></div>
+          <div class="summary" id="dispatchSummaryBw"></div>
+          <div id="dispatchBodyBw"></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="stripe green"></div>
+          <div class="head"><h3>🏭 시화 출하현황</h3></div>
+          <div class="summary" id="dispatchSummarySh"></div>
+          <div id="dispatchBodySh"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzDoqbXO2K_VHHaXIJu4CF1pip0jQtto5m8gJfKjvyCNdbD0c9pzI2wk34_wpsm0vdoqw/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbzDoqbXO2K_VHHaXIJu4CF1pip0jQtto5m8gJfKjvyCNdbD0c9pzI2wk34_wpsm0vdoqw/exec';
+const API_TOKEN = 'DY_SCALE';
+
+const DANSEOL_CUSTCDS = new Set(['10637','11588','14593','10223','10633','32764','10676','10884','27118']);
+
+function isCrane(r){
+  if(last4(r.car || r.CARNUM || '') === '3777') return true;
+  const cd = String(r.custcd || r.CUSTCD || '').trim();
+  if(cd && DANSEOL_CUSTCDS.has(cd)) return false;
+  const totwei = Number(String(r.totwei || r.TOTWEI || '').replace(/[^\d.]/g,''));
+  const empavg = Number(String(r.empavg || r.EMPAVG || '').replace(/[^\d.]/g,''));
+  if(!empavg) return totwei > 0 && totwei < 30000;
+  return (totwei - empavg) <= 10000;
+}
+function isDanseol(r){
+  const cd = String(r.custcd || r.CUSTCD || '').trim();
+  return cd && DANSEOL_CUSTCDS.has(cd);
+}
+function carCellHtml(car, r, secTitle){
+  const isRaw = (secTitle === '원료 하차중' || secTitle === '원료 대기');
+  const crane = isRaw && isCrane(r);
+  const danseol = isRaw && isDanseol(r);
+  const badges = [
+    crane ? '<span class="car-badge crane">집게차</span>' : '',
+    danseol ? '<span class="car-badge danseol">단설</span>' : '',
+  ].filter(Boolean).join('');
+  if(!badges) return car;
+  return `<div style="line-height:1.3">${car}<br>${badges}</div>`;
+}
+
+const SLOT_LABELS = Array.from({length:144}, (_,i) => {
+  const h = Math.floor(i*10/60), m = (i*10)%60;
+  return m === 0 ? `${String(h).padStart(2,'0')}시` : null;
+});
+const SLOT_LABELS_FULL = Array.from({length:144}, (_,i) => {
+  const h = Math.floor(i*10/60), m = (i*10)%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+});
+
+const LS = { collapse:'ui.collapse.map', plant:'ui.plant', q:'ui.q' };
+
+const CAPA_MAP = {
+  '반월': { '제품 상차중': 5, '원료 하차중': 5, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+  '시화': { '제품 상차중': 10, '원료 하차중': 10, '부자재 입차중': 5, '컨테이너 입차중': 3 },
+};
+
+const CONG_TYPES = [
+  { key:'제품 상차중',     label:'제품',     tp:'product',   capaB:5,  capaS:7  },
+  { key:'원료 하차중',     label:'원료',     tp:'raw',       capaB:5,  capaS:10 },
+  { key:'부자재 입차중',   label:'부자재',   tp:'sub',       capaB:5,  capaS:5  },
+  { key:'컨테이너 입차중', label:'컨테이너', tp:'container', capaB:3,  capaS:3  },
+];
+
+function congColor(pct){ return pct >= 100 ? 'cong-danger' : pct >= 60 ? 'cong-warn' : 'cong-ok'; }
+function congColorTxt(pct){ return pct >= 100 ? 'cong-danger-txt' : pct >= 60 ? 'cong-warn-txt' : 'cong-ok-txt'; }
+
+let __avgDurMap = {};
+
+function calcAvgDurMap(plantFilter){
+  const today = todayKST();
+  const allKey = `all_${today}_${today}`;
+  const cached = __anCache[allKey];
+  const map = {};
+  if(!cached || cached.mode!=='all-daily') return map;
+
+  const TYPE_KEYS = ['product','raw','sub','container'];
+  const SEC_TITLE_MAP = {
+    product: '제품 상차중',
+    raw: '원료 하차중',
+    sub: '부자재 입차중',
+    container: '컨테이너 입차중',
+  };
+
+  TYPE_KEYS.forEach(tp=>{
+    const d = cached.data[tp]||{};
+    ['banwol','sihwa'].forEach(p=>{
+      const plant = p==='banwol'?'반월':'시화';
+      const twoHoursAgo = nowKSTMin() - 120;
+      const allList = (d[p]||[]);
+
+      if(tp === 'raw'){
+        ['crane','normal'].forEach(kind=>{
+          const filtered = allList.filter(r=>{
+            const outM = timeToMin(r.OUTIME);
+            if(outM == null || outM < twoHoursAgo) return false;
+            return kind === 'crane' ? isCrane(r) : !isCrane(r);
+          });
+          const durs = filtered
+            .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
+            .filter(v=>v!=null && v>0 && v<=120);
+          if(durs.length){
+            map[`raw_${kind}_${plant}`] = Math.round(durs.reduce((s,v)=>s+v,0)/durs.length);
+          }
+        });
+
+        const dursAll = allList
+          .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && outM>=twoHoursAgo; })
+          .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
+          .filter(v=>v!=null && v>0 && v<=120);
+        const baseAvg = dursAll.length ? Math.round(dursAll.reduce((s,v)=>s+v,0)/dursAll.length) : null;
+
+        const extraDurs = [];
+        if(baseAvg!=null && __lastData && __lastData.sections){
+          const secTitle = SEC_TITLE_MAP[tp];
+          const sec = __lastData.sections.find(s=>s.title===secTitle);
+          if(sec){
+            sec.groups.filter(g=>g.plant===plant).forEach(g=>{
+              g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+                const inM = timeToMin(fmtTime(r.time));
+                if(inM==null) return;
+                const elapsed = nowKSTMin() - inM;
+                if(elapsed > baseAvg) extraDurs.push(elapsed);
+              });
+            });
+          }
+        }
+        const allDurs = [...dursAll, ...extraDurs];
+        if(allDurs.length){
+          map[`raw_${plant}`] = Math.round(allDurs.reduce((s,v)=>s+v,0)/allDurs.length);
+        }
+      } else {
+        const durs = allList
+          .filter(r=>{ const outM=timeToMin(r.OUTIME); return outM!=null && (tp!=='product' ? outM>=twoHoursAgo : true); })
+          .map(r=>effectiveDurMin(r.INTIME, r.OUTIME, tp))
+          .filter(v=>v!=null && v>0 && v<=(tp==='product' ? 90 : 120));
+        const baseAvg = durs.length ? Math.round(durs.reduce((s,v)=>s+v,0)/durs.length) : null;
+
+        const extraDurs = [];
+        if(baseAvg!=null && __lastData && __lastData.sections){
+          const secTitle = SEC_TITLE_MAP[tp];
+          const sec = __lastData.sections.find(s=>s.title===secTitle);
+          if(sec){
+            sec.groups.filter(g=>g.plant===plant).forEach(g=>{
+              g.rows.filter(r=>!isMonoDigit(r.car)).forEach(r=>{
+                const inM = timeToMin(fmtTime(r.time));
+                if(inM==null) return;
+                const elapsed = nowKSTMin() - inM;
+                if(tp !== 'product' && elapsed > baseAvg && elapsed <= baseAvg * 2) extraDurs.push(elapsed);
+              });
+            });
+          }
+        }
+        const allDurs = [...durs, ...extraDurs];
+        if(allDurs.length){
+          map[`${tp}_${plant}`] = Math.round(allDurs.reduce((s,v)=>s+v,0)/allDurs.length);
+        }
+      }
+    });
+  });
+  return map;
+}
+
+function refreshAvgDurMap(plantFilter){
+  const today = todayKST();
+  const allKey = `all_${today}_${today}`;
+  if(__anCache[allKey]){
+    __avgDurMap = calcAvgDurMap(plantFilter);
+  } else {
+    loadAllTypesForSearch().then(()=>{
+      __avgDurMap = calcAvgDurMap(plantFilter);
+      if(document.getElementById('btnViewLive').classList.contains('active')) rerenderCache();
+    }).catch(()=>{});
+  }
+}
+async function refreshAvgDurMapAsync(){
+  const today=todayKST();
+  const allKey=`all_${today}_${today}`;
+  if(!__anCache[allKey]){
+    try{ await loadAllTypesForSearch(); }catch(e){}
+  }
+  const pf = document.getElementById('plantFilter')?.value || 'all';
+  __avgDurMap=calcAvgDurMap(pf);
+}
+
+function renderCongPanel(data, plantFilter){
+  const grid = document.getElementById('congGrid');
+  if(!grid || !data || !data.sections) return;
+
+  const sectionMap = {};
+  data.sections.forEach(sec => {
+    const counts = { '반월': 0, '시화': 0 };
+    sec.groups.forEach(g => {
+      counts[g.plant] = (counts[g.plant] || 0) + g.rows.filter(r => {
+        if(isMonoDigit(r.car)) return false;
+        if(sec.title!=='제품 상차중') return true;
+        const c4 = last4(r.car);
+        const inDisp = (__dispatchData?.active || []).some(o =>
+          o['배차여부'] === 'Y' &&
+          String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+        );
+        if(!inDisp) return false;
+        const inM = timeToMin(fmtTime(r.time));
+        if(inM==null) return true;
+        const avg = __avgDurMap[`product_${g.plant}`];
+        const threshold = avg ? (avg + 30) : 150;
+        const elapsed = nowKSTMin() - inM;
+        if(elapsed<0) return false;
+        if(elapsed>threshold && !inDisp) return false;
+        return true;
+      }).length;
+    });
+    sectionMap[sec.title] = counts;
+  });
+
+  grid.innerHTML = CONG_TYPES.map(t => {
+    const counts = sectionMap[t.key] || { '반월': 0, '시화': 0 };
+    const bw = counts['반월'], sh = counts['시화'];
+    const pctB = Math.round(bw / t.capaB * 100);
+    const pctS = Math.round(sh / t.capaS * 100);
+    const barWidthB = Math.min(pctB, 100);
+    const barWidthS = Math.min(pctS, 100);
+    const showB = (plantFilter !== 'sihwa');
+    const showS = (plantFilter !== 'banwol');
+    const avgB = __avgDurMap[`${t.tp}_반월`];
+    const avgS = __avgDurMap[`${t.tp}_시화`];
+    const avgBStr = avgB ? `평균 ${avgB}분` : '';
+    const avgSStr = avgS ? `평균 ${avgS}분` : '';
+
+    const rowB = showB ? `
+      <div class="cong-row">
+        <span class="cong-plant">반월</span>
+        <div class="cong-bar-wrap"><div class="cong-bar ${congColor(pctB)}" style="width:${barWidthB}%"></div></div>
+        <span class="cong-num ${congColorTxt(pctB)}">${bw}/${t.capaB}</span>
+      </div>
+      ${avgBStr?`<div style="font-size:9px;color:var(--muted);padding-left:31px;margin-bottom:2px">${avgBStr}</div>`:''}` : '';
+
+    const rowS = showS ? `
+      <div class="cong-row">
+        <span class="cong-plant">시화</span>
+        <div class="cong-bar-wrap"><div class="cong-bar ${congColor(pctS)}" style="width:${barWidthS}%"></div></div>
+        <span class="cong-num ${congColorTxt(pctS)}">${sh}/${t.capaS}</span>
+      </div>
+      ${avgSStr?`<div style="font-size:9px;color:var(--muted);padding-left:31px;margin-bottom:2px">${avgSStr}</div>`:''}` : '';
+
+    const worstPct = showB && showS ? Math.max(pctB, pctS) : showB ? pctB : pctS;
+    const borderColor = worstPct >= 100 ? '#fca5a5' : worstPct >= 60 ? '#fcd34d' : '#d1fae5';
+
+    return `<div class="cong-cell" style="border-color:${borderColor}">
+      <div class="cong-type">${t.label}</div>
+      ${rowB}${rowS}
+    </div>`;
+  }).join('');
+
+  document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
+  document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
+    const types = ['product','raw','sub','container'];
+    cell.addEventListener('click', () => setTypeTab(types[idx]));
+    cell.style.cursor = 'pointer';
+    cell.style.transition = 'box-shadow .15s, border-color .15s';
+    if(!('ontouchstart' in window)){
+      cell.addEventListener('mouseenter', () => cell.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)');
+      cell.addEventListener('mouseleave', () => cell.style.boxShadow = '');
+    }
+  });
+}
+
+function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):d.length>0?d.padStart(4,'0'):''; }
+function isMonoDigit(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4&&d.split('').every(c=>c===d[0]); }
+
+function fmtTime(raw){
+  if(raw==null) return '';
+  const s0=String(raw).trim(); if(!s0) return '';
+  const m=s0.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if(m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+  const d=s0.replace(/\D/g,'').padStart(6,'0');
+  if(d.length>=6) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+  if(d.length>=4) return `${d.slice(0,2)}:${d.slice(2,4)}`;
+  return s0;
+}
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function stripeClass(c){ return String(c||'').toLowerCase().includes('00ff00')?'green':'cyan'; }
+const collapseMap=(()=>{ try{ return JSON.parse(localStorage.getItem(LS.collapse)||'{}'); }catch(_){return{};} })();
+
+function api(params){
+  const qs=Object.entries(params).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
+  return fetch(`${SNAPSHOT_URL}?token=${API_TOKEN}&_ts=${Date.now()}&${qs}`).then(r=>r.json());
+}
+function timeToMin(t){
+  if(!t) return null;
+  const s=fmtTime(t); const m=s.match(/(\d{1,2}):(\d{2})/);
+  if(!m) return null;
+  return parseInt(m[1])*60+parseInt(m[2]);
+}
+function diffMin(inT,outT){
+  const a=timeToMin(inT), b=timeToMin(outT);
+  if(a==null||b==null) return null;
+  let d=b-a; if(d<0) d+=1440; return d;
+}
+function nowKSTMin(){
+  const kst=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'}));
+  return kst.getHours()*60+kst.getMinutes();
+}
+function isOvernightEntry(inT, outT){
+  const inM = timeToMin(inT), outM = timeToMin(outT);
+  if(inM == null || outM == null) return false;
+  return outM < inM;
+}
+const WORK_START_MIN = 6 * 60;
+
+function effectiveDurMin(inT, outT, type){
+  const inM = timeToMin(inT), outM = timeToMin(outT);
+  if(inM == null || outM == null) return null;
+  if(type === 'product'){
+    if(outM < inM){
+      if(outM <= WORK_START_MIN) return null;
+      return outM - WORK_START_MIN;
+    }
+    if(outM <= WORK_START_MIN) return null;
+    const effectiveIn = inM < WORK_START_MIN ? WORK_START_MIN : inM;
+    const dur = outM - effectiveIn;
+    return dur > 0 ? dur : null;
+  }
+  if(outM < inM){
+    const dur = 1440 + outM - inM;
+    return dur > 0 && dur <= 1440 ? dur : null;
+  }
+  const dur = outM - inM;
+  return dur > 0 ? dur : null;
+}
+
+function todayKST(){
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+}
+function daysAgo(n){
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000 - n * 86400000);
+  return kst.toISOString().slice(0, 10);
+}
+function thisWeekMonday(){
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const day = kst.getUTCDay();
+  const diff = day === 0 ? 6 : day - 1;
+  const mon = new Date(kst.getTime() - diff * 86400000);
+  return mon.toISOString().slice(0, 10);
+}
+function lastWeekRange(){
+  const monStr = thisWeekMonday();
+  const mon = new Date(monStr + 'T00:00:00Z');
+  const lastMon = new Date(mon.getTime() - 7 * 86400000);
+  const lastSun = new Date(lastMon.getTime() + 6 * 86400000);
+  return { from: lastMon.toISOString().slice(0, 10), to: lastSun.toISOString().slice(0, 10) };
+}
+function dateToDowLabel(dateStr){
+  const dow = ['일','월','화','수','목','금','토'];
+  const d = new Date(dateStr + 'T00:00:00Z');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${dow[d.getUTCDay()]}(${mm}/${dd})`;
+}
+
+let watchList={};
+async function fetchWatch(){
+  try{
+    const res=await api({action:'get_watch'});
+    const raw=res.watch||{};
+    Object.keys(raw).forEach(k=>{ if(watchList[k]===undefined) watchList[k]='pending'; });
+    Object.keys(watchList).forEach(k=>{ if(raw[k]===undefined) delete watchList[k]; });
+    renderWatchTags();
+  }catch(e){}
+}
+async function addWatch(num,silent=false){
+  const c=String(num).replace(/\D/g,'').slice(-4);
+  if(c.length!==4){ if(!silent) showToast('4자리 숫자를 입력하세요'); return false; }
+  if(watchList[c]!==undefined){ if(!silent) showToast(`${c} 이미 등록됨`); return false; }
+  try{
+    const res=await api({action:'add_watch',num:c});
+    if(!res.ok){ if(!silent) showToast(res.error||'등록 실패'); return false; }
+    watchList[c]='pending'; renderWatchTags(); if(!silent) showToast(`${c} 등록 완료`); return true;
+  }catch(e){ if(!silent) showToast('오류 발생'); return false; }
+}
+window.removeWatch=async function(num,silent=false){
+  try{
+    await api({action:'del_watch',num});
+    delete watchList[num];
+    renderWatchTags();
+    rerenderCache();
+    if(!silent) showToast(`${num} 삭제됨`);
+  }catch(e){}
+};
+function renderWatchTags(){
+  const row=document.getElementById('watchTagsRow');
+  const keys=Object.keys(watchList);
+  const badge=document.getElementById('watchCountBadge');
+  if(!row || !badge) return;
+  if(!keys.length){ row.innerHTML='<span class="watch-empty-hint"></span>'; badge.style.display='none'; return; }
+  badge.style.display='inline-block';
+  badge.textContent=`감시 ${keys.length}대`;
+  row.innerHTML=keys.map(k=>{
+    const st=watchList[k];
+    const cls=st==='found'?'found':st==='not-found'?'not-found':'pending';
+    const icon=st==='found'?'✅':st==='not-found'?'❌':'⏳';
+    const label=st==='found'?'입차됨':st==='not-found'?'미확인':'대기';
+    return `<span class="watch-tag ${cls}" id="wtag-${k}">${icon} <strong>${k}</strong><span class="tag-status">${label}</span><button class="remove-btn" onclick="removeWatch('${k}')">✕</button></span>`;
+  }).join('');
+}
+function syncWatch(allCars){
+  if(!Object.keys(watchList).length) return;
+  const found=new Set(allCars.map(c=>last4(c)).filter(Boolean));
+  let changed=false;
+  Object.keys(watchList).forEach(k=>{
+    const ns=found.has(k)?'found':'not-found';
+    if(watchList[k]!==ns){ watchList[k]=ns; changed=true; }
+  });
+  if(changed){
+    renderWatchTags();
+    Object.keys(watchList).filter(k=>watchList[k]==='found').forEach(k=>{
+      const el=document.getElementById(`wtag-${k}`);
+      if(el){el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');}
+    });
+  }
+}
+
+let __searchCount=0, __lastWeigh=null, __lastData=null;
+const elUpdated=document.getElementById('updated');
+const elSections=document.getElementById('sections');
+const elWeighPanel=document.getElementById('weighingPanel');
+
+function render(data){
+  if(!data||!data.sections) return;
+  __lastData=data;
+  __searchCount=0;
+  elUpdated.textContent=`${data.updatedAt||'-'} · 반월/시화 · 계근`;
+  const plantSel=document.getElementById('plantFilter').value;
+  const q=(document.getElementById('searchInput').value||'').trim().replace(/\s+/g,'');
+  const dqq=q.replace(/\D/g,''), isFour=/^\d{4}$/.test(dqq);
+  const LEFT=['제품 상차중','원료 하차중','원료 대기'];
+  const RIGHT=['부자재 입차중','컨테이너 입차중'];
+  const byTitle=Object.fromEntries(data.sections.map(s=>[s.title,s]));
+  const allCars=[];
+
+  const buildSec=sec=>{
+    let rows=[];
+    sec.groups.forEach(g=>{
+      if(plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화')){
+        rows.push(...g.rows.filter(r=>{
+          const d=String(r.car||'').replace(/\D/g,'');
+          return d.length===4 && !isMonoDigit(r.car);
+        }).map(r=>({...r,plant:g.plant})));
+      }
+    });
+    rows.forEach(r=>allCars.push(r.car));
+    if(q) rows=rows.filter(r=>{ const m=isFour?last4(r.car)===dqq:String(r.car).includes(q); if(m)__searchCount++; return m; });
+    const collapsed=collapseMap[sec.title];
+    let seq=1;
+
+    const TYPE_FOR_SEC = {
+      '제품 상차중':'product',
+      '원료 하차중':'raw',
+      '원료 대기':'raw',
+      '부자재 입차중':'sub',
+      '컨테이너 입차중':'container'
+    };
+
+    const rawQueueEstMap = {};
+    if(sec.title === '원료 하차중'){
+      ['반월','시화'].forEach(plant=>{
+        ['crane','normal'].forEach(kind=>{
+          const avgKey = `raw_${kind}_${plant}`;
+          const avg = __avgDurMap[avgKey] || (kind === 'crane' ? 30 : 60);
+
+          const plantRows = rows
+            .filter(r => r.plant === plant && (kind === 'crane' ? isCrane(r) : !isCrane(r)))
+            .slice()
+            .sort((a,b)=>(timeToMin(fmtTime(a.time))||0)-(timeToMin(fmtTime(b.time))||0));
+
+          let prevEstOut = null;
+          plantRows.forEach(r=>{
+            const inM = timeToMin(fmtTime(r.time));
+            if(inM==null) return;
+            const selfEst = inM + avg;
+            const nowMin = nowKSTMin();
+            const estOut = prevEstOut!=null ? Math.max(selfEst, prevEstOut + avg) : selfEst;
+            rawQueueEstMap[`${plant}_${r.car}`] = estOut;
+            prevEstOut = Math.max(estOut, nowMin);
+          });
+        });
+      });
+    }
+
+    const rowsHTML=rows.length?rows.map((r,i)=>{
+      const sep=(plantSel==='all'&&i>0&&rows[i-1].plant!==r.plant);
+      if(sep) seq=1;
+      const watched=last4(r.car)&&watchList[last4(r.car)]!==undefined;
+
+      const secType = TYPE_FOR_SEC[sec.title]||'product';
+      const avgDurForRow = __avgDurMap[`${secType}_${r.plant}`];
+      const inMinForRow = timeToMin(fmtTime(r.time));
+      const nowMinForRow = nowKSTMin();
+      const elapsedForRow = inMinForRow!=null ? nowMinForRow - inMinForRow : null;
+      const threshold = avgDurForRow || (secType==='raw' ? 60 : 120);
+
+      const car4 = last4(r.car);
+      const inShipPlan = window.__shipPlanCars && window.__shipPlanCars.has(car4);
+
+      const inDispatch = sec.title === '제품 상차중'
+        ? (__dispatchData?.active || []).some(o =>
+            o['배차여부'] === 'Y' &&
+            String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === car4
+          )
+        : true;
+
+      const isUnDispatched = sec.title === '제품 상차중' && !inDispatch;
+
+      const isAbnormal = sec.title!=='원료 대기' && sec.title!=='원료 하차중' && elapsedForRow!=null && (elapsedForRow<0 || elapsedForRow > threshold+30) && !inShipPlan && !inDispatch;
+
+      let estTd = '<td style="color:var(--muted);font-size:12px">—</td>';
+
+      if(sec.title==='원료 하차중' && inMinForRow!=null){
+        const queueKey = `${r.plant}_${r.car}`;
+        const estMin = rawQueueEstMap[queueKey];
+        if(estMin!=null){
+          const remainMin = estMin - nowMinForRow;
+          if(remainMin > 0){
+            const estH = Math.floor(estMin/60)%24;
+            const estM = estMin%60;
+            const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
+            estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#0C447C">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후</span></td>`;
+          } else {
+            const overMin = Math.abs(remainMin);
+            estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
+          }
+        }
+      } else if(sec.title==='제품 상차중' && isUnDispatched){
+        estTd = `<td style="font-size:11px"><span style="color:#aaa">미배차</span></td>`;
+      } else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && elapsedForRow!=null && elapsedForRow>=0){
+        const estMin = inMinForRow + threshold;
+        const remainMin = estMin - nowMinForRow;
+        if(remainMin > 0){
+          const estH = Math.floor(estMin/60)%24;
+          const estM = estMin%60;
+          const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#0C447C">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후</span></td>`;
+        } else {
+          const overMin = Math.abs(remainMin);
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
+        }
+      } else if(sec.title==='원료 대기'){
+        const rawSec = __lastData&&__lastData.sections&&__lastData.sections.find(s=>s.title==='원료 하차중');
+        const rawNowCount = rawSec ? rawSec.groups
+          .filter(g=>plantSel==='all'||(plantSel==='banwol'&&g.plant==='반월')||(plantSel==='sihwa'&&g.plant==='시화'))
+          .reduce((sum,g)=>sum+g.rows.filter(rr=>!isMonoDigit(rr.car)).length, 0) : 0;
+        const capaRaw = r.plant==='반월' ? (CAPA_MAP['반월']['원료 하차중']||5) : (CAPA_MAP['시화']['원료 하차중']||10);
+        const avgDurRaw = __avgDurMap[`raw_${r.plant}`] || 60;
+        const freeSlots = Math.max(0, capaRaw - rawNowCount);
+        const waitingRowsSamePlant = rows.filter(rr=>rr.plant===r.plant);
+        const myWaitIdx = waitingRowsSamePlant.indexOf(r);
+        if(freeSlots > myWaitIdx){
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#059669">곧 입차</span><br><span style="color:var(--muted);font-size:10px">자리 있음</span></td>`;
+        } else {
+          const waitTurns = myWaitIdx - freeSlots + 1;
+          const estWaitMin = Math.round(waitTurns * avgDurRaw * 0.5);
+          const estEntryMin = nowMinForRow + estWaitMin;
+          const estH = Math.floor(estEntryMin/60)%24;
+          const estM = estEntryMin%60;
+          const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
+          estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#78350f">${estStr}</span><br><span style="color:var(--muted);font-size:10px">약 ${estWaitMin}분 후·참고</span></td>`;
+        }
+      } else if(isAbnormal){
+        const elapsed = elapsedForRow!=null&&elapsedForRow>0 ? elapsedForRow : null;
+        const elapsedStr = elapsed ? `${Math.floor(elapsed/60)>0?Math.floor(elapsed/60)+'h ':''}${elapsed%60}m` : '';
+        estTd = `<td style="font-size:11px"><span style="color:var(--muted)">미배차${elapsedStr?' · '+elapsedStr:''}</span></td>`;
+      }
+
+      const isSub = sec.title==='부자재 입차중';
+      if(isSub && inMinForRow!=null){
+        const elStr = (elapsedForRow!=null && elapsedForRow>=0)
+          ? `${Math.floor(elapsedForRow/60)>0 ? Math.floor(elapsedForRow/60)+'h ' : ''}${elapsedForRow%60}m 경과`
+          : '—';
+        estTd = `<td style="font-size:11px;color:var(--muted)">${elStr}</td>`;
+      }
+
+      let subItemInner;
+      if(isSub){
+        const nm = String(r.itemnm || '').trim();
+        subItemInner = nm
+          ? `<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:11px">${nm}</span>`
+          : `<span style="color:#dc2626;font-weight:600;font-size:11px">미입력</span>`;
+      }
+      const subItemTd = isSub
+        ? `<td style="text-align:left;vertical-align:middle;padding:4px 6px">${subItemInner}</td>`
+        : '';
+
+      const plantClass = r.plant==='반월' ? 'bw-row' : 'sh-row';
+      const carCellContent = carCellHtml(r.car, r, sec.title);
+      const carCellStyle = isFour&&last4(r.car)===dqq ? 'cell-hit' : '';
+
+      return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"': isUnDispatched?' style="opacity:0.35;background:#f5f5f5"':''}>
+        <td>${seq++}</td>
+        <td class="${carCellStyle}" style="vertical-align:middle">${carCellContent}</td>
+        <td>${fmtTime(r.time)}</td>
+        ${estTd}
+        ${isSub ? subItemTd : `<td style="color:#185FA5;font-size:12px">${r.totwei?Number(String(r.totwei).replace(/[^\d.]/g,'')).toLocaleString()+'kg':'—'}</td>`}
+      </tr>`;
+    }).join(''):'<tr><td colspan="5" class="empty">(데이터 없음)</td></tr>';
+
+    const sc=rows.filter(r=>{
+      if(r.plant!=='반월') return false;
+      if(sec.title!=='제품 상차중') return true;
+      const c4 = last4(r.car);
+      const inDisp = (__dispatchData?.active || []).some(o =>
+        o['배차여부'] === 'Y' &&
+        String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+      );
+      if(!inDisp) return false;
+      const inM=timeToMin(fmtTime(r.time));
+      if(inM==null) return true;
+      const avg=__avgDurMap[`product_반월`];
+      const threshold=avg?(avg+30):150;
+      const elapsed=nowKSTMin()-inM;
+      return !(elapsed<0||elapsed>threshold);
+    }).length;
+
+    const bc=rows.filter(r=>{
+      if(r.plant!=='시화') return false;
+      if(sec.title!=='제품 상차중') return true;
+      const c4 = last4(r.car);
+      const inDisp = (__dispatchData?.active || []).some(o =>
+        o['배차여부'] === 'Y' &&
+        String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === c4
+      );
+      if(!inDisp) return false;
+      const inM=timeToMin(fmtTime(r.time));
+      if(inM==null) return true;
+      const avg=__avgDurMap[`product_시화`];
+      const threshold=avg?(avg+30):150;
+      const elapsed=nowKSTMin()-inM;
+      return !(elapsed<0||elapsed>threshold);
+    }).length;
+
+    let summaryStr = `반월 ${sc} · 시화 ${bc}`;
+    if(sec.title === '원료 하차중'){
+      const craneCount = rows.filter(r=>isCrane(r)).length;
+      if(craneCount > 0) summaryStr += ` · 집게차 ${craneCount}대`;
+    }
+
+    const estColHeader = sec.title==='원료 대기' ? '예상 입차' : '예상 출차';
+    const lastColHeader = sec.title==='부자재 입차중' ? '품목' : '입차중량';
+
+    const secNote = sec.title==='원료 하차중'
+      ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상출차: 집게차/일반 분리 · 평균 체류시간 순차 누적</div>`
+      : sec.title==='원료 대기'
+      ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상입차: 평균 체류시간 ½ 주기 추정</div>`
+      : '';
+
+    return `<article class="card">
+      <div class="stripe ${stripeClass(sec.color)}"></div>
+      <div class="head"><h3>${sec.title}</h3>
+        <div class="head-right">
+          ${plantSel==='all'?`<span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#eff6ff;border:1px solid #bfdbfe"></span>반월
+            <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f0fdf4;border:1px solid #bbf7d0"></span>시화
+          </span>`:''}
+          <button class="btn" onclick="toggleCard('${encodeURIComponent(sec.title)}',this)">${collapsed?'펼치기':'접기'}</button>
+        </div>
+      </div>
+      <div class
