@@ -315,8 +315,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbwOtag_J4BdzHQqvEUo6kQbP9ZPje-eAYhu5L-BiO2T1ydw9beae7t7bLsE56s-ApicgA/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbwOtag_J4BdzHQqvEUo6kQbP9ZPje-eAYhu5L-BiO2T1ydw9beae7t7bLsE56s-ApicgA/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzDoqbXO2K_VHHaXIJu4CF1pip0jQtto5m8gJfKjvyCNdbD0c9pzI2wk34_wpsm0vdoqw/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbzDoqbXO2K_VHHaXIJu4CF1pip0jQtto5m8gJfKjvyCNdbD0c9pzI2wk34_wpsm0vdoqw/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -689,66 +689,6 @@ function dateToDowLabel(dateStr){
 }
 
 // ═══ 부자재 이력 캐시 ═══
-let __subHistoryMap = {};
-let __empavgMap = {};
-let __subHistoryLoaded = false;
-
-async function fetchSubHistory(carnums) {
-  if(!carnums||carnums.length===0) return;
-  const nums = carnums.map(c=>last4(c)).filter(Boolean);
-  if(!nums.length) return;
-  try{
-    const res = await api({action:'get_sub_history', carnums: nums.join(',')});
-    if(res && res.ok){
-      if(res.byCar)    Object.assign(__subHistoryMap, res.byCar);
-      if(res.empavgMap) Object.assign(__empavgMap, res.empavgMap);
-      __subHistoryLoaded = true;
-      applySubHistoryToDOM();
-    }
-  }catch(e){}
-}
-
-function applySubHistoryToDOM(){
-  document.querySelectorAll('[data-sub-car]').forEach(el=>{
-    const car4 = el.dataset.subCar;
-    const hist = __subHistoryMap[car4];
-    const td = el.closest('td');
-    if(!td) return;
-    if(hist && hist.items && hist.items.length){
-      td.innerHTML = hist.items.map(it=>
-        `<div style="margin:1px 0"><span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#ede9fe;color:#7c3aed;font-weight:600;font-size:11px" title="${it.avgDur?'평균 '+it.avgDur+'분':''}">${it.itemnm}</span></div>`
-      ).join('');
-    } else {
-      el.textContent = '신규';
-      el.style.color = '#dc2626';
-      el.style.fontWeight = '600';
-    }
-  });
-
-  document.querySelectorAll('[data-sub-est]').forEach(td=>{
-    const car4 = td.dataset.subEst;
-    const inMin = parseInt(td.dataset.inMin||'');
-    const hist = __subHistoryMap[car4];
-    if(!hist || !hist.items || isNaN(inMin)) return;
-    const empavgCode = td.dataset.empavg||'';
-    const currentItemNm = empavgCode ? (__empavgMap[empavgCode]||null) : null;
-    const matched = currentItemNm ? hist.items.find(it=>it.itemnm===currentItemNm) : null;
-    const avgDurSub = matched ? matched.avgDur : (hist.items[0] ? hist.items[0].avgDur : null);
-    if(!avgDurSub) return;
-    const nowMin = nowKSTMin();
-    const estMin = inMin + avgDurSub;
-    const remainMin = estMin - nowMin;
-    if(remainMin > 0){
-      const estH = Math.floor(estMin/60)%24;
-      const estM = estMin%60;
-      const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
-      td.innerHTML = `<span style="font-weight:600;color:#7c3aed;font-size:11px">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후·이력</span>`;
-    } else {
-      const overMin = Math.abs(remainMin);
-      td.innerHTML = `<span style="font-weight:600;color:#E24B4A;font-size:11px">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span>`;
-    }
-  });
-}
 
 // ═══ 감시 차량 ═══
 let watchList={};
@@ -965,58 +905,23 @@ else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && el
         estTd = `<td style="font-size:11px"><span style="color:var(--muted)">미배차${elapsedStr?' · '+elapsedStr:''}</span></td>`;
       }
 
-      // 부자재
-      const isSub = sec.title==='부자재 입차중';
-      const subHist = isSub ? (__subHistoryMap[car4] || null) : null;
-      const empavgCode = isSub ? String(r.empavg||'').trim() : '';
-      const currentItemNm = empavgCode ? (__empavgMap[empavgCode] || null) : null;
+// 부자재
+const isSub = sec.title==='부자재 입차중';
 
-      if(isSub && inMinForRow!=null){
-        let avgDurSub = null;
-        if(__subHistoryLoaded && subHist && subHist.items){
-          const matched = currentItemNm ? subHist.items.find(it=>it.itemnm===currentItemNm) : null;
-          avgDurSub = matched ? matched.avgDur : (subHist.items[0] ? subHist.items[0].avgDur : null);
-        }
-        if(avgDurSub && elapsedForRow!=null && elapsedForRow>=0){
-          const estMin = inMinForRow + avgDurSub;
-          const remainMin = estMin - nowMinForRow;
-          if(remainMin > 0){
-            const estH = Math.floor(estMin/60)%24;
-            const estM = estMin%60;
-            const estStr = `${String(estH).padStart(2,'0')}:${String(estM).padStart(2,'0')}`;
-            estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#7c3aed">${estStr}</span><br><span style="color:var(--muted);font-size:10px">${remainMin}분 후·이력</span></td>`;
-          } else {
-            const overMin = Math.abs(remainMin);
-            estTd = `<td style="font-size:11px;line-height:1.4"><span style="font-weight:600;color:#E24B4A">+${overMin}분</span><br><span style="color:var(--muted);font-size:10px">초과 체류</span></td>`;
-          }
-        } else {
-          const elStr = (elapsedForRow!=null&&elapsedForRow>=0)
-            ? `${Math.floor(elapsedForRow/60)>0?Math.floor(elapsedForRow/60)+'h ':''}${elapsedForRow%60}m 경과`
-            : '—';
-          estTd = `<td data-sub-est="${car4}" data-in-min="${inMinForRow}" data-empavg="${empavgCode}" style="font-size:11px;color:var(--muted);line-height:1.4">${elStr}</td>`;
-        }
-      }
+if(isSub && inMinForRow!=null){
+  const elStr = (elapsedForRow!=null && elapsedForRow>=0)
+    ? `${Math.floor(elapsedForRow/60)>0 ? Math.floor(elapsedForRow/60)+'h ' : ''}${elapsedForRow%60}m 경과`
+    : '—';
+  estTd = `<td style="font-size:11px;color:var(--muted)">${elStr}</td>`;
+}
 
-      let subItemInner;
-      if(!isSub){
-        subItemInner = null;
-      } else {
-        const histItems = (subHist && subHist.items) ? subHist.items : [];
-        if(!__subHistoryLoaded){
-          subItemInner = `<span data-sub-car="${car4}" style="color:#9ca3af;font-weight:600;font-size:11px">…</span>`;
-        } else if(currentItemNm || histItems.length){
-          const currentBadge = currentItemNm
-            ? `<div style="margin:1px 0"><span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:11px">▶ ${currentItemNm}</span></div>`
-            : '';
-          const histBadges = histItems
-            .filter(it=> it.itemnm !== currentItemNm)
-            .map(it=>`<div style="margin:1px 0"><span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#ede9fe;color:#7c3aed;font-weight:600;font-size:11px" title="${it.avgDur?'평균 '+it.avgDur+'분':''}">${it.itemnm}</span></div>`)
-            .join('');
-          subItemInner = currentBadge + histBadges || `<span style="color:#dc2626;font-weight:600;font-size:11px">신규</span>`;
-        } else {
-          subItemInner = `<span style="color:#dc2626;font-weight:600;font-size:11px">신규</span>`;
-        }
-      }
+    let subItemInner;
+if(isSub){
+  const nm = String(r.itemnm || '').trim();
+  subItemInner = nm
+    ? `<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:11px">${nm}</span>`
+    : `<span style="color:#dc2626;font-weight:600;font-size:11px">미입력</span>`;
+}
       const subItemTd = isSub
         ? `<td style="text-align:left;vertical-align:middle;padding:4px 6px">${subItemInner}</td>`
         : '';
@@ -1079,7 +984,7 @@ const sc=rows.filter(r=>{
     }
 
     const estColHeader = sec.title==='원료 대기' ? '예상 입차' : '예상 출차';
-    const lastColHeader = sec.title==='부자재 입차중' ? '이력품목' : '입차중량';
+    const lastColHeader = sec.title==='부자재 입차중' ? '품목' : '입차중량';
 
     const secNote = sec.title==='원료 하차중'
       ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상출차: 집게차/일반 분리 · 평균 체류시간 순차 누적</div>`
@@ -1128,11 +1033,7 @@ return `<article class="card">
     }
   }
 
-  const subSec = data.sections.find(s=>s.title==='부자재 입차중');
-  if(subSec){
-    const subCars = subSec.groups.flatMap(g=>g.rows.map(r=>r.car)).filter(c=>!isMonoDigit(c));
-    if(subCars.length > 0) fetchSubHistory(subCars);
-  }
+
 
  if(document.getElementById('btnViewLive').classList.contains('active')){
   if(!document.querySelector('#congGrid .cong-cell')){
@@ -2483,7 +2384,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbwOtag_J4BdzHQqvEUo6kQbP9ZPje-eAYhu5L-BiO2T1ydw9beae7t7bLsE56s-ApicgA/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbzDoqbXO2K_VHHaXIJu4CF1pip0jQtto5m8gJfKjvyCNdbD0c9pzI2wk34_wpsm0vdoqw/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
