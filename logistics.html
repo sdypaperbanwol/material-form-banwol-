@@ -286,53 +286,28 @@
 
   
 <section class="grid" id="weighingPanel" style="display:none"></section>
-  <section class="grid" id="sections" style="display:none"></section>
-  <section id="analyticPanel" style="display:none"></section>
- <section id="dispatchPanel" style="display:none">
+<section class="grid" id="sections" style="display:none"></section>
+<section id="analyticPanel" style="display:none"></section>
+<section id="dispatchPanel" style="display:none">
   <div class="grid">
-    <!-- 반월 -->
-    <!-- 반월 -->
     <div class="col">
-          <div class="card">
+      <div class="card">
         <div class="stripe cyan"></div>
         <div class="head"><h3>🏭 반월 출하현황</h3></div>
         <div class="summary" id="dispatchSummaryBw"></div>
-       <div style="overflow-x:auto">
-          <table style="width:100%">
-<thead><tr>
-  <th style="width:32px">No</th>
-  <th style="width:44px">구분</th>
-  <th style="width:56px">차량</th>
-  <th>납품처명</th>
-  <th style="width:44px">상차</th>
-  <th style="width:56px">상태</th>
-</tr></thead>
-            <tbody id="dispatchBodyBw"></tbody>
-          </table>
-        </div>
+        <div id="dispatchBodyBw"></div>
       </div>
     </div>
-    <!-- 시화 -->
     <div class="col">
-          <div class="card">
+      <div class="card">
         <div class="stripe green"></div>
         <div class="head"><h3>🏭 시화 출하현황</h3></div>
         <div class="summary" id="dispatchSummarySh"></div>
-       <div style="overflow-x:auto">
-          <table style="width:100%">
-        <thead><tr>
-  <th style="width:32px">No</th>
-  <th style="width:44px">구분</th>
-  <th style="width:56px">차량</th>
-  <th>납품처명</th>
-  <th style="width:44px">상차</th>
-  <th style="width:56px">상태</th>
-</tr></thead>
-            <tbody id="dispatchBodySh"></tbody>
-          </table>
-        </div>
+        <div id="dispatchBodySh"></div>
       </div>
+    </div>
   </div>
+</section>
 
 </section>
 </div>
@@ -2635,87 +2610,64 @@ function buildOrderRows(rows, isDim) {
     if (plantSel === 'sihwa' && !plant.includes('시화')) return false;
     return true;
   });
-  if (!filtered.length) return '<tr><td colspan="6" class="empty">데이터 없음</td></tr>';
+  if (!filtered.length) return '<div style="padding:14px;color:var(--muted);text-align:center;font-size:13px">데이터 없음</div>';
 
   return filtered.map((r, i) => {
     const isSihwa = String(r['사업장'] || '').includes('시화');
     const isDispatched = r['배차여부'] === 'Y';
-    const rowBg = isSihwa ? 'background:#f0fdf4' : 'background:#eff6ff';
     const opacity = isDim ? 'opacity:0.6;' : '';
-    const td  = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:center"`;
-    const tdL = `style="${rowBg};${opacity}border-bottom:1px solid #eee;padding:7px 10px;text-align:left"`;
 
     const 주문R = Number(r['ROLL수량'] || 0);
     const 상차R = Number(r['상차량'] || 0);
-    const scanColor = isDim ? ''
-      : 상차R >= 주문R && 주문R > 0 ? 'color:#16a34a;font-weight:700'
-      : 상차R > 0 ? 'color:#f59e0b;font-weight:700' : 'color:#9ca3af';
+    const barPct = 주문R > 0 ? Math.min(100, Math.round(상차R / 주문R * 100)) : 0;
+    const barColor = 상차R >= 주문R && 주문R > 0 ? '#16a34a' : 상차R > 0 ? '#f59e0b' : '#d1d5db';
 
     const creator = String(r['계획생성자'] || 'TMS');
-const creatorBadge = creator === 'ERP'
-  ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">ERP</span>`
-  : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">TMS</span>`;
+    const creatorBadge = creator === 'ERP'
+      ? `<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">ERP</span>`
+      : `<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700">TMS</span>`;
 
-// 합짐은 차량 아래로
-const hapjim = r['합짐'] === 'Y'
-  ? `<br><span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
-  : '';
+    const hapjimBadge = r['합짐'] === 'Y'
+      ? `<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
+      : '';
+
     const car4 = isDispatched ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4) : '—';
 
-    // ★ 계근 상태 확인
+    // 상태 뱃지
     let arrivalStatus = '';
-    if (isDispatched && car4 && car4 !== '—' && __lastData && __lastData.sections) {
-     const SEC_LABEL = {
-  '제품 상차중':   null,
-  '원료 하차중':   '원료하차',
-  '원료 대기':     '원료대기',
-  '부자재 입차중': '부자재',
-  '컨테이너 입차중': '컨테이너',
-};
+    if (!isDispatched) {
+      arrivalStatus = `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f1f5f9;color:#94a3b8;font-weight:600">미배차</span>`;
+    } else if (상차R > 0) {
+      const label = (주문R > 0 && 상차R >= 주문R) ? '상차완료' : '상차중';
+      const bg = (주문R > 0 && 상차R >= 주문R) ? '#dbeafe' : '#dcfce7';
+      const color = (주문R > 0 && 상차R >= 주문R) ? '#1d4ed8' : '#15803d';
+      arrivalStatus = `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:${bg};color:${color};font-weight:700">${label}</span>`;
+    } else if (car4 && car4 !== '—' && __lastData && __lastData.sections) {
+      const SEC_LABEL = {
+        '원료 하차중': '원료하차', '원료 대기': '원료대기',
+        '부자재 입차중': '부자재', '컨테이너 입차중': '컨테이너',
+      };
       for (const sec of __lastData.sections) {
         const label = SEC_LABEL[sec.title];
-        if (label === undefined || label === null) continue;
-        const found = sec.groups.some(g =>
-          g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car))
-        );
+        if (!label) continue;
+        const found = sec.groups.some(g => g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car)));
         if (found) {
-          arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef9c3;color:#854d0e;font-weight:700">${label}</span>`;
+          arrivalStatus = `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#fef9c3;color:#854d0e;font-weight:700">${label}</span>`;
           break;
         }
       }
-if (!isDispatched) {
-  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#94a3b8;font-weight:600">미배차</span>`;
-} else if (!arrivalStatus) {
-  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
-}
-    }
-
-    // ★ 제품 상차중이면 arrivalStatus 비움 (이미 싣는 중이라 표시 불필요)
-// ★ 제품 상차중이면 상차R 기준으로 판단
-if (isDispatched && car4 && __lastData && __lastData.sections) {
-  const prodSec = __lastData.sections.find(s => s.title === '제품 상차중');
-  if (prodSec) {
-    const inProd = prodSec.groups.some(g =>
-      g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car))
-    );
-    if (inProd) {
-      if (상차R > 0) {
-        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700">상차중</span>`;
-      } else {
-        arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef9c3;color:#854d0e;font-weight:700">도착</span>`;
+      const prodSec = __lastData.sections.find(s => s.title === '제품 상차중');
+      if (prodSec && prodSec.groups.some(g => g.rows.some(row => last4(row.car) === car4 && !isMonoDigit(row.car)))) {
+        arrivalStatus = `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#fef9c3;color:#854d0e;font-weight:700">도착</span>`;
       }
+      if (!arrivalStatus) {
+        arrivalStatus = `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
+      }
+    } else {
+      arrivalStatus = `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f1f5f9;color:#64748b;font-weight:600">미도착</span>`;
     }
-  }
-}
 
-// ★ 추가 — 계근 섹션에 없어도 상차R > 0이면 상차중
-if (isDispatched && 상차R > 0) {
-  const label = (주문R > 0 && 상차R >= 주문R) ? '상차완료' : '상차중';
-  const bg = (주문R > 0 && 상차R >= 주문R) ? '#dbeafe' : '#dcfce7';
-  const color = (주문R > 0 && 상차R >= 주문R) ? '#1d4ed8' : '#15803d';
-  arrivalStatus = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:${bg};color:${color};font-weight:700">${label}</span>`;
-}
-
+    // 품목 상세
     let items = [];
     try {
       const rawItems = r['품목목록'];
@@ -2725,77 +2677,82 @@ if (isDispatched && 상차R > 0) {
     const hasItems = items.length > 0;
     const plant = isSihwa ? '시화' : '반월';
     const PRIMARY_WH = isSihwa ? '2260' : '9160';
+    const rowKey = String(r['주문번호'] || '') + '_' + String(r['차량번호'] || '');
+    const isExpanded = __dispatchExpanded.has(rowKey);
 
-const stockHints = items.map(it => {
-  const remaining = calcRemainingStock(it['품목명'], plant, PRIMARY_WH);
-  const primary = remaining[PRIMARY_WH] || 0;
-  const ordered = it['ROLL수량'] || 0;
-  const picked = it['상차량'] || 0;
-  const others = Object.entries(remaining)
-    .filter(([k, v]) => String(k) !== String(PRIMARY_WH) && v > 0)
-    .map(([k, v]) => {
-      const nm = (__inventoryData.find(iv => String(iv['창고코드']) === String(k)) || {})['창고명'] || k;
-      return `${nm} ${v}R`;
-    });
-  let stockStr = '';
-  if (primary > 0) {
-    stockStr = `✅ 본창고 ${primary}R`;
-    if (others.length) stockStr += ` / 기타: ${others.join(', ')}`;
-  } else if (others.length) {
-    stockStr = `⚠️ 본창고 없음 → ${others.join(', ')}`;
-  } else {
-    stockStr = `❌ 재고 없음`;
-  }
-  const pct = ordered > 0 ? Math.round(picked / ordered * 100) : 0;
-  const barFilled = Math.round(pct / 100 * 6);
-  const bar = '█'.repeat(barFilled) + '░'.repeat(6 - barFilled);
-  const pickStr = `${bar} ${picked}/${ordered}R`;
-  return { nmItem: it['품목명'], picked, ordered, stockStr };
-});
+    const stockHints = items.map(it => {
+      const remaining = calcRemainingStock(it['품목명'], plant, PRIMARY_WH);
+      const primary = remaining[PRIMARY_WH] || 0;
+      const ordered = it['ROLL수량'] || 0;
+      const picked = it['상차량'] || 0;
+      const others = Object.entries(remaining)
+        .filter(([k, v]) => String(k) !== String(PRIMARY_WH) && v > 0)
+        .map(([k, v]) => {
+          const nm = (__inventoryData.find(iv => String(iv['창고코드']) === String(k)) || {})['창고명'] || k;
+          return `${nm.replace(/^반월\s*/, '')} ${v}R`;
+        });
 
-const rowKey = String(r['주문번호'] || '') + '_' + String(r['차량번호'] || '');
-const isExpanded = __dispatchExpanded.has(rowKey);
-const itemsHtml = hasItems
-  ? stockHints.map(h => {
-      const barColor = h.picked >= h.ordered && h.ordered > 0 ? '#1d4ed8'
-                     : h.picked > 0 ? '#f59e0b'
-                     : '#9ca3af';
-      const barFilled = h.ordered > 0 ? Math.round(h.picked / h.ordered * 6) : 0;
-      const bar = `<span style="color:${barColor};letter-spacing:1px">${'█'.repeat(barFilled)}${'░'.repeat(6 - barFilled)}</span>`;
-      const pickColor = barColor;
-      const stockColor = h.stockStr.startsWith('✅') ? '#15803d'
-                       : h.stockStr.startsWith('⚠️') ? '#b45309'
-                       : '#dc2626';
-      return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:11px;font-family:monospace">
-        <span style="color:var(--color-text-secondary);min-width:90px">${h.nmItem}</span>
-        ${bar}
-        <span style="color:${pickColor};font-weight:500">${h.picked}/${h.ordered}R</span>
-        <span style="color:var(--color-text-secondary)">—</span>
-        <span style="color:${stockColor}">${h.stockStr}</span>
+      let primaryHtml = '';
+      let othersHtml = '';
+      if (primary > 0) {
+        primaryHtml = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:600">✅ 본창고 ${primary}R</span>`;
+      } else {
+        primaryHtml = `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fee2e2;color:#dc2626;font-weight:600">❌ 본창고 없음</span>`;
+      }
+      if (others.length) {
+        othersHtml = others.map(o =>
+          `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:600">${o}</span>`
+        ).join('');
+      }
+      return { nmItem: it['품목명'], picked, ordered,
+               pct: ordered > 0 ? Math.min(100, Math.round(picked / ordered * 100)) : 0,
+               bc: picked >= ordered && ordered > 0 ? '#1d4ed8' : picked > 0 ? '#f59e0b' : '#d1d5db',
+               stockStr: primaryHtml + (othersHtml ? othersHtml : '') };
+    });  // ← stockHints = items.map(...) 닫는 괄호
+
+
+
+const detailHtml = isExpanded ? `
+  <div style="padding:8px 12px 10px;border-top:1px solid #e5e7eb;background:#fafbfd">
+    ${stockHints.map(h => `
+      <div style="display:grid;grid-template-columns:80px 44px 52px 1fr;align-items:center;gap:6px;padding:3px 0;font-size:11px">
+        <span style="color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.nmItem}</span>
+        <div style="height:5px;border-radius:99px;background:#e5e7eb;overflow:hidden">
+          <div style="width:${h.pct}%;height:100%;background:${h.bc};border-radius:99px"></div>
+        </div>
+        <span style="color:${h.bc};font-weight:600;white-space:nowrap">${h.picked}/${h.ordered}R</span>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${h.stockStr}</div>
+      </div>`).join('')}
+  </div>` : '';
+
+    const cardBg = isSihwa ? '#f0fdf4' : '#f8faff';
+    const borderColor = isSihwa ? '#bbf7d0' : '#bfdbfe';
+
+    return `
+      <div style="${opacity}background:${cardBg};border:1px solid ${borderColor};border-radius:10px;margin:6px 10px;overflow:hidden;cursor:${hasItems ? 'pointer' : 'default'}"
+           onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
+        <div style="padding:9px 12px">
+          <!-- 1행: 뱃지 + 차량 + 납품처 + 상태 -->
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">
+            ${creatorBadge}
+            ${hapjimBadge}
+            <span style="font-weight:700;font-size:13px;letter-spacing:1px">${car4}</span>
+            <span style="flex:1;min-width:0;font-size:12px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['납품처명'] || ''}</span>
+            <span style="flex-shrink:0">${arrivalStatus}</span>
+          </div>
+          <!-- 2행: 상차 진행바 -->
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--muted);flex-shrink:0">상차</span>
+            <div style="flex:1;max-width:120px;height:5px;border-radius:99px;background:#e5e7eb;overflow:hidden">
+              <div style="width:${barPct}%;height:100%;background:${barColor};border-radius:99px"></div>
+            </div>
+            <span style="font-size:12px;font-weight:600;color:${barColor}">${상차R}/${주문R}R</span>
+            ${hasItems ? `<span style="margin-left:auto;font-size:11px;color:#a0aec0">${isExpanded ? '▲ 접기' : '▼ 품목'}</span>` : ''}
+          </div>
+        </div>
+        ${detailHtml}
       </div>`;
-    }).join('')
-  : '<span style="color:#9ca3af;font-size:11px">품목 없음</span>';
-
-const detailRow = isExpanded ? `
-  <tr>
-    <td colspan="6" style="${rowBg}${opacity}border-bottom:1px solid #e5e7eb;padding:5px 14px;text-align:left">
-      ${itemsHtml}
-    </td>
-  </tr>` : '';
-
-const expandIcon = hasItems ? (isExpanded ? ' ▲' : ' ▼') : '';
-const rollCell = `<span style="${scanColor}">${상차R}</span><span style="color:#9ca3af;font-size:10px">/${주문R}</span>`;
-
-return `<tr style="cursor:${hasItems ? 'pointer' : 'default'}"
-          onclick="${hasItems ? `dispatchToggle('${rowKey}')` : ''}">
-  <td ${td}>${i + 1}</td>
-  <td ${td}>${creatorBadge}</td>
-  <td ${td}>${car4}${hapjim}</td>
-  <td ${tdL}>${r['납품처명'] || ''}${hasItems ? `<span style="color:#6366f1;font-size:10px">${expandIcon}</span>` : ''}</td>
-  <td ${td}>${rollCell}</td>
-  <td ${td}>${arrivalStatus}</td>
-</tr>${detailRow}`;
-}).join('');
+  }).join('');
 }
 function sortOrders(rows) {
   return [...rows].sort((a, b) => {
