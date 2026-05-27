@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .ritem:hover{border-color:var(--accent);}
 .ritem-name{font-size:14px;font-weight:700;}
 .ritem-meta{font-size:11px;color:var(--dim);margin-top:2px;}
-.ritem-right{display:flex;align-items:center;gap:8px;font-family:'Black Han Sans',sans-serif;font-size:14px;color:var(--accent);}
+.ritem-right{display:flex;align-items:center;gap:6px;font-size:16px;}
 .rlist-empty{text-align:center;color:var(--dim);font-size:13px;padding:20px 0;}
 
 /* ── 대기실 ── */
@@ -113,9 +113,9 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .card .br .r{font-family:'Black Han Sans',sans-serif;font-size:12px;}
 .card .br .s{font-size:10px;}
 /* 심볼 - 좌상단/우하단 레이블이 차지하는 공간 고려해서 범위 제한 */
-.card .sym{position:absolute;font-size:10px;line-height:1;transform:translateX(-50%) translateY(-50%);}
+.card .sym{position:absolute;font-size:9px;line-height:1;transform:translateX(-50%) translateY(-50%);}
 .card .sym.flip{transform:translateX(-50%) translateY(-50%) rotate(180deg);}
-.card .sym.big{font-size:20px;}
+.card .sym.big{font-size:18px;}
 /* 그림패 */
 .card .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;}
 /* 색상 */
@@ -385,17 +385,18 @@ function cardCls(c){
 
 // 카드 심볼 배치 (top%, left%, flip)
 const LAYOUTS = {
-  // [top%, left%, flip] - 심볼 영역: top 24%~76%, left 25%~75%
+  // [top%, left%, flip]
+  // 카드 62x92px, 레이블(tl/br) 각 26px 차지 → 심볼 유효범위 top:28~72%, left:28~72%
   'A': [[50,50,false]],
-  '2': [[26,50,false],[74,50,true]],
-  '3': [[26,50,false],[50,50,false],[74,50,true]],
-  '4': [[28,28,false],[28,72,false],[72,28,true],[72,72,true]],
-  '5': [[28,28,false],[28,72,false],[50,50,false],[72,28,true],[72,72,true]],
-  '6': [[28,28,false],[28,72,false],[50,28,false],[50,72,false],[72,28,true],[72,72,true]],
-  '7': [[26,28,false],[26,72,false],[40,50,false],[54,28,false],[54,72,false],[74,28,true],[74,72,true]],
-  '8': [[26,28,false],[26,72,false],[40,50,false],[54,28,false],[54,72,false],[60,50,true],[74,28,true],[74,72,true]],
-  '9': [[26,28,false],[26,72,false],[38,28,false],[38,72,false],[50,50,false],[62,28,true],[62,72,true],[74,28,true],[74,72,true]],
-  '10':[[26,28,false],[26,72,false],[35,50,false],[40,28,false],[40,72,false],[60,28,true],[60,72,true],[65,50,true],[74,28,true],[74,72,true]],
+  '2': [[30,50,false],[70,50,true]],
+  '3': [[30,50,false],[50,50,false],[70,50,true]],
+  '4': [[32,32,false],[32,68,false],[68,32,true],[68,68,true]],
+  '5': [[32,32,false],[32,68,false],[50,50,false],[68,32,true],[68,68,true]],
+  '6': [[32,32,false],[32,68,false],[50,32,false],[50,68,false],[68,32,true],[68,68,true]],
+  '7': [[30,32,false],[30,68,false],[43,50,false],[57,32,false],[57,68,false],[70,32,true],[70,68,true]],
+  '8': [[30,32,false],[30,68,false],[43,50,false],[57,32,false],[57,68,false],[63,50,true],[70,32,true],[70,68,true]],
+  '9': [[30,32,false],[30,68,false],[41,32,false],[41,68,false],[50,50,false],[59,32,true],[59,68,true],[70,32,true],[70,68,true]],
+  '10':[[30,32,false],[30,68,false],[38,50,false],[43,32,false],[43,68,false],[57,32,true],[57,68,true],[62,50,true],[70,32,true],[70,68,true]],
 };
 const FACE = {J:'🤴',Q:'👸',K:'🤴'};
 
@@ -504,7 +505,7 @@ async function loadRoomList(){
   rooms.forEach(([code,r])=>{
     const pc=Object.keys(r.players||{}).length;
     const div=document.createElement('div'); div.className='ritem';
-    div.innerHTML=`<div><div class="ritem-name">${r.roomName||'이름없는 방'}</div><div class="ritem-meta">코드: ${code}</div></div><div class="ritem-right">${r.hasPw?'🔒 ':''}<span>${pc}/5</span></div>`;
+    div.innerHTML=`<div><div class="ritem-name">${r.roomName||'이름없는 방'}</div><div class="ritem-meta">${pc}명 대기중</div></div><div class="ritem-right">${r.hasPw?'🔒':''}</div>`;
     div.addEventListener('click',()=>tryJoin(code,r));
     el.appendChild(div);
   });
@@ -540,12 +541,14 @@ async function doJoin(code){
 }
 
 async function enterRoom(code,rname,pw){
-  await set(ref(db,`onecard/${code}/players/${myId}`),{id:myId,nick:myNick,avatar:myAv,joinedAt:serverTimestamp(),active:true});
   if(isHost){
+    // 방 정보 먼저 생성
     const rd={status:'waiting',hostId:myId,roomName:rname||myNick+'의 방',hasPw:!!pw};
     if(pw) rd.pw=pw;
-    await update(ref(db,`onecard/${code}`),rd);
+    await set(ref(db,`onecard/${code}`),rd);
   }
+  // 플레이어 추가
+  await set(ref(db,`onecard/${code}/players/${myId}`),{id:myId,nick:myNick,avatar:myAv,joinedAt:serverTimestamp(),active:true});
   document.getElementById('g-code').textContent=code;
   listenWaiting();
 }
