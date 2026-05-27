@@ -105,13 +105,11 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 /* ── 카드 ── */
 .card{width:var(--cw);height:var(--ch);border-radius:var(--cr);background:#fff;border:2px solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;cursor:pointer;transition:transform .15s,box-shadow .15s;flex-shrink:0;overflow:hidden;}
 /* 좌상단 */
-.card .tl{position:absolute;top:3px;left:4px;display:flex;flex-direction:column;align-items:center;line-height:1.1;}
-.card .tl .r{font-family:'Black Han Sans',sans-serif;font-size:12px;}
-.card .tl .s{font-size:10px;}
+.card .tl{position:absolute;top:4px;left:5px;line-height:1;}
+.card .tl .r{font-family:'Black Han Sans',sans-serif;font-size:13px;}
 /* 우하단 */
-.card .br{position:absolute;bottom:3px;right:4px;display:flex;flex-direction:column;align-items:center;line-height:1.1;transform:rotate(180deg);}
-.card .br .r{font-family:'Black Han Sans',sans-serif;font-size:12px;}
-.card .br .s{font-size:10px;}
+.card .br{position:absolute;bottom:4px;right:5px;line-height:1;transform:rotate(180deg);}
+.card .br .r{font-family:'Black Han Sans',sans-serif;font-size:13px;}
 /* 심볼 - 좌상단/우하단 레이블이 차지하는 공간 고려해서 범위 제한 */
 .card .sym{position:absolute;font-size:9px;line-height:1;transform:translateX(-50%) translateY(-50%);}
 .card .sym.flip{transform:translateX(-50%) translateY(-50%) rotate(180deg);}
@@ -425,9 +423,9 @@ function makeCard(c, disabled=false, playable=false){
   }
 
   el.innerHTML = `
-    <div class="tl"><div class="r">${rlabel}</div><div class="s">${slabel}</div></div>
+    <div class="tl"><div class="r">${rlabel}</div></div>
     ${inner}
-    <div class="br"><div class="r">${rlabel}</div><div class="s">${slabel}</div></div>`;
+    <div class="br"><div class="r">${rlabel}</div></div>`;
   return el;
 }
 
