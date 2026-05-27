@@ -51,8 +51,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 
 /* ── 대기실 ── */
 #waiting{background:var(--bg);gap:20px;}
-.code-disp .lbl{font-size:11px;color:var(--dim);letter-spacing:3px;margin-bottom:6px;text-align:center;}
-.code-disp .code{font-family:'Black Han Sans',sans-serif;font-size:52px;color:var(--accent);letter-spacing:10px;text-align:center;}
+
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:340px;}
 .pslot{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;transition:all .3s;}
 .pslot.on{border-color:var(--accent);background:var(--surface2);}
@@ -106,17 +105,17 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 /* ── 카드 ── */
 .card{width:var(--cw);height:var(--ch);border-radius:var(--cr);background:#fff;border:2px solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;cursor:pointer;transition:transform .15s,box-shadow .15s;flex-shrink:0;overflow:hidden;}
 /* 좌상단 */
-.card .tl{position:absolute;top:3px;left:5px;display:flex;flex-direction:column;align-items:center;line-height:1;}
-.card .tl .r{font-family:'Black Han Sans',sans-serif;font-size:13px;}
-.card .tl .s{font-size:11px;}
+.card .tl{position:absolute;top:3px;left:4px;display:flex;flex-direction:column;align-items:center;line-height:1.1;}
+.card .tl .r{font-family:'Black Han Sans',sans-serif;font-size:12px;}
+.card .tl .s{font-size:10px;}
 /* 우하단 */
-.card .br{position:absolute;bottom:3px;right:5px;display:flex;flex-direction:column;align-items:center;line-height:1;transform:rotate(180deg);}
-.card .br .r{font-family:'Black Han Sans',sans-serif;font-size:13px;}
-.card .br .s{font-size:11px;}
-/* 심볼 */
-.card .sym{position:absolute;font-size:11px;line-height:1;transform:translateX(-50%) translateY(-50%);}
+.card .br{position:absolute;bottom:3px;right:4px;display:flex;flex-direction:column;align-items:center;line-height:1.1;transform:rotate(180deg);}
+.card .br .r{font-family:'Black Han Sans',sans-serif;font-size:12px;}
+.card .br .s{font-size:10px;}
+/* 심볼 - 좌상단/우하단 레이블이 차지하는 공간 고려해서 범위 제한 */
+.card .sym{position:absolute;font-size:10px;line-height:1;transform:translateX(-50%) translateY(-50%);}
 .card .sym.flip{transform:translateX(-50%) translateY(-50%) rotate(180deg);}
-.card .sym.big{font-size:22px;}
+.card .sym.big{font-size:20px;}
 /* 그림패 */
 .card .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;}
 /* 색상 */
@@ -235,10 +234,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 
 <!-- 대기실 -->
 <div id="waiting" class="screen hidden">
-  <div class="code-disp">
-    <div class="lbl">ROOM CODE</div>
-    <div class="code" id="disp-code">----</div>
-  </div>
+
   <div class="pgrid" id="pgrid"></div>
   <div style="font-size:12px;color:var(--dim)" id="wait-info">친구에게 방 코드를 알려주세요</div>
   <button class="btn btn-p" id="start-btn" style="width:200px" disabled>게임 시작 (2명~)</button>
@@ -389,16 +385,17 @@ function cardCls(c){
 
 // 카드 심볼 배치 (top%, left%, flip)
 const LAYOUTS = {
+  // [top%, left%, flip] - 심볼 영역: top 24%~76%, left 25%~75%
   'A': [[50,50,false]],
-  '2': [[22,50,false],[78,50,true]],
-  '3': [[22,50,false],[50,50,false],[78,50,true]],
-  '4': [[22,30,false],[22,70,false],[78,30,true],[78,70,true]],
-  '5': [[22,30,false],[22,70,false],[50,50,false],[78,30,true],[78,70,true]],
-  '6': [[22,30,false],[22,70,false],[50,30,false],[50,70,false],[78,30,true],[78,70,true]],
-  '7': [[22,30,false],[22,70,false],[38,50,false],[50,30,false],[50,70,false],[78,30,true],[78,70,true]],
-  '8': [[22,30,false],[22,70,false],[38,50,false],[50,30,false],[50,70,false],[62,50,true],[78,30,true],[78,70,true]],
-  '9': [[22,30,false],[22,70,false],[36,30,false],[36,70,false],[50,50,false],[64,30,true],[64,70,true],[78,30,true],[78,70,true]],
-  '10':[[22,30,false],[22,70,false],[33,50,false],[36,30,false],[36,70,false],[64,30,true],[64,70,true],[67,50,true],[78,30,true],[78,70,true]],
+  '2': [[26,50,false],[74,50,true]],
+  '3': [[26,50,false],[50,50,false],[74,50,true]],
+  '4': [[28,28,false],[28,72,false],[72,28,true],[72,72,true]],
+  '5': [[28,28,false],[28,72,false],[50,50,false],[72,28,true],[72,72,true]],
+  '6': [[28,28,false],[28,72,false],[50,28,false],[50,72,false],[72,28,true],[72,72,true]],
+  '7': [[26,28,false],[26,72,false],[40,50,false],[54,28,false],[54,72,false],[74,28,true],[74,72,true]],
+  '8': [[26,28,false],[26,72,false],[40,50,false],[54,28,false],[54,72,false],[60,50,true],[74,28,true],[74,72,true]],
+  '9': [[26,28,false],[26,72,false],[38,28,false],[38,72,false],[50,50,false],[62,28,true],[62,72,true],[74,28,true],[74,72,true]],
+  '10':[[26,28,false],[26,72,false],[35,50,false],[40,28,false],[40,72,false],[60,28,true],[60,72,true],[65,50,true],[74,28,true],[74,72,true]],
 };
 const FACE = {J:'🤴',Q:'👸',K:'🤴'};
 
@@ -501,7 +498,7 @@ async function loadRoomList(){
   cnt.textContent='불러오는 중...';
   const snap=await get(ref(db,'onecard'));
   const all=snap.val()||{};
-  const rooms=Object.entries(all).filter(([,r])=>r.status==='waiting'&&Object.keys(r.players||{}).length<5);
+  const rooms=Object.entries(all).filter(([,r])=>r.status==='waiting'&&Object.keys(r.players||{}).length>=1&&Object.keys(r.players||{}).length<5);
   cnt.textContent=`열린 방 ${rooms.length}개`;
   if(!rooms.length){empty.classList.remove('hidden');return;}
   rooms.forEach(([code,r])=>{
@@ -549,7 +546,6 @@ async function enterRoom(code,rname,pw){
     if(pw) rd.pw=pw;
     await update(ref(db,`onecard/${code}`),rd);
   }
-  document.getElementById('disp-code').textContent=code;
   document.getElementById('g-code').textContent=code;
   listenWaiting();
 }
@@ -582,14 +578,11 @@ function renderWaiting(players){
   sb.textContent=isHost?`게임 시작 (${n}명)`:'호스트가 시작합니다';
 }
 
-document.getElementById('leave-wait').addEventListener('click',()=>{
-  remove(ref(db,`onecard/${roomCode}/players/${myId}`));
+document.getElementById('leave-wait').addEventListener('click',async()=>{
+  await remove(ref(db,`onecard/${roomCode}/players/${myId}`));
   stopListeners();
-  // 빈 방 정리
-  setTimeout(async()=>{
-    const s=await get(ref(db,`onecard/${roomCode}/players`));
-    if(!s.exists()||!Object.keys(s.val()||{}).length) remove(ref(db,`onecard/${roomCode}`));
-  },500);
+  const s=await get(ref(db,`onecard/${roomCode}/players`));
+  if(!s.exists()||!Object.keys(s.val()||{}).length) remove(ref(db,`onecard/${roomCode}`));
   show('lobby');
 });
 
@@ -955,7 +948,15 @@ document.getElementById('leave-game').addEventListener('click',async()=>{
     }
     await update(ref(db),u);
   }
-  stopListeners(); gs=null; show('lobby');
+  stopListeners(); gs=null;
+  // 활성 플레이어 0명이면 방 삭제
+  setTimeout(async()=>{
+    const s=await get(ref(db,`onecard/${roomCode}/players`));
+    const ps=s.val()||{};
+    const anyActive=Object.values(ps).some(p=>p.active!==false);
+    if(!anyActive) remove(ref(db,`onecard/${roomCode}`));
+  },1000);
+  show('lobby');
 });
 
 // ════════════════════════
@@ -982,10 +983,12 @@ document.getElementById('rematch-btn').addEventListener('click',async()=>{
   show('waiting'); listenWaiting();
 });
 
-document.getElementById('to-lobby-btn').addEventListener('click',()=>{
-  remove(ref(db,`onecard/${roomCode}/players/${myId}`));
+document.getElementById('to-lobby-btn').addEventListener('click',async()=>{
+  await remove(ref(db,`onecard/${roomCode}/players/${myId}`));
   stopListeners(); gs=null;
   document.getElementById('result').classList.add('hidden');
+  const s=await get(ref(db,`onecard/${roomCode}/players`));
+  if(!s.exists()||!Object.keys(s.val()||{}).length) remove(ref(db,`onecard/${roomCode}`));
   show('lobby');
 });
 
