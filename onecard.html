@@ -1163,8 +1163,8 @@ async function playCard(handIdx, card) {
     [`onecard/${roomCode}/turn`]: order[nextIdx],
     [`onecard/${roomCode}/players`]: players,
     [`onecard/${roomCode}/deck`]: deck,
-    [`onecard/${roomCode}/onecardPending`]: onecardPending,
-    [`onecard/${roomCode}/onecardDeadline`]: onecardDeadline,
+    [`onecard/${roomCode}/onecardPending`]: onecardPending ?? null,
+    [`onecard/${roomCode}/onecardDeadline`]: onecardDeadline ?? null,
     [`onecard/${roomCode}/finishCount`]: finishCount,
     [`onecard/${roomCode}/status`]: status,
   };
