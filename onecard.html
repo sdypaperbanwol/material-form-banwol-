@@ -1153,18 +1153,19 @@ function renderGame(state) {
   myOnecardDeclared = state.onecardPending !== myId || (state.hands?.[myId]?.length !== 1);
 }
 
-// 카드 심볼 레이아웃 (top%, left%, 뒤집힘여부)
+// 실제 카드 심볼 배치 (top%, left%, 뒤집힘여부)
+// left: 30%=왼쪽, 50%=중앙, 70%=오른쪽
 const CARD_LAYOUTS = {
   'A':  [[50,50,false]],
-  '2':  [[28,50,false],[72,50,true]],
+  '2':  [[22,50,false],[78,50,true]],
   '3':  [[22,50,false],[50,50,false],[78,50,true]],
-  '4':  [[28,30,false],[28,70,false],[72,30,true],[72,70,true]],
+  '4':  [[22,30,false],[22,70,false],[78,30,true],[78,70,true]],
   '5':  [[22,30,false],[22,70,false],[50,50,false],[78,30,true],[78,70,true]],
   '6':  [[22,30,false],[22,70,false],[50,30,false],[50,70,false],[78,30,true],[78,70,true]],
-  '7':  [[20,30,false],[20,70,false],[36,50,false],[56,30,false],[56,70,false],[80,30,true],[80,70,true]],
-  '8':  [[20,30,false],[20,70,false],[36,50,false],[56,30,false],[56,70,false],[64,50,true],[80,30,true],[80,70,true]],
-  '9':  [[20,30,false],[20,70,false],[38,30,false],[38,70,false],[50,50,false],[62,30,true],[62,70,true],[80,30,true],[80,70,true]],
-  '10': [[20,30,false],[20,70,false],[36,50,false],[40,30,false],[40,70,false],[60,30,true],[60,70,true],[64,50,true],[80,30,true],[80,70,true]],
+  '7':  [[22,30,false],[22,70,false],[38,50,false],[50,30,false],[50,70,false],[78,30,true],[78,70,true]],
+  '8':  [[22,30,false],[22,70,false],[38,50,false],[50,30,false],[50,70,false],[62,50,true],[78,30,true],[78,70,true]],
+  '9':  [[22,30,false],[22,70,false],[36,30,false],[36,70,false],[50,50,false],[64,30,true],[64,70,true],[78,30,true],[78,70,true]],
+  '10': [[22,30,false],[22,70,false],[33,50,false],[36,30,false],[36,70,false],[64,30,true],[64,70,true],[67,50,true],[78,30,true],[78,70,true]],
 };
 const FACE_CARDS = {'J':'🤴','Q':'👸','K':'🤴'};
 
@@ -1194,7 +1195,8 @@ function makeCardEl(card, disabled=false, playable=false) {
   } else if (CARD_LAYOUTS[rank]) {
     // 숫자패 - 심볼 배치
     CARD_LAYOUTS[rank].forEach(([top, left, flip]) => {
-      inner += `<span class="sym${flip?' flip':''}" style="top:${top}%;left:${left}%">${suit}</span>`;
+      const extraCls = rank === 'A' ? ' sym-A' : '';
+      inner += `<span class="sym${flip?' flip':''}${extraCls}" style="top:${top}%;left:${left}%">${suit}</span>`;
     });
   } else {
     inner = `<div class="face-img">${suit}</div>`;
