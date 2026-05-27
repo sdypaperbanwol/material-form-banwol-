@@ -368,10 +368,26 @@
 
   .card.red { color: var(--suit-red); border-color: #ffaaaa; }
   .card.black { color: #1a1a2e; border-color: #aaaacc; }
-  .card.joker { background: linear-gradient(135deg, #1a1a2e, #2a1a4e); color: var(--accent); border-color: var(--accent); }
-  .card.joker::before { color: var(--accent); }
-  .card.joker::after { color: var(--accent); }
-  .card.joker .card-center { font-size: 30px; }
+  .card.joker-bw { background: linear-gradient(135deg,#1a1a1a,#3a3a3a); color:#fff; border:2px solid #888; }
+  .card.joker-bw::before { color:#fff; }
+  .card.joker-bw::after { color:#888; }
+  .card.joker-cl { background: linear-gradient(135deg,#1a0a2e,#2a1a4e,#0a2a1a); color:var(--accent); border:2px solid var(--accent); animation:rainbow-border 2s linear infinite; }
+  @keyframes rainbow-border{0%{border-color:#e84747}25%{border-color:#e8c547}50%{border-color:#47e847}75%{border-color:#47b3e8}100%{border-color:#e84747}}
+  .card.joker-cl::before { background:linear-gradient(90deg,#e84747,#e8c547,#47e8e8);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+
+  /* 7 선언 무늬 표시 */
+  .declared-suit{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:var(--accent3);color:#000;font-size:16px;font-weight:900;padding:2px 10px;border-radius:10px;white-space:nowrap;}
+
+  /* 7 무늬 선택 팝업 */
+  .suit-picker{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;}
+  .suit-picker.hidden{display:none;}
+  .suit-picker-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;text-align:center;}
+  .suit-picker-box h3{font-family:'Black Han Sans',sans-serif;font-size:20px;margin-bottom:20px;color:var(--accent);}
+  .suit-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .suit-btn{font-size:36px;padding:16px 24px;border-radius:14px;border:2px solid var(--border);background:var(--surface2);cursor:pointer;transition:transform .1s,border-color .2s;}
+  .suit-btn:hover{transform:scale(1.1);border-color:var(--accent);}
+  .suit-btn.red-suit{color:var(--suit-red);}
+  .suit-btn.black-suit{color:var(--suit-black);}
 
   .card:hover:not(.disabled) { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,.4); }
   .card.selected { transform: translateY(-14px); box-shadow: 0 0 0 3px var(--accent), 0 14px 28px rgba(232,197,71,.3); }
@@ -611,7 +627,6 @@
   <!-- 액션 버튼 -->
   <div class="action-btns">
     <button class="btn btn-onecard" id="onecard-btn">원카드!</button>
-    <button class="btn btn-secondary" id="pass-btn" style="display:none">패스</button>
   </div>
 
   <!-- 내 손패 -->
@@ -621,6 +636,19 @@
       <span class="card-count-badge" id="my-card-count">0장</span>
     </div>
     <div class="hand-scroll" id="my-hand"></div>
+  </div>
+</div>
+
+<!-- 7 무늬 선택 팝업 (game 밖에 위치해야 overflow:hidden 영향 없음) -->
+<div class="suit-picker hidden" id="suit-picker">
+  <div class="suit-picker-box">
+    <h3>무늬를 선택하세요</h3>
+    <div class="suit-btns">
+      <button class="suit-btn black-suit" data-suit="♠">♠</button>
+      <button class="suit-btn red-suit"   data-suit="♥">♥</button>
+      <button class="suit-btn red-suit"   data-suit="♦">♦</button>
+      <button class="suit-btn black-suit" data-suit="♣">♣</button>
+    </div>
   </div>
 </div>
 
@@ -694,9 +722,39 @@ const AVATARS = ['🦊','🐯','🐻','🦁','🐺','🦝','🐸','🐙'];
 function makeDeck() {
   let deck = [];
   SUITS.forEach(s => RANKS.forEach(r => deck.push({ suit: s, rank: r })));
-  deck.push({ suit: '🃏', rank: 'J1' }); // 조커1
-  deck.push({ suit: '🃏', rank: 'J2' }); // 조커2
+  deck.push({ suit: '\u{1F0CF}', rank: 'BW' }); // 흑백조커 +5
+  deck.push({ suit: '\u{1F0CF}', rank: 'CL' }); // 컬러조커 +7
   return shuffle(deck);
+}
+
+function isBW(c){ return c.suit === '\u{1F0CF}' && c.rank === 'BW'; }
+function isCL(c){ return c.suit === '\u{1F0CF}' && c.rank === 'CL'; }
+function isJoker(c){ return c.suit === '\u{1F0CF}'; }
+function isSpadeA(c){ return c.suit === '\u2660' && c.rank === 'A'; }
+
+// 드로우 파워 순위: 2<A<흑백조커<컬러조커
+function drawPower(c){
+  if(isCL(c)) return 4;
+  if(isBW(c)) return 3;
+  if(c.rank === 'A') return 2;
+  if(c.rank === '2') return 1;
+  return 0;
+}
+function drawAmount(c){
+  if(isCL(c)) return 7;
+  if(isBW(c)) return 5;
+  if(c.rank === 'A') return 3;
+  if(c.rank === '2') return 2;
+  return 0;
+}
+// 드로우 누적 중 막기 가능한가
+function canCounter(c, topCard){
+  const tp = drawPower(topCard);
+  const cp = drawPower(c);
+  if(cp === 0) return false;
+  // 흑백조커(3)는 ♠A로 막기 가능 (특수)
+  if(tp === 3 && isSpadeA(c)) return true;
+  return cp >= tp;
 }
 
 function shuffle(arr) {
@@ -709,30 +767,28 @@ function shuffle(arr) {
 }
 
 function cardColor(card) {
-  if (card.suit === '🃏') return 'joker';
-  return (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
+  if (isCL(card)) return 'joker-cl';
+  if (isBW(card)) return 'joker-bw';
+  return (card.suit === '\u2665' || card.suit === '\u2666') ? 'red' : 'black';
 }
 
-function cardSuitDisplay(card) {
-  return card.suit;
-}
-
-function isSpecial(card) {
-  return card.rank === '2' || card.rank === 'A' || card.suit === '🃏';
+function cardLabel(card) {
+  if (isBW(card)) return { rank: '🃏', suit: 'BW', center: '🃏' };
+  if (isCL(card)) return { rank: '🃏', suit: 'CL', center: '🌈' };
+  return { rank: card.rank, suit: card.suit, center: card.suit };
 }
 
 // canPlay: topCard위에 card를 낼 수 있는가
-function canPlay(card, topCard, drawStack) {
+function canPlay(card, topCard, drawStack, declaredSuit) {
   if (!topCard) return true;
-  // 드로우 누적 중엔 2 또는 조커만 가능 (막기 가능)
+  // 드로우 누적 중엔 카운터 카드만 가능
   if (drawStack > 0) {
-    if (card.suit === '🃏') return true; // 조커로 막기
-    if (card.rank === '2') return true;  // 2로 막기/누적
-    return false;
+    return canCounter(card, topCard);
   }
-  if (card.suit === '🃏') return true; // 조커는 항상 낼 수 있음
-  if (topCard.suit === '🃏') return true; // 조커 위엔 뭐든
-  if (card.suit === topCard.suit) return true;
+  if (isJoker(card)) return true; // 조커는 언제든
+  if (isJoker(topCard)) return true; // 조커 위엔 뭐든
+  const refSuit = declaredSuit || topCard.suit;
+  if (card.suit === refSuit) return true;
   if (card.rank === topCard.rank) return true;
   return false;
 }
@@ -762,7 +818,7 @@ let gameState = null;
 let listeners = [];
 let onecardTimer = null;
 let myOnecardDeclared = false;
-let selectedCard = null;
+let pendingCard = null; // 7 낼 때 무늬 선택 대기중인 카드
 
 // ════════════════════════════════════════
 // DOM 참조
@@ -790,7 +846,7 @@ const $myHand = document.getElementById('my-hand');
 const $myNameLabel = document.getElementById('my-name-label');
 const $myCardCount = document.getElementById('my-card-count');
 const $onecardBtn = document.getElementById('onecard-btn');
-const $passBtn = document.getElementById('pass-btn');
+// $passBtn removed
 const $gameRoomCode = document.getElementById('game-room-code');
 const $resultTitle = document.getElementById('result-title');
 const $resultSub = document.getElementById('result-sub');
@@ -930,9 +986,9 @@ async function initGame(players) {
     order.forEach(pid => { hands[pid].push(deck[di++]); });
   }
 
-  // 첫 버린 카드 (특수카드 아닌거로)
+  // 첫 버린 카드 (드로우/특수카드 제외)
   let firstCard = deck[di++];
-  while (firstCard.suit === '🃏' || firstCard.rank === '2' || firstCard.rank === 'A') {
+  while (drawPower(firstCard) > 0 || firstCard.rank === 'J' || firstCard.rank === 'Q' || firstCard.rank === 'K' || firstCard.rank === '7') {
     firstCard = deck[di++];
   }
 
@@ -994,6 +1050,7 @@ function renderGame(state) {
   const topCard = state.discard?.[state.discard.length-1];
   const isMyTurn = state.turn === myId;
   const drawStack = state.drawStack || 0;
+  const declaredSuit = state.declaredSuit || null;
 
   // 방향 표시
   $dirBadge.textContent = state.direction === 1 ? '→' : '←';
@@ -1047,12 +1104,22 @@ function renderGame(state) {
   $myCardCount.textContent = myHand.length + '장';
   $myHand.innerHTML = '';
   myHand.forEach((card, idx) => {
-    const playable = isMyTurn && canPlay(card, topCard, drawStack);
+    const playable = isMyTurn && canPlay(card, topCard, drawStack, declaredSuit);
     const el = makeCardEl(card, !isMyTurn || !playable, playable);
     el.addEventListener('click', () => {
-      if (!isMyTurn) { toast('내 차례가 아닙니다'); return; }
-      if (!canPlay(card, topCard, drawStack)) { toast('낼 수 없는 카드입니다'); return; }
-      playCard(idx, card);
+      // 클릭 시점의 최신 gameState에서 직접 읽기 (클로저 캡처 문제 방지)
+      const gs = gameState;
+      if (!gs || gs.turn !== myId) { toast('내 차례가 아닙니다'); return; }
+      const curTop = gs.discard?.[gs.discard.length-1];
+      const curDrawStack = gs.drawStack || 0;
+      const curDeclaredSuit = gs.declaredSuit || null;
+      if (!canPlay(card, curTop, curDrawStack, curDeclaredSuit)) { toast('낼 수 없는 카드입니다'); return; }
+      if (card.rank === '7') {
+        pendingCard = { card, idx };
+        document.getElementById('suit-picker').classList.remove('hidden');
+      } else {
+        playCard(idx, card, null);
+      }
     });
     $myHand.appendChild(el);
   });
@@ -1061,27 +1128,26 @@ function renderGame(state) {
   $deckPile.className = 'deck-pile' + (isMyTurn ? '' : ' disabled');
   $deckPile.onclick = isMyTurn ? () => drawCards() : null;
 
-  // 패스 버튼 (드로우 후 낼 카드 없을 때)
-  $passBtn.style.display = 'none';
-
-  // 원카드 버튼
-  $onecardBtn.style.display = '';
+  // 원카드 버튼 텍스트
+  const pendingOther = state.onecardPending && state.onecardPending !== myId && state.onecardDeadline && Date.now() < state.onecardDeadline;
+  $onecardBtn.textContent = pendingOther ? `잡기! (${state.players[state.onecardPending]?.nick})` : '원카드!';
   myOnecardDeclared = state.onecardPending !== myId || (state.hands?.[myId]?.length !== 1);
 }
 
 function makeCardEl(card, disabled=false, playable=false) {
   const el = document.createElement('div');
+  const lbl = cardLabel(card);
   el.className = `card ${cardColor(card)}${disabled?' disabled':''}${playable?' playable':''}`;
-  el.dataset.rank = card.rank.replace('J1','J★').replace('J2','J★');
-  el.dataset.suit = cardSuitDisplay(card);
-  el.innerHTML = `<div class="card-center">${card.suit === '🃏' ? '🃏' : card.suit}</div>`;
+  el.dataset.rank = lbl.rank;
+  el.dataset.suit = lbl.suit;
+  el.innerHTML = `<div class="card-center">${lbl.center}</div>`;
   return el;
 }
 
 // ════════════════════════════════════════
 // 카드 내기
 // ════════════════════════════════════════
-async function playCard(handIdx, card) {
+async function playCard(handIdx, card, declaredSuitArg) {
   if (!gameState) return;
   const myHand = [...(gameState.hands[myId] || [])];
   const discard = [...(gameState.discard || [])];
@@ -1100,16 +1166,27 @@ async function playCard(handIdx, card) {
   let onecardPending = gameState.onecardPending;
   let onecardDeadline = gameState.onecardDeadline;
 
+  let skipCount = 0;
+  let goBack = false;
+  let newDeclaredSuit = null;
+
   // 특수카드 처리
-  if (card.suit === '🃏') {
-    // 조커: +5 누적
-    nextDrawStack = drawStack + 5;
-  } else if (card.rank === '2') {
-    // 2: +2 누적
-    nextDrawStack = drawStack + 2;
-  } else if (card.rank === 'A') {
-    // A: 방향 반전
-    direction = direction * -1;
+  if (drawPower(card) > 0) {
+    // 드로우 누적 카드 (2, A, 흑백조커, 컬러조커)
+    nextDrawStack = drawStack + drawAmount(card);
+  } else if (card.rank === 'J') {
+    skipCount = 1;
+  } else if (card.rank === 'K') {
+    skipCount = 3;
+  } else if (card.rank === 'Q') {
+    goBack = true;
+  } else if (card.rank === '7') {
+    newDeclaredSuit = declaredSuitArg || null;
+  }
+  // 드로우 카드(2,A,조커)가 아닌 일반 카드를 낼 때 declaredSuit 초기화
+  // 드로우 카드는 누적 중에 낼 수 있으므로 declaredSuit 유지
+  if (drawPower(card) === 0 && card.rank !== '7') {
+    newDeclaredSuit = null;
   }
 
   // 손패 카운트 업데이트
@@ -1131,7 +1208,14 @@ async function playCard(handIdx, card) {
   const activeOrder = order.filter(pid => !players[pid]?.finished);
   if (activeOrder.length > 1) {
     const activeIdx = activeOrder.indexOf(order[currentIdx]);
-    let nextActiveIdx = ((activeIdx + direction) + activeOrder.length) % activeOrder.length;
+    let nextActiveIdx;
+    if (goBack) {
+      // Q: 이전 사람에게 (방향 반대)
+      nextActiveIdx = ((activeIdx - direction) + activeOrder.length * 10) % activeOrder.length;
+    } else {
+      // J=1스킵, K=3스킵
+      nextActiveIdx = ((activeIdx + direction * (1 + skipCount)) + activeOrder.length * 10) % activeOrder.length;
+    }
     nextIdx = order.indexOf(activeOrder[nextActiveIdx]);
   }
 
@@ -1154,20 +1238,20 @@ async function playCard(handIdx, card) {
     }
   }
 
-  const updates = {
-    [`onecard/${roomCode}/hands/${myId}`]: myHand,
-    [`onecard/${roomCode}/discard`]: discard,
-    [`onecard/${roomCode}/direction`]: direction,
-    [`onecard/${roomCode}/drawStack`]: nextDrawStack,
-    [`onecard/${roomCode}/currentIdx`]: nextIdx,
-    [`onecard/${roomCode}/turn`]: order[nextIdx],
-    [`onecard/${roomCode}/players`]: players,
-    [`onecard/${roomCode}/deck`]: deck,
-    [`onecard/${roomCode}/onecardPending`]: onecardPending ?? null,
-    [`onecard/${roomCode}/onecardDeadline`]: onecardDeadline ?? null,
-    [`onecard/${roomCode}/finishCount`]: finishCount,
-    [`onecard/${roomCode}/status`]: status,
-  };
+  const updates = {};
+  updates[`onecard/${roomCode}/hands/${myId}`] = myHand;
+  updates[`onecard/${roomCode}/discard`] = discard;
+  updates[`onecard/${roomCode}/direction`] = direction;
+  updates[`onecard/${roomCode}/drawStack`] = Number(nextDrawStack) || 0;
+  updates[`onecard/${roomCode}/currentIdx`] = nextIdx;
+  updates[`onecard/${roomCode}/turn`] = order[nextIdx];
+  updates[`onecard/${roomCode}/players`] = players;
+  updates[`onecard/${roomCode}/deck`] = deck;
+  updates[`onecard/${roomCode}/onecardPending`] = onecardPending ?? null;
+  updates[`onecard/${roomCode}/onecardDeadline`] = onecardDeadline ?? null;
+  updates[`onecard/${roomCode}/finishCount`] = finishCount;
+  updates[`onecard/${roomCode}/status`] = status;
+  updates[`onecard/${roomCode}/declaredSuit`] = newDeclaredSuit;
 
   await update(ref(db), updates);
 }
@@ -1205,15 +1289,15 @@ async function drawCards() {
   let nextActiveIdx = ((activeIdx + direction) + activeOrder.length) % activeOrder.length;
   const nextIdx = order.indexOf(activeOrder[nextActiveIdx]);
 
-  const updates = {
-    [`onecard/${roomCode}/hands/${myId}`]: myHand,
-    [`onecard/${roomCode}/deck`]: deck,
-    [`onecard/${roomCode}/discard`]: discard,
-    [`onecard/${roomCode}/drawStack`]: 0,
-    [`onecard/${roomCode}/currentIdx`]: nextIdx,
-    [`onecard/${roomCode}/turn`]: order[nextIdx],
-    [`onecard/${roomCode}/players`]: players,
-  };
+  const updates = {};
+  updates[`onecard/${roomCode}/hands/${myId}`] = myHand;
+  updates[`onecard/${roomCode}/deck`] = deck;
+  updates[`onecard/${roomCode}/discard`] = discard;
+  updates[`onecard/${roomCode}/drawStack`] = 0;
+  updates[`onecard/${roomCode}/currentIdx`] = nextIdx;
+  updates[`onecard/${roomCode}/turn`] = order[nextIdx];
+  updates[`onecard/${roomCode}/players`] = players;
+  updates[`onecard/${roomCode}/declaredSuit`] = null;
 
   await update(ref(db), updates);
   toast(`${count}장 드로우!`);
@@ -1222,6 +1306,18 @@ async function drawCards() {
 // ════════════════════════════════════════
 // 원카드 선언
 // ════════════════════════════════════════
+// 7 무늬 선택 팝업
+document.querySelectorAll('.suit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const suit = btn.dataset.suit;
+    document.getElementById('suit-picker').classList.add('hidden');
+    if (pendingCard) {
+      playCard(pendingCard.idx, pendingCard.card, suit);
+      pendingCard = null;
+    }
+  });
+});
+
 $onecardBtn.addEventListener('click', async () => {
   if (!gameState) return;
   const myHand = gameState.hands?.[myId] || [];
