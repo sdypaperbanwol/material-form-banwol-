@@ -112,6 +112,8 @@
   /* ══════════════════════════════
      대기실 화면
   ══════════════════════════════ */
+  .opponent.left-player { opacity: .4; }
+  .opponent.left-player .oname::after { content: ' (나감)'; color: var(--accent2); font-size: 10px; }
   #waiting {
     background: var(--bg);
     gap: 24px;
@@ -566,22 +568,63 @@
 
 <canvas id="bg-canvas"></canvas>
 
-<!-- 로비 -->
+<!-- 로비 - 닉네임 입력 -->
 <div id="lobby" class="screen">
   <div class="logo">원카드</div>
   <div class="logo-sub">ONE CARD · MULTIPLAYER</div>
   <div class="lobby-box">
     <div>
       <label>닉네임</label>
-      <input id="nickname-input" type="text" placeholder="닉네임 입력" maxlength="8">
+      <input id="nickname-input" type="text" placeholder="닉네임 입력 (최대 8자)" maxlength="8">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" id="go-create-btn" style="flex:1">방 만들기</button>
+      <button class="btn btn-secondary" id="go-join-btn" style="flex:1">방 참여</button>
+    </div>
+  </div>
+</div>
+
+<!-- 방 만들기 화면 -->
+<div id="create-room" class="screen hidden">
+  <div class="logo" style="font-size:40px">방 만들기</div>
+  <div class="lobby-box">
+    <div>
+      <label>방 이름</label>
+      <input id="room-name-input" type="text" placeholder="방 이름 입력" maxlength="12">
+    </div>
+    <div>
+      <label>비밀번호 (선택)</label>
+      <input id="room-pw-input" type="password" placeholder="없으면 비워두세요" maxlength="8">
     </div>
     <button class="btn btn-primary" id="create-btn">방 만들기</button>
-    <div class="divider">또는</div>
-    <div>
-      <label>방 코드</label>
-      <input id="room-input" type="text" placeholder="4자리 코드" maxlength="4" style="text-align:center;font-size:22px;letter-spacing:8px;font-family:'Black Han Sans',sans-serif">
+    <button class="btn btn-secondary" id="back-from-create">← 뒤로</button>
+  </div>
+</div>
+
+<!-- 방 목록 화면 -->
+<div id="room-list" class="screen hidden">
+  <div class="logo" style="font-size:40px">방 참여</div>
+  <div class="room-list-box">
+    <div class="room-list-header">
+      <span id="room-list-count">방 목록</span>
+      <button class="btn btn-secondary" id="refresh-btn" style="padding:6px 14px;font-size:13px">새로고침</button>
     </div>
-    <button class="btn btn-secondary" id="join-btn">입장하기</button>
+    <div id="room-list-items"></div>
+    <div id="room-list-empty" class="room-list-empty hidden">현재 열린 방이 없습니다</div>
+  </div>
+  <button class="btn btn-secondary" id="back-from-list" style="width:300px;margin-top:12px">← 뒤로</button>
+</div>
+
+<!-- 비밀번호 입력 팝업 -->
+<div class="suit-picker hidden" id="pw-picker">
+  <div class="suit-picker-box">
+    <h3>비밀번호 입력</h3>
+    <input id="pw-picker-input" type="password" placeholder="비밀번호" maxlength="8"
+      style="width:100%;background:#1e1e2a;border:1px solid #2a2a3a;border-radius:10px;color:#f0f0f5;font-size:18px;padding:12px 16px;outline:none;margin-bottom:12px;font-family:inherit">
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" id="pw-confirm-btn" style="flex:1;padding:10px;font-size:15px">확인</button>
+      <button class="btn btn-secondary" id="pw-cancel-btn" style="flex:1;padding:10px;font-size:15px">취소</button>
+    </div>
   </div>
 </div>
 
@@ -603,7 +646,10 @@
   <div class="top-bar">
     <div class="room-info">방 <span id="game-room-code"></span></div>
     <div class="turn-indicator" id="turn-indicator">대기중</div>
-    <div class="direction-badge" id="direction-badge">→</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="direction-badge" id="direction-badge">→</div>
+      <button id="game-leave-btn" style="background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer;">나가기</button>
+    </div>
   </div>
 
   <!-- 상대방 영역 -->
@@ -914,13 +960,15 @@ $joinBtn.addEventListener('click', async () => {
   showScreen('waiting');
 });
 
-async function joinRoom(code) {
+async function joinRoom(code, roomName, pw) {
   await set(ref(db, `onecard/${code}/players/${myId}`), {
     id: myId, nick: myNick, avatar: myAvatar,
-    joinedAt: serverTimestamp(), ready: false
+    joinedAt: serverTimestamp(), active: true
   });
   if (isHost) {
-    await update(ref(db, `onecard/${code}`), { status: 'waiting', hostId: myId });
+    const roomData = { status:'waiting', hostId:myId, roomName: roomName||myNick+'의 방', hasPw: !!pw };
+    if(pw) roomData.pw = pw;
+    await update(ref(db, `onecard/${code}`), roomData);
   }
   $displayCode.textContent = code;
   $gameRoomCode.textContent = code;
@@ -1037,27 +1085,44 @@ async function initGame(players) {
 // ════════════════════════════════════════
 // 게임 리스너
 // ════════════════════════════════════════
-function listenGame() {
-  const r = ref(db, `onecard/${roomCode}`);
-  const unsub = onValue(r, snap => {
-    const state = snap.val();
-    if (!state) return;
-    gameState = state;
+function listenGame(){
+  const r=ref(db,`onecard/${roomCode}`);
+  onValue(r,snap=>{
+    const state=snap.val();
+    if(!state) return;
+    gameState=state;
     renderGame(state);
+    if(state.onecardPending===myId && !myOnecardDeclared) startOnecardTimer(state.onecardDeadline);
+    if(state.status==='finished') showResult(state);
 
-    // 원카드 타이머 체크
-    if (state.onecardPending && state.onecardPending !== myId && state.onecardDeadline) {
-      // 다른 플레이어가 원카드 선언 대기 중 - 패널티 버튼 노출 가능 (선택적)
-    }
-    if (state.onecardPending === myId && !myOnecardDeclared) {
-      startOnecardTimer(state.onecardDeadline);
-    }
-
-    if (state.status === 'finished') {
-      showResult(state);
+    // 나간 플레이어 차례면 호스트가 자동 스킵
+    if(isHost && state.status==='playing' && state.turn){
+      const curPlayer=state.players?.[state.turn];
+      if(curPlayer && curPlayer.active===false){
+        setTimeout(()=>autoSkipLeftPlayer(state),800);
+      }
     }
   });
-  listeners.push({ ref: r, unsub: unsub });
+  listeners.push(r);
+}
+
+async function autoSkipLeftPlayer(state){
+  if(!gameState||gameState.turn!==state.turn) return;
+  const order=state.order;
+  const players=state.players;
+  const currentIdx=state.currentIdx;
+  const direction=state.direction;
+  const activeOrder=order.filter(pid=>players[pid]?.active!==false&&!players[pid]?.finished);
+  if(activeOrder.length<2) return;
+  const activeIdx=activeOrder.indexOf(order[currentIdx]);
+  const nextActiveIdx=((activeIdx+direction)+activeOrder.length*10)%activeOrder.length;
+  const nextIdx=order.indexOf(activeOrder[nextActiveIdx]);
+  const u={};
+  u[`onecard/${roomCode}/currentIdx`]=nextIdx;
+  u[`onecard/${roomCode}/turn`]=order[nextIdx];
+  u[`onecard/${roomCode}/drawStack`]=0;
+  await update(ref(db),u);
+  toast(`${players[state.turn]?.nick||'플레이어'}가 나가서 턴 넘김`);
 }
 
 // ════════════════════════════════════════
