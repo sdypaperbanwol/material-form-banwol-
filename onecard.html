@@ -888,77 +888,39 @@ let pendingCard = null; // 7 낼 때 무늬 선택 대기중인 카드
 // ════════════════════════════════════════
 // DOM 참조
 // ════════════════════════════════════════
-const $lobby = document.getElementById('lobby');
-const $waiting = document.getElementById('waiting');
-const $game = document.getElementById('game');
-const $result = document.getElementById('result-overlay');
-const $nickInput = document.getElementById('nickname-input');
-const $roomInput = document.getElementById('room-input');
-const $createBtn = document.getElementById('create-btn');
-const $joinBtn = document.getElementById('join-btn');
-const $displayCode = document.getElementById('display-room-code');
-const $playerGrid = document.getElementById('player-grid');
-const $waitingInfo = document.getElementById('waiting-info');
-const $startBtn = document.getElementById('start-btn');
-const $leaveBtn = document.getElementById('leave-btn');
-const $turnIndicator = document.getElementById('turn-indicator');
-const $dirBadge = document.getElementById('direction-badge');
-const $opponentsArea = document.getElementById('opponents-area');
-const $deckPile = document.getElementById('deck-pile');
-const $discardPile = document.getElementById('discard-pile');
-const $deckCount = document.getElementById('deck-count');
-const $myHand = document.getElementById('my-hand');
-const $myNameLabel = document.getElementById('my-name-label');
-const $myCardCount = document.getElementById('my-card-count');
-const $onecardBtn = document.getElementById('onecard-btn');
-// $passBtn removed
-const $gameRoomCode = document.getElementById('game-room-code');
-const $resultTitle = document.getElementById('result-title');
-const $resultSub = document.getElementById('result-sub');
+const $nickInput     = document.getElementById('nickname-input');
+const $displayCode   = document.getElementById('display-room-code');
+const $playerGrid    = document.getElementById('player-grid');
+const $waitingInfo   = document.getElementById('waiting-info');
+const $startBtn      = document.getElementById('start-btn');
+const $leaveBtn      = document.getElementById('leave-btn');
+const $turnInd       = document.getElementById('turn-indicator');
+const $dirBadge      = document.getElementById('direction-badge');
+const $opponents     = document.getElementById('opponents-area');
+const $deckPile      = document.getElementById('deck-pile');
+const $discardPile   = document.getElementById('discard-pile');
+const $deckCount     = document.getElementById('deck-count');
+const $myHand        = document.getElementById('my-hand');
+const $myName        = document.getElementById('my-name-label');
+const $myCardCount   = document.getElementById('my-card-count');
+const $onecardBtn    = document.getElementById('onecard-btn');
+const $gameCode      = document.getElementById('game-room-code');
+const $resultTitle   = document.getElementById('result-title');
+const $resultSub     = document.getElementById('result-sub');
 const $resultRanking = document.getElementById('result-ranking');
-const $rematchBtn = document.getElementById('rematch-btn');
-const $lobbyBtn = document.getElementById('lobby-btn');
+const $rematchBtn    = document.getElementById('rematch-btn');
+const $lobbyBtn      = document.getElementById('lobby-btn');
 
 // ════════════════════════════════════════
 // 화면 전환
 // ════════════════════════════════════════
 function showScreen(name) {
-  [$lobby, $waiting, $game, $result].forEach(s => s.classList.add('hidden'));
+  ['lobby','create-room','room-list','waiting','game','result-overlay'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.classList.add('hidden');
+  });
   document.getElementById(name).classList.remove('hidden');
 }
-
-// ════════════════════════════════════════
-// 로비 이벤트
-// ════════════════════════════════════════
-$roomInput.addEventListener('input', e => {
-  e.target.value = e.target.value.replace(/\D/g,'').slice(0,4);
-});
-
-$createBtn.addEventListener('click', async () => {
-  myNick = $nickInput.value.trim();
-  if (!myNick) { toast('닉네임을 입력해주세요'); return; }
-  roomCode = genRoomCode();
-  isHost = true;
-  await joinRoom(roomCode);
-  showScreen('waiting');
-});
-
-$joinBtn.addEventListener('click', async () => {
-  myNick = $nickInput.value.trim();
-  if (!myNick) { toast('닉네임을 입력해주세요'); return; }
-  const code = $roomInput.value.trim();
-  if (code.length !== 4) { toast('4자리 코드를 입력해주세요'); return; }
-  const snap = await get(ref(db, `onecard/${code}`));
-  if (!snap.exists()) { toast('존재하지 않는 방입니다'); return; }
-  const data = snap.val();
-  if (data.status === 'playing') { toast('이미 게임이 시작된 방입니다'); return; }
-  const players = data.players || {};
-  if (Object.keys(players).length >= 5) { toast('방이 꽉 찼습니다 (최대 5명)'); return; }
-  roomCode = code;
-  isHost = false;
-  await joinRoom(roomCode);
-  showScreen('waiting');
-});
 
 async function joinRoom(code, roomName, pw) {
   await set(ref(db, `onecard/${code}/players/${myId}`), {
@@ -971,7 +933,7 @@ async function joinRoom(code, roomName, pw) {
     await update(ref(db, `onecard/${code}`), roomData);
   }
   $displayCode.textContent = code;
-  $gameRoomCode.textContent = code;
+  $gameCode.textContent = code;
   listenWaiting();
 }
 
@@ -1140,8 +1102,8 @@ function renderGame(state) {
   $dirBadge.textContent = state.direction === 1 ? '→' : '←';
 
   // 턴 표시
-  $turnIndicator.className = 'turn-indicator' + (isMyTurn ? ' my-turn' : '');
-  $turnIndicator.textContent = isMyTurn ? '내 차례!' : (state.players[state.turn]?.nick + '의 차례');
+  $turnInd.className = 'turn-indicator' + (isMyTurn ? ' my-turn' : '');
+  $turnInd.textContent = isMyTurn ? '내 차례!' : (state.players[state.turn]?.nick + '의 차례');
 
   // 덱 카운트
   $deckCount.textContent = (state.deck?.length || 0) + '장';
@@ -1161,7 +1123,7 @@ function renderGame(state) {
   }
 
   // 상대방 영역
-  $opponentsArea.innerHTML = '';
+  $opponents.innerHTML = '';
   state.order.forEach(pid => {
     if (pid === myId) return;
     const p = state.players[pid];
@@ -1180,11 +1142,11 @@ function renderGame(state) {
       <div class="card-count ${count===1?'danger':''}">${p.finished ? '✅' : count}</div>
       <div class="oname">${p.avatar} ${p.nick}</div>
     `;
-    $opponentsArea.appendChild(div);
+    $opponents.appendChild(div);
   });
 
   // 내 손패
-  $myNameLabel.textContent = myAvatar + ' ' + myNick;
+  $myName.textContent = myAvatar + ' ' + myNick;
   $myCardCount.textContent = myHand.length + '장';
   $myHand.innerHTML = '';
   myHand.forEach((card, idx) => {
@@ -1576,11 +1538,11 @@ function showResult(state) {
     </div>
   `).join('');
 
-  $result.classList.remove('hidden');
+  document.getElementById('result-overlay').classList.remove('hidden');
 }
 
 $rematchBtn.addEventListener('click', async () => {
-  $result.classList.add('hidden');
+  document.getElementById('result-overlay').classList.add('hidden');
   if (isHost) {
     const snap = await get(ref(db, `onecard/${roomCode}/players`));
     const players = Object.values(snap.val() || {});
@@ -1599,15 +1561,14 @@ $lobbyBtn.addEventListener('click', () => {
   listeners.forEach(l => off(l.ref));
   listeners = [];
   gameState = null;
-  $result.classList.add('hidden');
+  document.getElementById('result-overlay').classList.add('hidden');
   showScreen('lobby');
 });
 
 // ════════════════════════════════════════
 // Enter 키 지원
 // ════════════════════════════════════════
-$nickInput.addEventListener('keydown', e => { if(e.key==='Enter') $createBtn.click(); });
-$roomInput.addEventListener('keydown', e => { if(e.key==='Enter') $joinBtn.click(); });
+// keydown 이벤트는 새 로비 코드에서 처리
 
 </script>
 </body>
