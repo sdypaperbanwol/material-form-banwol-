@@ -334,7 +334,7 @@ function isCrane(r){
   const empavg = Number(String(r.empavg || r.EMPAVG || '').replace(/[^\d.]/g,''));
   
   // ★ empavg 없으면 totwei 30톤 미만으로 판별
-  if(!empavg) return totwei > 0 && totwei < 30000;
+  if(!empavg) return totwei > 0 && totwei < 32000;
   
   return (totwei - empavg) <= 10000;
 }
