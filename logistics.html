@@ -315,8 +315,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbyd3K1xsQUvwiFXfbqL4Yj-Cg4scTQCE3YTyk339jLv2VdOJJr5H2o3co6V8wWhgX95zw/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbyd3K1xsQUvwiFXfbqL4Yj-Cg4scTQCE3YTyk339jLv2VdOJJr5H2o3co6V8wWhgX95zw/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzKjVMgmAruKmPDbPJ8azEwhaFdXEHTykMI4_IOnlP9cqGSLMzxgCdVzd4jhA-MnWcQXg/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbzKjVMgmAruKmPDbPJ8azEwhaFdXEHTykMI4_IOnlP9cqGSLMzxgCdVzd4jhA-MnWcQXg/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -909,15 +909,13 @@ else if(sec.title==='제품 상차중' && !isAbnormal && inMinForRow!=null && el
 const isSub = sec.title==='부자재 입차중';
 
 if(isSub && inMinForRow!=null){
-  const elStr = (elapsedForRow!=null && elapsedForRow>=0)
-    ? `${Math.floor(elapsedForRow/60)>0 ? Math.floor(elapsedForRow/60)+'h ' : ''}${elapsedForRow%60}m 경과`
-    : '—';
-  estTd = `<td style="font-size:11px;color:var(--muted)">${elStr}</td>`;
+  const jsname = String(r.jsname || '').trim();
+  estTd = `<td style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${jsname}">${jsname || '—'}</td>`;
 }
 
-    let subItemInner;
+let subItemInner;
 if(isSub){
-  const nm = String(r.itemnm || '').trim();
+  const nm = String(r.itemnm || r.weicla || '').trim();  // ← clasnm → itemnm
   subItemInner = nm
     ? `<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:11px">${nm}</span>`
     : `<span style="color:#dc2626;font-weight:600;font-size:11px">미입력</span>`;
@@ -983,8 +981,8 @@ const sc=rows.filter(r=>{
       if(craneCount > 0) summaryStr += ` · 집게차 ${craneCount}대`;
     }
 
-    const estColHeader = sec.title==='원료 대기' ? '예상 입차' : '예상 출차';
-    const lastColHeader = sec.title==='부자재 입차중' ? '품목' : '입차중량';
+const estColHeader = sec.title==='원료 대기' ? '예상 입차' : sec.title==='부자재 입차중' ? '업체' : '예상 출차';
+const lastColHeader = sec.title==='부자재 입차중' ? '등급' : '입차중량';
 
     const secNote = sec.title==='원료 하차중'
       ? `<div style="padding:4px 14px 6px;font-size:10px;color:var(--muted)">예상출차: 집게차/일반 분리 · 평균 체류시간 순차 누적</div>`
@@ -2181,7 +2179,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   });
   const tableAll=[...sortByOut(bw),...sortByOut(sh)];
   const hasQ=searchQ&&searchQ.length>=2;
-  const tableRows=tableAll.length===0?`<tr><td colspan="${isSub?7:6}" class="empty">데이터 없음</td></tr>`:tableAll.map((r,i)=>{
+  const tableRows=tableAll.length===0?`<tr><td colspan="${isSub?9:6}" class="empty">데이터 없음</td></tr>`:tableAll.map((r,i)=>{
     const overnight=isOvernightEntry(r.INTIME, r.OUTIME);
     const inM=timeToMin(r.INTIME), outM=timeToMin(r.OUTIME);
     const isProduct=(type==='product');
@@ -2212,7 +2210,7 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     const inNoteText=isProduct?(case1?'🌙전날':case2?'🌙새벽':case3?'⏰06시':''):(case1?'🌙야간':'');
     const inNoteColor=case2?'#94a3b8':'#6366f1';
     const inNoteSpan=inNoteText?`<br><span style="color:${inNoteColor};font-size:9px">${inNoteText}</span>`:'';
-    const itemNm=isSub?`<td style="font-size:12px;color:#555">${String(r.ITEMNM||'').trim()||'-'}</td>`:'';
+    
     const silwei=isRaw?null:Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||null;
     const silweiDisp=silwei!=null?String(silwei):'-';
     const isFirstSihwa = plantFilter==='all' && r._plant==='시화' && tableAll.indexOf(r)===bw.length;
@@ -2225,7 +2223,8 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
     const silStyle=`style="${plantBg};${border};padding:3px 3px;font-weight:500;color:#185FA5"`;
     const silTd=isRaw?'':`<td ${silStyle}>${silweiDisp}</td>`;
     const rowNo = r._plant==='반월' ? bwNo++ : shNo++;
-    return `<tr><td ${baseStyle}>${rowNo}</td><td ${baseStyle}>${carNum}</td>${itemNm?`<td ${baseStyle}>${String(r.ITEMNM||'').trim()||'-'}</td>`:''}<td ${baseStyleNW}>${fmtTime(r.INTIME)}${inNoteSpan}</td><td ${baseStyleNW}>${fmtTime(r.OUTIME)}</td><td ${durStyle}>${durDisplay}</td>${silTd}</tr>`;
+   // 행 데이터
+return `<tr><td ${baseStyle}>${rowNo}</td><td ${baseStyle}>${carNum}</td>${isSub?`<td ${baseStyle}>${String(r.JSNAME||'').trim()||'-'}</td><td ${baseStyle}>${String(r.ITEMNM||'').trim()||'-'}</td><td ${baseStyle}>${String(r.CLASNM||'').trim()||'-'}</td>`:''}<td ${baseStyleNW}>${fmtTime(r.INTIME)}${inNoteSpan}</td><td ${baseStyleNW}>${fmtTime(r.OUTIME)}</td><td ${durStyle}>${durDisplay}</td>${silTd}</tr>`;
   }).join('');
   const bwSil=isRaw?bw.reduce((s,r)=>s+(Number(r.RECCNT||0)),0):bw.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
   const shSil=isRaw?sh.reduce((s,r)=>s+(Number(r.RECCNT||0)),0):sh.reduce((s,r)=>s+(Number(String(r.SILWEI||'').replace(/[^\d.]/g,''))||0),0);
@@ -2236,7 +2235,8 @@ function renderAnalyticDaily(data,type,plantFilter,searchQ){
   const plantBadgesRow=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0 0">${plantBadgesArr.join('')}</div>`;
   const noteRow=(type==='product')?`<div style="font-size:11px;color:var(--muted);margin-top:4px">※ 전날 입차 또는 06시 이전 입차는 06:00 기준으로 보정 · 체류시간도 동일 적용</div>`:'';
   panel.innerHTML+=anCard(`<span class="dot" style="--dc:${cfg.dc}"></span>전체 데이터 (${all.length}건)`,
-    `${plantBadgesRow}${noteRow}<div style="max-height:320px;overflow-y:auto;margin-top:8px"><table style="table-layout:fixed;width:100%;font-size:11px;border-collapse:collapse"><thead><tr style="border-bottom:1.5px solid #d1d5db"><th style="width:28px;padding:4px 3px">No</th><th style="width:56px;padding:4px 3px">차량</th>${isSub?'<th style="width:64px;padding:4px 3px">품목</th>':''}<th style="width:52px;padding:4px 3px">입차</th><th style="width:46px;padding:4px 3px">출차</th><th style="width:44px;padding:4px 3px">체류(분)</th>${isRaw?'':`<th style="width:54px;padding:4px 3px;color:#185FA5">실중량(kg)</th>`}</tr></thead><tbody>${tableRows}</tbody></table></div>`
+  // 헤더
+`${plantBadgesRow}${noteRow}<div style="max-height:320px;overflow-y:auto;margin-top:8px"><table style="table-layout:fixed;width:100%;font-size:11px;border-collapse:collapse"><thead><tr style="border-bottom:1.5px solid #d1d5db"><th style="width:28px;padding:4px 3px">No</th><th style="width:56px;padding:4px 3px">차량</th>${isSub?'<th style="width:52px;padding:4px 3px">업체명</th><th style="width:52px;padding:4px 3px">품목</th><th style="width:56px;padding:4px 3px">등급</th>':''}<th style="width:52px;padding:4px 3px">입차</th><th style="width:46px;padding:4px 3px">출차</th><th style="width:44px;padding:4px 3px">체류(분)</th>${isRaw?'':`<th style="width:54px;padding:4px 3px;color:#185FA5">실중량(kg)</th>`}</tr></thead><tbody>${tableRows}</tbody></table></div>`
   );
 }
 
@@ -2384,7 +2384,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbyd3K1xsQUvwiFXfbqL4Yj-Cg4scTQCE3YTyk339jLv2VdOJJr5H2o3co6V8wWhgX95zw/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbzKjVMgmAruKmPDbPJ8azEwhaFdXEHTykMI4_IOnlP9cqGSLMzxgCdVzd4jhA-MnWcQXg/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
