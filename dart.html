@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DART 공시 자료 추출기</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; background-color: #f9f9f9; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #0056b3; padding-bottom: 10px; color: #0056b3; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: inline-block; width: 140px; font-weight: bold; }
+        .input-group input { width: 300px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-group { margin: 20px 0; }
+        button { padding: 10px 20px; font-size: 14px; font-weight: bold; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        button:hover { background-color: #004085; }
+        button.btn-excel { background-color: #28a745; }
+        button.btn-excel:hover { background-color: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        tr:hover { background-color: #f5f5f5; }
+        .status { margin-top: 10px; font-weight: bold; color: #d9534f; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>DART 기업 공시 분석기</h2>
+    
+    <div class="input-group">
+        <label for="apiKey">DART API Key :</label>
+        <input type="password" id="apiKey" placeholder="발급받은 인증키를 입력하세요 (비밀번호 형태)">
+    </div>
+    <div class="input-group">
+        <label for="corpCode">기업 고유번호 :</label>
+        <input type="text" id="corpCode" placeholder="DART 기업 고유번호 8자리 입력 (예: 00126380)">
+    </div>
+
+    <div class="btn-group">
+        <button onclick="fetchDartData()">1. 자료 조회하기</button>
+        <button onclick="downloadExcel()" class="btn-excel">2. 엑셀로 내보내기</button>
+    </div>
+
+    <div id="statusMessage" class="status"></div>
+    
+    <div id="resultTable"></div>
+</div>
+
+<script>
+    let fetchedData = []; // 수집된 데이터를 전역으로 보관
+
+    async function fetchDartData() {
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const corpCode = document.getElementById('corpCode').value.trim();
+        const statusMsg = document.getElementById('statusMessage');
+        const resultDiv = document.getElementById('resultTable');
+
+        // 간단한 유효성 검사
+        if (!apiKey) { alert('DART API Key를 입력해주세요.'); return; }
+        if (!corpCode) { alert('기업 고유번호 8자리를 입력해주세요.'); return; }
+
+        statusMsg.innerText = "데이터를 불러오는 중입니다...";
+        resultDiv.innerHTML = "";
+
+        // 브라우저 CORS 제약을 우회하기 위한 공용 프록시 서버 주소 조합
+        const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+        const targetUrl = `https://opendart.fss.or.kr/api/list.json?crtfc_key=${apiKey}&corp_code=${corpCode}&bgn_de=20260101&page_count=100`;
+        
+        try {
+            // 주의: cors-anywhere 공용 서버는 최초 접근 시 활성화 버튼을 눌러야 할 수 있습니다.
+            const response = await fetch(proxyUrl + targetUrl);
+            
+            if (!response.ok) throw new Error("네트워크 응답에 문제가 있습니다.");
+            
+            const data = await response.json();
+
+            if (data.status === "000" && data.list) {
+                fetchedData = data.list;
+                statusMsg.innerText = `조회 완료! 총 ${fetchedData.length}건의 자료를 찾았습니다.`;
+
+                // 표(Table) 생성 후 화면에 바인딩
+                let html = `<table>
+                                <thead>
+                                    <tr>
+                                        <th>공시일자</th>
+                                        <th>법인명</th>
+                                        <th>보고서명</th>
+                                        <th>제출인</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                
+                fetchedData.forEach(item => {
+                    html += `<tr>
+                                <td>${item.rcept_dt}</td>
+                                <td>${item.corp_name}</td>
+                                <td>${item.report_nm}</td>
+                                <td>${item.flr_nm}</td>
+                             </tr>`;
+                });
+                
+                html += `</tbody></table>`;
+                resultDiv.innerHTML = html;
+            } else {
+                statusMsg.innerText = `오류 발생: ${data.message} (코드: ${data.status})`;
+            }
+        } catch (error) {
+            console.error(error);
+            statusMsg.innerHTML = `데이터를 가져오지 못했습니다. <br>대다수 브라우저 CORS 차단 문제일 수 있으니, 공용 프록시 활성화 상태를 확인하세요.`;
+        }
+    }
+
+    // SheetJS를 활용한 데이터 추출 및 엑셀 다운로드 함수
+    function downloadExcel() {
+        if (fetchedData.length === 0) {
+            alert('먼저 자료를 조회하여 데이터를 확보해야 합니다.');
+            return;
+        }
+
+        // 1. JSON 데이터를 엑셀 시트 형태로 가공
+        const worksheet = XLSX.utils.json_to_sheet(fetchedData);
+        
+        // 2. 새 워크북(엑셀파일) 생성
+        const workbook = XLSX.utils.book_new();
+        
+        // 3. 워크북에 시트 추가 (시트이름: 공시현황)
+        XLSX.utils.book_append_sheet(workbook, worksheet, "공시현황");
+        
+        // 4. 브라우저에서 즉시 엑셀 파일 다운로드 실행
+        XLSX.writeFile(workbook, "DART_공시자료_보고서.xlsx");
+    }
+</script>
+
+</body>
+</html>
