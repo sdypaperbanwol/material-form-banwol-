@@ -816,7 +816,7 @@ function runCalc(){
     const m = calcCountMonthlyUpToBase(join, base);
     const p = calcProratedFromJoinYear(join);
     total = m.monthly + p.prorated;
-    whoLabel = `신입(${empLabel})`;
+    whoLabel = `신입(1년차)`;
     explain += `① 월차(최대 11)\n- 기준일까지 발생: ${m.monthly}개\n\n`;
     explain += `② 전년도(${joinY}) 일할(15기준, 올림)\n- 기간: ${fmtDate(join)} ~ ${fmtDate(p.periodEnd)}\n- 해당 연도 일수: ${p.yDays}일\n- 근무일수(포함): ${p.workedDays}일\n- 일할 결과(올림): ${p.prorated}개\n\n`;
     explain += `합계: ${total}개\n`;
