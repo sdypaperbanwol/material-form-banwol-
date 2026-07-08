@@ -807,7 +807,7 @@ function runCalc(){
   if (baseY === joinY) {
     const m = calcCountMonthlyUpToBase(join, base);
     total = m.monthly;
-    whoLabel = `신입`;
+    whoLabel = `신입(입사 ${join.getFullYear()}년 · ${baseY}년차)`;
     explain += `【입사연도(${joinY})】\n- 월차만 계산 (최대 11)\n\n`;
     explain += `① 월차(최대 11)\n- 1개월차 발생일: ${fmtDate(m.firstMonthlyAccrual)} (종료일 ${fmtDate(m.firstMonthlyEnd)})\n- 기준일까지 발생: ${m.monthly}개\n\n`;
     explain += `합계: ${total}개\n`;
