@@ -367,22 +367,6 @@ function buildMap() {
   let mapInstance = null;
 
   async function loadMap() {
-    if (mapLoaded) return;
-    mapLoaded = true;
-    try {
-      const keyRes = await fetch(EXEC_URL + '?action=kakaoKey');
-      const { key } = await keyRes.json();
-      if (!key) {
-        document.getElementById('map').innerHTML = '<p style="padding:20px;color:#999;">카카오맵 JS 키가 설정되지 않았습니다.</p>';
-        return;
-      }
-      await loadScript(`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false`);
-      kakao.maps.load(async () => {
-        const ptRes = await fetch(EXEC_URL + '?action=map');
-        const points = await ptRes.json();
-        drawMap(points);
-      });
-async function loadMap() {
   if (mapLoaded) return;
   mapLoaded = true;
   try {
@@ -397,7 +381,7 @@ async function loadMap() {
       const ptRes = await fetch(EXEC_URL + '?action=map');
       const points = await ptRes.json();
       drawMap(points);
-      setupMapSearch(); // ← 추가
+      setupMapSearch();
     });
   } catch (err) {
     document.getElementById('map').innerHTML = `<p style="padding:20px;color:#c0392b;">지도 로드 실패: ${err.message}</p>`;
@@ -420,7 +404,6 @@ function setupMapSearch() {
       mapInstance.setLevel(5);
       matched[0].info.open(mapInstance, matched[0].marker);
     } else if (matched.length > 1) {
-      // 여러 명이면 첫 매칭 지점으로만 살짝 이동
       mapInstance.setCenter(matched[0].marker.getPosition());
     }
   });
@@ -441,19 +424,7 @@ function loadScript(src) {
   });
 }
 
-  function drawMap(points) {
-    if (!points.length || points.error) {
-      document.getElementById('map').innerHTML = '<p style="padding:20px;color:#999;">지도에 표시할 주소 데이터가 없습니다. (KAKAO_REST_KEY 설정 여부 확인)</p>';
-      return;
-    }
-    const center = new kakao.maps.LatLng(points[0].lat, points[0].lng);
-    mapInstance = new kakao.maps.Map(document.getElementById('map'), { center, level: 9 });
-    points.forEach(p => {
-      const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(p.lat, p.lng), map: mapInstance });
-      const info = new kakao.maps.InfoWindow({ content: `<div style="padding:6px;font-size:12px;">${p.name} (${p.dept})</div>` });
-      marker.addListener('click', () => info.open(mapInstance, marker));
-    });
-  }
+  
 
   function renderAll() {
     destroyCharts();
