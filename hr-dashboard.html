@@ -198,10 +198,10 @@
 <body>
 <header>
   <h1>📊 인사 대시보드</h1>
-  <div>
-    <span class="updated" id="updatedAt"></span>
-    <button id="refreshBtn" onclick="loadData(true)">새로고침</button>
-  </div>
+  <div class="side">
+  <span class="updated" id="updatedAt"></span>
+  <button id="refreshBtn" onclick="loadData(true)">새로고침</button>
+</div>
 </header>
 <nav id="tabNav"></nav>
  <div class="search-bar">
@@ -278,7 +278,13 @@
       <div class="card"><h3>정년임박자 (55세 이상)</h3>
       ${table(['이름', '부서', '나이', '직급'], DATA.nearRetire.map(p => [p.name, p.dept, p.age, p.position]))}</div>`;
   }
-
+function buildAge() {
+  return `
+    <div class="grid2">
+      <div class="card"><h3>월별 생일 분포</h3><canvas id="chartBirthMonth"></canvas></div>
+      <div class="card"><h3>결혼여부</h3><canvas id="chartMarry"></canvas></div>
+    </div>`;
+}
     function buildHire() {
     const rows = DATA.byJoinReason.map(j => [j.joinReason, j.total, j.avgTenure ?? '-', j.retireRate + '%']);
     const cross = DATA.crossJoinReasonReferral.map(c => [c.joinReason, c.referral, c.total, c.retireRate + '%']);
@@ -324,10 +330,6 @@ function buildMap() {
     <div class="card"><h3>재직자 거주지 지도</h3><div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div></div>`;
 }
  
-  function buildMap() {
-    return `<div class="card"><h3>재직자 거주지 지도</h3><div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div></div>`;
-  }
-
   function destroyCharts() { charts.forEach(c => c.destroy()); charts = []; }
 
   function renderCharts() {
