@@ -167,16 +167,18 @@
   #refreshBtn:hover { background: rgba(255,255,255,0.22); }
 
   /* 검색 */
-  .search-bar { background: white; padding: 12px 20px; border-bottom: 1px solid var(--border); position: relative; }
-  .search-bar input {
-    width: 100%; max-width: 420px;
-    padding: 10px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: inherit;
-    transition: border-color .15s;
-  }
+#searchResults {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white; border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -8px rgba(20,30,45,0.18);
+  max-width: 420px; width: 90%;
+  max-height: 400px; overflow-y: auto; z-index: 20; display: none;
+}
+#searchResults.show { display: block; }
   .search-bar input:focus { outline: none; border-color: var(--accent); }
   #searchResults {
     position: absolute; left: 20px; top: 56px;
@@ -327,7 +329,11 @@ function buildMap() {
   const regionRows = DATA.byRegion.map(r => [r.region, r.count]);
   return `
     <div class="card"><h3>거주지역 분포 (시/구)</h3>${table(['지역', '인원'], regionRows)}</div>
-    <div class="card"><h3>재직자 거주지 지도</h3><div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div></div>`;
+    <div class="card">
+      <h3>재직자 거주지 지도</h3>
+      <input type="text" id="mapSearchInput" placeholder="🔍 이 지도에서 이름 검색" style="width:100%;max-width:320px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13.5px;margin-bottom:12px;">
+      <div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div>
+    </div>`;
 }
  
   function destroyCharts() { charts.forEach(c => c.destroy()); charts = []; }
@@ -376,6 +382,50 @@ function buildMap() {
         const points = await ptRes.json();
         drawMap(points);
       });
+async function loadMap() {
+  if (mapLoaded) return;
+  mapLoaded = true;
+  try {
+    const keyRes = await fetch(EXEC_URL + '?action=kakaoKey');
+    const { key } = await keyRes.json();
+    if (!key) {
+      document.getElementById('map').innerHTML = '<p style="padding:20px;color:#999;">카카오맵 JS 키가 설정되지 않았습니다.</p>';
+      return;
+    }
+    await loadScript(`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false`);
+    kakao.maps.load(async () => {
+      const ptRes = await fetch(EXEC_URL + '?action=map');
+      const points = await ptRes.json();
+      drawMap(points);
+      setupMapSearch(); // ← 추가
+    });
+  } catch (err) {
+    document.getElementById('map').innerHTML = `<p style="padding:20px;color:#c0392b;">지도 로드 실패: ${err.message}</p>`;
+  }
+}
+
+function setupMapSearch() {
+  const input = document.getElementById('mapSearchInput');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if (!q) {
+      mapMarkers.forEach(m => m.marker.setMap(mapInstance));
+      return;
+    }
+    const matched = mapMarkers.filter(m => m.name.includes(q));
+    mapMarkers.forEach(m => m.marker.setMap(matched.includes(m) ? mapInstance : null));
+    if (matched.length === 1) {
+      mapInstance.setCenter(matched[0].marker.getPosition());
+      mapInstance.setLevel(5);
+      matched[0].info.open(mapInstance, matched[0].marker);
+    } else if (matched.length > 1) {
+      // 여러 명이면 첫 매칭 지점으로만 살짝 이동
+      mapInstance.setCenter(matched[0].marker.getPosition());
+    }
+  });
+}
+     
     } catch (err) {
       document.getElementById('map').innerHTML = `<p style="padding:20px;color:#c0392b;">지도 로드 실패: ${err.message}</p>`;
     }
@@ -489,9 +539,9 @@ function showEmployeeDetail(name) {
       <div class="row"><span>결혼여부</span><span>${e.marry}</span></div>
       <div class="row"><span>최종학력</span><span>${e.schoolL || '-'} ${e.majorL ? '(' + e.majorL + ')' : ''}</span></div>
       <div class="row"><span>자격증</span><span>${e.license || '없음'}</span></div>
+      ${!e.retired ? `<button onclick="focusOnMap('${e.name.replace(/'/g, "\\'")}')" style="width:100%;margin-top:14px;padding:10px;background:var(--navy);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600;">📍 지도에서 위치보기</button>` : ''}
     </div>`;
 
-  // 모달로 띄우기
   let modal = document.getElementById('empModal');
   if (!modal) {
     modal = document.createElement('div');
@@ -505,6 +555,44 @@ function showEmployeeDetail(name) {
     modal.addEventListener('click', (ev) => { if (ev.target === modal) modal.remove(); });
   }
   document.getElementById('empModalBody').innerHTML = html;
+}
+
+ let mapMarkers = []; // { name, marker, infowindow } 저장
+
+function drawMap(points) {
+  if (!points.length || points.error) {
+    document.getElementById('map').innerHTML = '<p style="padding:20px;color:#999;">지도에 표시할 주소 데이터가 없습니다. (KAKAO_REST_KEY 설정 여부 확인)</p>';
+    return;
+  }
+  const center = new kakao.maps.LatLng(points[0].lat, points[0].lng);
+  mapInstance = new kakao.maps.Map(document.getElementById('map'), { center, level: 9 });
+  mapMarkers = [];
+  points.forEach(p => {
+    const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(p.lat, p.lng), map: mapInstance });
+    const info = new kakao.maps.InfoWindow({ content: `<div style="padding:6px;font-size:12px;">${p.name} (${p.dept})</div>` });
+    marker.addListener('click', () => info.open(mapInstance, marker));
+    mapMarkers.push({ name: p.name, marker, info });
+  });
+}
+
+function focusOnMap(name) {
+  document.getElementById('empModal')?.remove();
+  showTab('map');
+
+  const tryFocus = () => {
+    const found = mapMarkers.find(m => m.name === name);
+    if (found && mapInstance) {
+      mapInstance.setCenter(found.marker.getPosition());
+      mapInstance.setLevel(5);
+      found.info.open(mapInstance, found.marker);
+    } else if (!mapInstance) {
+      // 지도가 아직 로딩 중이면 잠시 후 재시도
+      setTimeout(tryFocus, 400);
+    } else {
+      alert('해당 인원의 좌표를 찾을 수 없습니다. (주소 지오코딩 실패 또는 캐시 미반영)');
+    }
+  };
+  setTimeout(tryFocus, 300);
 }
   renderNav();
  setupSearch();   // ← 이 줄 추가
