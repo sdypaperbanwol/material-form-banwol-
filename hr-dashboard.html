@@ -8,43 +8,191 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, 'Malgun Gothic', sans-serif; margin: 0; background: #f4f5f7; color: #222; }
-  header { background: #2c3e50; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
-  header h1 { margin: 0; font-size: 20px; }
-  header .updated { font-size: 12px; color: #bbb; }
-  nav { display: flex; background: white; border-bottom: 1px solid #ddd; overflow-x: auto; position: sticky; top: 0; z-index: 10; }
-  nav button { flex: none; padding: 12px 18px; border: none; background: none; cursor: pointer; font-size: 14px; color: #555; border-bottom: 3px solid transparent; white-space: nowrap; }
-  nav button.active { color: #2c3e50; border-bottom-color: #2c3e50; font-weight: bold; }
-  .container { padding: 20px; max-width: 1100px; margin: 0 auto; }
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+  :root {
+    --navy: #1a2b42;
+    --navy-light: #2c4260;
+    --accent: #3b82c4;
+    --accent-soft: #eaf2fa;
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-mute: #8b95a1;
+    --border: #e8eaee;
+    --danger: #d64545;
+    --success: #2a9d6f;
+    --radius: 14px;
+  }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    color: white;
+    padding: 18px 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  header h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.2px; display: flex; align-items: center; gap: 8px; }
+  header .side { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 10px; }
+  header .updated { font-size: 11.5px; color: rgba(255,255,255,0.55); }
+
+  nav {
+    display: flex;
+    justify-content: center;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  nav button {
+    flex: none;
+    padding: 9px 18px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-mute);
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: all .15s ease;
+  }
+  nav button:hover { background: var(--bg); color: var(--text); }
+  nav button.active { color: white; background: var(--navy); box-shadow: 0 2px 8px rgba(26,43,66,0.25); }
+
+  .container { padding: 24px 20px 60px; max-width: 1080px; margin: 0 auto; }
   .section { display: none; }
-  .section.active { display: block; }
-  .card { background: white; border-radius: 8px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .card h3 { margin-top: 0; font-size: 15px; color: #2c3e50; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .section.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 2px rgba(20,30,45,0.04), 0 8px 20px -12px rgba(20,30,45,0.10);
+    border: 1px solid var(--border);
+  }
+  .card h3 {
+    margin: 0 0 16px;
+    font-size: 14.5px;
+    color: var(--navy);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h3::before {
+    content: '';
+    width: 4px; height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #eee; }
-  th { background: #fafafa; color: #666; font-weight: 600; }
-  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
-  .stat-box { flex: 1; min-width: 120px; background: #f0f3f7; border-radius: 6px; padding: 12px; text-align: center; }
-  .stat-box .num { font-size: 22px; font-weight: bold; color: #2c3e50; }
-  .stat-box .label { font-size: 12px; color: #777; }
-  .insight-item { background: #fff8e1; border-left: 4px solid #f5a623; padding: 10px 14px; margin-bottom: 8px; border-radius: 4px; font-size: 13.5px; line-height: 1.5; }
-  #map { width: 100%; height: 480px; border-radius: 8px; }
-  .badge-retired { color: #c0392b; }
-  .badge-active { color: #27ae60; }
-  .loading, .error { text-align: center; padding: 60px; color: #999; }
-  .error { color: #c0392b; }
-  #refreshBtn { background: #34495e; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px; }
- .search-bar { background: white; padding: 10px 20px; border-bottom: 1px solid #ddd; position: relative; }
-.search-bar input { width: 100%; max-width: 400px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-#searchResults { position: absolute; left: 20px; top: 48px; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); max-width: 420px; width: calc(100% - 40px); max-height: 400px; overflow-y: auto; z-index: 20; display: none; }
-#searchResults.show { display: block; }
-.search-item { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-.search-item:hover { background: #f5f7fa; }
-.emp-detail { padding: 16px; }
-.emp-detail .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f5f5f5; font-size: 13.5px; }
-.emp-detail .row span:first-child { color: #888; }
+  thead th {
+    padding: 10px 12px;
+    text-align: left;
+    background: var(--accent-soft);
+    color: var(--navy);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: .2px;
+  }
+  thead th:first-child { border-radius: 8px 0 0 8px; }
+  thead th:last-child { border-radius: 0 8px 8px 0; }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tbody tr:nth-child(even) { background: #fafbfc; }
+  tbody tr:hover { background: var(--accent-soft); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .stat-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .stat-box {
+    flex: 1; min-width: 130px;
+    background: linear-gradient(135deg, var(--accent-soft), #ffffff);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+  .stat-box .num { font-size: 26px; font-weight: 800; color: var(--navy); letter-spacing: -0.5px; }
+  .stat-box .label { font-size: 12px; color: var(--text-mute); margin-top: 3px; font-weight: 600; }
+
+  .insight-item {
+    background: #fff9ec;
+    border-left: 4px solid #e8a13d;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+
+  #map { width: 100%; height: 480px; border-radius: 10px; overflow: hidden; }
+  .badge-retired { color: var(--danger); font-weight: 600; }
+  .badge-active { color: var(--success); font-weight: 600; }
+
+  .loading, .error { text-align: center; padding: 80px 20px; color: var(--text-mute); font-size: 14px; }
+  .error { color: var(--danger); }
+
+  #refreshBtn {
+    background: rgba(255,255,255,0.12);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background .15s;
+  }
+  #refreshBtn:hover { background: rgba(255,255,255,0.22); }
+
+  /* 검색 */
+  .search-bar { background: white; padding: 12px 20px; border-bottom: 1px solid var(--border); position: relative; }
+  .search-bar input {
+    width: 100%; max-width: 420px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color .15s;
+  }
+  .search-bar input:focus { outline: none; border-color: var(--accent); }
+  #searchResults {
+    position: absolute; left: 20px; top: 56px;
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 12px 28px -8px rgba(20,30,45,0.18);
+    max-width: 420px; width: calc(100% - 40px);
+    max-height: 400px; overflow-y: auto; z-index: 20; display: none;
+  }
+  #searchResults.show { display: block; }
+  .search-item { padding: 11px 16px; border-bottom: 1px solid #f2f3f5; cursor: pointer; font-size: 13.5px; }
+  .search-item:hover { background: var(--accent-soft); }
+  .emp-detail { padding: 20px; }
+  .emp-detail h3 { border-bottom: none !important; }
+  .emp-detail .row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f4f5f6; font-size: 13.5px; }
+  .emp-detail .row span:first-child { color: var(--text-mute); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -131,17 +279,7 @@
       ${table(['이름', '부서', '나이', '직급'], DATA.nearRetire.map(p => [p.name, p.dept, p.age, p.position]))}</div>`;
   }
 
-  function buildAge() {
-    return `
-      <div class="grid2">
-        <div class="card"><h3>월별 생일 분포</h3><canvas id="chartBirthMonth"></canvas></div>
-        <div class="card"><h3>결혼여부</h3><canvas id="chartMarry"></canvas></div>
-      </div>
-      <div class="card"><h3>거주지역 분포 (시/구)</h3>
-      ${table(['지역', '인원'], DATA.byRegion.map(r => [r.region, r.count]))}</div>`;
-  }
-
-  function buildHire() {
+    function buildHire() {
     const rows = DATA.byJoinReason.map(j => [j.joinReason, j.total, j.avgTenure ?? '-', j.retireRate + '%']);
     const cross = DATA.crossJoinReasonReferral.map(c => [c.joinReason, c.referral, c.total, c.retireRate + '%']);
     return `<div class="card"><h3>입사경로별 평균근속·퇴사율</h3>${table(['입사경로', '인원', '평균근속(년)', '퇴사율'], rows)}</div>
@@ -179,6 +317,13 @@
   </div>`;
 }
 
+function buildMap() {
+  const regionRows = DATA.byRegion.map(r => [r.region, r.count]);
+  return `
+    <div class="card"><h3>거주지역 분포 (시/구)</h3>${table(['지역', '인원'], regionRows)}</div>
+    <div class="card"><h3>재직자 거주지 지도</h3><div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div></div>`;
+}
+ 
   function buildMap() {
     return `<div class="card"><h3>재직자 거주지 지도</h3><div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div></div>`;
   }
