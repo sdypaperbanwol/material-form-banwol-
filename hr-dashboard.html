@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>인사 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, 'Malgun Gothic', sans-serif; margin: 0; background: #f4f5f7; color: #222; }
+  header { background: #2c3e50; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .updated { font-size: 12px; color: #bbb; }
+  nav { display: flex; background: white; border-bottom: 1px solid #ddd; overflow-x: auto; position: sticky; top: 0; z-index: 10; }
+  nav button { flex: none; padding: 12px 18px; border: none; background: none; cursor: pointer; font-size: 14px; color: #555; border-bottom: 3px solid transparent; white-space: nowrap; }
+  nav button.active { color: #2c3e50; border-bottom-color: #2c3e50; font-weight: bold; }
+  .container { padding: 20px; max-width: 1100px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: white; border-radius: 8px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card h3 { margin-top: 0; font-size: 15px; color: #2c3e50; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background: #fafafa; color: #666; font-weight: 600; }
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat-box { flex: 1; min-width: 120px; background: #f0f3f7; border-radius: 6px; padding: 12px; text-align: center; }
+  .stat-box .num { font-size: 22px; font-weight: bold; color: #2c3e50; }
+  .stat-box .label { font-size: 12px; color: #777; }
+  .insight-item { background: #fff8e1; border-left: 4px solid #f5a623; padding: 10px 14px; margin-bottom: 8px; border-radius: 4px; font-size: 13.5px; line-height: 1.5; }
+  #map { width: 100%; height: 480px; border-radius: 8px; }
+  .badge-retired { color: #c0392b; }
+  .badge-active { color: #27ae60; }
+  .loading, .error { text-align: center; padding: 60px; color: #999; }
+  .error { color: #c0392b; }
+  #refreshBtn { background: #34495e; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 인사 대시보드</h1>
+  <div>
+    <span class="updated" id="updatedAt"></span>
+    <button id="refreshBtn" onclick="loadData(true)">새로고침</button>
+  </div>
+</header>
+<nav id="tabNav"></nav>
+<div class="container" id="container">
+  <div class="loading">데이터 불러오는 중...</div>
+</div>
+
+<script>
+  // ════════════════════════════════════════════
+  //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
+  // ════════════════════════════════════════════
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbzc_bB93OFdfJCO79O6yh9aJP9gmsuVEtm0sBGKtMrFW8MTn0N4dyx7uDNW-Lfgx1k-/exec';
+
+  const TABS = [
+    { id: 'overview', label: '개요' },
+    { id: 'dept', label: '부서/퇴사율' },
+    { id: 'age', label: '연령/생일' },
+    { id: 'hire', label: '입사경로/채용' },
+    { id: 'referral', label: '추천인' },
+    { id: 'license', label: '자격증' },
+    { id: 'insight', label: '퇴사 인사이트' },
+    { id: 'map', label: '거주지 지도' }
+  ];
+
+  let DATA = null;
+  let charts = [];
+
+  function renderNav() {
+    const nav = document.getElementById('tabNav');
+    nav.innerHTML = TABS.map((t, i) =>
+      `<button data-tab="${t.id}" class="${i === 0 ? 'active' : ''}">${t.label}</button>`
+    ).join('');
+    nav.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => showTab(btn.dataset.tab));
+    });
+  }
+
+  function showTab(id) {
+    document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'sec-' + id));
+    if (id === 'map') loadMap();
+  }
+
+  function table(headers, rows) {
+    return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+
+  function buildOverview() {
+    const b = DATA.basic;
+    return `
+      <div class="card">
+        <h3>기본 현황</h3>
+        <div class="stat-row">
+          <div class="stat-box"><div class="num">${b.active}</div><div class="label">재직자</div></div>
+          <div class="stat-box"><div class="num">${b.retired}</div><div class="label">퇴사자</div></div>
+          <div class="stat-box"><div class="num">${b.total}</div><div class="label">전체 누적</div></div>
+          <div class="stat-box"><div class="num">${b.retireRate}%</div><div class="label">전체 퇴사율</div></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>연령대 분포 (재직자)</h3><canvas id="chartAge"></canvas></div>
+        <div class="card"><h3>연도별 입사자 수</h3><canvas id="chartJoinYear"></canvas></div>
+      </div>`;
+  }
+
+  function buildDept() {
+    const rows = DATA.byDept.map(d => [d.dept, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']);
+    return `<div class="card"><h3>부서별 평균연령·근속·퇴사율</h3>
+      ${table(['부서', '인원', '평균연령', '평균근속(년)', '퇴사율'], rows)}</div>
+      <div class="card"><h3>정년임박자 (55세 이상)</h3>
+      ${table(['이름', '부서', '나이', '직급'], DATA.nearRetire.map(p => [p.name, p.dept, p.age, p.position]))}</div>`;
+  }
+
+  function buildAge() {
+    return `
+      <div class="grid2">
+        <div class="card"><h3>월별 생일 분포</h3><canvas id="chartBirthMonth"></canvas></div>
+        <div class="card"><h3>결혼여부</h3><canvas id="chartMarry"></canvas></div>
+      </div>
+      <div class="card"><h3>거주지역 분포 (시/구)</h3>
+      ${table(['지역', '인원'], DATA.byRegion.map(r => [r.region, r.count]))}</div>`;
+  }
+
+  function buildHire() {
+    const rows = DATA.byJoinReason.map(j => [j.joinReason, j.total, j.avgTenure ?? '-', j.retireRate + '%']);
+    const cross = DATA.crossJoinReasonReferral.map(c => [c.joinReason, c.referral, c.total, c.retireRate + '%']);
+    return `<div class="card"><h3>입사경로별 평균근속·퇴사율</h3>${table(['입사경로', '인원', '평균근속(년)', '퇴사율'], rows)}</div>
+      <div class="card"><h3>추천여부 × 입사경로 교차 퇴사율</h3>${table(['입사경로', '추천여부', '인원', '퇴사율'], cross)}</div>
+      <div class="card"><h3>입사 시 경력 구간</h3>${table(['구간', '인원'], DATA.careerBucket.map(c => [c.bucket, c.count]))}</div>
+      <div class="card"><h3>퇴사자 근속연수 분포</h3>${table(['근속구간', '인원'], DATA.retiredTenure.map(r => [r.bucket, r.count]))}</div>`;
+  }
+
+  function buildReferral() {
+    const rv = DATA.referralVsNormal;
+    const summary = table(['구분', '인원', '평균근속(년)', '퇴사율'], [
+      ['추천입사', rv.referral.total, rv.referral.avgTenure ?? '-', (rv.referral.retireRate ?? '-') + '%'],
+['일반입사', rv.normal.total, rv.normal.avgTenure ?? '-', (rv.normal.retireRate ?? '-') + '%']
+    ]);
+    const detailRows = DATA.referrals.map(r => [
+      r.referrer, r.count,
+      r.referees.map(x => `${x.name}<span class="${x.retired ? 'badge-retired' : 'badge-active'}">(${x.retired ? '퇴사' : '재직'})</span>`).join(', ')
+    ]);
+    return `<div class="card"><h3>추천입사 vs 일반입사</h3>${summary}</div>
+      <div class="card"><h3>추천인별 피추천인 명단</h3>${table(['추천인', '추천건수', '피추천인'], detailRows)}</div>`;
+  }
+
+  function buildLicense() {
+    const rows = DATA.licenses.map(l => [l.license, l.count, l.holders.join(', ')]);
+    return `<div class="card"><h3>자격증 보유 현황 (보유자 명단 포함)</h3>${table(['자격증명', '인원', '보유자'], rows)}</div>`;
+  }
+
+  function buildInsight() {
+  return `<div class="card"><h3>퇴사자 인사이트 종합</h3>
+    ${DATA.insights.map(t => `<div class="insight-item">💡 ${t}</div>`).join('')}
+    ${DATA.cautionNotes && DATA.cautionNotes.length ? `
+      <h3 style="margin-top:20px;">참고 (표본 부족, 해석 주의)</h3>
+      ${DATA.cautionNotes.map(t => `<div class="insight-item" style="background:#f0f0f0;border-left-color:#aaa;">⚠️ ${t}</div>`).join('')}
+    ` : ''}
+  </div>`;
+}
+
+  function buildMap() {
+    return `<div class="card"><h3>재직자 거주지 지도</h3><div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div></div>`;
+  }
+
+  function destroyCharts() { charts.forEach(c => c.destroy()); charts = []; }
+
+  function renderCharts() {
+    charts.push(new Chart(document.getElementById('chartAge'), {
+      type: 'bar',
+      data: { labels: DATA.byAgeGroup.map(a => a.group + '대'), datasets: [{ label: '인원', data: DATA.byAgeGroup.map(a => a.count), backgroundColor: '#3498db' }] },
+      options: { plugins: { legend: { display: false } } }
+    }));
+    charts.push(new Chart(document.getElementById('chartJoinYear'), {
+      type: 'line',
+      data: { labels: DATA.byJoinYear.map(y => y.year), datasets: [{ label: '입사자수', data: DATA.byJoinYear.map(y => y.count), borderColor: '#2c3e50', tension: 0.3 }] },
+      options: { plugins: { legend: { display: false } } }
+    }));
+  }
+
+  function renderAgeSectionCharts() {
+    charts.push(new Chart(document.getElementById('chartBirthMonth'), {
+      type: 'bar',
+      data: { labels: DATA.byMonth.map(m => m.month + '월'), datasets: [{ label: '인원', data: DATA.byMonth.map(m => m.count), backgroundColor: '#e67e22' }] },
+      options: { plugins: { legend: { display: false } } }
+    }));
+    charts.push(new Chart(document.getElementById('chartMarry'), {
+      type: 'doughnut',
+      data: { labels: DATA.byMarry.map(m => m.status), datasets: [{ data: DATA.byMarry.map(m => m.count), backgroundColor: ['#3498db', '#e74c3c', '#95a5a6', '#f1c40f'] }] }
+    }));
+  }
+
+  let mapLoaded = false;
+  let mapInstance = null;
+
+  async function loadMap() {
+    if (mapLoaded) return;
+    mapLoaded = true;
+    try {
+      const keyRes = await fetch(EXEC_URL + '?action=kakaoKey');
+      const { key } = await keyRes.json();
+      if (!key) {
+        document.getElementById('map').innerHTML = '<p style="padding:20px;color:#999;">카카오맵 JS 키가 설정되지 않았습니다.</p>';
+        return;
+      }
+      await loadScript(`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false`);
+      kakao.maps.load(async () => {
+        const ptRes = await fetch(EXEC_URL + '?action=map');
+        const points = await ptRes.json();
+        drawMap(points);
+      });
+    } catch (err) {
+      document.getElementById('map').innerHTML = `<p style="padding:20px;color:#c0392b;">지도 로드 실패: ${err.message}</p>`;
+    }
+  }
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('스크립트 로드 실패 (도메인 미등록 또는 키 오류 가능): ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+  function drawMap(points) {
+    if (!points.length || points.error) {
+      document.getElementById('map').innerHTML = '<p style="padding:20px;color:#999;">지도에 표시할 주소 데이터가 없습니다. (KAKAO_REST_KEY 설정 여부 확인)</p>';
+      return;
+    }
+    const center = new kakao.maps.LatLng(points[0].lat, points[0].lng);
+    mapInstance = new kakao.maps.Map(document.getElementById('map'), { center, level: 9 });
+    points.forEach(p => {
+      const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(p.lat, p.lng), map: mapInstance });
+      const info = new kakao.maps.InfoWindow({ content: `<div style="padding:6px;font-size:12px;">${p.name} (${p.dept})</div>` });
+      marker.addListener('click', () => info.open(mapInstance, marker));
+    });
+  }
+
+  function renderAll() {
+    destroyCharts();
+    document.getElementById('container').innerHTML = TABS.map(t =>
+      `<div class="section ${t.id === 'overview' ? 'active' : ''}" id="sec-${t.id}"></div>`
+    ).join('');
+    document.getElementById('sec-overview').innerHTML = buildOverview();
+    document.getElementById('sec-dept').innerHTML = buildDept();
+    document.getElementById('sec-age').innerHTML = buildAge();
+    document.getElementById('sec-hire').innerHTML = buildHire();
+    document.getElementById('sec-referral').innerHTML = buildReferral();
+    document.getElementById('sec-license').innerHTML = buildLicense();
+    document.getElementById('sec-insight').innerHTML = buildInsight();
+    document.getElementById('sec-map').innerHTML = buildMap();
+    renderCharts();
+    renderAgeSectionCharts();
+    mapLoaded = false; // 탭 다시 그려졌으니 지도 재로드 허용
+  }
+
+  async function loadData(forceReload) {
+    document.getElementById('container').innerHTML = '<div class="loading">데이터 불러오는 중...</div>';
+    try {
+      const res = await fetch(EXEC_URL + '?action=data' + (forceReload ? '&t=' + Date.now() : ''));
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      DATA = json;
+      document.getElementById('updatedAt').textContent = '업데이트: ' + new Date(json.generatedAt).toLocaleString('ko-KR');
+      renderAll();
+    } catch (err) {
+      document.getElementById('container').innerHTML = `<div class="error">데이터를 불러오지 못했습니다: ${err.message}<br><small>EXEC_URL 설정 및 Apps Script 배포 상태를 확인하세요.</small></div>`;
+    }
+  }
+
+  renderNav();
+  loadData(false);
+</script>
+</body>
+</html>
