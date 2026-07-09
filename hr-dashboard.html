@@ -247,7 +247,7 @@
   // ════════════════════════════════════════════
   //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
   // ════════════════════════════════════════════
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyjAVFEueRt885rOUxJxrQl5VkSanRCtIOPJW706N1koJmPB6ihzMs9Bc6mK_buIGWX/exec';
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyEpsVkwKG0I81C1vi6t2FXcxpZVmr27cp5hyUZcvAXGBbLGoDfVvn35yBprTxAdIu3/exec';
 
   const TABS = [
     { id: 'overview', label: '개요' },
@@ -299,31 +299,37 @@
   }
 
   // ── 각 탭 빌더 ─────────────────────────────
-  function buildOverview() {
-    const b = DATA.basic;
-    return `
-      <div class="card">
-        <h3>기본 현황</h3>
-        <div class="stat-row">
-          <div class="stat-box"><div class="num">${b.active}</div><div class="label">재직자</div></div>
-          <div class="stat-box"><div class="num">${b.retired}</div><div class="label">퇴사자</div></div>
-          <div class="stat-box"><div class="num">${b.total}</div><div class="label">전체 누적</div></div>
-          <div class="stat-box"><div class="num">${b.retireRate}%</div><div class="label">전체 퇴사율</div></div>
-        </div>
+function buildOverview() {
+  const b = DATA.basic;
+  const jt = DATA.byJobType;
+  return `
+    <div class="card">
+      <h3>기본 현황</h3>
+      <div class="stat-row">
+        <div class="stat-box"><div class="num">${b.active}</div><div class="label">재직자</div></div>
+        <div class="stat-box"><div class="num">${b.retired}</div><div class="label">퇴사자</div></div>
+        <div class="stat-box"><div class="num">${b.total}</div><div class="label">전체 누적</div></div>
+        <div class="stat-box"><div class="num">${b.retireRate}%</div><div class="label">전체 퇴사율</div></div>
       </div>
-      <div class="grid2">
-        <div class="card"><h3>연령대 분포 (재직자)</h3><canvas id="chartAge"></canvas></div>
-        <div class="card"><h3>연도별 입사자 수</h3><canvas id="chartJoinYear"></canvas></div>
-      </div>`;
-  }
+    </div>
+    <div class="card">
+      <h3>직군별 현황 (관리직 vs 생산직)</h3>
+      ${table(['직군', '재직', '퇴사', '전체', '퇴사율', '평균연령', '평균근속'],
+        jt.map(j => [j.jobType, j.active, j.retired, j.total, j.retireRate + '%', j.avgAge ?? '-', (j.avgTenure ?? '-') + (j.avgTenure != null ? '년' : '')]))}
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>연령대 분포 (재직자)</h3><canvas id="chartAge"></canvas></div>
+      <div class="card"><h3>연도별 입사자 수</h3><canvas id="chartJoinYear"></canvas></div>
+    </div>`;
+}
 
-  function buildDept() {
-    const rows = DATA.byDept.map(d => [d.dept, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']);
-    return `<div class="card"><h3>부서별 평균연령·근속·퇴사율</h3>
-      ${table(['부서', '인원', '평균연령', '평균근속(년)', '퇴사율'], rows)}</div>
-      <div class="card"><h3>정년임박자 (55세 이상)</h3>
-      ${table(['이름', '부서', '나이', '직급'], DATA.nearRetire.map(p => [p.name, p.dept, p.age, p.position]))}</div>`;
-  }
+function buildDept() {
+  const rows = DATA.byDept.map(d => [d.dept, d.jobType, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']);
+  return `<div class="card"><h3>부서별 평균연령·근속·퇴사율 (직군 구분)</h3>
+    ${table(['부서', '직군', '인원', '평균연령', '평균근속(년)', '퇴사율'], rows)}</div>
+    <div class="card"><h3>정년임박자 (55세 이상)</h3>
+    ${table(['이름', '부서', '나이', '직급'], DATA.nearRetire.map(p => [p.name, p.dept, p.age, p.position]))}</div>`;
+}
 
   function buildAge() {
     return `
@@ -334,13 +340,13 @@
   }
 
   function buildHire() {
-    const rows = DATA.byJoinReason.map(j => [j.joinReason, j.total, j.avgTenure ?? '-', j.retireRate + '%']);
-    const cross = DATA.crossJoinReasonReferral.map(c => [c.joinReason, c.referral, c.total, c.retireRate + '%']);
-    return `<div class="card"><h3>입사경로별 평균근속·퇴사율</h3>${table(['입사경로', '인원', '평균근속(년)', '퇴사율'], rows)}</div>
-      <div class="card"><h3>추천여부 × 입사경로 교차 퇴사율</h3>${table(['입사경로', '추천여부', '인원', '퇴사율'], cross)}</div>
-      <div class="card"><h3>입사 시 경력 구간</h3>${table(['구간', '인원'], DATA.careerBucket.map(c => [c.bucket, c.count]))}</div>
-      <div class="card"><h3>퇴사자 근속연수 분포</h3>${table(['근속구간', '인원'], DATA.retiredTenure.map(r => [r.bucket, r.count]))}</div>`;
-  }
+  const rows = DATA.byJoinReason.map(j => [j.joinReason, j.jobType, j.total, j.avgTenure ?? '-', j.retireRate + '%']);
+  const cross = DATA.crossJoinReasonReferral.map(c => [c.joinReason, c.referral, c.total, c.retireRate + '%']);
+  return `<div class="card"><h3>입사경로별 평균근속·퇴사율 (직군 구분)</h3>${table(['입사경로', '직군', '인원', '평균근속(년)', '퇴사율'], rows)}</div>
+    <div class="card"><h3>추천여부 × 입사경로 교차 퇴사율</h3>${table(['입사경로', '추천여부', '인원', '퇴사율'], cross)}</div>
+    <div class="card"><h3>입사 시 경력 구간</h3>${table(['구간', '인원'], DATA.careerBucket.map(c => [c.bucket, c.count]))}</div>
+    <div class="card"><h3>퇴사자 근속연수 분포</h3>${table(['근속구간', '인원'], DATA.retiredTenure.map(r => [r.bucket, r.count]))}</div>`;
+}
 
   function buildReferral() {
     const rv = DATA.referralVsNormal;
@@ -361,15 +367,17 @@
     return `<div class="card"><h3>자격증 보유 현황 (보유자 명단 포함)</h3>${table(['자격증명', '인원', '보유자'], rows)}</div>`;
   }
 
-  function buildInsight() {
-    return `<div class="card"><h3>퇴사자 인사이트 종합</h3>
-      ${DATA.insights.map(t => `<div class="insight-item">💡 ${t}</div>`).join('')}
-      ${DATA.cautionNotes && DATA.cautionNotes.length ? `
-        <h3 style="margin-top:20px;">참고 (표본 부족, 해석 주의)</h3>
-        ${DATA.cautionNotes.map(t => `<div class="insight-item" style="background:#f0f0f0;border-left-color:#aaa;">⚠️ ${t}</div>`).join('')}
+function buildInsight() {
+  return DATA.insightsByJobType.map(g => `
+    <div class="card">
+      <h3>${g.jobType} 퇴사 인사이트 (전체 ${g.total}명 · 퇴사 ${g.retired}명 · 퇴사율 ${g.retireRate}%)</h3>
+      ${g.insights.map(t => `<div class="insight-item">💡 ${t}</div>`).join('')}
+      ${g.cautionNotes && g.cautionNotes.length ? `
+        <div style="margin-top:14px;font-size:13px;font-weight:600;color:#888;">참고 (표본 부족, 해석 주의)</div>
+        ${g.cautionNotes.map(t => `<div class="insight-item" style="background:#f0f0f0;border-left-color:#aaa;margin-top:6px;">⚠️ ${t}</div>`).join('')}
       ` : ''}
-    </div>`;
-  }
+    </div>`).join('');
+}
 
   function buildMap() {
     const regionRows = DATA.byRegion.map(r => ({ key: r.region, cells: [r.region, r.count] }));
