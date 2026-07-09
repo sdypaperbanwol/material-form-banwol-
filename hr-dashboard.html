@@ -36,6 +36,15 @@
   .loading, .error { text-align: center; padding: 60px; color: #999; }
   .error { color: #c0392b; }
   #refreshBtn { background: #34495e; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px; }
+ .search-bar { background: white; padding: 10px 20px; border-bottom: 1px solid #ddd; position: relative; }
+.search-bar input { width: 100%; max-width: 400px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+#searchResults { position: absolute; left: 20px; top: 48px; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); max-width: 420px; width: calc(100% - 40px); max-height: 400px; overflow-y: auto; z-index: 20; display: none; }
+#searchResults.show { display: block; }
+.search-item { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+.search-item:hover { background: #f5f7fa; }
+.emp-detail { padding: 16px; }
+.emp-detail .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f5f5f5; font-size: 13.5px; }
+.emp-detail .row span:first-child { color: #888; }
 </style>
 </head>
 <body>
@@ -47,6 +56,10 @@
   </div>
 </header>
 <nav id="tabNav"></nav>
+ <div class="search-bar">
+  <input type="text" id="searchInput" placeholder="🔍 이름으로 검색 (예: 홍길동)" />
+  <div id="searchResults"></div>
+</div>
 <div class="container" id="container">
   <div class="loading">데이터 불러오는 중...</div>
 </div>
@@ -55,7 +68,7 @@
   // ════════════════════════════════════════════
   //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
   // ════════════════════════════════════════════
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbzc_bB93OFdfJCO79O6yh9aJP9gmsuVEtm0sBGKtMrFW8MTn0N4dyx7uDNW-Lfgx1k-/exec';
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyjAVFEueRt885rOUxJxrQl5VkSanRCtIOPJW706N1koJmPB6ihzMs9Bc6mK_buIGWX/exec';
 
   const TABS = [
     { id: 'overview', label: '개요' },
@@ -276,8 +289,78 @@ function loadScript(src) {
       document.getElementById('container').innerHTML = `<div class="error">데이터를 불러오지 못했습니다: ${err.message}<br><small>EXEC_URL 설정 및 Apps Script 배포 상태를 확인하세요.</small></div>`;
     }
   }
+function setupSearch() {
+  const input = document.getElementById('searchInput');
+  const resultBox = document.getElementById('searchResults');
 
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if (!q || !DATA) { resultBox.classList.remove('show'); return; }
+    const matches = DATA.employees.filter(e => e.name.includes(q));
+    if (!matches.length) {
+      resultBox.innerHTML = `<div class="search-item" style="color:#999;">일치하는 사람이 없습니다.</div>`;
+    } else {
+      resultBox.innerHTML = matches.map(e =>
+        `<div class="search-item" data-name="${e.name}">
+          ${e.name} <span style="color:${e.retired ? '#c0392b' : '#27ae60'};font-size:12px;">(${e.retired ? '퇴사' : '재직'})</span>
+          <span style="color:#999;font-size:12px;"> · ${e.dept}</span>
+        </div>`
+      ).join('');
+    }
+    resultBox.classList.add('show');
+  });
+
+  resultBox.addEventListener('click', (ev) => {
+    const item = ev.target.closest('.search-item');
+    if (!item || !item.dataset.name) return;
+    showEmployeeDetail(item.dataset.name);
+    resultBox.classList.remove('show');
+    input.value = '';
+  });
+
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest('.search-bar')) resultBox.classList.remove('show');
+  });
+}
+
+function showEmployeeDetail(name) {
+  const e = DATA.employees.find(x => x.name === name);
+  if (!e) return;
+
+  const html = `
+    <div class="emp-detail">
+      <h3 style="margin-top:0;">${e.name} <span style="color:${e.retired ? '#c0392b' : '#27ae60'};font-size:13px;">${e.retired ? '(퇴사)' : '(재직)'}</span></h3>
+      <div class="row"><span>부서</span><span>${e.dept}</span></div>
+      <div class="row"><span>직급</span><span>${e.position}</span></div>
+      <div class="row"><span>나이</span><span>${e.age ?? '-'}</span></div>
+      <div class="row"><span>근속(년)</span><span>${e.tenure ?? '-'}</span></div>
+      <div class="row"><span>입사일</span><span>${e.joinDate || '-'}</span></div>
+      ${e.retired ? `<div class="row"><span>퇴사일</span><span>${e.retireDate || '-'}</span></div>` : ''}
+      <div class="row"><span>입사경로</span><span>${e.joinReason}</span></div>
+      <div class="row"><span>추천인</span><span>${e.referrer || '없음'}</span></div>
+      <div class="row"><span>거주지역</span><span>${e.region}</span></div>
+      <div class="row"><span>결혼여부</span><span>${e.marry}</span></div>
+      <div class="row"><span>최종학력</span><span>${e.schoolL || '-'} ${e.majorL ? '(' + e.majorL + ')' : ''}</span></div>
+      <div class="row"><span>자격증</span><span>${e.license || '없음'}</span></div>
+    </div>`;
+
+  // 모달로 띄우기
+  let modal = document.getElementById('empModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'empModal';
+    modal.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:100;';
+    modal.innerHTML = `<div style="background:white;border-radius:10px;max-width:420px;width:90%;max-height:80vh;overflow-y:auto;position:relative;">
+      <button onclick="document.getElementById('empModal').remove()" style="position:absolute;top:8px;right:12px;border:none;background:none;font-size:20px;cursor:pointer;">✕</button>
+      <div id="empModalBody"></div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (ev) => { if (ev.target === modal) modal.remove(); });
+  }
+  document.getElementById('empModalBody').innerHTML = html;
+}
   renderNav();
+ setupSearch();   // ← 이 줄 추가
   loadData(false);
 </script>
 </body>
