@@ -324,9 +324,12 @@ function buildOverview() {
 }
 
 function buildDept() {
-  const rows = DATA.byDept.map(d => [d.dept, d.jobType, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']);
+  const deptRows = DATA.byDept.map(d => ({
+    key: d.dept + '|' + d.jobType,
+    cells: [d.dept, d.jobType, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']
+  }));
   return `<div class="card"><h3>부서별 평균연령·근속·퇴사율 (직군 구분)</h3>
-    ${table(['부서', '직군', '인원', '평균연령', '평균근속(년)', '퇴사율'], rows)}</div>
+    ${clickableTable(['부서', '직군', '인원', '평균연령', '평균근속(년)', '퇴사율'], deptRows, 'deptkey')}</div>
     <div class="card"><h3>정년임박자 (55세 이상)</h3>
     ${table(['이름', '부서', '나이', '직급'], DATA.nearRetire.map(p => [p.name, p.dept, p.age, p.position]))}</div>`;
 }
@@ -649,12 +652,43 @@ function buildInsight() {
     openModal(html);
   }
 
-  // 지역 표 클릭 위임 (표는 renderAll 시마다 다시 그려지므로 document에 위임)
-  document.addEventListener('click', (ev) => {
-    const row = ev.target.closest('tr.clickable-row[data-region]');
-    if (row) showRegionDetail(row.dataset.region);
-  });
 
+ 
+  // 지역 표 클릭 위임 (표는 renderAll 시마다 다시 그려지므로 document에 위임)
+document.addEventListener('click', (ev) => {
+  const regionRow = ev.target.closest('tr.clickable-row[data-region]');
+  if (regionRow) { showRegionDetail(regionRow.dataset.region); return; }
+  const deptRow = ev.target.closest('tr.clickable-row[data-deptkey]');
+  if (deptRow) { showDeptDetail(deptRow.dataset.deptkey); return; }
+});
+// ── 부서 클릭 → 인원 명단 모달 ─────────────
+function showDeptDetail(deptKey) {
+  const [dept, jobType] = deptKey.split('|');
+  const people = DATA.employees
+    .filter(e => e.dept === dept && e.jobType === jobType)
+    .sort((a, b) => {
+      if (a.retired !== b.retired) return a.retired ? 1 : -1; // 재직자 먼저
+      return (b.tenure ?? 0) - (a.tenure ?? 0); // 근속 긴 사람 먼저
+    });
+
+  const activeCount = people.filter(p => !p.retired).length;
+  const retiredCount = people.filter(p => p.retired).length;
+
+  const rows = people.length
+    ? people.map(p => `
+        <div class="row" style="cursor:pointer;" onclick="closeModal(); showEmployeeDetail('${p.name.replace(/'/g, "\\'")}')">
+          <span>${p.name} <span class="${p.retired ? 'badge-retired' : 'badge-active'}" style="font-size:11px;">${p.retired ? '(퇴사)' : '(재직)'}</span></span>
+          <span>${p.position} · 근속 ${p.tenure ?? '-'}년</span>
+        </div>`).join('')
+    : `<div class="row"><span>해당 조건의 인원이 없습니다.</span></div>`;
+
+  const html = `
+    <div class="emp-detail">
+      <h3 style="margin-top:0;">🏢 ${dept} · ${jobType} (재직 ${activeCount}명 / 퇴사 ${retiredCount}명)</h3>
+      ${rows}
+    </div>`;
+  openModal(html);
+}
   // ── 초기화 ─────────────────────────────────
   renderNav();
   setupSearch();
