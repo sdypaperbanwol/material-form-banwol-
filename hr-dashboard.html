@@ -76,6 +76,8 @@
   }
   nav button:hover { background: var(--bg); color: var(--text); }
   nav button.active { color: white; background: var(--navy); box-shadow: 0 2px 8px rgba(26,43,66,0.3); }
+  nav button.retire-tab { color: var(--danger); }
+  nav button.retire-tab.active { background: var(--danger); color: white; }
 
   .container { padding: 24px 20px 60px; max-width: 1080px; margin: 0 auto; }
   .section { display: none; }
@@ -106,6 +108,7 @@
     border-radius: 2px;
     display: inline-block;
   }
+  .card.retire-card h3::before { background: var(--danger); }
   .card h4.sub {
     margin: 0 0 12px;
     font-size: 12.5px;
@@ -114,7 +117,6 @@
     text-transform: uppercase;
     letter-spacing: .3px;
   }
-  .card + .card.subcard { margin-top: -6px; }
 
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
@@ -149,16 +151,13 @@
   }
   .stat-box .num { font-size: 26px; font-weight: 800; color: var(--navy); letter-spacing: -0.5px; }
   .stat-box .label { font-size: 12px; color: var(--text-mute); margin-top: 3px; font-weight: 600; }
+  .stat-box.clickable { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+  .stat-box.clickable:hover { transform: translateY(-2px); box-shadow: 0 8px 18px -8px rgba(20,30,45,0.18); }
+  .stat-box.clickable .label::after { content: ' →'; opacity: .5; }
+  .stat-box.retire-box { background: linear-gradient(135deg, #fdecec, #ffffff); }
+  .stat-box.retire-box .num { color: var(--danger); }
 
-  .insight-item {
-    background: #fff9ec;
-    border-left: 4px solid #e8a13d;
-    padding: 12px 16px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    font-size: 13.5px;
-    line-height: 1.55;
-  }
+  .hint { font-size: 11.5px; color: var(--text-mute); margin: -4px 0 12px; }
 
   #map { width: 100%; height: 480px; border-radius: 10px; overflow: hidden; }
   .badge-retired { color: var(--danger); font-weight: 600; }
@@ -259,15 +258,17 @@
   // ════════════════════════════════════════════
   //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
   // ════════════════════════════════════════════
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbzX2xMXrUAHLLwh9imnWMlAeDqyfsWC-dvs3gGu7mXOMI_AjAK0zzFEqJKKHJxpMjV2/exec';
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbzRogAmZmfPd-84iJRo0Xi8ChA0FGa8fmY9_8B41-LpMPJM9AxVBtczP8UJBui9cCni/exec';
 
+  // 재직자 중심 탭 + 퇴사자 분석은 별도 탭으로 분리
   const TABS = [
     { id: 'overview', label: '개요' },
-    { id: 'dept', label: '부서/퇴사율' },
+    { id: 'dept', label: '재직 현황' },
     { id: 'age', label: '연령/생일' },
-    { id: 'hire', label: '입사경로/채용' },
+    { id: 'hire', label: '입사경로' },
     { id: 'license', label: '자격증' },
-    { id: 'map', label: '거주지 지도' }
+    { id: 'map', label: '거주지 지도' },
+    { id: 'retire', label: '퇴사자 분석', retireTab: true }
   ];
 
   let DATA = null;
@@ -275,12 +276,19 @@
   let mapLoaded = false;
   let mapInstance = null;
   let mapMarkers = []; // { name, marker, info }
+  let mapClusterer = null;
+  let shuttleRouteData = [];
+  let shuttlePolylines = [];
+  let shuttleOverlays = [];
+  let shuttleVisible = false;
+  let shuttleLoaded = false;
+  let shuttleWarning = '';
 
   // ── 탭 네비게이션 ──────────────────────────
   function renderNav() {
     const nav = document.getElementById('tabNav');
     nav.innerHTML = TABS.map((t, i) =>
-      `<button data-tab="${t.id}" class="${i === 0 ? 'active' : ''}">${t.label}</button>`
+      `<button data-tab="${t.id}" class="${i === 0 ? 'active' : ''}${t.retireTab ? ' retire-tab' : ''}">${t.label}</button>`
     ).join('');
     nav.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => showTab(btn.dataset.tab));
@@ -308,6 +316,22 @@
       ).join('')}</tbody></table>`;
   }
 
+  // 부서 클릭 표: mode='active'면 재직자만, mode='retired'면 퇴사자만 모달에 표시
+  function clickableDeptTable(headers, rows, mode) {
+    return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r =>
+        `<tr class="clickable-row" data-deptkey="${r.key}" data-deptmode="${mode}">${r.cells.map(c => `<td>${c}</td>`).join('')}</tr>`
+      ).join('')}</tbody></table>`;
+  }
+
+  // "라벨 (값)" 형태의 알약 배지. danger=true면 퇴사 계열 색상.
+  function statPill(text, danger) {
+    return `<span style="display:inline-block;background:${danger ? '#fdecec' : 'var(--accent-soft)'};color:${danger ? 'var(--danger)' : 'var(--navy)'};padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;">${text}</span>`;
+  }
+  function statPillRow(pillsHtml) {
+    return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">${pillsHtml}</div>`;
+  }
+
   // 필터 기반 클릭 가능 표: rows = [{ filter: {...}, title: '모달 제목', cells: [...] }]
   function clickableTableFilter(headers, rows) {
     return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
@@ -317,22 +341,27 @@
   }
 
   // ── 필터 적용 (employees 배열에서 조건에 맞는 사람 추출) ──
+  // 재직자 기준 통계(입사경로, 추천/일반, 경력구간)는 재직자만 매칭하고,
+  // 퇴사율 기준 통계(*Retire, cross, tenureBucket)는 재직+퇴사 모두 매칭해서
+  // 표에 나온 숫자와 모달에 나오는 명단 인원이 항상 일치하도록 함.
   function applyFilter(filter) {
     if (!DATA) return [];
     return DATA.employees.filter(e => {
       switch (filter.type) {
-        case 'joinReason':
-          return e.joinReason === filter.joinReason && e.jobType === filter.jobType;
-        case 'cross': {
-          const isRef = !!e.referrer;
-          return e.joinReason === filter.joinReason && (filter.referral === '추천' ? isRef : !isRef);
-        }
-        case 'career':
+        case 'joinReason': // 입사경로 탭 (재직자 기준)
+          return e.joinReason === filter.joinReason && e.jobType === filter.jobType && !e.retired;
+        case 'referralGroup': // 입사경로 탭 - 추천/일반 (재직자 기준)
+          return (filter.group === 'referral' ? !!e.referrer : !e.referrer) && !e.retired;
+        case 'career': // 입사경로 탭 - 경력구간 (재직자 기준)
           return e.careerBucket === filter.bucket && !e.retired;
-        case 'tenureBucket':
-          return e.tenureBucket === filter.bucket && e.retired;
-        case 'referralGroup':
+        case 'joinReasonRetire': // 퇴사자 분석 - 입사경로별 퇴사율 (전체)
+          return e.joinReason === filter.joinReason && e.jobType === filter.jobType;
+        case 'referralGroupRetire': // 퇴사자 분석 - 추천/일반 퇴사율 (전체)
           return filter.group === 'referral' ? !!e.referrer : !e.referrer;
+        case 'cross': // 퇴사자 분석 - 교차 퇴사율 (전체)
+          return e.joinReason === filter.joinReason && (filter.referral === '추천' ? !!e.referrer : !e.referrer);
+        case 'tenureBucket': // 퇴사자 분석 - 퇴사자 근속연수 분포 (퇴사자만)
+          return e.tenureBucket === filter.bucket && e.retired;
         default:
           return false;
       }
@@ -354,61 +383,101 @@
     openModal(`<div class="emp-detail"><h3 style="margin-top:0;">${title} (${sorted.length}명)</h3>${rows}</div>`);
   }
 
-  // ── 각 탭 빌더 ─────────────────────────────
-function buildOverview() {
-  const b = DATA.basic;
-  const jt = DATA.byJobType;
-  return `
-    <div class="card">
-      <h3>기본 현황</h3>
-      <div class="stat-row">
-        <div class="stat-box"><div class="num">${b.active}</div><div class="label">재직자</div></div>
-        <div class="stat-box"><div class="num">${b.retired}</div><div class="label">퇴사자</div></div>
-        <div class="stat-box"><div class="num">${b.total}</div><div class="label">전체 누적</div></div>
-        <div class="stat-box"><div class="num">${b.retireRate}%</div><div class="label">전체 퇴사율</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>직군별 현황 (관리직 vs 생산직)</h3>
-      ${table(['직군', '재직', '퇴사', '전체', '퇴사율', '평균연령', '평균근속'],
-        jt.map(j => [j.jobType, j.active, j.retired, j.total, j.retireRate + '%', j.avgAge ?? '-', (j.avgTenure ?? '-') + (j.avgTenure != null ? '년' : '')]))}
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>연령대 분포 (재직자)</h3><canvas id="chartAge"></canvas></div>
-      <div class="card"><h3>연도별 입사자 수</h3><canvas id="chartJoinYear"></canvas></div>
-    </div>`;
-}
+  function showStatusList(retiredFlag) {
+    const people = DATA.employees.filter(e => e.retired === retiredFlag)
+      .sort((a, b) => a.dept.localeCompare(b.dept));
+    showEmployeeListModal(retiredFlag ? '퇴사자 전체 명단' : '재직자 전체 명단', people);
+  }
 
-function buildDept() {
-  const jobTypes = ['관리직', '생산직'];
-  return jobTypes.map(jt => {
-    const deptRows = DATA.byDept.filter(d => d.jobType === jt).map(d => ({
-      key: d.dept + '|' + d.jobType,
-      cells: [d.dept, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']
-    }));
-    const near = DATA.nearRetire.filter(p => p.jobType === jt);
+  // ── 각 탭 빌더 ─────────────────────────────
+  function buildOverview() {
+    const b = DATA.basic;
+    const jt = DATA.byJobType;
     return `
       <div class="card">
-        <h4 class="sub">${jt}</h4>
-        <h3>부서별 평균연령·근속·퇴사율</h3>
-        ${deptRows.length ? clickableTable(['부서', '인원', '평균연령', '평균근속(년)', '퇴사율'], deptRows, 'deptkey') : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}
+        <h3>기본 현황</h3>
+        <div class="stat-row">
+          <div class="stat-box clickable" onclick="showStatusList(false)"><div class="num">${b.active}</div><div class="label">재직자</div></div>
+          <div class="stat-box retire-box clickable" onclick="showStatusList(true)"><div class="num">${b.retired}</div><div class="label">퇴사자</div></div>
+          <div class="stat-box"><div class="num">${b.total}</div><div class="label">전체 누적</div></div>
+        </div>
+        <p class="hint" style="margin-top:12px;">퇴사율 등 퇴사 관련 상세 분석은 <b>'퇴사자 분석'</b> 탭에서 볼 수 있어요. 재직자/퇴사자 박스를 클릭하면 전체 명단이 나와요.</p>
+        ${b.groupTransferActive ? `<p class="hint">재직자 중 <b>${b.groupTransferActive}명</b>은 그룹입사일이 입사일보다 빨라요 — 계열사에서 소속만 이동해온 인원으로, 근속연수는 그룹입사일 기준으로 계산돼요.</p>` : ''}
       </div>
       <div class="card">
-        <h3>${jt} 정년임박자 (55세 이상)</h3>
-        ${near.length ? table(['이름', '부서', '나이', '직급'], near.map(p => [p.name, p.dept, p.age, p.position])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
+        <h3>직군별 현황 (재직자 기준)</h3>
+        ${table(['직군', '재직 인원', '평균연령', '평균근속'],
+          jt.map(j => [j.jobType, j.active, j.avgAge ?? '-', (j.avgTenure ?? '-') + (j.avgTenure != null ? '년' : '')]))}
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>연령대 분포 (재직자)</h3><canvas id="chartAge"></canvas></div>
+        <div class="card"><h3>연도별 입사자 수</h3><canvas id="chartJoinYear"></canvas></div>
       </div>`;
-  }).join('');
-}
+  }
+
+  function buildDept() {
+    const jobTypes = ['관리직', '생산직'];
+
+    const riskRows = DATA.earlyLeaveRisk.map(r => [
+      r.name, r.dept, r.jobType, r.tenureMonths != null ? r.tenureMonths + '개월' : '-', r.deptEarlyLeaveRate + '%'
+    ]);
+    const riskCard = `
+      <div class="card" style="border-color:#f0d58a;background:#fffbf0;">
+        <h3 style="color:#a9720d;">⚠️ 조기퇴사 위험군</h3>
+        <div class="hint">근속 6개월 미만 + 소속 부서가 과거 초기퇴사(1년 미만 퇴사) 비율이 평균보다 높은 경우예요. 확정된 결과가 아니라 참고용 신호예요.</div>
+        ${riskRows.length ? table(['이름', '부서', '직군', '근속', '부서 초기퇴사율(과거)'], riskRows) : '<p style="color:var(--text-mute);font-size:13px;">해당자 없음</p>'}
+      </div>`;
+
+    const sections = jobTypes.map(jt => {
+      const jtStat = DATA.byJobType.find(j => j.jobType === jt);
+      const summaryPills = jtStat ? statPillRow(
+        statPill(`재직 인원 (총 ${jtStat.active}명)`) +
+        statPill(`평균 연령 (${jtStat.avgAge ?? '-'}세)`) +
+        statPill(`평균근속(년) (${jtStat.avgTenure ?? '-'}년)`)
+      ) : '';
+      const deptRows = DATA.byDept.filter(d => d.jobType === jt).map(d => ({
+        key: d.dept + '|' + d.jobType,
+        cells: [d.dept, d.active, d.avgAge ?? '-', d.avgTenure ?? '-']
+      }));
+      const special = DATA.specialEmployment.filter(p => p.jobType === jt);
+      const upcoming = DATA.retireUpcoming.filter(p => p.jobType === jt);
+      const overdue = DATA.retireOverdue.filter(p => p.jobType === jt);
+
+      return `
+        <div class="card">
+          <h4 class="sub">${jt}</h4>
+          ${summaryPills}
+          <h3>부서별 재직 인원·평균연령·근속</h3>
+          ${deptRows.length ? clickableDeptTable(['부서', '재직 인원', '평균연령', '평균근속(년)'], deptRows, 'active') : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}
+        </div>
+        <div class="card">
+          <h3>${jt} 촉탁직·임금피크직 현황</h3>
+          ${special.length ? table(['이름', '부서', '나이', '직급', '구분'], special.map(p => [p.name, p.dept, p.age, p.position, p.employmentNote])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
+        </div>
+        <div class="card">
+          <h3>${jt} 정년 도달 예정자 (3년 이내)</h3>
+          <div class="hint">만 60세 정년 기준, 아직 촉탁·임금피크 전환 전인 재직자예요.</div>
+          ${upcoming.length ? table(['이름', '부서', '나이', '직급', '정년까지'], upcoming.map(p => [p.name, p.dept, p.age, p.position, p.yearsLeft + '년'])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
+        </div>
+        <div class="card" style="border-color:#f0c0c0;background:#fff6f6;">
+          <h3 style="color:var(--danger);">${jt} 정년 초과 · 전환 미확인</h3>
+          <div class="hint">정년(60세)을 넘었는데 촉탁직·임금피크직 전환 기록이 확인되지 않아요. 실제 고용형태를 확인해보는 게 좋아요.</div>
+          ${overdue.length ? table(['이름', '부서', '나이', '직급'], overdue.map(p => [p.name, p.dept, p.age, p.position])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
+        </div>`;
+    }).join('');
+
+    return riskCard + sections;
+  }
 
   function buildAge() {
     return `
       <div class="grid2">
         <div class="card">
-          <h3>월별 생일 분포</h3>
+          <h3>월별 생일 분포 (재직자)</h3>
           <div class="chart-hint">막대를 클릭하면 해당 월 생일자 명단이 나와요</div>
           <div class="chart-box"><canvas id="chartBirthMonth"></canvas></div>
         </div>
-        <div class="card"><h3>결혼여부</h3><div class="chart-box"><canvas id="chartMarry"></canvas></div></div>
+        <div class="card"><h3>결혼여부 (재직자)</h3><div class="chart-box"><canvas id="chartMarry"></canvas></div></div>
       </div>`;
   }
 
@@ -416,17 +485,12 @@ function buildDept() {
     const rows = DATA.byJoinReason.map(j => ({
       filter: { type: 'joinReason', joinReason: j.joinReason, jobType: j.jobType },
       title: `${j.joinReason} · ${j.jobType}`,
-      cells: [j.joinReason, j.jobType, j.total, j.avgTenure ?? '-', j.retireRate + '%']
+      cells: [j.joinReason, j.jobType, j.active, j.avgTenure ?? '-']
     }));
-    const cross = DATA.crossJoinReasonReferral.map(c => ({
-      filter: { type: 'cross', joinReason: c.joinReason, referral: c.referral },
-      title: `${c.joinReason} · ${c.referral}`,
-      cells: [c.joinReason, c.referral, c.total, c.retireRate + '%']
-    }));
-    const rv = DATA.referralVsNormal;
+    const ra = DATA.referralActive;
     const refSummary = [
-      { filter: { type: 'referralGroup', group: 'referral' }, title: '추천입사자', cells: ['추천입사', rv.referral.total, rv.referral.avgTenure ?? '-', (rv.referral.retireRate ?? '-') + '%'] },
-      { filter: { type: 'referralGroup', group: 'normal' }, title: '일반입사자', cells: ['일반입사', rv.normal.total, rv.normal.avgTenure ?? '-', (rv.normal.retireRate ?? '-') + '%'] }
+      { filter: { type: 'referralGroup', group: 'referral' }, title: '추천입사자', cells: ['추천입사', ra.referral.active, ra.referral.avgTenure ?? '-'] },
+      { filter: { type: 'referralGroup', group: 'normal' }, title: '일반입사자', cells: ['일반입사', ra.normal.active, ra.normal.avgTenure ?? '-'] }
     ];
     const detailRows = DATA.referrals.map(r => [
       r.referrer, r.count,
@@ -437,6 +501,69 @@ function buildDept() {
       title: `입사 시 경력 ${c.bucket}`,
       cells: [c.bucket, c.count]
     }));
+
+    return `
+      <div class="card"><h3>입사경로별 재직 인원·평균근속</h3>${clickableTableFilter(['입사경로', '직군', '재직 인원', '평균근속(년)'], rows)}</div>
+      <div class="card"><h3>추천입사 vs 일반입사 (재직자 기준)</h3>${clickableTableFilter(['구분', '재직 인원', '평균근속(년)'], refSummary)}</div>
+      <div class="card"><h3>추천인별 피추천인 명단</h3>${table(['추천인', '추천건수', '피추천인'], detailRows)}</div>
+      <div class="card"><h3>입사 시 경력 구간 (재직자)</h3>${clickableTableFilter(['구간', '인원'], career)}</div>`;
+  }
+
+  function buildLicense() {
+    const groups = (DATA.licensesByJobType) || {};
+    return ['관리직', '생산직'].map(jt => {
+      const rows = (groups[jt] || []).map(l => [l.license, l.count, l.holders.join(', ')]);
+      return `<div class="card"><h3>${jt} 자격증 보유 현황 (재직자)</h3>${rows.length ? table(['자격증명', '인원', '보유자'], rows) : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}</div>`;
+    }).join('');
+  }
+
+  function buildMap() {
+    const regionRows = DATA.byRegion.map(r => ({ key: r.region, cells: [r.region + (r.isAnsan ? ' 🚌' : ''), r.count] }));
+    const ansanRows = DATA.byAnsanDong.map(d => [d.dong, d.count]);
+    return `
+      <div class="card">
+        <h3>거주지역 분포 (시/구, 재직자)</h3>
+        <div class="hint">🚌 표시가 안산 거주자예요. 통근버스는 안산 안에서만 운행돼요.</div>
+        ${clickableTable(['지역', '인원'], regionRows, 'region')}
+      </div>
+      <div class="card">
+        <h3>안산시 거주자 동(洞) 분포</h3>
+        <div class="hint">통근버스 노선 짤 때 참고용이에요. 실제 도로 거리는 반영 안 된 직선거리 기준이라, 최종 노선은 지도앱에서 확인해서 정하는 게 정확해요.</div>
+        ${ansanRows.length ? table(['동', '인원'], ansanRows) : '<p style="color:var(--text-mute);font-size:13px;">안산 거주자 데이터 없음</p>'}
+      </div>
+      <div class="card">
+        <h3>재직자 거주지 지도</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <input type="text" id="mapSearchInput" placeholder="🔍 이 지도에서 이름 검색" style="flex:1;min-width:200px;max-width:320px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13.5px;">
+          <button id="shuttleToggleBtn" onclick="toggleShuttleRoutes()" style="padding:8px 14px;border-radius:8px;border:1.5px solid var(--accent);background:white;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">🚌 통근버스 노선 표시</button>
+        </div>
+        <div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div>
+        <div id="shuttleLegend" style="margin-top:10px;"></div>
+      </div>`;
+  }
+
+  function buildRetireAnalysis() {
+    const b = DATA.basic;
+    const jtRows = DATA.byJobTypeRetire.map(j => [j.jobType, j.total, j.retired, j.retireRate + '%']);
+    const deptRows = DATA.byDeptRetire.map(d => ({
+      key: d.dept + '|' + d.jobType,
+      cells: [d.dept, d.jobType, d.total, d.retired, d.retireRate + '%']
+    }));
+    const jrRows = DATA.byJoinReasonRetire.map(j => ({
+      filter: { type: 'joinReasonRetire', joinReason: j.joinReason, jobType: j.jobType },
+      title: `${j.joinReason} · ${j.jobType}`,
+      cells: [j.joinReason, j.jobType, j.total, j.retired, j.retireRate + '%']
+    }));
+    const cross = DATA.crossJoinReasonReferral.map(c => ({
+      filter: { type: 'cross', joinReason: c.joinReason, referral: c.referral },
+      title: `${c.joinReason} · ${c.referral}`,
+      cells: [c.joinReason, c.referral, c.total, c.retireRate + '%']
+    }));
+    const rr = DATA.referralRetire;
+    const refRows = [
+      { filter: { type: 'referralGroupRetire', group: 'referral' }, title: '추천입사자', cells: ['추천입사', rr.referral.total, rr.referral.retired, (rr.referral.retireRate ?? '-') + '%'] },
+      { filter: { type: 'referralGroupRetire', group: 'normal' }, title: '일반입사자', cells: ['일반입사', rr.normal.total, rr.normal.retired, (rr.normal.retireRate ?? '-') + '%'] }
+    ];
     const tenureRows = DATA.retiredTenure.map(r => ({
       filter: { type: 'tenureBucket', bucket: r.bucket },
       title: `퇴사 시 근속 ${r.bucket}`,
@@ -444,34 +571,19 @@ function buildDept() {
     }));
 
     return `
-      <div class="card"><h3>입사경로별 평균근속·퇴사율 (직군 구분)</h3>${clickableTableFilter(['입사경로', '직군', '인원', '평균근속(년)', '퇴사율'], rows)}</div>
-      <div class="card"><h3>추천여부 × 입사경로 교차 퇴사율</h3>${clickableTableFilter(['입사경로', '추천여부', '인원', '퇴사율'], cross)}</div>
-      <div class="card"><h3>추천입사 vs 일반입사</h3>${clickableTableFilter(['구분', '인원', '평균근속(년)', '퇴사율'], refSummary)}</div>
-      <div class="card"><h3>추천인별 피추천인 명단</h3>${table(['추천인', '추천건수', '피추천인'], detailRows)}</div>
-      <div class="card"><h3>입사 시 경력 구간</h3>${clickableTableFilter(['구간', '인원'], career)}</div>
-      <div class="card"><h3>퇴사자 근속연수 분포</h3>${clickableTableFilter(['근속구간', '인원'], tenureRows)}</div>`;
-  }
-
-  function buildLicense() {
-    const groups = (DATA.licensesByJobType) || {};
-    return ['관리직', '생산직'].map(jt => {
-      const rows = (groups[jt] || []).map(l => [l.license, l.count, l.holders.join(', ')]);
-      return `<div class="card"><h3>${jt} 자격증 보유 현황</h3>${rows.length ? table(['자격증명', '인원', '보유자'], rows) : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}</div>`;
-    }).join('');
-  }
-
-  function buildMap() {
-    const regionRows = DATA.byRegion.map(r => ({ key: r.region, cells: [r.region, r.count] }));
-    return `
-      <div class="card">
-        <h3>거주지역 분포 (시/구)</h3>
-        ${clickableTable(['지역', '인원'], regionRows, 'region')}
+      <div class="card retire-card">
+        <h3>퇴사 기본 현황</h3>
+        <div class="stat-row">
+          <div class="stat-box retire-box clickable" onclick="showStatusList(true)"><div class="num">${b.retired}</div><div class="label">퇴사자</div></div>
+          <div class="stat-box retire-box"><div class="num">${b.retireRate}%</div><div class="label">전체 퇴사율</div></div>
+        </div>
       </div>
-      <div class="card">
-        <h3>재직자 거주지 지도</h3>
-        <input type="text" id="mapSearchInput" placeholder="🔍 이 지도에서 이름 검색" style="width:100%;max-width:320px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13.5px;margin-bottom:12px;">
-        <div id="map"><div style="padding:20px;color:#999;">지도 불러오는 중...</div></div>
-      </div>`;
+      <div class="card retire-card"><h3>직군별 퇴사율</h3>${table(['직군', '전체', '퇴사', '퇴사율'], jtRows)}</div>
+      <div class="card retire-card"><h3>부서별 퇴사율 (직군 구분)</h3>${clickableDeptTable(['부서', '직군', '전체', '퇴사', '퇴사율'], deptRows, 'retired')}</div>
+      <div class="card retire-card"><h3>입사경로별 퇴사율 (직군 구분)</h3>${clickableTableFilter(['입사경로', '직군', '전체', '퇴사', '퇴사율'], jrRows)}</div>
+      <div class="card retire-card"><h3>추천여부 × 입사경로 교차 퇴사율</h3>${clickableTableFilter(['입사경로', '추천여부', '인원', '퇴사율'], cross)}</div>
+      <div class="card retire-card"><h3>추천입사 vs 일반입사 퇴사율</h3>${clickableTableFilter(['구분', '전체', '퇴사', '퇴사율'], refRows)}</div>
+      <div class="card retire-card"><h3>퇴사자 근속연수 분포</h3>${clickableTableFilter(['근속구간', '인원'], tenureRows)}</div>`;
   }
 
   // ── 차트 ───────────────────────────────────
@@ -561,7 +673,7 @@ function buildDept() {
       ? people.map(p => `
           <div class="row" style="cursor:pointer;" onclick="closeModal(); showEmployeeDetail('${p.name.replace(/'/g, "\\'")}')">
             <span>${p.name}</span>
-            <span>${p.dept} · ${p.age ?? '-'}세</span>
+            <span>${p.dept} · ${p.age ?? '-'}세 · ${p.birthDate || '-'}</span>
           </div>`).join('')
       : `<div class="row"><span>해당 월 생일자가 없습니다.</span></div>`;
     openModal(`<div class="emp-detail"><h3 style="margin-top:0;">🎂 ${month}월 생일자 (${people.length}명)</h3>${rows}</div>`);
@@ -578,7 +690,7 @@ function buildDept() {
         document.getElementById('map').innerHTML = '<p style="padding:20px;color:#999;">카카오맵 JS 키가 설정되지 않았습니다.</p>';
         return;
       }
-      await loadScript(`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false`);
+      await loadScript(`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false&libraries=clusterer`);
       kakao.maps.load(async () => {
         const ptRes = await fetch(EXEC_URL + '?action=map');
         const points = await ptRes.json();
@@ -608,12 +720,32 @@ function buildDept() {
     const center = new kakao.maps.LatLng(points[0].lat, points[0].lng);
     mapInstance = new kakao.maps.Map(document.getElementById('map'), { center, level: 9 });
     mapMarkers = [];
+    const markerObjs = [];
     points.forEach(p => {
-      const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(p.lat, p.lng), map: mapInstance });
+      const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(p.lat, p.lng) });
       const info = new kakao.maps.InfoWindow({ content: `<div style="padding:6px;font-size:12px;">${p.name} (${p.dept})</div>` });
       marker.addListener('click', () => info.open(mapInstance, marker));
       mapMarkers.push({ name: p.name, marker, info });
+      markerObjs.push(marker);
     });
+
+    // 마커가 겹쳐서 이름표가 뒤엉키는 문제 해결: 근처 마커는 숫자 뱃지로 묶어서 표시
+    // (통근버스 정류장 번호원과 헷갈리지 않게 남색 계열로 스타일 지정)
+    if (kakao.maps.MarkerClusterer) {
+      mapClusterer = new kakao.maps.MarkerClusterer({
+        map: mapInstance,
+        averageCenter: true,
+        minLevel: 6,
+        markers: markerObjs,
+        styles: [{
+          width: '34px', height: '34px', background: 'rgba(26,43,66,0.82)',
+          color: '#fff', textAlign: 'center', lineHeight: '34px',
+          borderRadius: '50%', fontSize: '12px', fontWeight: '700'
+        }]
+      });
+    } else {
+      markerObjs.forEach(m => m.setMap(mapInstance));
+    }
   }
 
   function setupMapSearch() {
@@ -621,13 +753,16 @@ function buildDept() {
     if (!input) return;
     input.addEventListener('input', () => {
       const q = input.value.trim();
-      if (!q) {
-        mapMarkers.forEach(m => m.marker.setMap(mapInstance));
-        return;
+      const matched = q ? mapMarkers.filter(m => m.name.includes(q)) : mapMarkers;
+
+      if (mapClusterer) {
+        mapClusterer.clear();
+        mapClusterer.addMarkers(matched.map(m => m.marker));
+      } else {
+        mapMarkers.forEach(m => m.marker.setMap(matched.includes(m) ? mapInstance : null));
       }
-      const matched = mapMarkers.filter(m => m.name.includes(q));
-      mapMarkers.forEach(m => m.marker.setMap(matched.includes(m) ? mapInstance : null));
-      if (matched.length >= 1) {
+
+      if (q && matched.length >= 1) {
         mapInstance.setCenter(matched[0].marker.getPosition());
         if (matched.length === 1) {
           mapInstance.setLevel(5);
@@ -659,6 +794,98 @@ function buildDept() {
     setTimeout(tryFocus, 300);
   }
 
+  // ── 통근버스 노선 표시/숨기기 ─────────────
+  // '통근버스' 시트(routeName/seq/stopName/addr)에 데이터를 채우면 여기 표시됨.
+  // 안산 밖 정류장은 백엔드에서 자동으로 제외됨.
+  async function toggleShuttleRoutes() {
+    const btn = document.getElementById('shuttleToggleBtn');
+    const legend = document.getElementById('shuttleLegend');
+
+    if (shuttleVisible) {
+      shuttlePolylines.forEach(p => p.setMap(null));
+      shuttleOverlays.forEach(o => o.setMap(null));
+      shuttleVisible = false;
+      if (btn) { btn.style.background = 'white'; btn.style.color = 'var(--accent)'; }
+      if (legend) legend.innerHTML = '';
+      return;
+    }
+
+    if (!mapInstance) return; // 지도가 아직 안 뜬 상태
+
+    if (!shuttleLoaded) {
+      if (legend) legend.innerHTML = '<p class="hint">노선 정보를 불러오는 중...</p>';
+      try {
+        const res = await fetch(EXEC_URL + '?action=shuttle');
+        const data = await res.json();
+        shuttleRouteData = data.routes || [];
+        shuttleLoaded = true;
+        shuttleWarning = data.warning || '';
+        if (data.error) {
+          if (legend) legend.innerHTML = `<p class="hint" style="color:var(--danger);">${data.error}</p>`;
+          return;
+        }
+      } catch (err) {
+        if (legend) legend.innerHTML = `<p class="hint" style="color:var(--danger);">노선 정보를 불러오지 못했어요: ${err.message}</p>`;
+        return;
+      }
+    }
+
+    if (!shuttleRouteData.length) {
+      if (legend) legend.innerHTML = `<p class="hint">등록된 통근버스 노선이 없어요. '통근버스' 시트에 routeName / seq / stopName / addr 컬럼으로 정류장을 입력하면 여기 표시돼요.</p>`;
+      return;
+    }
+
+    const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'];
+    shuttlePolylines = [];
+    shuttleOverlays = [];
+    let openShuttleInfo = null;
+    let legendSections = '';
+
+    shuttleRouteData.forEach((route, i) => {
+      const color = colors[i % colors.length];
+      const path = route.stops.map(s => new kakao.maps.LatLng(s.lat, s.lng));
+      const polyline = new kakao.maps.Polyline({ path, strokeWeight: 4, strokeColor: color, strokeOpacity: 0.85, strokeStyle: 'solid' });
+      polyline.setMap(mapInstance);
+      shuttlePolylines.push(polyline);
+
+      route.stops.forEach((s, si) => {
+        // 지도 위엔 작은 번호 원만 표시 (이름/시간을 다 띄우면 서로 겹쳐서 지저분해짐)
+        const el = document.createElement('div');
+        el.style.cssText = `width:22px;height:22px;border-radius:50%;background:${color};color:white;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px white,0 2px 6px rgba(0,0,0,.3);cursor:pointer;`;
+        el.textContent = si + 1;
+        const overlay = new kakao.maps.CustomOverlay({
+          position: new kakao.maps.LatLng(s.lat, s.lng), content: el, yAnchor: 0.5, zIndex: 10
+        });
+        overlay.setMap(mapInstance);
+        shuttleOverlays.push(overlay);
+
+        const info = new kakao.maps.InfoWindow({
+          position: new kakao.maps.LatLng(s.lat, s.lng),
+          content: `<div style="padding:8px 10px;font-size:12.5px;min-width:130px;"><b>${si + 1}. ${s.stopName}</b>${s.time ? `<br><span style="color:#888;">${s.time}</span>` : ''}</div>`
+        });
+        el.addEventListener('click', () => {
+          if (openShuttleInfo) openShuttleInfo.close();
+          info.open(mapInstance);
+          openShuttleInfo = info;
+        });
+      });
+
+      // 지도는 번호만, 전체 이름+시간은 아래 목록으로 따로 정리
+      const stopListHtml = route.stops.map((s, si) => `
+        <div class="row"><span>${si + 1}. ${s.stopName}</span><span style="color:var(--text-mute);">${s.time || '-'}</span></div>
+      `).join('');
+      legendSections += `
+        <div style="margin-bottom:12px;">
+          ${statPill(`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:5px;"></span>${route.routeName} (${route.stops.length}개 정류장)`)}
+          <div style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;padding:4px 12px;">${stopListHtml}</div>
+        </div>`;
+    });
+
+    if (legend) legend.innerHTML = (shuttleWarning ? `<p class="hint" style="color:var(--danger);margin-bottom:10px;">⚠️ ${shuttleWarning}</p>` : '') + legendSections;
+    shuttleVisible = true;
+    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = 'white'; }
+  }
+
   // ── 전체 렌더링 ────────────────────────────
   function renderAll() {
     destroyCharts();
@@ -671,9 +898,11 @@ function buildDept() {
     document.getElementById('sec-hire').innerHTML = buildHire();
     document.getElementById('sec-license').innerHTML = buildLicense();
     document.getElementById('sec-map').innerHTML = buildMap();
+    document.getElementById('sec-retire').innerHTML = buildRetireAnalysis();
     renderCharts();
     renderAgeSectionCharts();
     mapLoaded = false; // 탭 다시 그려졌으니 지도 재로드 허용
+    shuttleVisible = false; // DOM이 새로 그려졌으니 버튼 상태도 초기화
   }
 
   async function loadData(forceReload) {
@@ -755,10 +984,12 @@ function buildDept() {
     const html = `
       <div class="emp-detail">
         <h3 style="margin-top:0;">${e.name} <span style="color:${e.retired ? '#c0392b' : '#27ae60'};font-size:13px;">${e.retired ? '(퇴사)' : '(재직)'}</span></h3>
+        ${e.employmentNote ? `<div class="row"><span>고용형태</span><span style="color:#b8860b;font-weight:700;">${e.employmentNote}</span></div>` : ''}
         <div class="row"><span>부서</span><span>${e.dept}</span></div>
         <div class="row"><span>직급</span><span>${e.position}</span></div>
         <div class="row"><span>나이</span><span>${e.age ?? '-'}</span></div>
-        <div class="row"><span>근속(년)</span><span>${e.tenure ?? '-'}</span></div>
+        <div class="row"><span>근속(년)</span><span>${e.tenure ?? '-'} ${e.groupJoinDate ? '<span style="color:var(--text-mute);font-size:11.5px;">(그룹입사 기준)</span>' : ''}</span></div>
+        <div class="row"><span>그룹입사일</span><span>${e.groupJoinDate || '-'}</span></div>
         <div class="row"><span>입사일</span><span>${e.joinDate || '-'}</span></div>
         ${e.retired ? `<div class="row"><span>퇴사일</span><span>${e.retireDate || '-'}</span></div>` : ''}
         <div class="row"><span>입사경로</span><span>${e.joinReason}</span></div>
@@ -800,7 +1031,7 @@ document.addEventListener('click', (ev) => {
   const regionRow = ev.target.closest('tr.clickable-row[data-region]');
   if (regionRow) { showRegionDetail(regionRow.dataset.region); return; }
   const deptRow = ev.target.closest('tr.clickable-row[data-deptkey]');
-  if (deptRow) { showDeptDetail(deptRow.dataset.deptkey); return; }
+  if (deptRow) { showDeptDetail(deptRow.dataset.deptkey, deptRow.dataset.deptmode); return; }
   const filterRow = ev.target.closest('tr.clickable-row[data-filter]');
   if (filterRow) {
     const filter = JSON.parse(decodeURIComponent(filterRow.dataset.filter));
@@ -810,29 +1041,43 @@ document.addEventListener('click', (ev) => {
   }
 });
 // ── 부서 클릭 → 인원 명단 모달 ─────────────
-function showDeptDetail(deptKey) {
+// mode: 'active'면 재직자만 (재직 현황 탭), 'retired'면 퇴사자만 (퇴사자 분석 탭)
+function showDeptDetail(deptKey, mode) {
   const [dept, jobType] = deptKey.split('|');
-  const people = DATA.employees
-    .filter(e => e.dept === dept && e.jobType === jobType)
-    .sort((a, b) => {
-      if (a.retired !== b.retired) return a.retired ? 1 : -1; // 재직자 먼저
-      return (b.tenure ?? 0) - (a.tenure ?? 0); // 근속 긴 사람 먼저
-    });
+  let people = DATA.employees.filter(e => e.dept === dept && e.jobType === jobType);
+  let pills;
 
-  const activeCount = people.filter(p => !p.retired).length;
-  const retiredCount = people.filter(p => p.retired).length;
+  if (mode === 'active') {
+    people = people.filter(e => !e.retired);
+    const stat = DATA.byDept.find(d => d.dept === dept && d.jobType === jobType);
+    const avgAgeText = stat && stat.avgAge != null ? stat.avgAge + '세' : '-';
+    const avgTenureText = stat && stat.avgTenure != null ? stat.avgTenure + '년' : '-';
+    pills = statPill(`재직 인원 (총 ${people.length}명)`) +
+      statPill(`평균 연령 (${avgAgeText})`) +
+      statPill(`평균근속(년) (${avgTenureText})`);
+  } else if (mode === 'retired') {
+    people = people.filter(e => e.retired);
+    pills = statPill(`퇴사 인원 (총 ${people.length}명)`, true);
+  } else {
+    const activeCount = people.filter(p => !p.retired).length;
+    const retiredCount = people.filter(p => p.retired).length;
+    pills = statPill(`재직 인원 (총 ${activeCount}명)`) + statPill(`퇴사 인원 (총 ${retiredCount}명)`, true);
+  }
+
+  people.sort((a, b) => (b.tenure ?? 0) - (a.tenure ?? 0));
 
   const rows = people.length
     ? people.map(p => `
         <div class="row" style="cursor:pointer;" onclick="closeModal(); showEmployeeDetail('${p.name.replace(/'/g, "\\'")}')">
-          <span>${p.name} <span class="${p.retired ? 'badge-retired' : 'badge-active'}" style="font-size:11px;">${p.retired ? '(퇴사)' : '(재직)'}</span></span>
+          <span>${p.name}${p.employmentNote ? ` <span style="color:#b8860b;font-size:11px;">[${p.employmentNote}]</span>` : ''}</span>
           <span>${p.position} · 근속 ${p.tenure ?? '-'}년</span>
         </div>`).join('')
     : `<div class="row"><span>해당 조건의 인원이 없습니다.</span></div>`;
 
   const html = `
     <div class="emp-detail">
-      <h3 style="margin-top:0;">🏢 ${dept} · ${jobType} (재직 ${activeCount}명 / 퇴사 ${retiredCount}명)</h3>
+      <h3 style="margin-top:0;margin-bottom:10px;">🏢 ${dept} · ${jobType}</h3>
+      ${statPillRow(pills)}
       ${rows}
     </div>`;
   openModal(html);
