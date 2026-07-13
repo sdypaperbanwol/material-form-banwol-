@@ -106,6 +106,15 @@
     border-radius: 2px;
     display: inline-block;
   }
+  .card h4.sub {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+  .card + .card.subcard { margin-top: -6px; }
 
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
@@ -211,6 +220,9 @@
   .emp-detail .row span:first-child { color: var(--text-mute); font-weight: 600; white-space: nowrap; }
   .emp-detail .row span:last-child { text-align: right; }
 
+  .chart-box { position: relative; }
+  .chart-hint { font-size: 11.5px; color: var(--text-mute); margin: -8px 0 12px; }
+
   /* 모바일 대응 */
   @media (max-width: 480px) {
     header { padding: 12px 16px; }
@@ -247,16 +259,14 @@
   // ════════════════════════════════════════════
   //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
   // ════════════════════════════════════════════
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyEpsVkwKG0I81C1vi6t2FXcxpZVmr27cp5hyUZcvAXGBbLGoDfVvn35yBprTxAdIu3/exec';
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbzX2xMXrUAHLLwh9imnWMlAeDqyfsWC-dvs3gGu7mXOMI_AjAK0zzFEqJKKHJxpMjV2/exec';
 
   const TABS = [
     { id: 'overview', label: '개요' },
     { id: 'dept', label: '부서/퇴사율' },
     { id: 'age', label: '연령/생일' },
     { id: 'hire', label: '입사경로/채용' },
-    { id: 'referral', label: '추천인' },
     { id: 'license', label: '자격증' },
-    { id: 'insight', label: '퇴사 인사이트' },
     { id: 'map', label: '거주지 지도' }
   ];
 
@@ -298,6 +308,52 @@
       ).join('')}</tbody></table>`;
   }
 
+  // 필터 기반 클릭 가능 표: rows = [{ filter: {...}, title: '모달 제목', cells: [...] }]
+  function clickableTableFilter(headers, rows) {
+    return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r =>
+        `<tr class="clickable-row" data-filter="${encodeURIComponent(JSON.stringify(r.filter))}" data-filtertitle="${(r.title || '상세 목록').replace(/"/g, '&quot;')}">${r.cells.map(c => `<td>${c}</td>`).join('')}</tr>`
+      ).join('')}</tbody></table>`;
+  }
+
+  // ── 필터 적용 (employees 배열에서 조건에 맞는 사람 추출) ──
+  function applyFilter(filter) {
+    if (!DATA) return [];
+    return DATA.employees.filter(e => {
+      switch (filter.type) {
+        case 'joinReason':
+          return e.joinReason === filter.joinReason && e.jobType === filter.jobType;
+        case 'cross': {
+          const isRef = !!e.referrer;
+          return e.joinReason === filter.joinReason && (filter.referral === '추천' ? isRef : !isRef);
+        }
+        case 'career':
+          return e.careerBucket === filter.bucket && !e.retired;
+        case 'tenureBucket':
+          return e.tenureBucket === filter.bucket && e.retired;
+        case 'referralGroup':
+          return filter.group === 'referral' ? !!e.referrer : !e.referrer;
+        default:
+          return false;
+      }
+    });
+  }
+
+  function showEmployeeListModal(title, people) {
+    const sorted = people.slice().sort((a, b) => {
+      if (a.retired !== b.retired) return a.retired ? 1 : -1;
+      return (b.tenure ?? 0) - (a.tenure ?? 0);
+    });
+    const rows = sorted.length
+      ? sorted.map(p => `
+          <div class="row" style="cursor:pointer;" onclick="closeModal(); showEmployeeDetail('${p.name.replace(/'/g, "\\'")}')">
+            <span>${p.name} <span class="${p.retired ? 'badge-retired' : 'badge-active'}" style="font-size:11px;">${p.retired ? '(퇴사)' : '(재직)'}</span></span>
+            <span>${p.dept} · ${p.position}</span>
+          </div>`).join('')
+      : `<div class="row"><span>해당 조건의 인원이 없습니다.</span></div>`;
+    openModal(`<div class="emp-detail"><h3 style="margin-top:0;">${title} (${sorted.length}명)</h3>${rows}</div>`);
+  }
+
   // ── 각 탭 빌더 ─────────────────────────────
 function buildOverview() {
   const b = DATA.basic;
@@ -324,63 +380,85 @@ function buildOverview() {
 }
 
 function buildDept() {
-  const deptRows = DATA.byDept.map(d => ({
-    key: d.dept + '|' + d.jobType,
-    cells: [d.dept, d.jobType, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']
-  }));
-  return `<div class="card"><h3>부서별 평균연령·근속·퇴사율 (직군 구분)</h3>
-    ${clickableTable(['부서', '직군', '인원', '평균연령', '평균근속(년)', '퇴사율'], deptRows, 'deptkey')}</div>
-    <div class="card"><h3>정년임박자 (55세 이상)</h3>
-    ${table(['이름', '부서', '나이', '직급'], DATA.nearRetire.map(p => [p.name, p.dept, p.age, p.position]))}</div>`;
+  const jobTypes = ['관리직', '생산직'];
+  return jobTypes.map(jt => {
+    const deptRows = DATA.byDept.filter(d => d.jobType === jt).map(d => ({
+      key: d.dept + '|' + d.jobType,
+      cells: [d.dept, d.total, d.avgAge ?? '-', d.avgTenure ?? '-', d.retireRate + '%']
+    }));
+    const near = DATA.nearRetire.filter(p => p.jobType === jt);
+    return `
+      <div class="card">
+        <h4 class="sub">${jt}</h4>
+        <h3>부서별 평균연령·근속·퇴사율</h3>
+        ${deptRows.length ? clickableTable(['부서', '인원', '평균연령', '평균근속(년)', '퇴사율'], deptRows, 'deptkey') : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}
+      </div>
+      <div class="card">
+        <h3>${jt} 정년임박자 (55세 이상)</h3>
+        ${near.length ? table(['이름', '부서', '나이', '직급'], near.map(p => [p.name, p.dept, p.age, p.position])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
+      </div>`;
+  }).join('');
 }
 
   function buildAge() {
     return `
       <div class="grid2">
-        <div class="card"><h3>월별 생일 분포</h3><canvas id="chartBirthMonth"></canvas></div>
-        <div class="card"><h3>결혼여부</h3><canvas id="chartMarry"></canvas></div>
+        <div class="card">
+          <h3>월별 생일 분포</h3>
+          <div class="chart-hint">막대를 클릭하면 해당 월 생일자 명단이 나와요</div>
+          <div class="chart-box"><canvas id="chartBirthMonth"></canvas></div>
+        </div>
+        <div class="card"><h3>결혼여부</h3><div class="chart-box"><canvas id="chartMarry"></canvas></div></div>
       </div>`;
   }
 
   function buildHire() {
-  const rows = DATA.byJoinReason.map(j => [j.joinReason, j.jobType, j.total, j.avgTenure ?? '-', j.retireRate + '%']);
-  const cross = DATA.crossJoinReasonReferral.map(c => [c.joinReason, c.referral, c.total, c.retireRate + '%']);
-  return `<div class="card"><h3>입사경로별 평균근속·퇴사율 (직군 구분)</h3>${table(['입사경로', '직군', '인원', '평균근속(년)', '퇴사율'], rows)}</div>
-    <div class="card"><h3>추천여부 × 입사경로 교차 퇴사율</h3>${table(['입사경로', '추천여부', '인원', '퇴사율'], cross)}</div>
-    <div class="card"><h3>입사 시 경력 구간</h3>${table(['구간', '인원'], DATA.careerBucket.map(c => [c.bucket, c.count]))}</div>
-    <div class="card"><h3>퇴사자 근속연수 분포</h3>${table(['근속구간', '인원'], DATA.retiredTenure.map(r => [r.bucket, r.count]))}</div>`;
-}
-
-  function buildReferral() {
+    const rows = DATA.byJoinReason.map(j => ({
+      filter: { type: 'joinReason', joinReason: j.joinReason, jobType: j.jobType },
+      title: `${j.joinReason} · ${j.jobType}`,
+      cells: [j.joinReason, j.jobType, j.total, j.avgTenure ?? '-', j.retireRate + '%']
+    }));
+    const cross = DATA.crossJoinReasonReferral.map(c => ({
+      filter: { type: 'cross', joinReason: c.joinReason, referral: c.referral },
+      title: `${c.joinReason} · ${c.referral}`,
+      cells: [c.joinReason, c.referral, c.total, c.retireRate + '%']
+    }));
     const rv = DATA.referralVsNormal;
-    const summary = table(['구분', '인원', '평균근속(년)', '퇴사율'], [
-      ['추천입사', rv.referral.total, rv.referral.avgTenure ?? '-', (rv.referral.retireRate ?? '-') + '%'],
-      ['일반입사', rv.normal.total, rv.normal.avgTenure ?? '-', (rv.normal.retireRate ?? '-') + '%']
-    ]);
+    const refSummary = [
+      { filter: { type: 'referralGroup', group: 'referral' }, title: '추천입사자', cells: ['추천입사', rv.referral.total, rv.referral.avgTenure ?? '-', (rv.referral.retireRate ?? '-') + '%'] },
+      { filter: { type: 'referralGroup', group: 'normal' }, title: '일반입사자', cells: ['일반입사', rv.normal.total, rv.normal.avgTenure ?? '-', (rv.normal.retireRate ?? '-') + '%'] }
+    ];
     const detailRows = DATA.referrals.map(r => [
       r.referrer, r.count,
       r.referees.map(x => `${x.name}<span class="${x.retired ? 'badge-retired' : 'badge-active'}">(${x.retired ? '퇴사' : '재직'})</span>`).join(', ')
     ]);
-    return `<div class="card"><h3>추천입사 vs 일반입사</h3>${summary}</div>
-      <div class="card"><h3>추천인별 피추천인 명단</h3>${table(['추천인', '추천건수', '피추천인'], detailRows)}</div>`;
+    const career = DATA.careerBucket.map(c => ({
+      filter: { type: 'career', bucket: c.bucket },
+      title: `입사 시 경력 ${c.bucket}`,
+      cells: [c.bucket, c.count]
+    }));
+    const tenureRows = DATA.retiredTenure.map(r => ({
+      filter: { type: 'tenureBucket', bucket: r.bucket },
+      title: `퇴사 시 근속 ${r.bucket}`,
+      cells: [r.bucket, r.count]
+    }));
+
+    return `
+      <div class="card"><h3>입사경로별 평균근속·퇴사율 (직군 구분)</h3>${clickableTableFilter(['입사경로', '직군', '인원', '평균근속(년)', '퇴사율'], rows)}</div>
+      <div class="card"><h3>추천여부 × 입사경로 교차 퇴사율</h3>${clickableTableFilter(['입사경로', '추천여부', '인원', '퇴사율'], cross)}</div>
+      <div class="card"><h3>추천입사 vs 일반입사</h3>${clickableTableFilter(['구분', '인원', '평균근속(년)', '퇴사율'], refSummary)}</div>
+      <div class="card"><h3>추천인별 피추천인 명단</h3>${table(['추천인', '추천건수', '피추천인'], detailRows)}</div>
+      <div class="card"><h3>입사 시 경력 구간</h3>${clickableTableFilter(['구간', '인원'], career)}</div>
+      <div class="card"><h3>퇴사자 근속연수 분포</h3>${clickableTableFilter(['근속구간', '인원'], tenureRows)}</div>`;
   }
 
   function buildLicense() {
-    const rows = DATA.licenses.map(l => [l.license, l.count, l.holders.join(', ')]);
-    return `<div class="card"><h3>자격증 보유 현황 (보유자 명단 포함)</h3>${table(['자격증명', '인원', '보유자'], rows)}</div>`;
+    const groups = (DATA.licensesByJobType) || {};
+    return ['관리직', '생산직'].map(jt => {
+      const rows = (groups[jt] || []).map(l => [l.license, l.count, l.holders.join(', ')]);
+      return `<div class="card"><h3>${jt} 자격증 보유 현황</h3>${rows.length ? table(['자격증명', '인원', '보유자'], rows) : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}</div>`;
+    }).join('');
   }
-
-function buildInsight() {
-  return DATA.insightsByJobType.map(g => `
-    <div class="card">
-      <h3>${g.jobType} 퇴사 인사이트 (전체 ${g.total}명 · 퇴사 ${g.retired}명 · 퇴사율 ${g.retireRate}%)</h3>
-      ${g.insights.map(t => `<div class="insight-item">💡 ${t}</div>`).join('')}
-      ${g.cautionNotes && g.cautionNotes.length ? `
-        <div style="margin-top:14px;font-size:13px;font-weight:600;color:#888;">참고 (표본 부족, 해석 주의)</div>
-        ${g.cautionNotes.map(t => `<div class="insight-item" style="background:#f0f0f0;border-left-color:#aaa;margin-top:6px;">⚠️ ${t}</div>`).join('')}
-      ` : ''}
-    </div>`).join('');
-}
 
   function buildMap() {
     const regionRows = DATA.byRegion.map(r => ({ key: r.region, cells: [r.region, r.count] }));
@@ -399,11 +477,36 @@ function buildInsight() {
   // ── 차트 ───────────────────────────────────
   function destroyCharts() { charts.forEach(c => c.destroy()); charts = []; }
 
+  // 막대 위에 값(인원수)을 예쁘게 표시하는 플러그인
+  function valueLabelPlugin() {
+    return {
+      id: 'valueLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          if (meta.type !== 'bar') return;
+          meta.data.forEach((bar, index) => {
+            const value = dataset.data[index];
+            if (!value) return;
+            ctx.save();
+            ctx.fillStyle = '#1a2b42';
+            ctx.font = "600 12px 'Pretendard', sans-serif";
+            ctx.textAlign = 'center';
+            ctx.fillText(value, bar.x, bar.y - 6);
+            ctx.restore();
+          });
+        });
+      }
+    };
+  }
+
   function renderCharts() {
     charts.push(new Chart(document.getElementById('chartAge'), {
       type: 'bar',
       data: { labels: DATA.byAgeGroup.map(a => a.group + '대'), datasets: [{ label: '인원', data: DATA.byAgeGroup.map(a => a.count), backgroundColor: '#3498db' }] },
-      options: { plugins: { legend: { display: false } } }
+      options: { plugins: { legend: { display: false } }, layout: { padding: { top: 16 } } },
+      plugins: [valueLabelPlugin()]
     }));
     charts.push(new Chart(document.getElementById('chartJoinYear'), {
       type: 'line',
@@ -413,15 +516,55 @@ function buildInsight() {
   }
 
   function renderAgeSectionCharts() {
-    charts.push(new Chart(document.getElementById('chartBirthMonth'), {
+    const monthCanvas = document.getElementById('chartBirthMonth');
+    monthCanvas.style.cursor = 'pointer';
+    charts.push(new Chart(monthCanvas, {
       type: 'bar',
       data: { labels: DATA.byMonth.map(m => m.month + '월'), datasets: [{ label: '인원', data: DATA.byMonth.map(m => m.count), backgroundColor: '#e67e22' }] },
-      options: { plugins: { legend: { display: false } } }
+      options: {
+        plugins: { legend: { display: false } },
+        layout: { padding: { top: 16 } },
+        onClick: (evt, elements) => {
+          if (!elements.length) return;
+          const idx = elements[0].index;
+          showMonthDetail(DATA.byMonth[idx].month);
+        }
+      },
+      plugins: [valueLabelPlugin()]
     }));
     charts.push(new Chart(document.getElementById('chartMarry'), {
       type: 'doughnut',
-      data: { labels: DATA.byMarry.map(m => m.status), datasets: [{ data: DATA.byMarry.map(m => m.count), backgroundColor: ['#3498db', '#e74c3c', '#95a5a6', '#f1c40f'] }] }
+      data: { labels: DATA.byMarry.map(m => m.status), datasets: [{ data: DATA.byMarry.map(m => m.count), backgroundColor: ['#3498db', '#e74c3c', '#95a5a6', '#f1c40f'] }] },
+      options: {
+        plugins: {
+          legend: {
+            labels: {
+              generateLabels: (chart) => {
+                const d = chart.data;
+                return d.labels.map((label, i) => ({
+                  text: `${label} (${d.datasets[0].data[i]}명)`,
+                  fillStyle: d.datasets[0].backgroundColor[i],
+                  index: i
+                }));
+              }
+            }
+          }
+        }
+      }
     }));
+  }
+
+  function showMonthDetail(month) {
+    const entry = DATA.byMonth.find(m => m.month === month);
+    const people = entry ? entry.people : [];
+    const rows = people.length
+      ? people.map(p => `
+          <div class="row" style="cursor:pointer;" onclick="closeModal(); showEmployeeDetail('${p.name.replace(/'/g, "\\'")}')">
+            <span>${p.name}</span>
+            <span>${p.dept} · ${p.age ?? '-'}세</span>
+          </div>`).join('')
+      : `<div class="row"><span>해당 월 생일자가 없습니다.</span></div>`;
+    openModal(`<div class="emp-detail"><h3 style="margin-top:0;">🎂 ${month}월 생일자 (${people.length}명)</h3>${rows}</div>`);
   }
 
   // ── 지도 ───────────────────────────────────
@@ -526,9 +669,7 @@ function buildInsight() {
     document.getElementById('sec-dept').innerHTML = buildDept();
     document.getElementById('sec-age').innerHTML = buildAge();
     document.getElementById('sec-hire').innerHTML = buildHire();
-    document.getElementById('sec-referral').innerHTML = buildReferral();
     document.getElementById('sec-license').innerHTML = buildLicense();
-    document.getElementById('sec-insight').innerHTML = buildInsight();
     document.getElementById('sec-map').innerHTML = buildMap();
     renderCharts();
     renderAgeSectionCharts();
@@ -653,13 +794,20 @@ function buildInsight() {
   }
 
 
- 
-  // 지역 표 클릭 위임 (표는 renderAll 시마다 다시 그려지므로 document에 위임)
+
+  // 지역/부서/필터 표 클릭 위임 (표는 renderAll 시마다 다시 그려지므로 document에 위임)
 document.addEventListener('click', (ev) => {
   const regionRow = ev.target.closest('tr.clickable-row[data-region]');
   if (regionRow) { showRegionDetail(regionRow.dataset.region); return; }
   const deptRow = ev.target.closest('tr.clickable-row[data-deptkey]');
   if (deptRow) { showDeptDetail(deptRow.dataset.deptkey); return; }
+  const filterRow = ev.target.closest('tr.clickable-row[data-filter]');
+  if (filterRow) {
+    const filter = JSON.parse(decodeURIComponent(filterRow.dataset.filter));
+    const people = applyFilter(filter);
+    showEmployeeListModal(filterRow.dataset.filtertitle || '상세 목록', people);
+    return;
+  }
 });
 // ── 부서 클릭 → 인원 명단 모달 ─────────────
 function showDeptDetail(deptKey) {
