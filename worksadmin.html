@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>근무현황</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; background:#f5f6f8; margin:0; padding:24px; color:#222; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:#888; font-size:13px; margin-bottom:20px; }
+
+  /* 로그인 카드 */
+  #loginBox { max-width:360px; margin:60px auto; background:#fff; border:1px solid #e0e0e0; border-radius:10px; padding:28px; }
+  #loginBox h2 { margin-top:0; font-size:17px; }
+  #loginBox input { width:100%; padding:10px 12px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+  #loginBox button { width:100%; padding:10px; background:#1c7ed6; color:#fff; border:none; border-radius:6px; font-size:14px; cursor:pointer; }
+  #loginBox button:hover { background:#1971c2; }
+  #loginErr { color:#e03131; font-size:13px; margin-top:8px; display:none; }
+
+  /* 메인 화면 */
+  #mainBox { display:none; }
+  .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:16px; background:#fff; padding:14px 16px; border-radius:8px; border:1px solid #e0e0e0; flex-wrap:wrap; }
+  .toolbar input[type=date] { padding:7px 10px; border:1px solid #ddd; border-radius:6px; }
+  .toolbar button { padding:7px 14px; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; font-size:13px; }
+  .toolbar button.primary { background:#1c7ed6; color:#fff; border-color:#1c7ed6; }
+  .toolbar .spacer { flex:1; }
+  #logoutBtn { color:#888; }
+
+  .badges { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .badge { padding:6px 12px; border-radius:6px; font-size:13px; font-weight:600; background:#eee; }
+  .badge.late { background:#fff3bf; color:#997404; }
+  .badge.working { background:#d3f9d8; color:#2b8a3e; }
+  .badge.scheduled { background:#e7e9ee; color:#555; }
+  .badge.total { background:#e7f5ff; color:#1971c2; }
+
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0; }
+  th, td { padding:10px 14px; font-size:13px; border-bottom:1px solid #eee; text-align:left; }
+  th { background:#fafafa; color:#666; }
+  tr:last-child td { border-bottom:none; }
+
+  .status-pill { display:inline-block; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; }
+  .status-LATE { background:#fff3bf; color:#997404; }
+  .status-WORKING { background:#d3f9d8; color:#2b8a3e; }
+  .status-SCHEDULED { background:#e7e9ee; color:#555; }
+  .status-DONE { background:#dbe4ff; color:#3b5bdb; }
+  .status-ABSENT { background:#ffe3e3; color:#c92a2a; }
+
+  #loadingRow, #emptyRow { text-align:center; color:#999; padding:24px; }
+</style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div id="loginBox">
+  <h2>근무현황 로그인</h2>
+  <input id="empNo" placeholder="사번" autocomplete="username">
+  <input id="password" type="password" placeholder="비밀번호" autocomplete="current-password">
+  <button id="loginBtn">로그인</button>
+  <div id="loginErr"></div>
+</div>
+
+<!-- 메인 화면 -->
+<div id="mainBox">
+  <h1>근무현황</h1>
+  <div class="sub">일자별 출퇴근 기록·근무상태 한눈에 보기</div>
+
+  <div class="toolbar">
+    <input type="date" id="dateInput">
+    <button id="todayBtn">오늘</button>
+    <button id="prevBtn">◀ 전일</button>
+    <button id="nextBtn">다음날 ▶</button>
+    <input type="text" id="searchInput" placeholder="이름 또는 사번" style="padding:7px 10px; border:1px solid #ddd; border-radius:6px;">
+    <button id="searchBtn" class="primary">검색</button>
+    <div class="spacer"></div>
+    <span id="userLabel" style="font-size:13px; color:#666;"></span>
+    <button id="logoutBtn">로그아웃</button>
+  </div>
+
+  <div class="badges" id="badges"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>No</th><th>사번</th><th>이름</th><th>부서</th>
+        <th>예정시간</th><th>출퇴근</th><th>상태</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr id="loadingRow"><td colspan="7">불러오는 중...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const API_BASE = 'https://worksadmin.dygroup.co.kr';
+
+const loginBox = document.getElementById('loginBox');
+const mainBox = document.getElementById('mainBox');
+const loginErr = document.getElementById('loginErr');
+const dateInput = document.getElementById('dateInput');
+const searchInput = document.getElementById('searchInput');
+const tbody = document.getElementById('tbody');
+const badges = document.getElementById('badges');
+const userLabel = document.getElementById('userLabel');
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function shiftDate(str, delta) {
+  const d = new Date(str + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function getToken() { return localStorage.getItem('work_status_token'); }
+function setToken(t) { localStorage.setItem('work_status_token', t); }
+function clearToken() { localStorage.removeItem('work_status_token'); }
+
+async function login(emp_no, password) {
+  const res = await fetch(API_BASE + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ emp_no, password })
+  });
+  if (!res.ok) throw new Error('로그인 실패 (상태 ' + res.status + ')');
+  const json = await res.json();
+  return json.data;
+}
+
+async function fetchAttendances(date) {
+  const params = new URLSearchParams({
+    start_date: date,
+    end_date: date,
+    page: '1',
+    size: '100',
+    department_id: '10',
+    include_descendants: 'true'
+  });
+  const res = await fetch(API_BASE + '/api/attendances?' + params.toString(), {
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  });
+  if (res.status === 401) {
+    clearToken();
+    showLogin('토큰이 만료되었습니다. 다시 로그인해주세요.');
+    throw new Error('unauthorized');
+  }
+  if (!res.ok) throw new Error('조회 실패 (상태 ' + res.status + ')');
+  return res.json();
+}
+
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function statusLabel(s) {
+  const map = { LATE:'지각', WORKING:'근무중', SCHEDULED:'예정', DONE:'퇴근', ABSENT:'결근' };
+  return map[s] || s;
+}
+
+function render(json) {
+  const rows = json.data || [];
+  const counts = json.status_counts || {};
+  const total = json.total ?? rows.length;
+
+  badges.innerHTML = `
+    <span class="badge total">총 ${total}건</span>
+    <span class="badge working">근무중 ${counts.WORKING || 0}</span>
+    <span class="badge late">지각 ${counts.LATE || 0}</span>
+    <span class="badge scheduled">예정 ${counts.SCHEDULED || 0}</span>
+  `;
+
+  const q = searchInput.value.trim();
+  const filtered = q
+    ? rows.filter(r => r.employee_name.includes(q) || r.emp_no.includes(q))
+    : rows;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr id="emptyRow"><td colspan="7">데이터가 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((r, i) => {
+    const scheduled = r.scheduled_start && r.scheduled_end
+      ? `${r.scheduled_start.slice(0,5)}-${r.scheduled_end.slice(0,5)}${r.schedule_is_next_day ? ' (익일)' : ''}`
+      : '자유';
+    const inOut = [fmtTime(r.check_in_time), fmtTime(r.check_out_time)].filter(Boolean).join(' - ') +
+                  (r.check_in_time && !r.check_out_time ? '-' : '');
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${r.emp_no}</td>
+      <td>${r.employee_name} ${r.employee_position ? `<span style="color:#999">${r.employee_position}</span>` : ''}</td>
+      <td>${r.department_name}</td>
+      <td>${scheduled}</td>
+      <td>${inOut}</td>
+      <td><span class="status-pill status-${r.status}">${statusLabel(r.status)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadData() {
+  tbody.innerHTML = '<tr id="loadingRow"><td colspan="7">불러오는 중...</td></tr>';
+  try {
+    const json = await fetchAttendances(dateInput.value);
+    render(json);
+  } catch (e) {
+    if (e.message !== 'unauthorized') {
+      tbody.innerHTML = `<tr><td colspan="7" style="color:#e03131">오류: ${e.message}</td></tr>`;
+    }
+  }
+}
+
+function showLogin(msg) {
+  mainBox.style.display = 'none';
+  loginBox.style.display = 'block';
+  if (msg) {
+    loginErr.textContent = msg;
+    loginErr.style.display = 'block';
+  }
+}
+
+function showMain(user) {
+  loginBox.style.display = 'none';
+  mainBox.style.display = 'block';
+  userLabel.textContent = user ? `${user.name} (${user.department_name})` : '';
+  dateInput.value = todayStr();
+  loadData();
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  loginErr.style.display = 'none';
+  const emp_no = document.getElementById('empNo').value.trim();
+  const password = document.getElementById('password').value;
+  if (!emp_no || !password) {
+    loginErr.textContent = '사번과 비밀번호를 입력하세요.';
+    loginErr.style.display = 'block';
+    return;
+  }
+  try {
+    const data = await login(emp_no, password);
+    setToken(data.token);
+    showMain(data.user);
+  } catch (e) {
+    loginErr.textContent = e.message.includes('401') || e.message.includes('실패')
+      ? '사번 또는 비밀번호가 올바르지 않습니다.'
+      : '로그인 중 오류가 발생했습니다: ' + e.message;
+    loginErr.style.display = 'block';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  clearToken();
+  showLogin();
+});
+
+document.getElementById('todayBtn').addEventListener('click', () => { dateInput.value = todayStr(); loadData(); });
+document.getElementById('prevBtn').addEventListener('click', () => { dateInput.value = shiftDate(dateInput.value, -1); loadData(); });
+document.getElementById('nextBtn').addEventListener('click', () => { dateInput.value = shiftDate(dateInput.value, 1); loadData(); });
+dateInput.addEventListener('change', loadData);
+document.getElementById('searchBtn').addEventListener('click', loadData);
+searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadData(); });
+
+// 시작 시 토큰 있으면 바로 메인 화면 (사용자 정보는 재조회 없이 표시 생략, 필요시 /api/auth/me 등 추가 가능)
+if (getToken()) {
+  showMain(null);
+} else {
+  showLogin();
+}
+</script>
+</body>
+</html>
