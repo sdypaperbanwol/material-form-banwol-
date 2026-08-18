@@ -92,8 +92,11 @@ function renderTable(rows) {
   let header = rows[headerRowIdx].map(h => String(h).trim());
   let dataRows = rows.slice(headerRowIdx + 1).filter(r => r.some(c => !isBlank(c)));
 
+  // 헤더가 "_"로 시작하는 열은 숨김 처리 (시트에서 헤더 이름 앞에 _ 붙이면 자동으로 안 보임)
+  const hiddenByPrefix = header.map(h => h.startsWith("_"));
+
   // 헤더도 비어있고 모든 데이터 행에서도 비어있는 열(빈 칸/숨겨진 열)은 제거
-  const keepCols = header.map((h, ci) => !isBlank(h) || dataRows.some(r => !isBlank(r[ci])));
+  const keepCols = header.map((h, ci) => !hiddenByPrefix[ci] && (!isBlank(h) || dataRows.some(r => !isBlank(r[ci]))));
   header = header.filter((_, ci) => keepCols[ci]);
   dataRows = dataRows.map(r => r.filter((_, ci) => keepCols[ci]));
 
