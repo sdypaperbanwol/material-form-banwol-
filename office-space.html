@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>신대양제지 반월 사무동 리모델링 공사 견적 취합표</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+    background: #f4f5f7; color: #1f2430; margin: 0; padding: 0 0 60px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+  header.top {
+    background: linear-gradient(135deg, #1f2937, #374151); color: #fff;
+    padding: 32px 28px; border-radius: 14px; margin-bottom: 24px;
+  }
+  header.top h1 { margin: 0 0 6px; font-size: 22px; }
+  header.top .sub { opacity: 0.85; font-size: 13px; margin-bottom: 18px; }
+  .grand-total {
+    background: rgba(255,255,255,0.12); border-radius: 10px; padding: 14px 18px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .grand-total .amt { font-size: 26px; font-weight: 700; }
+  .grand-total .vat { font-size: 12px; opacity: 0.75; }
+
+  .note { font-size: 11.5px; color: #9ca3af; margin: 0 0 16px; display:flex; justify-content:space-between; align-items:center; }
+  .refresh-btn { background:#2563eb; color:#fff; border:none; padding:6px 14px; border-radius:20px; font-size:12px; cursor:pointer; }
+  .refresh-btn:hover { background:#1d4ed8; }
+
+  table.ov-table { width: 100%; border-collapse: collapse; font-size: 12.5px; background:#fff; border-radius: 12px; overflow:hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 10px; }
+  table.ov-table th { background: #111827; color:#fff; padding: 10px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  table.ov-table td { padding: 9px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+  table.ov-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.ov-table tr.subtotal-row td { background: #eef1f5; font-weight: 700; }
+  table.ov-table tr.total-row td { background: #111827; color:#fff; font-weight: 700; font-size: 13.5px; }
+  table.ov-table tr.pending td { background: #fce4d6; }
+
+  .state-msg { text-align:center; padding: 60px 20px; color:#9ca3af; font-size: 13px; }
+  footer.foot { text-align: center; color: #9ca3af; font-size: 11.5px; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>신대양제지 반월 사무동 리모델링 공사</h1>
+    <div class="sub">전체 견적 취합표 (구글시트 실시간 연동)</div>
+    <div class="grand-total">
+      <div>
+        <div style="font-size:12px; opacity:0.8;">전체 견적 합계</div>
+        <div class="amt" id="grand-total-amt">불러오는 중...</div>
+      </div>
+      <div class="vat">V.A.T 별도 (업체별 조건 상이)</div>
+    </div>
+  </header>
+
+  <div class="note">
+    <span id="updated-at">마지막 갱신: -</span>
+    <button class="refresh-btn" onclick="loadSheet()">새로고침</button>
+  </div>
+
+  <div id="table-holder">
+    <div class="state-msg">구글시트에서 데이터를 불러오는 중...</div>
+  </div>
+
+  <footer class="foot">
+    이 표는 구글시트를 실시간으로 읽어와 표시합니다. 시트 내용을 수정하면 새로고침 시 자동 반영됩니다.<br>
+    인테리어 세부 도면·3D 렌더링·원본 견적서 이미지는 별도 뷰어 파일에서 확인 가능함.
+  </footer>
+</div>
+
+<script>
+// 구글시트 CSV 내보내기 주소 (공유 설정: 링크가 있는 모든 사용자 - 뷰어여야 함)
+const SHEET_ID = "1T2keFUJA5VlEvlKXDBEHD_YAJPNzN_kW9_N6bJo82bI";
+const GID = "0";
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+
+// 세로 병합(rowspan)을 시뮬레이션할 열 이름들 (시트에서 병합되어 쓰이는 열)
+const MERGE_COLS = ["구분", "대분류"];
+
+function isBlank(s) { return s === undefined || s === null || String(s).trim() === ""; }
+
+function renderTable(rows) {
+  if (!rows.length) {
+    document.getElementById("table-holder").innerHTML = '<div class="state-msg">표시할 데이터가 없습니다.</div>';
+    return;
+  }
+  const header = rows[0].map(h => String(h).trim());
+  const dataRows = rows.slice(1).filter(r => r.some(c => !isBlank(c)));
+
+  // 번호 열(첫 열) 기준으로 소계/합계 행 판별
+  const noColIdx = 0;
+
+  // 병합 열의 인덱스
+  const mergeIdx = MERGE_COLS.map(name => header.indexOf(name)).filter(i => i >= 0);
+
+  // 각 병합 열에 대해 rowspan/skip 정보 계산 (소계/합계 행은 병합 그룹을 끊음)
+  const rowMeta = dataRows.map(r => {
+    const label = String(r[noColIdx] || "").replace(/\s/g, "");
+    return { isSummary: label === "소계" || label === "합계" };
+  });
+
+  const skip = dataRows.map(() => ({}));   // skip[rowIdx][colIdx] = true 이면 렌더링 생략
+  const span = dataRows.map(() => ({}));   // span[rowIdx][colIdx] = rowspan 값
+
+  mergeIdx.forEach(colIdx => {
+    let anchor = -1;
+    for (let i = 0; i < dataRows.length; i++) {
+      if (rowMeta[i].isSummary) { anchor = -1; continue; }
+      const val = dataRows[i][colIdx];
+      if (!isBlank(val)) {
+        anchor = i;
+        span[i][colIdx] = 1;
+      } else if (anchor >= 0) {
+        span[anchor][colIdx] = (span[anchor][colIdx] || 1) + 1;
+        skip[i][colIdx] = true;
+      }
+    }
+  });
+
+  let html = '<table class="ov-table"><thead><tr>';
+  header.forEach((h, i) => {
+    const align = /금액/.test(h) ? ' style="text-align:right;"' : '';
+    html += `<th${align}>${h}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  let grandTotal = null;
+
+  dataRows.forEach((r, i) => {
+    if (rowMeta[i].isSummary) {
+      const label = String(r[noColIdx] || "").replace(/\s/g, "");
+      const cls = label === "합계" ? "total-row" : "subtotal-row";
+      // 마지막 비어있지 않은 값을 금액으로 간주
+      let amt = "";
+      for (let c = r.length - 1; c >= 0; c--) {
+        if (!isBlank(r[c])) { amt = r[c]; break; }
+      }
+      if (label === "합계") grandTotal = amt;
+      html += `<tr class="${cls}"><td colspan="${header.length - 1}">${label === "합계" ? "합&nbsp;&nbsp;계" : "소&nbsp;계"}</td><td class="num">${amt}</td></tr>`;
+      return;
+    }
+    const pendingFlag = header.some((h, ci) => /업체명/.test(h) && /미정/.test(r[ci] || ""));
+    html += `<tr${pendingFlag ? ' class="pending"' : ''}>`;
+    header.forEach((h, ci) => {
+      if (skip[i][ci]) return;
+      const rs = span[i][ci];
+      const rsAttr = rs && rs > 1 ? ` rowspan="${rs}"` : '';
+      const isNum = /금액/.test(h);
+      const val = r[ci] || "";
+      html += `<td${rsAttr}${isNum ? ' class="num"' : ''}>${val}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById("table-holder").innerHTML = html;
+  document.getElementById("grand-total-amt").textContent = grandTotal ? grandTotal + "원" : "-";
+}
+
+function loadSheet() {
+  document.getElementById("table-holder").innerHTML = '<div class="state-msg">불러오는 중...</div>';
+  Papa.parse(CSV_URL, {
+    download: true,
+    complete: function(results) {
+      const rows = results.data.filter(r => r.length > 1 || (r.length === 1 && !isBlank(r[0])));
+      renderTable(rows);
+      document.getElementById("updated-at").textContent = "마지막 갱신: " + new Date().toLocaleString("ko-KR");
+    },
+    error: function(err) {
+      document.getElementById("table-holder").innerHTML =
+        '<div class="state-msg">구글시트를 불러오지 못했습니다.<br>시트 공유 설정이 "링크가 있는 모든 사용자 - 뷰어"인지 확인해주세요.<br>(' + err + ')</div>';
+    }
+  });
+}
+
+loadSheet();
+</script>
+</body>
+</html>
