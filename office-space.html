@@ -53,7 +53,7 @@
       </div>
       <div class="vat">V.A.T 별도 (업체별 조건 상이)</div>
     </div>
-    <a href="viewer.html" style="display:inline-block; margin-top:14px; font-size:12px; color:#fff; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:6px 12px; border-radius:20px; text-decoration:none;">인테리어 상세 (KS디자인) 보기 →</a>
+    <a href="https://drive.google.com/drive/folders/1qjOhFHxb-Js78_uhn82mj1FL5s8ZcyYv" target="_blank" style="display:inline-block; margin-top:14px; font-size:12px; color:#fff; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:6px 12px; border-radius:20px; text-decoration:none;">📁 견적서 폴더 보기 →</a>
   </header>
 
   <div class="note">
@@ -168,7 +168,11 @@ function renderTable(rows) {
       const rsAttr = rs && rs > 1 ? ` rowspan="${rs}"` : '';
       const isNum = /금액/.test(h);
       const val = r[ci] || "";
-      html += `<td${rsAttr}${isNum ? ' class="num"' : ''}>${val}</td>`;
+      const isInteriorLink = /대분류/.test(h) && val.trim() === "인테리어 종합공사";
+      const cellContent = isInteriorLink
+        ? `<a href="viewer.html" style="color:#2563eb; font-weight:700; text-decoration:underline;">${val} →</a>`
+        : val;
+      html += `<td${rsAttr}${isNum ? ' class="num"' : ''}>${cellContent}</td>`;
     });
     html += '</tr>';
   });
