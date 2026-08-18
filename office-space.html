@@ -82,12 +82,25 @@ const MERGE_COLS = ["구분", "대분류"];
 function isBlank(s) { return s === undefined || s === null || String(s).trim() === ""; }
 
 function renderTable(rows) {
-  if (!rows.length) {
+  // 실제 표 헤더("번호"가 있는 행)를 찾아서 그 이전(제목/합계상자/안내문 등)은 건너뜀
+  const headerRowIdx = rows.findIndex(r => r.some(c => String(c).trim() === "번호"));
+  if (headerRowIdx === -1) {
+    document.getElementById("table-holder").innerHTML = '<div class="state-msg">표 헤더("번호" 열)를 찾을 수 없습니다. 시트 구조를 확인해주세요.</div>';
+    return;
+  }
+
+  let header = rows[headerRowIdx].map(h => String(h).trim());
+  let dataRows = rows.slice(headerRowIdx + 1).filter(r => r.some(c => !isBlank(c)));
+
+  // 헤더도 비어있고 모든 데이터 행에서도 비어있는 열(빈 칸/숨겨진 열)은 제거
+  const keepCols = header.map((h, ci) => !isBlank(h) || dataRows.some(r => !isBlank(r[ci])));
+  header = header.filter((_, ci) => keepCols[ci]);
+  dataRows = dataRows.map(r => r.filter((_, ci) => keepCols[ci]));
+
+  if (!dataRows.length) {
     document.getElementById("table-holder").innerHTML = '<div class="state-msg">표시할 데이터가 없습니다.</div>';
     return;
   }
-  const header = rows[0].map(h => String(h).trim());
-  const dataRows = rows.slice(1).filter(r => r.some(c => !isBlank(c)));
 
   // 번호 열(첫 열) 기준으로 소계/합계 행 판별
   const noColIdx = 0;
