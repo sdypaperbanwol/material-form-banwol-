@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>시설 탐색 지도</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background:#161616; color:#eee; font-family:'Malgun Gothic', sans-serif;
+    margin:0; padding:16px;
+  }
+  h1 { font-size:17px; color:#ffd54a; margin:0 0 2px 0; }
+  p.desc { color:#999; font-size:12px; margin:0 0 10px 0; }
+
+  .breadcrumb {
+    font-size:12px; color:#aaa; margin-bottom:10px; display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+  }
+  .breadcrumb .crumb { cursor:pointer; color:#8fc7ff; }
+  .breadcrumb .crumb:hover { text-decoration:underline; }
+  .breadcrumb .crumb.current { color:#ffd54a; cursor:default; }
+  .breadcrumb .crumb.current:hover { text-decoration:none; }
+  .breadcrumb .sep { color:#555; }
+
+  .toolbar {
+    display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;
+  }
+  .toolbar button, .toolbar label.filebtn {
+    background:#333; color:#eee; border:1px solid #555; border-radius:6px;
+    padding:7px 12px; font-size:12px; cursor:pointer;
+  }
+  .toolbar button:hover, .toolbar label.filebtn:hover { background:#444; }
+  .toolbar button.primary { background:#ffd54a; color:#222; font-weight:bold; border:none; }
+  .toolbar button.primary:hover { background:#ffe27a; }
+  .toolbar button.danger { color:#ff8080; }
+  .toolbar button:disabled { opacity:0.4; cursor:not-allowed; }
+  #fileInput { display:none; }
+  .status { font-size:11px; color:#8fd48f; background:#1c2e1c; padding:3px 8px; border-radius:10px; }
+  .node-id-debug { font-size:10px; color:#555; font-family:monospace; }
+  #linkTargetSelectRow label { color:#ff8080 !important; font-size:11px; }
+  .status.saving { color:#ffcf6b; }
+
+  .node-heading { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .node-heading h2 { font-size:15px; color:#fff; margin:0; }
+  .node-heading .rename-btn { font-size:11px; color:#888; cursor:pointer; border:1px solid #444; border-radius:4px; padding:2px 6px; }
+  .node-heading .rename-btn:hover { color:#ffd54a; border-color:#ffd54a; }
+  .node-desc-row { display:flex; align-items:center; gap:8px; margin:-4px 0 12px 0; }
+  .node-desc-text { font-size:12px; color:#999; }
+
+  /* 태그로 찾기 */
+  .tag-panel-toggle {
+    display:inline-flex; align-items:center; gap:4px; font-size:12px; color:#8fc7ff;
+    cursor:pointer; margin-bottom:10px; user-select:none;
+  }
+  .tag-panel-toggle:hover { color:#b8dcff; }
+  .tag-panel {
+    background:#1c1c1c; border:1px solid #3a3a3a; border-radius:8px; padding:12px;
+    margin-bottom:14px;
+  }
+  .tag-panel input {
+    width:100%; background:#111; border:1px solid #444; color:#eee; border-radius:5px;
+    padding:6px 9px; font-size:12px; margin-bottom:10px;
+  }
+  .tag-list { display:flex; flex-wrap:wrap; gap:6px; max-height:200px; overflow-y:auto; }
+  .tag-pill {
+    background:#2a2a2a; border:1px solid #444; color:#ffd54a; border-radius:14px;
+    padding:5px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  .tag-pill:hover { border-color:#ffd54a; background:#332b17; }
+  .tag-pill .tag-path { color:#777; font-size:10px; margin-left:4px; }
+
+  .layout { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap {
+    position:relative; border:2px solid #444; background:#222;
+    max-width:100%; max-height:80vh; overflow:auto; line-height:0;
+  }
+  #imgCanvas { display:block; cursor:crosshair; max-width:100%; }
+  .empty-state {
+    padding:70px 40px; text-align:center; color:#777; font-size:13px; min-width:400px;
+    line-height:1.6;
+  }
+  .empty-state .hint { font-size:11px; color:#555; margin-top:8px; display:block; }
+
+  .sidebar { width:280px; max-width:100%; flex-shrink:0; }
+  .sidebar.full-width { width:100%; max-width:760px; }
+  .sidebar h2 { font-size:13px; color:#ffd54a; margin:0 0 8px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .tiny-photo-add { display:none; gap:8px; }
+  .tiny-photo-add .rename-btn { font-size:10px; padding:2px 7px; color:#888; }
+  .tiny-photo-add .rename-btn:hover { color:#ffd54a; border-color:#ffd54a; }
+  .zone-item {
+    position:relative; background:#232323; border:1px solid #3a3a3a; border-radius:6px;
+    padding:12px 40px 12px 14px; margin-bottom:6px; font-size:13px; cursor:pointer;
+  }
+  .zone-item:hover { border-color:#ffd54a; background:#241f10; }
+  .zone-item .zname { font-weight:bold; color:#ffd54a; margin-bottom:3px; display:flex; align-items:center; gap:6px; }
+  .zone-item .ztype-badge {
+    font-size:9px; padding:1px 5px; border-radius:8px; font-weight:normal;
+  }
+  .ztype-badge.link { background:#2a4a6b; color:#8fc7ff; }
+  .ztype-badge.info { background:#3a3a2a; color:#d9c98a; }
+  .zone-item .zdesc { color:#999; font-size:11.5px; line-height:1.4; }
+  .zone-item .zdel {
+    position:absolute; top:10px; right:10px; color:#ff8080; font-size:11px;
+    padding:2px 6px; border-radius:4px;
+  }
+  .zone-item .zdel:hover { background:rgba(255,128,128,0.15); }
+  .no-zones { color:#666; font-size:12px; }
+
+  .modal-backdrop {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65);
+    align-items:center; justify-content:center; z-index:50;
+  }
+  .modal-backdrop.show { display:flex; }
+  .modal {
+    background:#232323; border:1px solid #444; border-radius:10px; padding:20px 24px;
+    max-width:400px; width:90%;
+  }
+  .modal h3 { margin:0 0 12px 0; color:#ffd54a; font-size:15px; }
+  .modal label { display:block; font-size:11px; color:#999; margin:10px 0 4px 0; }
+  .modal input[type=text], .modal textarea, .modal select {
+    width:100%; background:#1a1a1a; border:1px solid #444; color:#eee;
+    border-radius:5px; padding:7px 9px; font-size:13px; font-family:inherit;
+  }
+  .modal textarea { resize:vertical; min-height:55px; }
+  .type-choice { display:flex; gap:8px; margin-top:4px; }
+  .type-choice label {
+    flex:1; display:flex; flex-direction:column; gap:2px; margin:0;
+    border:1px solid #444; border-radius:6px; padding:8px 10px; cursor:pointer; font-size:11px; color:#ccc;
+  }
+  .type-choice label.active { border-color:#ffd54a; background:rgba(255,213,74,0.08); }
+  .type-choice input { display:none; }
+  .type-choice .t-title { font-weight:bold; color:#eee; font-size:12px; }
+  .modal-actions { margin-top:16px; display:flex; gap:8px; justify-content:flex-end; align-items:center; }
+  .modal-actions button { padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer; border:none; }
+  .btn-cancel { background:#3a3a3a; color:#eee; }
+  .btn-save { background:#ffd54a; color:#222; font-weight:bold; }
+
+  /* 갤러리 */
+  .gallery-section { margin-top:20px; }
+  .gallery-section h2 { font-size:13px; color:#ffd54a; margin:0 0 8px 0; }
+  .gallery-hint { color:#777; font-weight:normal; font-size:11px; }
+  .gallery-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; }
+  .gallery-thumb {
+    position:relative; flex-shrink:0; width:120px; height:90px; border-radius:6px; overflow:hidden;
+    border:1px solid #3a3a3a; cursor:pointer; background:#232323;
+  }
+  .gallery-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .gallery-thumb .gdel {
+    position:absolute; top:3px; right:3px; background:rgba(0,0,0,0.65); color:#ff8080;
+    border-radius:4px; font-size:10px; padding:1px 5px; cursor:pointer;
+  }
+  .gallery-add-tile {
+    flex-shrink:0; width:120px; height:90px; border-radius:6px; border:1px dashed #555;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    color:#888; font-size:11px; cursor:pointer; background:#1c1c1c;
+  }
+  .gallery-add-tile:hover { border-color:#ffd54a; color:#ffd54a; }
+
+  /* 맵뷰(루트 전용) 툴바 */
+  .map-toolbar { display:flex; gap:8px; margin-bottom:10px; }
+  .cover-wrap { margin-bottom:24px; }
+  .cover-img-tile { position:relative; max-width:560px; border-radius:8px; overflow:hidden; border:1px solid #3a3a3a; }
+  .cover-img-tile img { width:100%; display:block; }
+  .cover-actions { position:absolute; top:8px; right:8px; display:flex; gap:6px; }
+  .cover-actions button {
+    background:rgba(0,0,0,0.65); color:#eee; border:1px solid #555; border-radius:5px;
+    padding:4px 9px; font-size:11px; cursor:pointer;
+  }
+  .cover-actions button:hover { border-color:#ffd54a; color:#ffd54a; }
+  .cover-add-tile {
+    width:220px; height:110px; border:1px dashed #555; border-radius:8px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    color:#888; font-size:12px; cursor:pointer; background:#1c1c1c;
+  }
+  .cover-add-tile:hover { border-color:#ffd54a; color:#ffd54a; }
+
+  .item-grid { display:flex; flex-wrap:wrap; gap:10px; }
+  .item-tile {
+    position:relative; width:150px; padding:18px 12px; border:1px solid #3a3a3a; border-radius:10px;
+    background:#1c1c1c; cursor:pointer; text-align:center;
+  }
+  .item-tile:hover { border-color:#ffd54a; background:#241f10; }
+  .item-tile .item-name { font-size:13px; color:#ffd54a; font-weight:bold; word-break:break-all; }
+  .item-tile .item-desc-preview { display:block; font-size:10.5px; color:#888; font-weight:normal; margin-top:5px; line-height:1.4; }
+  .item-tile .item-del {
+    position:absolute; top:4px; right:6px; font-size:10px; color:#ff8080; padding:2px 4px;
+  }
+
+  /* 드라이브 브라우저 모달 */
+  .drive-modal { max-width:640px; }
+  .drive-breadcrumb { font-size:12px; color:#8fc7ff; margin-bottom:10px; }
+  .drive-breadcrumb span { cursor:pointer; }
+  .drive-breadcrumb span:hover { text-decoration:underline; }
+  .drive-grid {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:8px;
+    max-height:360px; overflow-y:auto; padding:4px;
+  }
+  .drive-tile { border:2px solid transparent; border-radius:6px; overflow:hidden; cursor:pointer; background:#1c1c1c; }
+  .drive-tile.folder {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; height:90px;
+    color:#ddd; font-size:11px; gap:6px; padding:6px; text-align:center; word-break:break-all;
+  }
+  .drive-tile.image { position:relative; height:90px; }
+  .drive-tile.image img { width:100%; height:100%; object-fit:cover; display:block; }
+  .drive-tile.selected { border-color:#ffd54a; }
+  .drive-tile.selected::after {
+    content:'✓'; position:absolute; top:3px; right:3px; background:#ffd54a; color:#222;
+    width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:bold;
+  }
+  .drive-selected-count { font-size:11px; color:#999; margin-right:auto; }
+
+  /* 라이트박스 */
+  .lightbox-inner {
+    max-width:90vw; max-height:92vh; display:flex; flex-direction:column; gap:8px; align-items:stretch;
+    background:#1c1c1c; border:1px solid #3a3a3a; border-radius:10px; padding:16px; overflow-y:auto;
+  }
+  .lightbox-canvas-wrap { max-width:100%; max-height:65vh; overflow:visible; align-self:center; line-height:0; display:flex; justify-content:center; }
+  .lightbox-canvas-wrap canvas { max-width:100%; max-height:65vh; width:auto; height:auto; cursor:crosshair; border-radius:6px; display:block; }
+  .lightbox-hint { font-size:11px; color:#777; }
+  .lightbox-inner textarea {
+    background:#111; border:1px solid #444; color:#eee; border-radius:5px; padding:7px 9px;
+    font-size:12px; font-family:inherit; min-height:50px; resize:vertical;
+  }
+  .lightbox-actions { display:flex; justify-content:flex-end; gap:8px; }
+  .lightbox-actions button { padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer; border:none; }
+
+  /* 사진 선택 인라인 버튼 (빈 상태) */
+  .photo-add-inline { display:flex; gap:10px; justify-content:center; margin-bottom:8px; }
+  .photo-add-inline .rename-btn { font-size:13px; padding:6px 14px; }
+  .photo-controls { display:flex; gap:10px; padding:8px 0; }
+</style>
+</head>
+<body>
+
+<h1>시설 탐색 지도 <span style="color:#666; font-weight:normal; font-size:12px;">Facility Explorer</span></h1>
+<p class="desc">화면을 클릭해서 하위 화면으로 들어가거나, 설비 설명을 확인하세요. 이 페이지를 여는 모든 사람이 같은 데이터를 공유합니다.</p>
+
+<div class="breadcrumb" id="breadcrumb"></div>
+
+<div class="tag-panel-toggle" id="tagPanelToggle">🏷️ 태그로 찾기 (전체 화면 목록) ▾</div>
+<div class="tag-panel" id="tagPanel" style="display:none;">
+  <input type="text" id="tagSearchInput" placeholder="이름으로 검색... 예: 리와인더, 전기실">
+  <div class="tag-list" id="tagList"></div>
+</div>
+
+<div class="node-heading">
+  <h2 id="nodeTitle">홈</h2>
+  <span class="rename-btn" id="renameBtn">이름변경</span>
+  <span class="status" id="statusText">불러오는 중...</span>
+  <span class="node-id-debug" id="nodeIdDebug"></span>
+</div>
+<div class="node-desc-row">
+  <span id="nodeDescText" class="node-desc-text"></span>
+  <span class="rename-btn" id="editDescBtn">설명 수정</span>
+</div>
+
+<div class="toolbar">
+  <button id="backBtn" disabled>← 뒤로가기</button>
+  <button id="addListItemBtn" class="primary">+ 항목 추가</button>
+</div>
+
+<!-- 모든 화면에서 동일하게 동작: 사진은 선택사항, 있으면 드래그로 영역 지정 가능 -->
+<div class="layout" id="mapView">
+  <div class="canvas-wrap" id="canvasWrap" style="display:none;">
+    <canvas id="imgCanvas"></canvas>
+    <div class="photo-controls" id="photoControls">
+      <span class="rename-btn" id="photoChangeBtn">사진 변경</span>
+      <span class="rename-btn" id="photoRemoveBtn">사진 삭제</span>
+    </div>
+  </div>
+
+  <div class="sidebar" id="sidebarPanel">
+    <h2>
+      <span>등록된 항목 (<span id="zoneCount">0</span>)</span>
+      <span class="tiny-photo-add" id="tinyPhotoAdd">
+        <span class="rename-btn" id="tinyUploadLink">+ 사진 업로드</span>
+        <span class="rename-btn" id="tinyDriveLink">드라이브에서</span>
+      </span>
+    </h2>
+    <div id="zoneList"><div class="no-zones">아직 등록된 항목이 없습니다.</div></div>
+  </div>
+</div>
+
+<label class="filebtn" style="display:none;">
+  <input type="file" id="fileInput" accept="image/*">
+</label>
+
+<div class="gallery-section">
+  <h2>"<span id="galleryNodeName">이 화면</span>"의 사진 갤러리 (<span id="galleryCount">0</span>) <span class="gallery-hint">— 참고사진 모음</span></h2>
+  <div class="gallery-strip" id="galleryStrip"></div>
+</div>
+
+<!-- 드라이브 사진 선택 모달 -->
+<div class="modal-backdrop" id="driveBrowserBackdrop">
+  <div class="modal drive-modal">
+    <h3 id="driveBrowserTitle">드라이브에서 사진 선택</h3>
+    <div class="drive-breadcrumb" id="driveBreadcrumb"></div>
+    <div class="drive-grid" id="driveGrid"><div class="no-zones">불러오는 중...</div></div>
+    <div class="modal-actions">
+      <span class="drive-selected-count" id="driveSelectedCount"></span>
+      <button class="btn-cancel" id="btnDriveCancel">취소</button>
+      <button class="btn-save" id="btnDriveConfirm">선택 완료</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사진 크게보기 + 표시/설명 -->
+<div class="modal-backdrop" id="lightboxBackdrop">
+  <div class="lightbox-inner">
+    <div class="lightbox-canvas-wrap" id="lightboxCanvasWrap">
+      <canvas id="lightboxCanvas"></canvas>
+    </div>
+    <div class="lightbox-hint">사진 위를 드래그하면 표시(설명 딸린 박스)를 남길 수 있습니다. 표시를 클릭하면 삭제됩니다.</div>
+    <label style="align-self:flex-start; font-size:11px; color:#999;">이 사진 전체에 대한 설명 (선택)</label>
+    <textarea id="lightboxCaption" placeholder="예: 2026년 8월 촬영, 리모델링 전 상태" style="width:100%;"></textarea>
+    <div class="lightbox-actions">
+      <button class="btn-cancel" id="btnLightboxClose">닫기</button>
+      <button class="btn-save" id="btnLightboxSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 생성/수정 모달 -->
+<div class="modal-backdrop" id="backdrop">
+  <div class="modal">
+    <h3 id="editModalTitle">항목 등록</h3>
+    <label>이름</label>
+    <input type="text" id="inputName" placeholder="예: 사무동, 1층, 원료 탈수기">
+    <label>설명 (선택 — 클릭해서 들어가면 보입니다)</label>
+    <textarea id="inputDesc" placeholder="예: 담당자, 스펙, 참고사항 등"></textarea>
+    <div id="linkTargetWrap" style="margin-top:8px;">
+      <span class="rename-btn" id="advancedLinkToggle">고급 옵션: 이미 있는 페이지에 연결하기 ▾</span>
+      <div id="linkTargetSelectRow" style="display:none; margin-top:6px;">
+        <label style="color:#ff8080;">⚠ 잘못 고르면 두 항목이 같은 페이지가 됩니다. 보통은 안 건드려도 됩니다.</label>
+        <select id="linkTargetSelect">
+          <option value="__new__">새 페이지 만들기</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnCancel">취소</button>
+      <button class="btn-save" id="btnSave">저장</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 설명형 보기 모달 -->
+<div class="modal-backdrop" id="viewBackdrop">
+  <div class="modal">
+    <h3 id="viewName"></h3>
+    <p style="font-size:13px; line-height:1.6; color:#ddd; white-space:pre-wrap;" id="viewDesc"></p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnViewDelete" style="color:#ff8080;">삭제</button>
+      <button class="btn-cancel" id="btnViewEdit">수정</button>
+      <button class="btn-save" id="btnViewClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Google Sheets + Drive (Apps Script) 백엔드 연동
+const API_URL = 'https://script.google.com/macros/s/AKfycbyex220PvTkvtzMhkhqXQQUKSiBwPpMONuR5Zvz_3rQG09GcwfTsUSN2iXLbOU67WbZ/exec';
+const ROOT_ID = 'root';
+
+const canvas = document.getElementById('imgCanvas');
+const ctx = canvas.getContext('2d');
+const canvasWrapEl = document.getElementById('canvasWrap');
+const statusText = document.getElementById('statusText');
+const zoneListEl = document.getElementById('zoneList');
+const zoneCountEl = document.getElementById('zoneCount');
+const breadcrumbEl = document.getElementById('breadcrumb');
+const nodeTitleEl = document.getElementById('nodeTitle');
+const backBtn = document.getElementById('backBtn');
+
+let nodesCache = [];    // 시트에서 읽어온 전체 노드 배열 [{id,name,parentId,zones,image,updatedAt}]
+let nodeIndex = [];     // 브레드크럼/트리 탐색용 경량 인덱스 [{id, name, parentId}] (nodesCache에서 파생)
+let currentId = ROOT_ID;
+let currentNode = null; // {id, name, image, zones:[{id,x,y,w,h,name,desc,type,childId}]}
+let currentImage = null;
+let drag = null;
+let pendingZone = null;
+let editingId = null;
+let viewingId = null;
+let highlightId = null;
+let highlightTimer = null;
+
+function setStatus(text, saving) {
+  statusText.textContent = text;
+  statusText.className = 'status' + (saving ? ' saving' : '');
+}
+function genId() { return 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+
+// ---------- Apps Script API 래퍼 ----------
+async function apiListNodes() {
+  const res = await fetch(API_URL + '?action=list');
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'list 실패');
+  return data.nodes || [];
+}
+async function apiSaveNode(node) {
+  // Content-Type을 지정하지 않아야 브라우저가 preflight 없는 단순요청으로 보내서 Apps Script와 호환됨
+  const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'save', node }) });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'save 실패');
+  return data;
+}
+async function apiDeleteNode(id) {
+  const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id }) });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'delete 실패');
+  return data;
+}
+async function apiUploadImage(id, dataUrl) {
+  const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'uploadImage', id, dataUrl }) });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'upload 실패');
+  return { imageUrl: data.imageUrl, sharingOk: data.sharingOk !== false };
+}
+async function apiBrowseDrive(folderId) {
+  const url = API_URL + '?action=browseDrive' + (folderId ? '&folderId=' + encodeURIComponent(folderId) : '');
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'browseDrive 실패');
+  return data;
+}
+
+// 실패해도 앱이 멈추지 않도록 감싸는 안전 래퍼
+async function safeSaveNode(node) {
+  try {
+    await apiSaveNode(node);
+    return true;
+  } catch (e) {
+    console.error('save failed:', e);
+    setStatus('저장소 연결 문제 - 변경사항이 지금 화면에서만 유지될 수 있습니다', false);
+    return false;
+  }
+}
+async function safeDeleteNode(id) {
+  try {
+    await apiDeleteNode(id);
+    return true;
+  } catch (e) {
+    console.error('delete failed:', e);
+    return false;
+  }
+}
+
+function findNodeInCache(id) { return nodesCache.find(n => n.id === id) || null; }
+
+function rebuildIndexFromCache() {
+  nodeIndex = nodesCache.map(n => ({ id: n.id, name: n.name, parentId: n.parentId || null }));
+  if (!nodeIndex.find(n => n.id === ROOT_ID)) {
+    nodeIndex.unshift({ id: ROOT_ID, name: '홈', parentId: null });
+  }
+}
+
+async function loadIndex() {
+  try {
+    nodesCache = await apiListNodes();
+  } catch (e) {
+    console.error('노드 목록 불러오기 실패', e);
+    setStatus('시트 연결 실패 - 로컬 상태로 표시 중', false);
+    nodesCache = [];
+  }
+  if (!findNodeInCache(ROOT_ID)) {
+    nodesCache.push({ id: ROOT_ID, name: '홈', parentId: '', zones: [], image: '', images: [], desc: '' });
+  }
+  rebuildIndexFromCache();
+}
+async function loadNodeData(id) {
+  const found = findNodeInCache(id);
+  if (found) {
+    return {
+      id: found.id,
+      name: found.name,
+      image: found.image || null,
+      zones: Array.isArray(found.zones) ? found.zones.map(z => ({ ...z })) : [], // 참조 공유 방지 - 각자 독립된 사본
+      images: Array.isArray(found.images) ? [...found.images] : [], // 참조 공유 방지
+      desc: found.desc || ''
+    };
+  }
+  const entry = nodeIndex.find(n => n.id === id);
+  return { id, name: entry ? entry.name : '⚠ 삭제된 페이지', image: null, zones: [], images: [], desc: entry ? '' : '이 페이지는 삭제되었거나 더 이상 존재하지 않습니다. 뒤로가기로 나가주세요.' };
+}
+async function saveCurrentNode() {
+  setStatus('저장 중...', true);
+  const entry = nodeIndex.find(n => n.id === currentId);
+  const parentId = currentId === ROOT_ID ? '' : (entry ? entry.parentId : '');
+  const nodeToSave = {
+    id: currentId,
+    name: currentNode.name,
+    parentId: parentId || '',
+    zones: currentNode.zones,
+    image: currentNode.image || '',
+    images: currentNode.images || [],
+    desc: currentNode.desc || ''
+  };
+  const ok = await safeSaveNode(nodeToSave);
+  if (ok) {
+    setStatus('저장됨 ✓', false);
+    // 로컬 캐시도 즉시 갱신 (매번 재조회하지 않도록)
+    const idx = nodesCache.findIndex(n => n.id === currentId);
+    if (idx >= 0) nodesCache[idx] = { ...nodesCache[idx], ...nodeToSave };
+    else nodesCache.push(nodeToSave);
+    rebuildIndexFromCache();
+  }
+}
+
+async function navigateTo(id) {
+  currentId = id;
+  currentNode = await loadNodeData(id);
+  currentImage = null;
+  pendingZone = null; editingId = null; viewingId = null; highlightId = null;
+  render();
+  if (currentNode.image) {
+    await setImageFromDataUrl(currentNode.image);
+  } else {
+    updateCanvasVisibility();
+  }
+}
+
+// 사진 유무에 따라 캔버스 영역을 통째로 보이거나 숨기고, 리스트를 전체 너비로 넓혀줌
+function updateCanvasVisibility() {
+  const hasImage = !!(currentNode && currentNode.image);
+  canvas.style.display = hasImage ? 'block' : 'none';
+  canvasWrapEl.style.display = hasImage ? 'block' : 'none';
+  document.getElementById('photoControls').style.display = hasImage ? 'flex' : 'none';
+  document.getElementById('sidebarPanel').classList.toggle('full-width', !hasImage);
+  document.getElementById('tinyPhotoAdd').style.display = hasImage ? 'none' : 'flex';
+}
+
+function render() {
+  const entry = nodeIndex.find(n => n.id === currentId);
+  nodeTitleEl.textContent = entry ? entry.name : currentNode.name;
+  backBtn.disabled = !entry || !entry.parentId;
+  renderBreadcrumb();
+  redrawZonesList();
+  redrawGallery();
+  renderTagPanel();
+  renderNodeDesc();
+  document.getElementById('nodeIdDebug').textContent = 'id: ' + currentId;
+}
+
+function renderNodeDesc() {
+  const el = document.getElementById('nodeDescText');
+  if (!el) return;
+  el.textContent = currentNode && currentNode.desc ? currentNode.desc : '(이 화면에 대한 설명 없음)';
+}
+document.getElementById('editDescBtn').addEventListener('click', async () => {
+  if (!currentNode) return;
+  const val = prompt('이 화면에 대한 설명을 입력하세요', currentNode.desc || '');
+  if (val === null) return;
+  currentNode.desc = val.trim();
+  renderNodeDesc();
+  await saveCurrentNode();
+});
+
+// ---------- 태그로 찾기 (전체 화면 목록, 트리 깊이 상관없이 바로 이동) ----------
+document.getElementById('tagPanelToggle').addEventListener('click', () => {
+  const panel = document.getElementById('tagPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  document.getElementById('tagPanelToggle').textContent = '🏷️ 태그로 찾기 (전체 화면 목록) ' + (isOpen ? '▾' : '▴');
+  if (!isOpen) document.getElementById('tagSearchInput').focus();
+});
+document.getElementById('tagSearchInput').addEventListener('input', () => renderTagPanel());
+
+function nodePathLabel(id) {
+  const path = [];
+  let cur = nodeIndex.find(n => n.id === id);
+  while (cur) {
+    path.unshift(cur.name);
+    cur = cur.parentId ? nodeIndex.find(n => n.id === cur.parentId) : null;
+  }
+  return path.join(' > ');
+}
+
+function renderTagPanel() {
+  const listEl = document.getElementById('tagList');
+  if (!listEl) return;
+  const query = (document.getElementById('tagSearchInput').value || '').trim().toLowerCase();
+  const items = nodeIndex
+    .filter(n => !query || n.name.toLowerCase().includes(query))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+  listEl.innerHTML = '';
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="no-zones">일치하는 화면이 없습니다.</div>';
+    return;
+  }
+  items.forEach(n => {
+    const pill = document.createElement('span');
+    pill.className = 'tag-pill';
+    const pathLabel = nodePathLabel(n.id);
+    pill.innerHTML = '#' + escapeHtml(n.name) + (pathLabel !== n.name ? `<span class="tag-path">${escapeHtml(pathLabel)}</span>` : '');
+    pill.addEventListener('click', async () => {
+      document.getElementById('tagPanel').style.display = 'none';
+      document.getElementById('tagPanelToggle').textContent = '🏷️ 태그로 찾기 (전체 화면 목록) ▾';
+      await navigateTo(n.id);
+    });
+    listEl.appendChild(pill);
+  });
+}
+
+function renderBreadcrumb() {
+  const path = [];
+  let cur = nodeIndex.find(n => n.id === currentId);
+  while (cur) {
+    path.unshift(cur);
+    cur = cur.parentId ? nodeIndex.find(n => n.id === cur.parentId) : null;
+  }
+  breadcrumbEl.innerHTML = '';
+  path.forEach((n, i) => {
+    const span = document.createElement('span');
+    span.className = 'crumb' + (i === path.length - 1 ? ' current' : '');
+    span.textContent = n.name;
+    if (i !== path.length - 1) span.addEventListener('click', () => navigateTo(n.id));
+    breadcrumbEl.appendChild(span);
+    if (i !== path.length - 1) {
+      const sep = document.createElement('span');
+      sep.className = 'sep'; sep.textContent = '>';
+      breadcrumbEl.appendChild(sep);
+    }
+  });
+}
+
+backBtn.addEventListener('click', () => {
+  const entry = nodeIndex.find(n => n.id === currentId);
+  if (entry && entry.parentId) navigateTo(entry.parentId);
+});
+
+document.getElementById('renameBtn').addEventListener('click', async () => {
+  const entry = nodeIndex.find(n => n.id === currentId);
+  const newName = prompt('이 화면의 이름을 입력하세요', entry ? entry.name : currentNode.name);
+  if (!newName || !newName.trim()) return;
+  const trimmed = newName.trim();
+  if (entry) entry.name = trimmed;
+  currentNode.name = trimmed;
+  // 부모 화면의 zone 라벨(연결형)도 이름을 맞춰준다
+  if (entry && entry.parentId) {
+    const parentNode = await loadNodeData(entry.parentId);
+    const z = parentNode.zones.find(zz => zz.type === 'link' && zz.childId === currentId);
+    if (z) {
+      z.name = trimmed;
+      const parentEntry = nodeIndex.find(n => n.id === entry.parentId);
+      await safeSaveNode({
+        id: entry.parentId,
+        name: parentNode.name,
+        parentId: (parentEntry && parentEntry.parentId) || '',
+        zones: parentNode.zones,
+        image: parentNode.image || ''
+      });
+    }
+  }
+  await saveCurrentNode();
+  render();
+});
+
+// ---------- 이미지 업로드 / 초기화 ----------
+function compressImage(file, maxDim, quality) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (w > maxDim || h > maxDim) {
+          const scale = maxDim / Math.max(w, h);
+          w = Math.round(w * scale); h = Math.round(h * scale);
+        }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!currentNode) {
+    alert('화면이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    e.target.value = '';
+    return;
+  }
+  setStatus('이미지 업로드 중...', true);
+  try {
+    const dataUrl = await compressImage(file, 1600, 0.82);
+    const { imageUrl, sharingOk } = await apiUploadImage(currentId, dataUrl);
+    currentNode.image = imageUrl;
+    await saveCurrentNode();
+    const displayOk = await setImageFromDataUrl(imageUrl);
+    if (!sharingOk) {
+      setStatus('업로드는 됐지만 공개 공유가 막혀있어 다른 사람에겐 안 보일 수 있습니다', false);
+    } else if (!displayOk) {
+      setStatus('업로드는 됐지만 이 화면 미리보기 로딩에 실패했습니다 (새로고침 해보세요)', false);
+    } else {
+      setStatus('저장됨 ✓', false);
+    }
+  } catch (err) {
+    console.error('이미지 업로드 실패', err);
+    setStatus('이미지 업로드 실패 - 잠시 후 다시 시도해주세요', false);
+  }
+  e.target.value = '';
+});
+
+function setImageFromDataUrl(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (!settled) { settled = true; resolve(false); }
+    }, 8000); // 8초 넘게 안 뜨면 실패로 간주하고 앱이 멈추지 않게 함
+    img.onload = () => {
+      if (settled) return;
+      settled = true; clearTimeout(timeout);
+      currentImage = img;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      updateCanvasVisibility();
+      drawCanvas();
+      resolve(true);
+    };
+    img.onerror = () => {
+      if (settled) return;
+      settled = true; clearTimeout(timeout);
+      resolve(false);
+    };
+    img.src = dataUrl;
+  });
+}
+
+document.getElementById('tinyUploadLink').addEventListener('click', () => fileInput.click());
+document.getElementById('tinyDriveLink').addEventListener('click', () => openDriveBrowser({ mode: 'background' }));
+document.getElementById('photoChangeBtn').addEventListener('click', () => openDriveBrowser({ mode: 'background' }));
+document.getElementById('photoRemoveBtn').addEventListener('click', async () => {
+  if (!confirm('이 화면의 사진만 지울까요? (하위 항목은 그대로 유지됩니다)')) return;
+  currentNode.image = null;
+  currentImage = null;
+  updateCanvasVisibility();
+  await saveCurrentNode();
+});
+
+// ---------- 캔버스 그리기 / 클릭 ----------
+function drawCanvas(dragBox) {
+  if (!currentImage) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(currentImage, 0, 0);
+
+  currentNode.zones.forEach(z => {
+    if (z.w < 1 || z.h < 1) return; // 목록 전용 항목(좌표 없음)은 캔버스에 그리지 않음
+    const isHi = z.id === highlightId;
+    const isLink = z.type === 'link';
+    ctx.strokeStyle = isHi ? '#ff5c5c' : (isLink ? 'rgba(143,199,255,0.9)' : 'rgba(255,213,74,0.85)');
+    ctx.lineWidth = isHi ? Math.max(4, canvas.width * 0.003) : Math.max(2, canvas.width * 0.0015);
+    ctx.strokeRect(z.x, z.y, z.w, z.h);
+    ctx.fillStyle = isHi ? 'rgba(255,92,92,0.22)' : (isLink ? 'rgba(143,199,255,0.12)' : 'rgba(255,213,74,0.12)');
+    ctx.fillRect(z.x, z.y, z.w, z.h);
+    ctx.fillStyle = isHi ? '#ff5c5c' : (isLink ? '#8fc7ff' : '#ffd54a');
+    ctx.font = `bold ${Math.max(14, canvas.width * 0.014)}px sans-serif`;
+    ctx.fillText((isLink ? '▶ ' : '') + z.name, z.x + 6, z.y + 20);
+  });
+
+  if (dragBox) {
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.strokeRect(dragBox.x, dragBox.y, dragBox.w, dragBox.h);
+    ctx.setLineDash([]);
+  }
+}
+
+function getCanvasCoords(evt) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+    y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+function findZoneAt(x, y) {
+  for (let i = currentNode.zones.length - 1; i >= 0; i--) {
+    const z = currentNode.zones[i];
+    if (z.w < 1 || z.h < 1) continue; // 목록 전용 항목은 캔버스 클릭 대상에서 제외
+    if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) return z;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  if (!currentImage) return;
+  const p = getCanvasCoords(e);
+  drag = { startX: p.x, startY: p.y };
+});
+canvas.addEventListener('mousemove', (e) => {
+  if (!currentImage) return;
+  const p = getCanvasCoords(e);
+  if (drag) {
+    const box = { x: Math.min(drag.startX, p.x), y: Math.min(drag.startY, p.y), w: Math.abs(p.x - drag.startX), h: Math.abs(p.y - drag.startY) };
+    drawCanvas(box);
+  } else {
+    canvas.style.cursor = findZoneAt(p.x, p.y) ? 'pointer' : 'crosshair';
+  }
+});
+canvas.addEventListener('mouseup', async (e) => {
+  if (!drag) return;
+  const p = getCanvasCoords(e);
+  const dx = Math.abs(p.x - drag.startX), dy = Math.abs(p.y - drag.startY);
+
+  if (dx < 6 && dy < 6) {
+    const hit = findZoneAt(drag.startX, drag.startY);
+    drag = null; drawCanvas();
+    if (hit) {
+      if (hit.type === 'link') { await navigateTo(hit.childId); }
+      else { openViewModal(hit.id); }
+    }
+    return;
+  }
+
+  const box = { x: Math.min(drag.startX, p.x), y: Math.min(drag.startY, p.y), w: dx, h: dy };
+  drag = null;
+  pendingZone = box; editingId = null;
+  openCreateModal();
+});
+
+document.getElementById('addListItemBtn').addEventListener('click', () => {
+  // 사진 없이 목록에만 등록하는 항목 - 좌표는 0으로 두고 캔버스엔 표시하지 않음
+  pendingZone = { x: 0, y: 0, w: 0, h: 0 };
+  editingId = null;
+  openCreateModal();
+});
+
+// ---------- 생성/수정 모달 ----------
+function openCreateModal() {
+  document.getElementById('editModalTitle').textContent = '항목 등록';
+  document.getElementById('btnCancel').textContent = '취소';
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputDesc').value = '';
+  populateLinkTargetSelect();
+  document.getElementById('linkTargetSelect').value = '__new__';
+  document.getElementById('linkTargetSelect').disabled = false;
+  document.getElementById('linkTargetWrap').style.display = 'block';
+  document.getElementById('linkTargetSelectRow').style.display = 'none';
+  document.getElementById('advancedLinkToggle').textContent = '고급 옵션: 이미 있는 페이지에 연결하기 ▾';
+  document.getElementById('backdrop').classList.add('show');
+  document.getElementById('inputName').focus();
+  drawCanvas();
+}
+document.getElementById('advancedLinkToggle').addEventListener('click', () => {
+  const row = document.getElementById('linkTargetSelectRow');
+  const isOpen = row.style.display !== 'none';
+  row.style.display = isOpen ? 'none' : 'block';
+  document.getElementById('advancedLinkToggle').textContent = '고급 옵션: 이미 있는 페이지에 연결하기 ' + (isOpen ? '▾' : '▴');
+  if (isOpen) document.getElementById('linkTargetSelect').value = '__new__'; // 접으면 안전하게 기본값으로 되돌림
+});
+function populateLinkTargetSelect() {
+  const sel = document.getElementById('linkTargetSelect');
+  sel.innerHTML = '<option value="__new__">새 페이지 만들기</option>';
+  nodeIndex
+    .filter(n => n.id !== currentId && n.id !== ROOT_ID)
+    .forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n.id;
+      opt.textContent = nodePathLabel(n.id); // 경로까지 보여줘서 헷갈리지 않게 (id 노출 안 함)
+      sel.appendChild(opt);
+    });
+}
+
+document.getElementById('btnCancel').addEventListener('click', () => {
+  pendingZone = null; editingId = null;
+  document.getElementById('backdrop').classList.remove('show');
+  drawCanvas();
+});
+
+document.getElementById('btnSave').addEventListener('click', async () => {
+  const name = document.getElementById('inputName').value.trim() || '이름 없음';
+  const desc = document.getElementById('inputDesc').value.trim();
+
+  if (editingId !== null) {
+    const z = currentNode.zones.find(zz => zz.id === editingId);
+    if (z) {
+      z.name = name; z.desc = desc;
+      if (z.type === 'link' && z.childId) {
+        // keep child page's name in sync (기존 설명형 데이터는 건드리지 않음)
+        const entry = nodeIndex.find(n => n.id === z.childId);
+        if (entry) entry.name = name;
+        const childData = await loadNodeData(z.childId);
+        childData.name = name;
+        await safeSaveNode({ id: z.childId, name, parentId: currentId, zones: childData.zones, image: childData.image || '', images: childData.images || [], desc: childData.desc || '' });
+      }
+    }
+    editingId = null;
+  } else if (pendingZone) {
+    const zoneId = genId();
+    const isListOnly = pendingZone.w < 1 || pendingZone.h < 1; // 사진 없이 목록으로만 추가한 항목
+    const zone = { id: zoneId, x: pendingZone.x, y: pendingZone.y, w: pendingZone.w, h: pendingZone.h, name, desc, type: 'link' };
+    let targetId = null;
+    const selectedTarget = document.getElementById('linkTargetSelect').value;
+    if (selectedTarget === '__new__') {
+      const newChildId = genId();
+      nodeIndex.push({ id: newChildId, name, parentId: currentId });
+      await safeSaveNode({ id: newChildId, name, parentId: currentId, zones: [], image: '', images: [], desc });
+      nodesCache.push({ id: newChildId, name, parentId: currentId, zones: [], image: '', images: [], desc });
+      zone.childId = newChildId;
+      targetId = newChildId;
+    } else {
+      // 이미 존재하는 화면(예: 드라이브 동기화로 미리 만들어둔 노드)에 연결 - 기존 내용은 건드리지 않음
+      zone.childId = selectedTarget;
+      targetId = selectedTarget;
+      const entry = nodeIndex.find(n => n.id === selectedTarget);
+      if (entry) entry.parentId = currentId; // 트리 상 위치를 지금 화면 밑으로 갱신
+      const targetNode = findNodeInCache(selectedTarget);
+      if (targetNode) {
+        targetNode.parentId = currentId;
+        await safeSaveNode({ id: targetNode.id, name: targetNode.name, parentId: currentId, zones: targetNode.zones || [], image: targetNode.image || '', images: targetNode.images || [], desc: targetNode.desc || '' });
+      }
+    }
+    currentNode.zones.push(zone);
+    pendingZone = null;
+    await saveCurrentNode();
+    redrawZonesList();
+
+    if (isListOnly) {
+      // 목록 전용 추가는 팝업을 닫지 않고 이어서 다음 항목을 입력할 수 있게 함
+      pendingZone = { x: 0, y: 0, w: 0, h: 0 };
+      document.getElementById('inputName').value = '';
+      document.getElementById('inputDesc').value = '';
+      populateLinkTargetSelect();
+      document.getElementById('editModalTitle').textContent = '항목 등록 (계속 추가 가능 — 끝나면 닫기)';
+      document.getElementById('btnCancel').textContent = '닫기';
+      document.getElementById('inputName').focus();
+      drawCanvas();
+      return;
+    }
+
+    document.getElementById('backdrop').classList.remove('show');
+    if (targetId) {
+      await navigateTo(targetId); // 사진 위에 그린 박스는 만들자마자 바로 그 화면으로 이동해 확인
+      return;
+    }
+    drawCanvas();
+    return;
+  }
+  document.getElementById('backdrop').classList.remove('show');
+  drawCanvas();
+  redrawZonesList();
+  await saveCurrentNode();
+});
+
+// ---------- 설명형 보기 모달 ----------
+function openViewModal(id) {
+  const z = currentNode.zones.find(zz => zz.id === id);
+  if (!z) return;
+  viewingId = id;
+  document.getElementById('viewName').textContent = z.name;
+  document.getElementById('viewDesc').textContent = z.desc || '(설명 없음)';
+  document.getElementById('viewBackdrop').classList.add('show');
+}
+document.getElementById('btnViewClose').addEventListener('click', () => {
+  document.getElementById('viewBackdrop').classList.remove('show'); viewingId = null;
+});
+document.getElementById('btnViewEdit').addEventListener('click', () => {
+  const z = currentNode.zones.find(zz => zz.id === viewingId);
+  if (!z) return;
+  document.getElementById('viewBackdrop').classList.remove('show');
+  editingId = z.id; pendingZone = null;
+  document.getElementById('editModalTitle').textContent = '항목 수정';
+  document.getElementById('inputName').value = z.name;
+  document.getElementById('inputDesc').value = z.desc || '';
+  document.getElementById('linkTargetWrap').style.display = 'none'; // 수정 시엔 연결 대상 변경 불가
+  document.getElementById('backdrop').classList.add('show');
+  document.getElementById('inputName').focus();
+});
+document.getElementById('btnViewDelete').addEventListener('click', async () => {
+  const z = currentNode.zones.find(zz => zz.id === viewingId);
+  if (!z) return;
+  if (z.type === 'link' && z.childId && isChildReferencedElsewhere(z.childId, currentId, z.id)) {
+    if (!confirm('⚠ 이 항목이 가리키는 페이지를 다른 항목도 같이 가리키고 있습니다.\n\n"확인"을 누르면 이 목록에서만 빼고, 실제 페이지(사진/하위내용)는 지우지 않습니다.\n(다른 항목이 계속 쓸 수 있게 보존)')) return;
+    currentNode.zones = currentNode.zones.filter(zz => zz.id !== viewingId);
+    document.getElementById('viewBackdrop').classList.remove('show');
+    viewingId = null;
+    redrawZonesList();
+    await saveCurrentNode();
+    return;
+  }
+  if (!confirm('이 항목을 삭제할까요? 하위 화면이 연결되어 있다면 그 안의 내용도 함께 삭제됩니다.')) return;
+  if (z.type === 'link') await deleteNodeRecursive(z.childId);
+  currentNode.zones = currentNode.zones.filter(zz => zz.id !== viewingId);
+  document.getElementById('viewBackdrop').classList.remove('show');
+  viewingId = null;
+  drawCanvas(); redrawZonesList();
+  await saveCurrentNode();
+});
+
+// 이 페이지(childId)를 지우기 전에, 다른 곳에서도 같이 가리키고 있는지 확인
+// (예: 옛날에 실수로 "기존 페이지에 연결"을 잘못 골라서 두 항목이 같은 페이지를 공유하는 경우)
+function isChildReferencedElsewhere(childId, excludeParentId, excludeZoneId) {
+  return nodesCache.some(n => {
+    const zones = n.zones || [];
+    return zones.some(z => z.childId === childId && !(n.id === excludeParentId && z.id === excludeZoneId));
+  });
+}
+
+async function deleteNodeRecursive(id) {
+  const children = nodeIndex.filter(n => n.parentId === id);
+  for (const c of children) await deleteNodeRecursive(c.id);
+  nodeIndex = nodeIndex.filter(n => n.id !== id);
+  nodesCache = nodesCache.filter(n => n.id !== id);
+  await safeDeleteNode(id);
+}
+
+// ---------- 사이드바 ----------
+function redrawZonesList() {
+  const zones = currentNode ? currentNode.zones : [];
+  zoneCountEl.textContent = zones.length;
+  const sidebarEl = document.querySelector('.sidebar');
+  if (zones.length === 0) {
+    // 하위 항목이 없는 leaf 화면 - 리스트 패널을 숨기고 사진+설명만 크게 보이게
+    if (sidebarEl) sidebarEl.style.display = 'none';
+    zoneListEl.innerHTML = '<div class="no-zones">아직 등록된 항목이 없습니다.</div>';
+    return;
+  }
+  if (sidebarEl) sidebarEl.style.display = '';
+  zoneListEl.innerHTML = '';
+  zones.forEach(z => {
+    const div = document.createElement('div');
+    div.className = 'zone-item';
+    div.dataset.id = z.id;
+    const badge = z.type === 'link' ? '<span class="ztype-badge link">하위연결</span>' : '<span class="ztype-badge info">설명</span>';
+    div.innerHTML = `<span class="zdel" data-id="${z.id}">삭제</span>
+      <div class="zname">${escapeHtml(z.name)} ${badge}</div>
+      <div class="zdesc">${escapeHtml(z.desc || '(설명 없음)')}</div>`;
+    zoneListEl.appendChild(div);
+  });
+  // 행 전체를 클릭하면 바로 열림 (삭제 버튼 클릭은 제외)
+  zoneListEl.querySelectorAll('.zone-item').forEach(el => {
+    el.addEventListener('click', async (e) => {
+      if (e.target.closest('.zdel')) return;
+      const z = currentNode.zones.find(zz => zz.id === el.dataset.id);
+      if (!z) return;
+      if (z.w >= 1 && z.h >= 1) flashHighlight(el.dataset.id); // 캔버스에 실제 박스가 있으면 하이라이트도 같이
+      if (z.type === 'link' && z.childId) await navigateTo(z.childId);
+      else openViewModal(z.id);
+    });
+  });
+  zoneListEl.querySelectorAll('.zdel').forEach(el => {
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const z = currentNode.zones.find(zz => zz.id === e.target.dataset.id);
+      if (!z) return;
+      if (z.type === 'link' && z.childId && isChildReferencedElsewhere(z.childId, currentId, z.id)) {
+        if (!confirm('⚠ 이 항목이 가리키는 페이지를 다른 항목도 같이 가리키고 있습니다.\n\n"확인"을 누르면 이 목록에서만 빼고, 실제 페이지(사진/하위내용)는 지우지 않습니다.\n(다른 항목이 계속 쓸 수 있게 보존)')) return;
+        currentNode.zones = currentNode.zones.filter(zz => zz.id !== z.id);
+        redrawZonesList();
+        await saveCurrentNode();
+        return;
+      }
+      if (!confirm('이 항목을 삭제할까요? 하위 화면이 연결되어 있다면 그 안의 내용도 함께 삭제됩니다.')) return;
+      if (z.type === 'link') await deleteNodeRecursive(z.childId);
+      currentNode.zones = currentNode.zones.filter(zz => zz.id !== z.id);
+      drawCanvas(); redrawZonesList();
+      await saveCurrentNode();
+    });
+  });
+}
+
+function flashHighlight(id) {
+  highlightId = id;
+  if (highlightTimer) clearTimeout(highlightTimer);
+  drawCanvas();
+  const z = currentNode.zones.find(zz => zz.id === id);
+  if (z) {
+    const wrap = document.getElementById('canvasWrap');
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / canvas.width;
+    wrap.scrollTo({
+      left: Math.max(0, z.x * scaleX - wrap.clientWidth / 2),
+      top: Math.max(0, z.y * scaleX - wrap.clientHeight / 2),
+      behavior: 'smooth'
+    });
+  }
+  highlightTimer = setTimeout(() => { highlightId = null; drawCanvas(); }, 1600);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---------- 사진 갤러리 ----------
+// images 항목을 항상 {url, caption, annotations} 객체 형태로 정규화 (예전엔 문자열 URL만 저장했었음)
+function normalizeImageEntry(entry) {
+  if (typeof entry === 'string') return { url: entry, caption: '', annotations: [] };
+  return {
+    url: entry.url || '',
+    caption: entry.caption || '',
+    annotations: Array.isArray(entry.annotations) ? entry.annotations : []
+  };
+}
+
+function redrawGallery() {
+  const images = ((currentNode && currentNode.images) || []).map(normalizeImageEntry);
+  document.getElementById('galleryCount').textContent = images.length;
+  document.getElementById('galleryNodeName').textContent = currentNode ? currentNode.name : '이 화면';
+  const strip = document.getElementById('galleryStrip');
+  strip.innerHTML = '';
+  images.forEach((img, idx) => {
+    const div = document.createElement('div');
+    div.className = 'gallery-thumb';
+    const marks = img.annotations.length ? ` <span style="color:#8fc7ff;">✎${img.annotations.length}</span>` : '';
+    div.innerHTML = `<img src="${img.url}" loading="lazy"><span class="gdel" data-idx="${idx}">삭제</span>`;
+    if (img.caption) div.title = img.caption;
+    div.querySelector('img').addEventListener('click', () => openLightbox(idx));
+    div.querySelector('.gdel').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('갤러리에서 이 사진을 뺄까요?')) return;
+      currentNode.images.splice(idx, 1);
+      redrawGallery();
+      await saveCurrentNode();
+    });
+    strip.appendChild(div);
+  });
+  const addTile = document.createElement('div');
+  addTile.className = 'gallery-add-tile';
+  addTile.innerHTML = '+<br>사진 추가';
+  addTile.addEventListener('click', () => openDriveBrowser({ mode: 'gallery' }));
+  strip.appendChild(addTile);
+}
+
+// ---------- 라이트박스: 사진 크게보기 + 드래그 표시 + 설명 ----------
+let lightboxIndex = null;
+let lightboxImgObj = null;
+let lightboxWorkingAnnotations = [];
+let lightboxDrag = null;
+const lightboxCanvas = document.getElementById('lightboxCanvas');
+const lightboxCtx = lightboxCanvas.getContext('2d');
+
+function openLightbox(idx) {
+  const images = (currentNode.images || []).map(normalizeImageEntry);
+  const entry = images[idx];
+  if (!entry) return;
+  lightboxIndex = idx;
+  lightboxWorkingAnnotations = entry.annotations.map(a => ({ ...a }));
+  document.getElementById('lightboxCaption').value = entry.caption || '';
+  document.getElementById('lightboxBackdrop').classList.add('show');
+
+  const img = new Image();
+  img.onload = () => {
+    lightboxImgObj = img;
+    lightboxCanvas.width = img.naturalWidth;
+    lightboxCanvas.height = img.naturalHeight;
+    drawLightboxCanvas();
+  };
+  img.src = entry.url;
+}
+
+function drawLightboxCanvas(dragBox) {
+  if (!lightboxImgObj) return;
+  lightboxCtx.clearRect(0, 0, lightboxCanvas.width, lightboxCanvas.height);
+  lightboxCtx.drawImage(lightboxImgObj, 0, 0);
+  lightboxWorkingAnnotations.forEach(a => {
+    lightboxCtx.strokeStyle = '#ffd54a';
+    lightboxCtx.lineWidth = Math.max(2, lightboxCanvas.width * 0.002);
+    lightboxCtx.strokeRect(a.x, a.y, a.w, a.h);
+    lightboxCtx.fillStyle = 'rgba(255,213,74,0.15)';
+    lightboxCtx.fillRect(a.x, a.y, a.w, a.h);
+    lightboxCtx.fillStyle = '#ffd54a';
+    lightboxCtx.font = `bold ${Math.max(14, lightboxCanvas.width * 0.018)}px sans-serif`;
+    lightboxCtx.fillText(a.label, a.x + 6, a.y + 20);
+  });
+  if (dragBox) {
+    lightboxCtx.strokeStyle = '#fff'; lightboxCtx.lineWidth = 2; lightboxCtx.setLineDash([6, 4]);
+    lightboxCtx.strokeRect(dragBox.x, dragBox.y, dragBox.w, dragBox.h);
+    lightboxCtx.setLineDash([]);
+  }
+}
+
+function lightboxCoords(evt) {
+  const rect = lightboxCanvas.getBoundingClientRect();
+  return {
+    x: (evt.clientX - rect.left) * (lightboxCanvas.width / rect.width),
+    y: (evt.clientY - rect.top) * (lightboxCanvas.height / rect.height)
+  };
+}
+function findAnnotationAt(x, y) {
+  for (let i = lightboxWorkingAnnotations.length - 1; i >= 0; i--) {
+    const a = lightboxWorkingAnnotations[i];
+    if (x >= a.x && x <= a.x + a.w && y >= a.y && y <= a.y + a.h) return i;
+  }
+  return -1;
+}
+
+lightboxCanvas.addEventListener('mousedown', (e) => {
+  if (!lightboxImgObj) return;
+  const p = lightboxCoords(e);
+  lightboxDrag = { startX: p.x, startY: p.y };
+});
+lightboxCanvas.addEventListener('mousemove', (e) => {
+  if (!lightboxDrag) return;
+  const p = lightboxCoords(e);
+  const box = { x: Math.min(lightboxDrag.startX, p.x), y: Math.min(lightboxDrag.startY, p.y), w: Math.abs(p.x - lightboxDrag.startX), h: Math.abs(p.y - lightboxDrag.startY) };
+  drawLightboxCanvas(box);
+});
+lightboxCanvas.addEventListener('mouseup', (e) => {
+  if (!lightboxDrag) return;
+  const p = lightboxCoords(e);
+  const dx = Math.abs(p.x - lightboxDrag.startX), dy = Math.abs(p.y - lightboxDrag.startY);
+
+  if (dx < 6 && dy < 6) {
+    // 드래그가 거의 없으면 클릭으로 간주 - 기존 표시 삭제
+    const hitIdx = findAnnotationAt(lightboxDrag.startX, lightboxDrag.startY);
+    lightboxDrag = null;
+    if (hitIdx >= 0 && confirm('이 표시를 삭제할까요?')) {
+      lightboxWorkingAnnotations.splice(hitIdx, 1);
+    }
+    drawLightboxCanvas();
+    return;
+  }
+
+  const box = { x: Math.min(lightboxDrag.startX, p.x), y: Math.min(lightboxDrag.startY, p.y), w: dx, h: dy };
+  lightboxDrag = null;
+  const label = prompt('이 표시에 대한 짧은 설명을 입력하세요', '');
+  if (label !== null && label.trim()) {
+    lightboxWorkingAnnotations.push({ x: box.x, y: box.y, w: box.w, h: box.h, label: label.trim() });
+  }
+  drawLightboxCanvas();
+});
+
+async function saveLightbox() {
+  if (lightboxIndex === null || !currentNode.images) return;
+  const images = currentNode.images.map(normalizeImageEntry);
+  images[lightboxIndex] = {
+    url: images[lightboxIndex].url,
+    caption: document.getElementById('lightboxCaption').value.trim(),
+    annotations: lightboxWorkingAnnotations
+  };
+  currentNode.images = images;
+  redrawGallery();
+  await saveCurrentNode();
+}
+
+document.getElementById('btnLightboxSave').addEventListener('click', async () => {
+  await saveLightbox();
+  document.getElementById('lightboxBackdrop').classList.remove('show');
+  lightboxIndex = null; lightboxImgObj = null;
+});
+document.getElementById('btnLightboxClose').addEventListener('click', () => {
+  document.getElementById('lightboxBackdrop').classList.remove('show');
+  lightboxIndex = null; lightboxImgObj = null;
+});
+
+// ---------- 드라이브에서 사진 선택 모달 ----------
+let driveBrowserMode = 'background'; // 'background' | 'gallery'
+let driveBrowserSelected = new Map(); // id -> {id, name, fullUrl}
+let driveCurrentFolderId = null;
+let driveFolderStack = []; // [{id, name}]
+
+
+async function openDriveBrowser(opts) {
+  driveBrowserMode = opts.mode;
+  driveBrowserSelected = new Map();
+  driveFolderStack = [];
+  document.getElementById('driveBrowserTitle').textContent =
+    driveBrowserMode === 'background' ? '드라이브에서 배경사진 선택 (1장)' : '드라이브에서 갤러리 사진 추가 (여러 장 가능)';
+  document.getElementById('driveBrowserBackdrop').classList.add('show');
+  await loadDriveFolder(null);
+}
+
+async function loadDriveFolder(folderId) {
+  const grid = document.getElementById('driveGrid');
+  grid.innerHTML = '<div class="no-zones">불러오는 중...</div>';
+  try {
+    const data = await apiBrowseDrive(folderId);
+    driveCurrentFolderId = data.folderId;
+    renderDriveBreadcrumb(data);
+    renderDriveGrid(data);
+  } catch (err) {
+    console.error('드라이브 목록 불러오기 실패', err);
+    grid.innerHTML = '<div class="no-zones">불러오기 실패했습니다. 잠시 후 다시 시도해주세요.</div>';
+  }
+}
+
+function renderDriveBreadcrumb(data) {
+  const el = document.getElementById('driveBreadcrumb');
+  el.innerHTML = '';
+
+  if (data.parentFolderId) {
+    const up = document.createElement('span');
+    up.textContent = '⬆ 상위 폴더로';
+    up.style.color = '#ffd54a';
+    up.addEventListener('click', () => {
+      // 지금까지 내려온 경로 기록에서 상위 폴더를 찾아 그대로 되돌아가고,
+      // 기록에 없으면(원래 시작점보다 더 위로 올라가는 경우) 이름 없이 그냥 이동
+      const idx = driveFolderStack.findIndex(f => f.id === data.parentFolderId);
+      if (idx >= 0) {
+        driveFolderStack = driveFolderStack.slice(0, idx);
+      } else {
+        driveFolderStack = [];
+      }
+      loadDriveFolder(data.parentFolderId);
+    });
+    el.appendChild(up);
+    el.appendChild(document.createTextNode(' | '));
+  }
+
+  const trail = driveFolderStack.concat([{ id: data.folderId, name: data.folderName }]);
+  trail.forEach((f, i) => {
+    const span = document.createElement('span');
+    span.textContent = f.name;
+    if (i !== trail.length - 1) {
+      span.addEventListener('click', () => {
+        driveFolderStack = trail.slice(0, i);
+        loadDriveFolder(f.id);
+      });
+    }
+    el.appendChild(span);
+    if (i !== trail.length - 1) el.appendChild(document.createTextNode(' > '));
+  });
+}
+
+function renderDriveGrid(data) {
+  const grid = document.getElementById('driveGrid');
+  grid.innerHTML = '';
+
+  data.folders.forEach(f => {
+    const tile = document.createElement('div');
+    tile.className = 'drive-tile folder';
+    tile.innerHTML = '📁<br>' + escapeHtml(f.name);
+    tile.addEventListener('click', () => {
+      driveFolderStack.push({ id: data.folderId, name: data.folderName });
+      loadDriveFolder(f.id);
+    });
+    grid.appendChild(tile);
+  });
+
+  data.files.forEach(f => {
+    const tile = document.createElement('div');
+    tile.className = 'drive-tile image';
+    tile.innerHTML = `<img src="${f.thumbnailUrl}" loading="lazy">`;
+    if (driveBrowserSelected.has(f.id)) tile.classList.add('selected');
+    tile.addEventListener('click', () => {
+      if (driveBrowserMode === 'background') {
+        driveBrowserSelected = new Map([[f.id, f]]); // 배경은 1장만
+        renderDriveGrid(data);
+      } else {
+        if (driveBrowserSelected.has(f.id)) driveBrowserSelected.delete(f.id);
+        else driveBrowserSelected.set(f.id, f);
+        tile.classList.toggle('selected');
+      }
+      updateDriveSelectedCount();
+    });
+    grid.appendChild(tile);
+  });
+
+  if (data.folders.length === 0 && data.files.length === 0) {
+    grid.innerHTML = '<div class="no-zones">이 폴더에는 하위 폴더나 이미지가 없습니다.</div>';
+  }
+  updateDriveSelectedCount();
+}
+
+function updateDriveSelectedCount() {
+  const n = driveBrowserSelected.size;
+  document.getElementById('driveSelectedCount').textContent = n > 0 ? n + '장 선택됨' : '';
+}
+
+document.getElementById('btnDriveCancel').addEventListener('click', () => {
+  document.getElementById('driveBrowserBackdrop').classList.remove('show');
+});
+
+document.getElementById('btnDriveConfirm').addEventListener('click', async () => {
+  const selected = Array.from(driveBrowserSelected.values());
+  if (selected.length === 0) {
+    document.getElementById('driveBrowserBackdrop').classList.remove('show');
+    return;
+  }
+  document.getElementById('driveBrowserBackdrop').classList.remove('show');
+
+  if (driveBrowserMode === 'background') {
+    currentNode.image = selected[0].fullUrl;
+    setStatus('저장 중...', true);
+    await saveCurrentNode();
+    await setImageFromDataUrl(currentNode.image);
+  } else {
+    if (!currentNode.images) currentNode.images = [];
+    const existingUrls = currentNode.images.map(normalizeImageEntry).map(i => i.url);
+    selected.forEach(f => {
+      if (!existingUrls.includes(f.fullUrl)) {
+        currentNode.images.push({ url: f.fullUrl, caption: '', annotations: [] });
+      }
+    });
+    redrawGallery();
+    await saveCurrentNode();
+  }
+});
+
+// ---------- 초기 로드 ----------
+(async function init() {
+  setStatus('불러오는 중...', true);
+  try {
+    await loadIndex();
+  } catch (e) {
+    console.error('index load failed, continuing with empty index', e);
+    nodeIndex = [{ id: ROOT_ID, name: '홈', parentId: null }];
+  }
+  try {
+    await navigateTo(ROOT_ID);
+    setStatus('구글시트 연결됨 ✓', false);
+  } catch (e) {
+    console.error('navigateTo(root) failed', e);
+    // 그래도 화면은 반드시 뜨게 최소 상태로 강제 설정
+    currentId = ROOT_ID;
+    currentNode = { id: ROOT_ID, name: '홈', image: null, zones: [], images: [], desc: '' };
+    currentImage = null;
+    render();
+    updateCanvasVisibility();
+    setStatus('저장소 연결 실패 - 로컬 상태로 표시 중', false);
+  }
+})();
+</script>
+
+</body>
+</html>
