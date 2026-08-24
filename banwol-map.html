@@ -778,8 +778,8 @@ function drawCanvas(dragBox) {
     if (z.w < 1 || z.h < 1) return; // 목록 전용 항목(좌표 없음)은 캔버스에 그리지 않음
     const isHi = z.id === highlightId;
     const isLink = z.type === 'link';
-    const borderColor = isHi ? '#ff3b3b' : (isLink ? '#4fd6ff' : '#ffd54a');
-    const fillColor = isHi ? 'rgba(255,59,59,0.18)' : (isLink ? 'rgba(79,214,255,0.14)' : 'rgba(255,213,74,0.14)');
+    const borderColor = isHi ? '#ff3b3b' : (isLink ? '#ff8a3d' : '#ffd54a');
+    const fillColor = isHi ? 'rgba(255,59,59,0.18)' : (isLink ? 'rgba(255,138,61,0.14)' : 'rgba(255,213,74,0.14)');
 
     // 테두리 - 어떤 배경 색이든 도드라지게 흰색 외곽선 + 컬러 테두리 이중으로
     ctx.strokeStyle = '#ffffff';
