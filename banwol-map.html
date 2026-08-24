@@ -84,9 +84,8 @@
   .sidebar { width:280px; max-width:100%; flex-shrink:0; }
   .sidebar.full-width { width:100%; max-width:760px; }
   .sidebar h2 { font-size:13px; color:#ffd54a; margin:0 0 8px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-  .tiny-photo-add { display:none; gap:8px; }
-  .tiny-photo-add .rename-btn { font-size:10px; padding:2px 7px; color:#888; }
-  .tiny-photo-add .rename-btn:hover { color:#ffd54a; border-color:#ffd54a; }
+  .photo-add-standalone { display:flex; gap:8px; margin-bottom:10px; }
+  .photo-add-standalone .rename-btn { font-size:11px; padding:4px 10px; }
   .zone-item {
     position:relative; background:#232323; border:1px solid #3a3a3a; border-radius:6px;
     padding:12px 40px 12px 14px; margin-bottom:6px; font-size:13px; cursor:pointer;
@@ -282,11 +281,17 @@
 </div>
 
 <!-- 모든 화면에서 동일하게 동작: 사진은 선택사항, 있으면 드래그로 영역 지정 가능 -->
+<div class="photo-add-standalone" id="photoAddStandalone" style="display:none;">
+  <span class="rename-btn" id="tinyUploadLink">+ 사진 업로드</span>
+  <span class="rename-btn" id="tinyDriveLink">드라이브에서</span>
+  <span class="rename-btn" id="tinyGalleryPickLink">갤러리 사진 중에서</span>
+</div>
 <div class="layout" id="mapView">
   <div class="canvas-wrap" id="canvasWrap" style="display:none;">
     <canvas id="imgCanvas"></canvas>
     <div class="photo-controls" id="photoControls">
       <span class="rename-btn" id="photoChangeBtn">사진 변경</span>
+      <span class="rename-btn" id="photoChangeGalleryBtn">갤러리에서 변경</span>
       <span class="rename-btn" id="photoRemoveBtn">사진 삭제</span>
     </div>
   </div>
@@ -294,10 +299,6 @@
   <div class="sidebar" id="sidebarPanel">
     <h2>
       <span>등록된 항목 (<span id="zoneCount">0</span>)</span>
-      <span class="tiny-photo-add" id="tinyPhotoAdd">
-        <span class="rename-btn" id="tinyUploadLink">+ 사진 업로드</span>
-        <span class="rename-btn" id="tinyDriveLink">드라이브에서</span>
-      </span>
     </h2>
     <div id="zoneList"><div class="no-zones">아직 등록된 항목이 없습니다.</div></div>
   </div>
@@ -322,6 +323,17 @@
       <span class="drive-selected-count" id="driveSelectedCount"></span>
       <button class="btn-cancel" id="btnDriveCancel">취소</button>
       <button class="btn-save" id="btnDriveConfirm">선택 완료</button>
+    </div>
+  </div>
+</div>
+
+<!-- 갤러리 사진 중에서 배경사진 선택 모달 -->
+<div class="modal-backdrop" id="galleryPickerBackdrop">
+  <div class="modal drive-modal">
+    <h3>이 화면 갤러리 사진 중에서 배경사진으로 선택</h3>
+    <div class="drive-grid" id="galleryPickerGrid"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnGalleryPickerCancel">취소</button>
     </div>
   </div>
 </div>
@@ -549,7 +561,7 @@ function updateCanvasVisibility() {
   canvasWrapEl.style.display = hasImage ? 'block' : 'none';
   document.getElementById('photoControls').style.display = hasImage ? 'flex' : 'none';
   document.getElementById('sidebarPanel').classList.toggle('full-width', !hasImage);
-  document.getElementById('tinyPhotoAdd').style.display = hasImage ? 'none' : 'flex';
+  document.getElementById('photoAddStandalone').style.display = hasImage ? 'none' : 'flex';
 }
 
 function render() {
@@ -759,13 +771,43 @@ function setImageFromDataUrl(dataUrl) {
 
 document.getElementById('tinyUploadLink').addEventListener('click', () => fileInput.click());
 document.getElementById('tinyDriveLink').addEventListener('click', () => openDriveBrowser({ mode: 'background' }));
+document.getElementById('tinyGalleryPickLink').addEventListener('click', () => openGalleryPicker());
 document.getElementById('photoChangeBtn').addEventListener('click', () => openDriveBrowser({ mode: 'background' }));
+document.getElementById('photoChangeGalleryBtn').addEventListener('click', () => openGalleryPicker());
 document.getElementById('photoRemoveBtn').addEventListener('click', async () => {
   if (!confirm('이 화면의 사진만 지울까요? (하위 항목은 그대로 유지됩니다)')) return;
   currentNode.image = null;
   currentImage = null;
   updateCanvasVisibility();
   await saveCurrentNode();
+});
+
+// ---------- 갤러리 사진 중에서 배경사진으로 선택 ----------
+function openGalleryPicker() {
+  const grid = document.getElementById('galleryPickerGrid');
+  const images = ((currentNode && currentNode.images) || []).map(normalizeImageEntry);
+  grid.innerHTML = '';
+  if (images.length === 0) {
+    grid.innerHTML = '<div class="no-zones">이 화면 갤러리에 사진이 없습니다. 먼저 아래 "사진 갤러리"에 사진을 추가해주세요.</div>';
+  } else {
+    images.forEach(img => {
+      const tile = document.createElement('div');
+      tile.className = 'drive-tile image';
+      tile.innerHTML = `<img src="${img.url}" loading="lazy">`;
+      tile.addEventListener('click', async () => {
+        document.getElementById('galleryPickerBackdrop').classList.remove('show');
+        currentNode.image = img.url;
+        setStatus('저장 중...', true);
+        await saveCurrentNode();
+        await setImageFromDataUrl(currentNode.image);
+      });
+      grid.appendChild(tile);
+    });
+  }
+  document.getElementById('galleryPickerBackdrop').classList.add('show');
+}
+document.getElementById('btnGalleryPickerCancel').addEventListener('click', () => {
+  document.getElementById('galleryPickerBackdrop').classList.remove('show');
 });
 
 // ---------- 캔버스 그리기 / 클릭 ----------
