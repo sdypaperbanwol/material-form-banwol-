@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>시설 탐색 지도</title>
 <style>
   * { box-sizing: border-box; }
@@ -73,7 +74,7 @@
     position:relative; border:2px solid #444; background:#222;
     max-width:100%; max-height:80vh; overflow:auto; line-height:0;
   }
-  #imgCanvas { display:block; cursor:crosshair; max-width:100%; }
+  #imgCanvas { display:block; cursor:crosshair; max-width:100%; touch-action:none; }
   .empty-state {
     padding:70px 40px; text-align:center; color:#777; font-size:13px; min-width:400px;
     line-height:1.6;
@@ -215,7 +216,7 @@
     background:#1c1c1c; border:1px solid #3a3a3a; border-radius:10px; padding:16px; overflow-y:auto;
   }
   .lightbox-canvas-wrap { max-width:100%; max-height:65vh; overflow:visible; align-self:center; line-height:0; display:flex; justify-content:center; }
-  .lightbox-canvas-wrap canvas { max-width:100%; max-height:65vh; width:auto; height:auto; cursor:crosshair; border-radius:6px; display:block; }
+  .lightbox-canvas-wrap canvas { max-width:100%; max-height:65vh; width:auto; height:auto; cursor:crosshair; border-radius:6px; display:block; touch-action:none; }
   .lightbox-hint { font-size:11px; color:#777; }
   .lightbox-inner textarea {
     background:#111; border:1px solid #444; color:#eee; border-radius:5px; padding:7px 9px;
@@ -775,9 +776,10 @@ function drawCanvas(dragBox) {
 
 function getCanvasCoords(evt) {
   const rect = canvas.getBoundingClientRect();
+  const point = evt.touches && evt.touches.length ? evt.touches[0] : (evt.changedTouches && evt.changedTouches.length ? evt.changedTouches[0] : evt);
   return {
-    x: (evt.clientX - rect.left) * (canvas.width / rect.width),
-    y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+    x: (point.clientX - rect.left) * (canvas.width / rect.width),
+    y: (point.clientY - rect.top) * (canvas.height / rect.height)
   };
 }
 function findZoneAt(x, y) {
@@ -824,6 +826,42 @@ canvas.addEventListener('mouseup', async (e) => {
   pendingZone = box; editingId = null;
   openCreateModal();
 });
+
+// 모바일/태블릿 터치로도 동일하게 드래그 가능하게 (마우스 이벤트와 동일 로직 재사용)
+canvas.addEventListener('touchstart', (e) => {
+  if (!currentImage) return;
+  e.preventDefault();
+  const p = getCanvasCoords(e);
+  drag = { startX: p.x, startY: p.y };
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+  if (!currentImage || !drag) return;
+  e.preventDefault();
+  const p = getCanvasCoords(e);
+  const box = { x: Math.min(drag.startX, p.x), y: Math.min(drag.startY, p.y), w: Math.abs(p.x - drag.startX), h: Math.abs(p.y - drag.startY) };
+  drawCanvas(box);
+}, { passive: false });
+canvas.addEventListener('touchend', async (e) => {
+  if (!drag) return;
+  e.preventDefault();
+  const p = getCanvasCoords(e);
+  const dx = Math.abs(p.x - drag.startX), dy = Math.abs(p.y - drag.startY);
+
+  if (dx < 6 && dy < 6) {
+    const hit = findZoneAt(drag.startX, drag.startY);
+    drag = null; drawCanvas();
+    if (hit) {
+      if (hit.type === 'link') { await navigateTo(hit.childId); }
+      else { openViewModal(hit.id); }
+    }
+    return;
+  }
+
+  const box = { x: Math.min(drag.startX, p.x), y: Math.min(drag.startY, p.y), w: dx, h: dy };
+  drag = null;
+  pendingZone = box; editingId = null;
+  openCreateModal();
+}, { passive: false });
 
 document.getElementById('addListItemBtn').addEventListener('click', () => {
   // 사진 없이 목록에만 등록하는 항목 - 좌표는 0으로 두고 캔버스엔 표시하지 않음
@@ -1180,9 +1218,10 @@ function drawLightboxCanvas(dragBox) {
 
 function lightboxCoords(evt) {
   const rect = lightboxCanvas.getBoundingClientRect();
+  const point = evt.touches && evt.touches.length ? evt.touches[0] : (evt.changedTouches && evt.changedTouches.length ? evt.changedTouches[0] : evt);
   return {
-    x: (evt.clientX - rect.left) * (lightboxCanvas.width / rect.width),
-    y: (evt.clientY - rect.top) * (lightboxCanvas.height / rect.height)
+    x: (point.clientX - rect.left) * (lightboxCanvas.width / rect.width),
+    y: (point.clientY - rect.top) * (lightboxCanvas.height / rect.height)
   };
 }
 function findAnnotationAt(x, y) {
@@ -1228,6 +1267,45 @@ lightboxCanvas.addEventListener('mouseup', (e) => {
   }
   drawLightboxCanvas();
 });
+
+// 모바일/태블릿 터치 지원
+lightboxCanvas.addEventListener('touchstart', (e) => {
+  if (!lightboxImgObj) return;
+  e.preventDefault();
+  const p = lightboxCoords(e);
+  lightboxDrag = { startX: p.x, startY: p.y };
+}, { passive: false });
+lightboxCanvas.addEventListener('touchmove', (e) => {
+  if (!lightboxDrag) return;
+  e.preventDefault();
+  const p = lightboxCoords(e);
+  const box = { x: Math.min(lightboxDrag.startX, p.x), y: Math.min(lightboxDrag.startY, p.y), w: Math.abs(p.x - lightboxDrag.startX), h: Math.abs(p.y - lightboxDrag.startY) };
+  drawLightboxCanvas(box);
+}, { passive: false });
+lightboxCanvas.addEventListener('touchend', (e) => {
+  if (!lightboxDrag) return;
+  e.preventDefault();
+  const p = lightboxCoords(e);
+  const dx = Math.abs(p.x - lightboxDrag.startX), dy = Math.abs(p.y - lightboxDrag.startY);
+
+  if (dx < 6 && dy < 6) {
+    const hitIdx = findAnnotationAt(lightboxDrag.startX, lightboxDrag.startY);
+    lightboxDrag = null;
+    if (hitIdx >= 0 && confirm('이 표시를 삭제할까요?')) {
+      lightboxWorkingAnnotations.splice(hitIdx, 1);
+    }
+    drawLightboxCanvas();
+    return;
+  }
+
+  const box = { x: Math.min(lightboxDrag.startX, p.x), y: Math.min(lightboxDrag.startY, p.y), w: dx, h: dy };
+  lightboxDrag = null;
+  const label = prompt('이 표시에 대한 짧은 설명을 입력하세요', '');
+  if (label !== null && label.trim()) {
+    lightboxWorkingAnnotations.push({ x: box.x, y: box.y, w: box.w, h: box.h, label: label.trim() });
+  }
+  drawLightboxCanvas();
+}, { passive: false });
 
 async function saveLightbox() {
   if (lightboxIndex === null || !currentNode.images) return;
