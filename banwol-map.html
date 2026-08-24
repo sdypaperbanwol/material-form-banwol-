@@ -229,6 +229,26 @@
   .photo-add-inline { display:flex; gap:10px; justify-content:center; margin-bottom:8px; }
   .photo-add-inline .rename-btn { font-size:13px; padding:6px 14px; }
   .photo-controls { display:flex; gap:10px; padding:8px 0; }
+
+  /* 모바일 화면 대응 */
+  @media (max-width: 480px) {
+    body { padding:10px; }
+    h1 { font-size:15px; }
+    p.desc { font-size:11px; }
+    .breadcrumb { font-size:11px; }
+    .tag-panel-toggle { font-size:11px; }
+    .node-heading { gap:6px; }
+    .node-heading h2 { font-size:16px; width:100%; }
+    .node-heading .rename-btn, .node-heading .status, .node-id-debug { font-size:10px; }
+    .node-desc-row { flex-wrap:wrap; }
+    .toolbar { flex-wrap:wrap; gap:6px; }
+    .toolbar button { font-size:11px; padding:6px 10px; }
+    .sidebar h2 { flex-direction:column; align-items:flex-start; gap:4px; }
+    .sidebar.full-width { max-width:100%; }
+    .zone-item { padding:10px 36px 10px 12px; font-size:12px; }
+    .gallery-thumb, .gallery-add-tile { width:100px; height:76px; }
+    .modal { padding:16px 18px; }
+  }
 </style>
 </head>
 <body>
@@ -757,14 +777,32 @@ function drawCanvas(dragBox) {
     if (z.w < 1 || z.h < 1) return; // 목록 전용 항목(좌표 없음)은 캔버스에 그리지 않음
     const isHi = z.id === highlightId;
     const isLink = z.type === 'link';
-    ctx.strokeStyle = isHi ? '#ff5c5c' : (isLink ? 'rgba(143,199,255,0.9)' : 'rgba(255,213,74,0.85)');
-    ctx.lineWidth = isHi ? Math.max(4, canvas.width * 0.003) : Math.max(2, canvas.width * 0.0015);
+    const borderColor = isHi ? '#ff3b3b' : (isLink ? '#4fd6ff' : '#ffd54a');
+    const fillColor = isHi ? 'rgba(255,59,59,0.18)' : (isLink ? 'rgba(79,214,255,0.14)' : 'rgba(255,213,74,0.14)');
+
+    // 테두리 - 어떤 배경 색이든 도드라지게 흰색 외곽선 + 컬러 테두리 이중으로
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(5, canvas.width * 0.004);
     ctx.strokeRect(z.x, z.y, z.w, z.h);
-    ctx.fillStyle = isHi ? 'rgba(255,92,92,0.22)' : (isLink ? 'rgba(143,199,255,0.12)' : 'rgba(255,213,74,0.12)');
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = Math.max(2.5, canvas.width * 0.002);
+    ctx.strokeRect(z.x, z.y, z.w, z.h);
+    ctx.fillStyle = fillColor;
     ctx.fillRect(z.x, z.y, z.w, z.h);
-    ctx.fillStyle = isHi ? '#ff5c5c' : (isLink ? '#8fc7ff' : '#ffd54a');
-    ctx.font = `bold ${Math.max(14, canvas.width * 0.014)}px sans-serif`;
-    ctx.fillText((isLink ? '▶ ' : '') + z.name, z.x + 6, z.y + 20);
+
+    // 라벨 - 반투명 검은 배경 칩 위에 흰 글씨로 배경색 상관없이 항상 잘 보이게
+    const fontSize = Math.max(15, canvas.width * 0.015);
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    const label = (isLink ? '▶ ' : '') + z.name;
+    const textW = ctx.measureText(label).width;
+    const padX = 8, padY = 5;
+    const chipH = fontSize + padY * 2;
+    const aboveBox = z.y - chipH >= 0;
+    const chipY = aboveBox ? z.y - chipH : z.y; // 박스가 화면 맨 위쪽이면 위 대신 박스 안쪽 상단에 표시
+    ctx.fillStyle = 'rgba(0,0,0,0.72)';
+    ctx.fillRect(z.x, chipY, textW + padX * 2, chipH);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(label, z.x + padX, chipY + fontSize + padY - 4);
   });
 
   if (dragBox) {
