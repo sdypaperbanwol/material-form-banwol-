@@ -35,10 +35,9 @@
 
   /* HERO */
   .hero{
-    padding: 44px 20px 30px;
+    padding: 44px 20px 24px;
     text-align:center;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 30px;
+    margin-bottom: 22px;
   }
   .hero .eyebrow{
     display:inline-flex; align-items:center; gap:8px;
@@ -46,20 +45,77 @@
     background: rgba(53,216,201,0.08);
     border: 1px solid rgba(53,216,201,0.35);
     padding: 6px 14px; border-radius: 999px;
-    margin-bottom: 18px;
   }
   .hero .eyebrow .dot{
     width:7px;height:7px;border-radius:50%;
     background: var(--teal);
     box-shadow: 0 0 0 4px rgba(53,216,201,0.18);
   }
-  .hero h1{
+  .hero-inner{
+    text-align:center;
+    padding: 8px 20px 30px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 30px;
+  }
+  .hero-inner h1{
     font-size: 27px; line-height:1.35; margin: 0 0 12px;
     font-weight: 800; letter-spacing: -0.01em;
   }
-  .hero h1 .accent{ color: var(--teal); }
-  .hero p{
+  .hero-inner h1 .accent{ color: var(--teal); }
+  .hero-inner p{
     color: var(--text-dim); font-size: 15px; margin: 0 auto; max-width: 420px;
+  }
+
+  /* TABS */
+  .tabbar{
+    display:flex; gap:8px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 6px;
+    margin-bottom: 30px;
+  }
+  .tabbtn{
+    flex: 1 1 0;
+    appearance: none; -webkit-appearance: none;
+    border: none; cursor: pointer;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 14.5px; font-weight: 700;
+    padding: 11px 10px;
+    border-radius: 10px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .tabbtn.active{
+    background: var(--card-2);
+    color: var(--teal);
+    box-shadow: 0 0 0 1px rgba(53,216,201,0.35) inset;
+  }
+  .tabpanel{ display:none; }
+  .tabpanel.active{ display:block; }
+
+  /* COMING SOON */
+  .soon{
+    text-align:center;
+    padding: 70px 20px 60px;
+  }
+  .soon .icon{
+    width:56px;height:56px;border-radius:50%;
+    background: rgba(240,192,89,0.1);
+    border: 1.5px solid var(--amber);
+    display:flex;align-items:center;justify-content:center;
+    margin: 0 auto 18px;
+    font-size: 24px; color: var(--amber);
+  }
+  .soon h3{ font-size: 19px; margin: 0 0 10px; }
+  .soon p{ color: var(--text-dim); font-size: 14.5px; margin: 0 auto; max-width: 340px; }
+  .soon .badge{
+    display:inline-block; margin-top:18px;
+    font-size: 12.5px; color: var(--amber);
+    background: rgba(240,192,89,0.1);
+    border: 1px solid rgba(240,192,89,0.3);
+    padding: 5px 14px; border-radius: 999px;
   }
 
   /* INTRO NOTE */
@@ -175,6 +231,16 @@
 
   <div class="hero">
     <div class="eyebrow"><span class="dot"></span> 대양웍스 · 근태 관리</div>
+  </div>
+
+  <div class="tabbar">
+    <button type="button" class="tabbtn active" data-tab="commute" onclick="switchTab('commute')">출퇴근 시간 변경</button>
+    <button type="button" class="tabbtn" data-tab="vacation" onclick="switchTab('vacation')">휴가 신청</button>
+  </div>
+
+  <div id="tab-commute" class="tabpanel active">
+
+  <div class="hero-inner">
     <h1>비콘을 못 찍었을 땐,<br><span class="accent">이렇게</span> 요청하세요</h1>
     <p>출퇴근 시간을 잘못 눌렀거나 비콘 인식이 안 됐을 때<br>직접 수정 요청하는 방법을 순서대로 안내합니다</p>
   </div>
@@ -282,8 +348,30 @@
     <div class="contact">문의사항은 반월 지원파트로 연락 주세요.</div>
   </div>
 
+  </div>
+
+  <div id="tab-vacation" class="tabpanel">
+    <div class="soon">
+      <div class="icon">🛠</div>
+      <h3>휴가 신청 가이드, 제작 예정입니다</h3>
+      <p>휴가 신청 방법 안내는 현재 준비 중이며, 완료되는 대로 이 화면에서 확인하실 수 있습니다.</p>
+      <div class="badge">제작 예정</div>
+    </div>
+  </div>
+
   <footer>신대양제지반월(주) · 대양웍스 근태 관리 시스템 안내</footer>
 
 </div>
+
+<script>
+  function switchTab(name){
+    document.querySelectorAll('.tabbtn').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === name);
+    });
+    document.querySelectorAll('.tabpanel').forEach(function(panel){
+      panel.classList.toggle('active', panel.id === 'tab-' + name);
+    });
+  }
+</script>
 </body>
 </html>
