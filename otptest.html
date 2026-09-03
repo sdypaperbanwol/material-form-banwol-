@@ -719,12 +719,10 @@ function printCurrentMonth() {
   SUM_KEYS.forEach(k => sums[k] = 0);
   rows.forEach(r => SUM_KEYS.forEach(k => { sums[k] += parseFloat(r[k]) || 0; }));
 
-  const signImg = hasSigned ? signCanvas.toDataURL('image/png') : '';
-  const signImgHtml = signImg
-    ? `<img src="${signImg}" style="width:60px;height:50px;object-fit:contain;display:block;">`
-    : '';
+  // 이미 서명된 게 있으면 팝업에 미리 채워줌 (없으면 빈 캔버스)
+  const savedSignData = hasSigned ? signCanvas.toDataURL('image/png') : (localStorage.getItem('dyhr_sign') || '');
 
-const lastDateStr = rows
+  const lastDateStr = rows
     .map(r => String(r['근무일자'] || ''))
     .filter(Boolean)
     .sort()
@@ -760,10 +758,11 @@ const lastDateStr = rows
     .map(v => `<td style="font-weight:bold;">${v}</td>`).join('');
   rowsHtml += `<tr>${sumTds}</tr>\n`;
 
- const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 @page { size: A4 portrait; margin: 15mm 10mm 15mm 10mm; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -779,14 +778,23 @@ table.main th { background:#fff; color:#000; font-weight:bold; padding:5px 3px; 
 table.main td { padding:4px 3px; text-align:center; border:1px solid #000; white-space:nowrap; font-size:7.5pt; }
 .notice { font-size:8.5pt; margin-bottom:6px; }
 .issued { text-align:center; font-size:9pt; margin-bottom:14px; }
-.bottom { display:flex; justify-content:flex-end; }
-table.confirm { border-collapse:collapse; font-size:8pt; }
-table.confirm td { border:1px solid #000; text-align:center; width:70px; vertical-align:middle; }
+table.confirm { border-collapse:collapse; font-size:8pt; margin-left:auto; }
+table.confirm td { border:1px solid #000; text-align:center; vertical-align:middle; }
 table.confirm .label td { font-weight:bold; font-size:8pt; padding:4px 0; }
-table.confirm .sign td { height:60px; vertical-align:top; padding:2px; }
+#pv-sign-canvas { cursor:crosshair; display:block; width:100%; height:70px; touch-action:none; background:#fff; }
+.pv-sign-btns { display:flex; gap:6px; justify-content:center; margin-top:10px; }
+.pv-sign-btns button { padding:8px 16px; font-size:13px; border-radius:6px; border:1px solid #ccc; cursor:pointer; background:#fff; }
+.pv-sign-btns .pv-save { background:#198038; color:#fff; border-color:#198038; }
+.pv-sign-btns .pv-submit { background:#ff6b00; color:#fff; border-color:#ff6b00; }
+.pv-sign-btns .pv-clear { color:#da1e28; border-color:#da1e28; }
+.pv-hint { font-size:11px; color:#888; text-align:center; margin-top:6px; }
 @media screen {
   body { background:#888; padding:20px; }
   .page { background:white; width:210mm; min-height:297mm; margin:0 auto; padding:15mm 10mm; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+}
+@media screen and (max-width: 480px) {
+  body { padding:8px; }
+  .page { width:100%; min-height:auto; padding:10px; box-shadow:none; }
 }
 @media print {
   .no-print { display:none; }
@@ -825,21 +833,79 @@ table.confirm .sign td { height:60px; vertical-align:top; padding:2px; }
   </table>
   <div class="notice">※ 교대근무자는 휴게시간을 포함하여 상기와 같이 근무했음을 확인합니다.</div>
   <div class="issued">${issuedAt}</div>
-  <div class="bottom">
-    <table class="confirm">
-      <tr class="label"><td>확인</td><td></td><td></td></tr>
-      <tr class="sign"><td>${signImgHtml}</td><td></td><td></td></tr>
-    </table>
+  <table class="confirm">
+    <tr class="label"><td style="padding:4px 12px;">확인</td></tr>
+    <tr><td style="padding:2px;"><canvas id="pv-sign-canvas" width="280" height="70"></canvas></td></tr>
+  </table>
+  <div class="no-print pv-sign-btns">
+    <button class="pv-clear" onclick="pvClearSign()">서명 지우기</button>
+    <button class="pv-save" onclick="pvSaveSign()">💾 서명 저장</button>
+    <button class="pv-submit" onclick="pvSubmit()">✅ 확인 제출</button>
   </div>
+  <div class="no-print pv-hint">손가락 또는 마우스로 서명 후 저장/제출하세요. 인쇄/PDF 저장은 서명 완료 후 이용하세요.</div>
 </div>
+<script>
+(function(){
+  const canvas = document.getElementById('pv-sign-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  let drawing = false, signed = false;
+
+  const savedSign = ${JSON.stringify(savedSignData)};
+  if (savedSign) {
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); signed = true; };
+    img.src = savedSign;
+  }
+
+  const getXY = (e, r) => {
+    if (e.touches) return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  const start = e => { e.preventDefault(); drawing = true; ctx.beginPath();
+    const r = canvas.getBoundingClientRect(); const p = getXY(e,r);
+    ctx.moveTo(p.x * canvas.width / r.width, p.y * canvas.height / r.height); };
+  const move = e => { e.preventDefault(); if (!drawing) return; signed = true;
+    const r = canvas.getBoundingClientRect(); const p = getXY(e,r);
+    ctx.lineTo(p.x * canvas.width / r.width, p.y * canvas.height / r.height); ctx.stroke(); };
+  const end = e => { e.preventDefault(); drawing = false; };
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('touchstart', start, { passive:false });
+  canvas.addEventListener('touchmove', move, { passive:false });
+  canvas.addEventListener('touchend', end, { passive:false });
+
+  window.pvClearSign = function() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    signed = false;
+  };
+  window.pvSaveSign = function() {
+    if (!signed) { alert('서명을 먼저 해주세요.'); return; }
+    if (!window.opener || window.opener.closed) { alert('원본 화면을 찾을 수 없습니다. 원래 탭에서 다시 시도해주세요.'); return; }
+    window.opener.loadSign(canvas.toDataURL('image/png'));
+    window.opener.saveSign();
+  };
+  window.pvSubmit = function() {
+    if (!signed) { alert('서명을 먼저 해주세요.'); return; }
+    if (!window.opener || window.opener.closed) { alert('원본 화면을 찾을 수 없습니다. 원래 탭에서 다시 시도해주세요.'); return; }
+    window.opener.loadSign(canvas.toDataURL('image/png'));
+    window.opener.submitConfirm();
+    alert('제출 요청을 보냈습니다. 원래 탭에서 완료 화면을 확인해주세요.');
+    setTimeout(() => window.close(), 800);
+  };
+})();
+</script>
 </body>
 </html>`;
 
-const w = window.open('', '_blank');
+  const w = window.open('', '_blank');
   w.document.write(html);
   w.document.close();
   w.focus();
-  setTimeout(() => w.print(), 500);
+  // ※ 자동 인쇄 트리거 제거됨 — 서명 먼저 하고, 필요할 때 수동으로 인쇄 버튼 클릭
 }
 
 async function submitConfirm() {
