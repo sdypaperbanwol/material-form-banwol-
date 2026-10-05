@@ -315,8 +315,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycbzKjVMgmAruKmPDbPJ8azEwhaFdXEHTykMI4_IOnlP9cqGSLMzxgCdVzd4jhA-MnWcQXg/exec';
-const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycbzKjVMgmAruKmPDbPJ8azEwhaFdXEHTykMI4_IOnlP9cqGSLMzxgCdVzd4jhA-MnWcQXg/exec';
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycby9AxiAqqMqQQHE4kYOKuYvNnKjDGMnsij-1TPrM91h5SbIF3RCliWWg3Nohv3H92x_RA/exec';
+const GAS_DISPATCH_URL = 'https://script.google.com/macros/s/AKfycby9AxiAqqMqQQHE4kYOKuYvNnKjDGMnsij-1TPrM91h5SbIF3RCliWWg3Nohv3H92x_RA/exec';
 const API_TOKEN    = 'DY_SCALE';
 
 // ★ 단설 거래처 코드 목록
@@ -2384,7 +2384,7 @@ setTab('dispatch');
 loadDispatch();
 
 });
-const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycbzKjVMgmAruKmPDbPJ8azEwhaFdXEHTykMI4_IOnlP9cqGSLMzxgCdVzd4jhA-MnWcQXg/exec';
+const SHIP_PLAN_URL = 'https://script.google.com/macros/s/AKfycby9AxiAqqMqQQHE4kYOKuYvNnKjDGMnsij-1TPrM91h5SbIF3RCliWWg3Nohv3H92x_RA/exec';
 // ═══ 초기화 ═══
 (async function init(){
   const sp=localStorage.getItem(LS.plant); if(sp) document.getElementById('plantFilter').value=sp;
@@ -2531,7 +2531,12 @@ function buildOrderRows(rows, isDim) {
     const hapjimBadge = r['합짐'] === 'Y'
       ? `<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:700">합짐</span>`
       : '';
-
+ const isDup = r['중복오더'] === 'Y';
+    let dupMap = {};
+    try { dupMap = isDup ? JSON.parse(r['중복내역'] || '{}') : {}; } catch(e) {}
+    const dupBadge = isDup
+      ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fee2e2;color:#b91c1c;font-weight:700;border:1px solid #fca5a5">⚠ 오더수정</span>`
+      : '';
     const car4 = isDispatched ? String(r['차량번호'] || '').replace(/\D/g, '').slice(-4) : '—';
 
     // 상태 뱃지
@@ -2626,8 +2631,8 @@ const detailHtml = isExpanded ? `
       </div>`).join('')}
   </div>` : '';
 
-    const cardBg = isSihwa ? '#f0fdf4' : '#f8faff';
-    const borderColor = isSihwa ? '#bbf7d0' : '#bfdbfe';
+       const cardBg = isDup ? '#fff1f2' : (isSihwa ? '#f0fdf4' : '#f8faff');
+    const borderColor = isDup ? '#f87171' : (isSihwa ? '#bbf7d0' : '#bfdbfe');
 
     return `
       <div style="${opacity}background:${cardBg};border:1px solid ${borderColor};border-radius:10px;margin:6px 10px;overflow:hidden;cursor:${hasItems ? 'pointer' : 'default'}"
@@ -2635,8 +2640,9 @@ const detailHtml = isExpanded ? `
         <div style="padding:9px 12px">
           <!-- 1행: 뱃지 + 차량 + 납품처 + 상태 -->
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">
-            ${creatorBadge}
+                       ${creatorBadge}
             ${hapjimBadge}
+            ${dupBadge}
             <span style="font-weight:700;font-size:13px;letter-spacing:1px">${car4}</span>
             <span style="flex:1;min-width:0;font-size:12px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['납품처명'] || ''}</span>
             <span style="flex-shrink:0">${arrivalStatus}</span>
@@ -2650,6 +2656,10 @@ const detailHtml = isExpanded ? `
             <span style="font-size:12px;font-weight:600;color:${barColor}">${상차R}/${주문R}R</span>
             ${hasItems ? `<span style="margin-left:auto;font-size:11px;color:#a0aec0">${isExpanded ? '▲ 접기' : '▼ 품목'}</span>` : ''}
           </div>
+          ${isDup ? `<div style="margin-top:6px;font-size:11px;color:#b91c1c;font-weight:600">
+            ⚠ 동일 품목 중복 오더 — ${Object.entries(dupMap).map(([nm,q]) =>
+              `${nm} (${q.join('+')}=${q.reduce((a,b)=>a+b,0)}R)`).join(', ')} → 하나로 합쳐서 재오더 필요
+          </div>` : ''}
         </div>
         ${detailHtml}
       </div>`;
@@ -2657,6 +2667,9 @@ const detailHtml = isExpanded ? `
 }
 function sortOrders(rows) {
   return [...rows].sort((a, b) => {
+    const aW = a['중복오더'] === 'Y' ? 0 : 1;   // ★ 추가
+    const bW = b['중복오더'] === 'Y' ? 0 : 1;   // ★ 추가
+    if (aW !== bW) return aW - bW;              // ★ 추가
     const aD = a['배차여부'] === 'Y' ? 0 : 1;
     const bD = b['배차여부'] === 'Y' ? 0 : 1;
     if (aD !== bD) return aD - bD;
@@ -2676,8 +2689,10 @@ function renderDispatch() {
   // 반월
   if (plantSel !== 'sihwa') {
     const dispatched = bwRows.filter(r => r['배차여부'] === 'Y').length;
+       const dupCnt = bwRows.filter(r => r['중복오더'] === 'Y').length;
     document.getElementById('dispatchSummaryBw').textContent =
-      `총 ${bwRows.length}건 · 배차 ${dispatched} · 미배차 ${bwRows.length - dispatched}`;
+      `총 ${bwRows.length}건 · 배차 ${dispatched} · 미배차 ${bwRows.length - dispatched}` +
+      (dupCnt ? ` · ⚠ 중복 ${dupCnt}` : '');
     document.getElementById('dispatchBodyBw').innerHTML = buildOrderRows(bwRows, false);
   }
 
