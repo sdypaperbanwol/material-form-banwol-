@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>연차 계산기</title>
+  <style>
+    :root{
+      --bg:#f6f7f9;
+      --card:#ffffff;
+      --border:#e6e8ee;
+      --text:#111827;
+      --muted:#6b7280;
+      --accent:#111827;
+      --shadow:0 10px 30px rgba(17,24,39,.08);
+      --radius:14px;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:920px;margin:34px auto;padding:0 16px;}
+    .header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;}
+    h1{margin:0;font-size:22px;letter-spacing:-.2px;}
+    .sub{margin:2px 0 0;color:var(--muted);font-size:13px;}
+    .grid{display:grid;grid-template-columns: 1.2fr .8fr;gap:14px;}
+    @media (max-width: 820px){ .grid{grid-template-columns:1fr;} }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .sectionTitle{font-size:13px;font-weight:700;color:var(--muted);margin:0 0 10px;}
+    .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media (max-width: 520px){ .formGrid{grid-template-columns:1fr;} }
+    label{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);margin:0 0 6px;}
+    label .quick{
+      font-size:11px;
+      color:var(--accent);
+      cursor:pointer;
+      text-decoration:underline;
+      user-select:none;
+    }
+    label .quick:hover{opacity:.7;}
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      font-size:14px;
+      outline:none;
+      background:#fff;
+      color:var(--text);
+      font-family:inherit;
+    }
+    input:focus, select:focus{
+      border-color:#c7cbe0;
+      box-shadow: 0 0 0 4px rgba(17,24,39,.06);
+    }
+    .hint{font-size:12px;color:var(--muted);margin-top:6px;}
+    .diffHint{font-size:12px;color:#2f6f4f;margin-top:8px;font-weight:600;min-height:16px;}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+    button{
+      border:1px solid var(--border);
+      background:#fff;
+      padding:10px 14px;
+      border-radius:12px;
+      font-size:14px;
+      cursor:pointer;
+      font-family:inherit;
+    }
+    .btnPrimary{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .btnPrimary:hover{filter:brightness(1.05);}
+    .btnGhost:hover{background:#f3f4f6;}
+    .btnSmall{padding:7px 10px;font-size:12px;border-radius:10px;}
+    .resultBox{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px;
+      border:1px dashed #d6d9e6;
+      border-radius:12px;
+      background:#fafbff;
+      margin-top:10px;
+    }
+    .who{display:flex;flex-direction:column;gap:4px;}
+    .who .line1{font-weight:800;}
+    .who .line2{font-size:12px;color:var(--muted);}
+    .big{font-size:34px;font-weight:900;letter-spacing:-.5px;white-space:nowrap;}
+    .small{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;}
+    .details{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+    .breakdown{width:100%;border-collapse:collapse;font-size:13px;}
+    .breakdown th{
+      text-align:left;
+      font-size:11px;
+      font-weight:700;
+      color:var(--muted);
+      padding:0 8px 6px;
+      border-bottom:1px solid var(--border);
+    }
+    .breakdown th.num, .breakdown td.num{text-align:right;}
+    .breakdown td{
+      padding:8px 8px;
+      border-bottom:1px solid var(--border);
+      vertical-align:top;
+    }
+    .breakdown tr.groupRow td{
+      padding-top:14px;
+      font-weight:700;
+      font-size:11px;
+      color:var(--accent);
+      border-bottom:none;
+      text-transform:none;
+    }
+    .breakdown tr:last-child td{border-bottom:none;}
+    .breakdown tr.totalRow td{
+      font-weight:800;
+      border-top:1px solid var(--border);
+      border-bottom:none;
+      padding-top:10px;
+    }
+    .breakdown .rowLabel{color:var(--text);}
+    .breakdown .rowSub{display:block;color:var(--muted);font-size:11px;margin-top:2px;}
+    .copyRow{display:flex;justify-content:flex-end;margin-top:8px;}
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:24px;
+      transform:translateX(-50%) translateY(8px);
+      background:#111827;
+      color:#fff;
+      padding:9px 16px;
+      border-radius:10px;
+      font-size:13px;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
+      z-index:20;
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    .error{color:#b00020;font-weight:700;font-size:13px;margin-top:10px;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1>연차 계산기</h1>
+      <div class="sub">입사일자와 기준일자를 입력하면 자동으로 산정 방식이 전환됩니다.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Input -->
+    <div class="card">
+      <div class="sectionTitle">입력</div>
+
+      <div class="formGrid">
+        <div>
+          <label for="join">입사일자</label>
+          <input id="join" type="date" />
+        </div>
+
+        <div>
+          <label for="base">
+            기준일자
+            <span class="quick" id="setToday">오늘로 설정</span>
+          </label>
+          <input id="base" type="date" />
+        </div>
+      </div>
+
+      <div class="diffHint" id="diffHint"></div>
+
+      <div class="btnRow">
+        <button class="btnPrimary" id="calcBtn">계산</button>
+        <button class="btnGhost" id="resetBtn">초기화</button>
+      </div>
+
+      <div id="err" class="error" style="display:none;"></div>
+    </div>
+
+    <!-- Output -->
+    <div class="card">
+      <div class="sectionTitle">결과</div>
+
+      <div class="resultBox" id="resultBox" style="display:none;">
+        <div class="who">
+          <div class="line1" id="whoLine">-</div>
+          <div class="line2" id="metaLine">-</div>
+        </div>
+        <div class="big" id="outDays">-</div>
+      </div>
+
+      <div class="small" id="emptyHelp">
+        입력 후 <b>계산</b>을 누르면 결과가 표시됩니다.
+      </div>
+
+      <div class="details" id="details" style="display:none;">
+        <div class="sectionTitle">계산 내역</div>
+        <table class="breakdown" id="explainTable">
+          <thead>
+            <tr><th>항목</th><th class="num">값</th></tr>
+          </thead>
+          <tbody id="explainBody"></tbody>
+        </table>
+        <div class="copyRow">
+          <button class="btnGhost btnSmall" id="copyBtn">결과 복사</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">복사되었습니다</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function todayStr(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  // <input type="date"> gives "YYYY-MM-DD" directly
+  function parseDateInput(s){
+    if (!s) return null;
+    const parts = s.split("-");
+    if (parts.length !== 3) return null;
+    const y = Number(parts[0]);
+    const m = Number(parts[1]);
+    const d = Number(parts[2]);
+    if (!y || m<1 || m>12 || d<1 || d>31) return null;
+
+    const dt = new Date(y, m-1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== (m-1) || dt.getDate() !== d) return null;
+    return dt;
+  }
+
+  function fmt(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  function addDays(date, n){
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+  function isJan1(d){ return d.getMonth() === 0 && d.getDate() === 1; }
+  function yearEnd(y){ return new Date(y,11,31); }
+
+  function daysInYear(y){
+    const a = new Date(y,0,1);
+    const b = new Date(y+1,0,1);
+    return Math.round((b-a)/86400000); // 365 or 366
+  }
+
+  function diffDaysInclusive(a,b){
+    const A = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+    const B = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+    const diff = Math.round((B-A)/86400000);
+    return diff >= 0 ? diff + 1 : 0;
+  }
+
+  // 15개 시작 "연도"(정규 연부여 시작):
+  // - 1/1 입사: 다음해(=+1)부터 15개 시작
+  // - 그 외: 다다음해(=+2)부터 15개 시작
+  function startYear15(join){
+    return join.getFullYear() + (isJan1(join) ? 1 : 2);
+  }
+
+  // -----------------------------
+  // 월차("1개월을 채운 다음날 발생") 계산용
+  // -----------------------------
+  function monthPeriodEnd_MOEL(join, n){
+    const y = join.getFullYear();
+    const m = join.getMonth();
+    const day = join.getDate();
+
+    const targetY = y + Math.floor((m + n) / 12);
+    const targetM = (m + n) % 12;
+
+    const targetLast = new Date(targetY, targetM + 1, 0).getDate();
+
+    if (day <= targetLast) {
+      return new Date(targetY, targetM, day - 1);
+    }
+    return new Date(targetY, targetM, targetLast);
+  }
+
+  function monthlyAccrualDate_MOEL(join, n){
+    return addDays(monthPeriodEnd_MOEL(join, n), 1);
+  }
+
+  function countMonthlyUpToBase(join, base){
+    // 월차는 최대 11개 (회사 룰 고정)
+    const firstMonthlyAccrual = monthlyAccrualDate_MOEL(join, 1);
+    if (base < firstMonthlyAccrual) {
+      return {
+        monthly: 0,
+        accrualDates: [],
+        countedDates: [],
+        firstMonthlyAccrual,
+        firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1),
+        anniv: new Date(join.getFullYear()+1, join.getMonth(), join.getDate())
+      };
+    }
+
+    const anniv = new Date(join.getFullYear()+1, join.getMonth(), join.getDate());
+    const annivMonth = anniv.getMonth();
+    const annivYear  = anniv.getFullYear();
+
+    let monthly = 0;
+    const accrualDates = [];
+    const countedDates = []; // 실제로 카운트된 월차 발생일 (표시용)
+    for (let k=1; k<=11; k++){
+      const d = monthlyAccrualDate_MOEL(join, k);
+      accrualDates.push(d);
+      if (d > base) continue;
+
+      // 기존 "마지막 1개 튐" 방지 장치 유지
+      const isFirstDay = (d.getDate() === 1);
+      const isMonthBeforeAnniv =
+        (d.getFullYear() === annivYear) &&
+        (d.getMonth() === ((annivMonth + 11) % 12)); // annivMonth-1
+
+      if (base < anniv && isFirstDay && isMonthBeforeAnniv) {
+        continue;
+      }
+
+      monthly += 1;
+      countedDates.push({ n: k, date: d });
+    }
+
+    monthly = clamp(monthly, 0, 11);
+
+    return {
+      monthly,
+      accrualDates,
+      countedDates,
+      firstMonthlyAccrual,
+      firstMonthlyEnd: monthPeriodEnd_MOEL(join, 1),
+      anniv
+    };
+  }
+
+  // 전년도(입사연도) 일할(15기준) - 회사 룰:
+  // - 1/1 입사자는 "만근 처리"라서 전년도 일할 슬롯 자체가 없음(0)
+  // - 1/1이 아닌 입사자는 입사연도 근무분을 15기준으로 "올림" 일할 계산
+  //   (입사일~12/31 포함)
+  function proratedFromJoinYear(join){
+    if (isJan1(join)) return { prorated: 0, workedDays: 0, yDays: daysInYear(join.getFullYear()), periodEnd: yearEnd(join.getFullYear()) };
+
+    const joinY = join.getFullYear();
+    const end = yearEnd(joinY);
+    const workedDays = diffDaysInclusive(join, end);
+    const yDays = daysInYear(joinY);
+    const prorated = Math.ceil((workedDays / yDays) * 15);
+
+    return { prorated, workedDays, yDays, periodEnd: end };
+  }
+
+  // 정규 연부여(연 1회, 1/1 확정): baseYear의 "그 해 연차"
+  // - 15 시작연도(s15)부터 15
+  // - 2년에 1개 증가
+  // - 최대 25
+  function annualEntitlementForYear(join, baseYear){
+    const s15 = startYear15(join);
+    let leave = 0;
+    if (baseYear < s15) leave = 0;
+    else {
+      leave = 15 + Math.floor((baseYear - s15)/2);
+      leave = Math.min(25, leave);
+    }
+    return { leave, s15 };
+  }
+
+  // ---------- UI ----------
+  const joinEl = $("join");
+  const baseEl = $("base");
+
+  // 기본값: 기준일자는 오늘로 미리 채워둔다
+  baseEl.value = todayStr();
+
+  $("setToday").addEventListener("click", () => {
+    baseEl.value = todayStr();
+    updateDiffHint();
+  });
+
+  function setError(msg){
+    const el = $("err");
+    if (!msg){
+      el.style.display = "none";
+      el.textContent = "";
+      return;
+    }
+    el.style.display = "block";
+    el.textContent = msg;
+  }
+
+  function updateDiffHint(){
+    const join = parseDateInput(joinEl.value);
+    const base = parseDateInput(baseEl.value);
+    const hint = $("diffHint");
+
+    if (!join || !base){
+      hint.textContent = "";
+      return;
+    }
+    if (base < join){
+      hint.textContent = "";
+      return;
+    }
+    const days = diffDaysInclusive(join, base) - 1; // 근속일수(입사일 제외)
+    const years = Math.floor(days/365);
+    hint.textContent = `근속기간: 약 ${years}년 ${Math.floor((days%365)/30)}개월`;
+  }
+
+  joinEl.addEventListener("change", updateDiffHint);
+  baseEl.addEventListener("change", updateDiffHint);
+
+  function esc(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // rows: [{type:'group', label} | {type:'row', label, sub, value} | {type:'total', label, value}]
+  function renderExplainRows(rows){
+    const body = $("explainBody");
+    body.innerHTML = rows.map(r => {
+      if (r.type === "group"){
+        return `<tr class="groupRow"><td colspan="2">${esc(r.label)}</td></tr>`;
+      }
+      if (r.type === "total"){
+        return `<tr class="totalRow"><td>${esc(r.label)}</td><td class="num">${esc(r.value)}</td></tr>`;
+      }
+      const sub = r.sub ? `<span class="rowSub">${esc(r.sub)}</span>` : "";
+      return `<tr><td class="rowLabel">${esc(r.label)}${sub}</td><td class="num">${esc(r.value)}</td></tr>`;
+    }).join("");
+  }
+
+  function rowsToPlainText(rows){
+    return rows.map(r => {
+      if (r.type === "group") return `\n[${r.label}]`;
+      if (r.type === "total") return `${r.label}: ${r.value}`;
+      return r.sub ? `- ${r.label} (${r.sub}): ${r.value}` : `- ${r.label}: ${r.value}`;
+    }).join("\n").trim();
+  }
+
+  function showResult({whoLabel, join, base, total, rows}){
+    $("emptyHelp").style.display = "none";
+    $("resultBox").style.display = "flex";
+    $("details").style.display = "block";
+
+    $("whoLine").textContent = whoLabel;
+    $("metaLine").textContent = `입사 ${fmt(join)} · 기준일 ${fmt(base)}`;
+    $("outDays").textContent = `${total} 개`;
+    renderExplainRows(rows);
+    $("explainTable").dataset.plain = rowsToPlainText(rows);
+  }
+
+  function resetAll(){
+    joinEl.value = "";
+    baseEl.value = todayStr();
+    setError("");
+    $("diffHint").textContent = "";
+
+    $("resultBox").style.display = "none";
+    $("details").style.display = "none";
+    $("emptyHelp").style.display = "block";
+  }
+
+  $("resetBtn").addEventListener("click", resetAll);
+
+  function runCalc(){
+    setError("");
+
+    const join = parseDateInput(joinEl.value);
+    const base = parseDateInput(baseEl.value);
+
+    if (!join || !base){
+      setError("입사일자와 기준일자를 모두 입력해주세요.");
+      return;
+    }
+    if (base < join){
+      setError("기준일자는 입사일자보다 빠를 수 없습니다.");
+      return;
+    }
+
+    const joinY = join.getFullYear();
+    const baseY = base.getFullYear();
+
+    let total = 0;
+    let whoLabel = "";
+    let rows = [];
+
+    // 1) 입사연도: 월차만(기준일까지)
+    // 2) 입사 다음해(=joinY+1):
+    //    - 1/1 입사자: 그 해는 연부여(15 시작)로 간다
+    //    - 1/1 아닌 입사자: "월차(최대11, 기준일까지) + 전년도 일할(15기준, 올림)" 합산
+    //      (이 합산은 25 상한 미적용 가능)
+    // 3) 그 이후(s15 이상): 연부여(최대25)
+
+    if (baseY === joinY) {
+      // 입사연도
+      const m = countMonthlyUpToBase(join, base);
+      total = m.monthly;
+
+      whoLabel = `입사연도(${joinY}) · 월차 발생 구간`;
+
+      const accruedRows = m.countedDates.map(x => ({
+        type: "row",
+        label: `${x.n}개월차 발생일`,
+        sub: `종료일 ${fmt(monthPeriodEnd_MOEL(join, x.n))}`,
+        value: fmt(x.date),
+      }));
+
+      if (accruedRows.length === 0) {
+        accruedRows.push({
+          type: "row",
+          label: "아직 발생한 월차 없음",
+          sub: `1개월차 종료일 ${fmt(m.firstMonthlyEnd)}`,
+          value: `발생 예정 ${fmt(m.firstMonthlyAccrual)}`,
+        });
+      }
+
+      rows = [
+        { type: "group", label: "월차 (입사월 기준, 최대 11개)" },
+        ...accruedRows,
+        { type: "row", label: "기준일까지 발생 개수", value: `${m.monthly}개` },
+        { type: "total", label: "합계", value: `${total}개` },
+      ];
+    }
+    else if (baseY === joinY + 1 && !isJan1(join)) {
+      // 입사 다음해 + 1/1 입사 아님: 월차(기준일까지) + 전년도 일할(올림)
+      const m = countMonthlyUpToBase(join, base);
+      const p = proratedFromJoinYear(join);
+
+      total = m.monthly + p.prorated;
+
+      whoLabel = `입사 다음해(${baseY}) · 월차+전년도 일할 합산`;
+
+      rows = [
+        { type: "group", label: "① 월차 (최대 11개)" },
+        { type: "row", label: "기준일까지 발생 개수", value: `${m.monthly}개` },
+
+        { type: "group", label: `② 전년도(${joinY}) 일할 (15개 기준, 올림)` },
+        { type: "row", label: "산정 기간", value: `${fmt(join)} ~ ${fmt(p.periodEnd)}` },
+        { type: "row", label: "해당 연도 일수", value: `${p.yDays}일` },
+        { type: "row", label: "근무일수(입사일 포함)", value: `${p.workedDays}일` },
+        { type: "row", label: "일할 결과(올림)", value: `${p.prorated}개` },
+
+        { type: "total", label: "합계 (① + ②)", value: `${total}개` },
+      ];
+    }
+    else {
+      // 연부여 구간(1/1 입사자의 다음해 포함) 또는 그 이후
+      const ent = annualEntitlementForYear(join, baseY);
+      total = ent.leave;
+
+      whoLabel = `정기 연부여 · ${baseY}년 기준`;
+
+      rows = [
+        { type: "group", label: `연부여 산정 (${baseY}년 기준)` },
+        { type: "row", label: "15개 시작연도", value: `${ent.s15}년` },
+        { type: "row", label: "증가 규칙", value: "2년에 1개 증가" },
+        { type: "row", label: "상한", value: "최대 25개" },
+        { type: "total", label: "결과", value: `${total}개` },
+      ];
+    }
+
+    showResult({ whoLabel, join, base, total, rows });
+  }
+
+  $("calcBtn").addEventListener("click", runCalc);
+
+  // Enter 키로도 계산 실행
+  [joinEl, baseEl].forEach(el => {
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runCalc();
+    });
+  });
+
+  function showToast(msg){
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 1400);
+  }
+
+  $("copyBtn").addEventListener("click", async () => {
+    const plain = $("explainTable").dataset.plain || "";
+    const text = `${$("whoLine").textContent}\n${$("metaLine").textContent}\n연차: ${$("outDays").textContent}\n\n${plain}`;
+    try{
+      await navigator.clipboard.writeText(text);
+      showToast("결과가 복사되었습니다");
+    }catch(e){
+      showToast("복사에 실패했습니다");
+    }
+  });
+
+  updateDiffHint();
+</script>
+</body>
+</html>
