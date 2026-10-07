@@ -1,0 +1,3471 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>반월공장 3D 통합 배치도 (지도 + 창고 재고 + 원료 야적)</title>
+<style>
+:root{
+  --bg:#eceff3; --panel:#fbfbfc; --text:#1b2330; --muted:#677286; --line:#d3d9e2;
+  --accent:#1d4ed8; --scene-bg:#dfe4eb; --ground:#f4f5f7; --edge:#1b2330; --chip:#e6eaf0;
+  --label-bg:rgba(251,251,252,.92); --label-text:#1b2330;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d121b; --panel:#151c28; --text:#e4e9f1; --muted:#8d9ab0; --line:#27313f;
+    --accent:#6ea0ff; --scene-bg:#0f1520; --ground:#1a2230; --edge:#c9d3e3; --chip:#222c3b;
+    --label-bg:rgba(21,28,40,.92); --label-text:#e4e9f1;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d121b; --panel:#151c28; --text:#e4e9f1; --muted:#8d9ab0; --line:#27313f;
+  --accent:#6ea0ff; --scene-bg:#0f1520; --ground:#1a2230; --edge:#c9d3e3; --chip:#222c3b;
+  --label-bg:rgba(21,28,40,.92); --label-text:#e4e9f1;
+}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  font-size:14px; line-height:1.5; overflow:hidden;
+}
+#app{display:grid;grid-template-columns:1fr 310px;height:100%}
+#stage{position:relative;min-height:0;min-width:0;overflow:hidden;background:var(--scene-bg)}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{
+  position:absolute;transform:translate(-50%,-100%);white-space:nowrap;
+  background:var(--label-bg);color:var(--label-text);
+  padding:1px 7px;border-radius:3px;font-size:12px;border:1px solid var(--line);
+}
+.lbl.on{border-color:var(--accent);font-weight:600}
+.toolbar{position:absolute;top:12px;left:12px;display:flex;gap:6px;flex-wrap:wrap}
+button{font:inherit;color:inherit;cursor:pointer}
+.tb{
+  background:var(--panel);border:1px solid var(--line);border-radius:5px;
+  padding:5px 11px;
+}
+.tb:hover{border-color:var(--accent)}
+.tb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.legend{
+  position:absolute;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:6px;padding:8px 11px;display:flex;flex-wrap:wrap;gap:4px 14px;max-width:min(560px,calc(100% - 24px));
+  font-size:12px;color:var(--muted)
+}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.hint{position:absolute;right:12px;bottom:12px;font-size:12px;color:var(--muted);text-align:right}
+#panel{
+  background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;
+  min-height:0;min-width:0
+}
+.head{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.head h1{font-size:16px;margin:0 0 2px;font-weight:700}
+.head p{margin:0;color:var(--muted);font-size:12px}
+#info{padding:12px 16px;border-bottom:1px solid var(--line);min-height:150px}
+#info .empty{color:var(--muted)}
+#info h2{margin:0 0 8px;font-size:15px}
+dl{display:grid;grid-template-columns:72px 1fr;gap:3px 8px;margin:0 0 10px}
+dt{color:var(--muted)} dd{margin:0}
+.seg{display:flex;gap:4px;margin-bottom:8px}
+.seg button{
+  flex:1;background:var(--chip);border:1px solid var(--line);border-radius:5px;padding:4px 0
+}
+.seg button[aria-pressed="true"]{color:#fff;border-color:transparent}
+.seg button[data-s="ok"][aria-pressed="true"]{background:#2e9e5b}
+.seg button[data-s="warn"][aria-pressed="true"]{background:#d98a06}
+.seg button[data-s="check"][aria-pressed="true"]{background:#d63c3c}
+textarea{
+  width:100%;box-sizing:border-box;resize:vertical;min-height:54px;background:var(--bg);
+  color:var(--text);border:1px solid var(--line);border-radius:5px;padding:6px 8px;font:inherit
+}
+#list{flex:1;overflow:auto;padding:6px 8px 12px;min-height:0}
+#list button{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;
+  padding:4px 8px;border-radius:4px
+}
+#list button:hover{background:var(--chip)}
+#list button[aria-current="true"]{background:var(--chip);font-weight:600}
+#list .st{margin-left:auto}
+.note{padding:8px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}
+
+.modlabels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.ptabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.ptabs button{flex:1;background:var(--chip);border:1px solid var(--line);border-radius:5px;padding:4px 0}
+.ptabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.ptab{flex:1;min-height:0;display:flex;flex-direction:column;overflow:auto}
+.ptab[hidden]{display:none}
+.modbar{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
+.modbar .tb{padding:3px 9px;font-size:12px}
+.ptab .legend{position:static;margin:8px 12px;max-width:none}
+.ptab .head{border-bottom:1px solid var(--line)}
+.mod-wh .lbl{
+  position:absolute;transform:translate(-50%,-100%);white-space:nowrap;
+  background:var(--label-bg);color:var(--label-text);
+  padding:0 6px;border-radius:3px;font-size:11.5px;border:1px solid var(--line);
+}
+.mod-wh .lbl.sec{font-weight:700;font-size:12px}
+.mod-wh .dline{position:absolute;height:1px;background:var(--accent);opacity:.35;transform-origin:0 0;pointer-events:none}
+.mod-wh button, .mod-wh select{font:inherit;color:inherit}
+.mod-wh button{cursor:pointer}
+.mod-wh .tb{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:5px 11px}
+.mod-wh .tb:hover{border-color:var(--accent)}
+.mod-wh .tb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mod-wh button:focus-visible, .mod-wh select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mod-wh .legend{
+  position:absolute;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:6px;padding:8px 11px;font-size:12px;color:var(--muted);min-width:230px
+}
+.mod-wh .bar{height:10px;border-radius:3px;margin:4px 0 2px}
+.mod-wh .scale{display:flex;justify-content:space-between}
+.mod-wh .head{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.mod-wh .head h1{font-size:16px;margin:0 0 2px;font-weight:700}
+.mod-wh .head p{margin:0;color:var(--muted);font-size:12px}
+.mod-wh .ctrl{padding:10px 16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:64px 1fr;gap:6px 8px;align-items:center}
+.mod-wh .ctrl label{color:var(--muted)}
+.mod-wh .seg{display:flex;gap:4px}
+.mod-wh .seg button{flex:1;background:var(--chip);border:1px solid var(--line);border-radius:5px;padding:3px 0}
+.mod-wh .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mod-wh select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:4px 6px}
+.mod-wh #wh-info{padding:12px 16px;border-bottom:1px solid var(--line);min-height:170px}
+.mod-wh #wh-info .empty{color:var(--muted)}
+.mod-wh #wh-info h2{margin:0 0 8px;font-size:15px}
+.mod-wh dl{display:grid;grid-template-columns:76px 1fr;gap:3px 8px;margin:0 0 10px}
+.mod-wh dt{color:var(--muted)}
+.mod-wh dd{margin:0}
+.mod-wh .acts{display:flex;gap:6px}
+.mod-wh .acts button{flex:1;background:var(--chip);border:1px solid var(--line);border-radius:5px;padding:4px 0}
+.mod-wh .acts button:hover{border-color:var(--accent)}
+.mod-wh .acts button:disabled{opacity:.4;cursor:default}
+.mod-wh .small{font-size:12px;color:var(--muted);margin-top:8px}
+.mod-wh #wh-sum{flex:1;overflow:auto;padding:0 10px 8px;min-height:0}
+.mod-wh #wh-sum .tot{padding:2px 6px 8px;color:var(--muted)}
+.mod-wh #wh-sum .tot:first-child{padding-top:8px}
+.mod-wh #wh-sum button{
+  display:block;width:100%;text-align:left;background:none;border:1px solid transparent;
+  border-radius:5px;padding:6px 8px;margin-bottom:2px
+}
+.mod-wh #wh-sum button:hover{background:var(--chip)}
+.mod-wh #wh-sum b{font-weight:600}
+.mod-wh #wh-sum .sub{color:var(--muted);font-size:12px}
+.mod-wh .note{padding:8px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}
+.mod-wh .tabs{display:flex;gap:4px;padding:8px 10px 0}
+.mod-wh .tabs button{flex:1;background:var(--chip);border:1px solid var(--line);border-radius:5px;padding:3px 0}
+.mod-wh .tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mod-wh table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+.mod-wh .tbl th, .mod-wh .tbl td{padding:3px 6px;text-align:right;border-bottom:1px solid var(--line)}
+.mod-wh .tbl th:first-child, .mod-wh .tbl td:first-child{text-align:left}
+.mod-wh .tbl td.loc, .mod-wh .tbl th:last-child{text-align:left}
+.mod-wh .tbl td.loc{color:var(--muted);font-size:11.5px}
+.mod-wh .tbl th{position:sticky;top:0;z-index:2;background:var(--panel);color:var(--muted);font-weight:500;white-space:nowrap}
+.mod-wh .tbl tr.sum td{font-weight:600;border-top:1px solid var(--line)}
+.mod-wh .tbl tr.none td{color:var(--muted);opacity:.55}
+.mod-wh .dot2{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted);vertical-align:baseline}
+.mod-wh .meter{height:5px;background:var(--chip);border-radius:3px;margin-top:5px;overflow:hidden}
+.mod-wh .meter i{display:block;height:100%;background:var(--accent)}
+.mod-wh .tbl tr.row{cursor:pointer}
+.mod-wh .tbl tr.row:hover, .mod-wh .tbl tr.on{background:var(--chip)}
+.mod-wh #wh-sum .clr{margin:0 0 6px;padding:3px 8px;border:1px solid var(--line);border-radius:5px;background:var(--chip);display:inline-block;width:auto}
+.mod-yd .lbl{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:var(--label-bg);color:var(--label-text);padding:0 6px;border-radius:3px;font-size:11.5px;border:1px solid var(--line)}
+.mod-yd .lbl.sec{font-weight:700;font-size:12px}
+.mod-yd button, .mod-yd input{font:inherit;color:inherit}
+.mod-yd button{cursor:pointer}
+.mod-yd .tb{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:5px 11px}
+.mod-yd .tb:hover{border-color:var(--accent)}
+.mod-yd .tb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mod-yd button:focus-visible, .mod-yd input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mod-yd .head{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.mod-yd .head h1{font-size:16px;margin:0 0 2px;font-weight:700}
+.mod-yd .head p{margin:0;color:var(--muted);font-size:12px}
+.mod-yd .card{padding:12px 16px;border-bottom:1px solid var(--line)}
+.mod-yd .card h2{margin:0 0 6px;font-size:14px}
+.mod-yd .row{display:flex;justify-content:space-between;gap:8px}
+.mod-yd .meter{height:7px;background:var(--chip);border-radius:4px;margin:6px 0;overflow:hidden}
+.mod-yd .meter i{display:block;height:100%;background:var(--accent)}
+.mod-yd .small{font-size:12px;color:var(--muted)}
+.mod-yd .inp{display:flex;gap:6px;margin-top:8px}
+.mod-yd .inp input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:3px 6px}
+.mod-yd .inp button{background:var(--chip);border:1px solid var(--line);border-radius:5px;padding:3px 9px}
+.mod-yd .inp button:hover{border-color:var(--accent)}
+.mod-yd dl{display:grid;grid-template-columns:84px 1fr;gap:3px 8px;margin:0}
+.mod-yd dt{color:var(--muted)}
+.mod-yd dd{margin:0}
+.mod-yd .note{padding:10px 16px;font-size:11px;color:var(--muted)}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 46vh}
+  #panel{border-left:0;border-top:1px solid var(--line)}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="labels"></div>
+    <div class="modlabels mod-wh" id="wh-labels"></div>
+    <div class="modlabels mod-yd" id="yd-labels"></div>
+    <div class="toolbar">
+      <button class="tb" id="bReset">기본 시점</button>
+      <button class="tb" id="bTop">평면</button>
+      <button class="tb" id="bWh">창고 CCTV 시점</button>
+      <button class="tb" id="bFlyWh">창고 보기</button>
+      <button class="tb" id="bFlyYd">원료 야적 보기</button>
+      <button class="tb" id="bLabels" aria-pressed="false">이름 전체 표시</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="hint">왼쪽 드래그: 회전 · 오른쪽 드래그: 이동 · 휠: 확대</div>
+  </div>
+  <aside id="panel">
+  <div class="ptabs" id="ptabs"><button data-pt="map" aria-pressed="true">지도</button><button data-pt="wh" aria-pressed="false">창고 재고</button><button data-pt="yd" aria-pressed="false">원료 야적</button></div>
+  <div class="ptab" data-pt="map">
+    <div class="head">
+      <h1>반월공장 3D 통합 배치도</h1>
+      <p>1층 평면도 기준의 단순 모형</p>
+    </div>
+    <div id="info"></div>
+    <div id="list"></div>
+    <div class="note">높이와 상태값은 임의의 샘플입니다. 상태·메모는 이 브라우저에만 저장됩니다.</div>
+  </div>
+  <div class="ptab mod-wh" data-pt="wh" id="pane-wh" data-ids="bDemo,bLabels,bPanel,bRefresh,bRoof,bSim,info,legend,modeSeg,note,statDot,statTxt,sum,tabs,tf,wf" hidden><div class="modbar"><button class="tb" id="wh-bRoof" aria-pressed="true">지붕</button><button class="tb" id="wh-bSim" aria-pressed="true">동작 애니메이션</button><button class="tb" id="wh-bDemo">동작 시연</button><button class="tb" id="wh-bLabels" aria-pressed="true">이름</button><button class="tb" id="wh-bRefresh">재고 새로고침</button><button class="tb fly" data-fly="wh">이 위치로 카메라 이동</button></div><div class="legend" id="wh-legend"></div>
+    <div class="head">
+      <h1>반월공장 창고 3D 재고 배치</h1>
+      <p><span class="dot2" id="wh-statDot"></span><span id="wh-statTxt">불러오는 중…</span></p>
+    </div>
+    <div class="ctrl">
+      <label>색상</label>
+      <div class="seg" id="wh-modeSeg">
+        <button data-m="width" aria-pressed="true">지폭별</button>
+        <button data-m="fill" aria-pressed="false">적재율</button>
+        <button data-m="type" aria-pressed="false">지종별</button>
+      </div>
+      <label for="wh-wf">지폭 필터</label>
+      <select id="wh-wf"></select>
+      <label for="wh-tf">지종 필터</label>
+      <select id="wh-tf"></select>
+    </div>
+    <div id="wh-info"></div>
+    <div class="tabs" id="wh-tabs"><button data-tab="zone" aria-pressed="true">구역</button><button data-tab="stock" aria-pressed="false">재고표</button></div>
+    <div id="wh-sum"></div>
+    <div class="note" id="wh-note"></div>
+  </div>
+  <div class="ptab mod-yd" data-pt="yd" id="pane-yd" data-ids="bAnim,bLabels,bPanel,bTruck,info,legend,note,tanks,today,veh,zones" hidden><div class="modbar"><button class="tb" id="yd-bAnim" aria-pressed="true">동작</button><button class="tb" id="yd-bTruck" aria-pressed="true">시연 자동 입차</button><button class="tb" id="yd-bLabels" aria-pressed="true">이름</button><button class="tb fly" data-fly="yd">이 위치로 카메라 이동</button></div>
+    <div class="head">
+      <h1>파지(원료) 야적 · 원형조 1~4</h1>
+      <p>초안 4 · 차량은 계근대 목록 연동 · 톤수는 직접 입력</p>
+    </div>
+    <div id="yd-zones"></div>
+    <div class="card" id="yd-veh"></div>
+    <div class="card" id="yd-today"></div>
+    <div class="card" id="yd-tanks"></div>
+    <div class="card" id="yd-info"><div class="small">구역, 원형조, 차량, 페이로더를 클릭하면 정보가 표시됩니다.</div></div>
+    <div class="note" id="yd-note"></div>
+  </div>
+</aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="text/plain" id="code-wh">(function(){
+  'use strict';
+
+  /* ---------- 상수 ---------- */
+  var OX = -34.3115, OZ = 6.7645;          // 창고 좌표(m) → 장면 중심 보정
+  var P = 1.15, R = 0.55;        // 롤 배치 간격 / 반경 (지름 1.1m 가정)
+  var MAXH = 6.3;                // 최대 적재 높이 (2100mm × 3단)
+  var FLOOR = 0.2;               // 바닥 슬래브 두께
+  function maxTiers(w){ return Math.max(1, Math.floor(MAXH*1000/w + 1e-9)); }
+
+  /* ---------- 재고 데이터 ----------
+     시트 "재고현황" 중 창고코드 9160 행을 아래 형식으로 넣으면 실제 재고로 표시됩니다.
+     {code:'9160', type:'S', gsm:120, width:1600, kg:28034, rolls:22}
+     (A~J열: 공장, 창고코드, 창고명, 품목코드, 품목명, 지종, 평량, 지폭, 중량, 롤 수 로 해석)  */
+  var STOCK_ROWS = null;
+  var DATA_LABEL = '샘플 데이터';
+
+  /* ---------- 구역 정의 (창고 좌표: x=동쪽, z=남쪽, 원점=본관 북서 모서리) ----------
+     axis 'x': 라인이 동서 방향, 칸이 남북 방향 / axis 'z': 라인이 남북 방향(세로), 칸이 동서 방향 */
+  var SECT = [
+    {id:'A',   short:'A',     name:'A구역 · 중폭',            axis:'x', lines:8,  cols:5, x0:1.0,   z0:1.0},
+    {id:'B',   short:'B',     name:'B구역 · 입구쪽',          axis:'x', lines:11, cols:6, x0:1.0,   z0:26.8},
+    {id:'CU',  short:'C위',   name:'C구역 위 · 안쪽 · 단폭',  axis:'x', lines:16, cols:5, x0:17.3,  z0:1.0},
+    {id:'CD1', short:'C확장①', name:'C구역 확장부 ① · 장폭',  axis:'z', lines:16, cols:5, x0:29.0,  z0:27.0},
+    {id:'CD2', short:'C확장②', name:'C구역 확장부 ② · 장폭',  axis:'z', lines:16, cols:5, x0:19.45, z0:27.0}
+  ];
+  // 지폭 범위: C위=단폭 950~1200, A=중폭 1050~1500, B=1550~1600, C확장부=장폭 1650~2500
+  // 단폭과 중폭이 겹치는 1050~1200은 두 구역에 나눠 배치 (C위 비율: OVERLAP_SHARE)
+  var OVERLAP_SHARE = 0.5;
+  var GROUPS = [
+    {sects:['CU'],         min:0,    max:1200},
+    {sects:['A'],          min:1050, max:1500},
+    {sects:['B'],          min:1501, max:1649},
+    {sects:['CD1','CD2'],  min:1650, max:99999}
+  ];
+  function sect(id){ return SECT.filter(function(q){ return q.id === id; })[0]; }
+  function slotPos(s,i,j){
+    return s.axis === 'x' ? {x:s.x0+i*P+P/2, z:s.z0+j*P+P/2} : {x:s.x0+j*P+P/2, z:s.z0+i*P+P/2};
+  }
+  function sectSize(s){
+    return s.axis === 'x' ? {dx:s.lines*P, dz:s.cols*P} : {dx:s.cols*P, dz:s.lines*P};
+  }
+
+  /* ---------- 장면 ---------- */
+  var stage = document.getElementById('stage');
+  var canvas = document.getElementById('c');
+  var labelsEl = document.getElementById('labels');
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var scene = new THREE.Scene();
+  var cam = new THREE.PerspectiveCamera(42, 1, 0.5, 1500);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.6);
+  sun.position.set(-40, 90, 60);
+  scene.add(sun);
+
+  var hall = new THREE.Group();
+  hall.position.set(-OX, 0, -OZ);
+  scene.add(hall);
+
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(220, 200), new THREE.MeshLambertMaterial({color:0xeef0f4}));
+  ground.rotation.x = -Math.PI/2; ground.position.y = -0.05;
+  ground.visible = false; scene.add(ground);
+
+  var floorMat = new THREE.MeshLambertMaterial({color:0xc9ced7});
+  function slab(x0,z0,x1,z1){
+    var m = new THREE.Mesh(new THREE.BoxGeometry(x1-x0, FLOOR, z1-z0), floorMat);
+    m.position.set((x0+x1)/2, FLOOR/2, (z0+z1)/2);
+    hall.add(m);
+  }
+  slab(0,0,36,34);
+  slab(18.4,34,36,47.6);
+
+  var yellow = new THREE.MeshBasicMaterial({color:0xe8c21a});
+  var lineBlue = new THREE.MeshBasicMaterial({color:0x7aa2e8});
+  function bar(x0,z0,x1,z1,mat){
+    var len = Math.hypot(x1-x0, z1-z0);
+    var m = new THREE.Mesh(new THREE.BoxGeometry(len, 0.02, 0.16), mat || yellow);
+    m.position.set((x0+x1)/2, FLOOR+0.012, (z0+z1)/2);
+    m.rotation.y = -Math.atan2(z1-z0, x1-x0);
+    hall.add(m);
+  }
+  function outline(x0,z0,x1,z1,mat){
+    bar(x0,z0,x1,z0,mat); bar(x1,z0,x1,z1,mat); bar(x1,z1,x0,z1,mat); bar(x0,z1,x0,z0,mat);
+  }
+
+  /* 벽 / 기둥 / 지붕 */
+  var WALLH = 9, RIDGE = 12, T = 0.35;
+  var DOOR_Z0 = 10.3, DOOR_Z1 = 23.3, DOOR_C = 16.8;   // 서쪽 벽 기둥 1번(z=10)~3번(z=23.6) 사이 전체
+  var wallMat = new THREE.MeshLambertMaterial({color:0xaeb6c3, transparent:true, opacity:0.34, depthWrite:false});
+  var colMat = new THREE.MeshLambertMaterial({color:0xf2c200});
+  function wall(x0,z0,x1,z1,hh,yb){
+    var w = Math.max(x1-x0, T), d = Math.max(z1-z0, T);
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), wallMat);
+    m.position.set((x0+x1)/2, yb + hh/2 + FLOOR, (z0+z1)/2);
+    hall.add(m);
+  }
+  wall(0,0,0,DOOR_Z0,WALLH,0);              // 서쪽 벽 (출입구 북쪽)
+  wall(0,DOOR_Z0,0,DOOR_Z1,WALLH-5,5);      // 출입구 상부
+  wall(0,DOOR_Z1,0,34,WALLH,0);             // 서쪽 벽 (출입구 남쪽)
+  wall(0,34,18.4,34,WALLH,0);               // 본관 남쪽 벽
+  wall(18.4,34,18.4,47.6,WALLH,0);          // 확장부 서쪽 벽
+  wall(18.4,47.6,36,47.6,WALLH,0);          // 확장부 남쪽 벽
+  wall(36,0,36,19.1,WALLH,0);          // 동쪽 벽 (롤 배출구 북쪽)
+  wall(36,19.1,36,21.9,WALLH-4.5,4.5); // 롤 배출구 상부
+  wall(36,21.9,36,47.6,WALLH,0);       // 동쪽 벽 (롤 배출구 남쪽, 노란 기둥 포함)
+
+  function col(x,z){
+    var m = new THREE.Mesh(new THREE.BoxGeometry(0.55, WALLH, 0.55), colMat);
+    m.position.set(x, WALLH/2 + FLOOR, z);
+    hall.add(m);
+  }
+  [10, 23.6].forEach(function(z){ col(0.3,z); });
+  [9.8,22.5].forEach(function(z){ col(35.7,z); });
+  col(15.5,33.7);
+  [[19,40],[35.6,40],[27.5,47.2]].forEach(function(q){ col(q[0],q[1]); });
+  col(25.0,20.5);   // 롤이 굴러와 멈추는 첫번째 기둥
+
+  var roofGroup = new THREE.Group(); hall.add(roofGroup);
+  (function(){
+    var trussMat = new THREE.LineBasicMaterial({color:0x4a5363});
+    var roofMat = new THREE.MeshLambertMaterial({color:0x8f98a8, transparent:true, opacity:0.2, side:THREE.DoubleSide, depthWrite:false});
+    var yE = WALLH + FLOOR, yR = RIDGE + FLOOR, xC = 18, pts = [];
+    function seg(a,b){ pts.push(new THREE.Vector3(a[0],a[1],a[2]), new THREE.Vector3(b[0],b[1],b[2])); }
+    [0,8.5,17,25.5,34].forEach(function(z){
+      seg([0,yE,z],[xC,yR,z]); seg([xC,yR,z],[36,yE,z]);
+      seg([0,yE,z],[36,yE,z]); seg([xC,yR,z],[xC,yE,z]);
+    });
+    [[0,yE],[xC,yR],[36,yE],[9,(yE+yR)/2],[27,(yE+yR)/2]].forEach(function(q){ seg([q[0],q[1],0],[q[0],q[1],34]); });
+    roofGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), trussMat));
+    function quad(a,b,c,d){
+      var g = new THREE.BufferGeometry(), arr = [];
+      [a,b,c,a,c,d].forEach(function(p){ arr.push(p[0],p[1],p[2]); });
+      g.setAttribute('position', new THREE.Float32BufferAttribute(arr,3));
+      g.computeVertexNormals();
+      return new THREE.Mesh(g, roofMat);
+    }
+    roofGroup.add(quad([0,yE,0],[xC,yR,0],[xC,yR,34],[0,yE,34]));
+    roofGroup.add(quad([xC,yR,0],[36,yE,0],[36,yE,34],[xC,yR,34]));
+    roofGroup.add(quad([18.4,yE,34],[36,yE,34],[36,yE,47.6],[18.4,yE,47.6]));
+  })();
+
+  /* 바닥 표시선 */
+  SECT.forEach(function(s){
+    var sz = sectSize(s);
+    outline(s.x0-0.2, s.z0-0.2, s.x0+sz.dx+0.2, s.z0+sz.dz+0.2);
+  });
+  outline(20.4,11.0,32.4,16.2,lineBlue);   // 화물차 1 주차 구역
+  outline(5.1,18.4,17.6,24.3,lineBlue);    // 화물차 2 주차 구역
+
+  /* ---------- 엔티티 ---------- */
+  var pickables = [];
+  var hallObjs = [];
+  var geoCache = {};
+  function rollGeo(w){
+    if(!geoCache[w]) geoCache[w] = new THREE.CylinderGeometry(R, R, w/1000, 18);
+    return geoCache[w];
+  }
+  function clamp(v,a,b){ return Math.min(Math.max(v,a),b); }
+
+  var slots = [];
+  SECT.forEach(function(s){
+    s.slots = [];
+    for(var i=0;i<s.lines;i++){
+      for(var j=0;j<s.cols;j++){
+        var pos = slotPos(s,i,j);
+        var sl = {kind:'slot', sect:s, line:i+1, col:j+1, w:0, t:0, max:0, key:'', type:'', gsm:0, x:pos.x, z:pos.z, meshes:[]};
+        sl.mat = new THREE.MeshLambertMaterial({color:0xcdb48a});
+        sl.group = new THREE.Group();
+        sl.group.position.set(sl.x, FLOOR, sl.z);
+        hall.add(sl.group);
+        slots.push(sl); s.slots.push(sl);
+      }
+    }
+  });
+  SECT.forEach(function(s){                    // 통로 쪽 가장자리가 1열인 구역(B, C확장부①)은 안쪽 칸부터 채우도록 줄 안 순서를 뒤집음
+    if(s.id !== 'B' && s.id !== 'CD1') return;
+    var re = [];
+    for(var i=0;i<s.lines;i++){ re = re.concat(s.slots.slice(i*s.cols, (i+1)*s.cols).reverse()); }
+    s.slots = re;
+  });
+
+  function buildSlot(sl){
+    sl.meshes.forEach(function(m){
+      sl.group.remove(m);
+      var k = pickables.indexOf(m); if(k >= 0) pickables.splice(k,1);
+    });
+    sl.meshes = [];
+    if(!sl.w) return;
+    var h = sl.w/1000;
+    for(var l=0;l<sl.t;l++){
+      var m = new THREE.Mesh(rollGeo(sl.w), sl.mat);
+      m.position.y = l*h + h/2;
+      m.userData.ent = sl;
+      sl.group.add(m);
+      sl.meshes.push(m);
+      pickables.push(m);
+    }
+  }
+
+  function addObj(ent, parent, w,h,d, x,y,z, mat, pick){
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    m.position.set(x,y,z);
+    parent.add(m);
+    if(pick){ m.userData.ent = ent; pickables.push(m); }
+    return m;
+  }
+
+  // 25톤 화물차: 길이 약 10.4m, 운전석이 출입구 쪽(서쪽)으로 후진 주차
+  function addTruck(id,name,x0,z,rev){
+    var ent = {kind:'obj', id:id, type:'화물차', name:name, note:'25톤 · 길이 약 10.4m · 운전석이 출입구를 향해 후진 주차'};
+    var g = new THREE.Group(); g.position.set(x0, FLOOR, z);
+    var rot = rev === true ? Math.PI : (rev || 0);
+    g.rotation.y = rot;               // 0: 동쪽(+x)으로, π: 서쪽(-x)으로, π/2: 북쪽(-z)으로 뻗음
+    hall.add(g);
+    var cargo = new THREE.MeshLambertMaterial({color:0xdde2ea});
+    var cab = new THREE.MeshLambertMaterial({color:0x2f5fb3});
+    var wheel = new THREE.MeshLambertMaterial({color:0x22262e});
+    ent.mats = [cargo, cab];
+    addObj(ent,g, 2.2,2.6,2.5, 1.1,1.9,0, cab, true);
+    addObj(ent,g, 8.0,3.0,2.5, 6.4,2.4,0, cargo, true);
+    [1.3,6.0,7.4,8.8].forEach(function(x){ addObj(ent,g, 1.1,1.1,2.8, x+0.4,0.55,0, wheel, false); });
+    ent.cx = x0 + 5.2*Math.cos(rot); ent.cz = z - 5.2*Math.sin(rot); ent.size = 10.4; ent.top = 4.2;
+    ent.group = g;
+    hallObjs.push(ent);
+    return ent;
+  }
+  addTruck('T1','화물차 1 (입구 기둥 1~2번 라인)', 21.2, 13.6, 0);
+  addTruck('T2','화물차 2 (입구 기둥 2~3번 라인)', 6.15, 21.35, 0);
+
+  // 지게차 (앞쪽이 -z). 모델 좌표 기준 앞쪽 끝 약 -2.45m
+  function addForklift(id,name,x,z,h,note){
+    var ent = {kind:'obj', id:id, type:'지게차', name:name, note:note};
+    var g = new THREE.Group(); g.position.set(x, FLOOR, z); g.rotation.y = h || 0; hall.add(g);
+    var orange = new THREE.MeshLambertMaterial({color:0xe07a1f});
+    var steel  = new THREE.MeshLambertMaterial({color:0x8a93a3});
+    var black  = new THREE.MeshLambertMaterial({color:0x252a33});
+    ent.mats = [orange, steel];
+    // 차체 / 카운터웨이트 / 좌석
+    addObj(ent,g, 1.7,0.8,2.5, 0,0.8,0.45, orange, true);
+    addObj(ent,g, 1.7,0.9,0.7, 0,0.95,1.9, orange, true);
+    addObj(ent,g, 0.7,0.45,0.6, 0,1.4,0.75, black, false);
+    // 헤드가드
+    [[-0.72,-0.2],[0.72,-0.2],[-0.72,1.1],[0.72,1.1]].forEach(function(q){ addObj(ent,g, 0.07,1.2,0.07, q[0],1.85,q[1], steel, false); });
+    addObj(ent,g, 1.55,0.07,1.5, 0,2.5,0.45, steel, true);
+    // 바퀴 (이동 거리만큼 회전)
+    ent.wheels = [];
+    [[-0.95,0.42,-0.45,0.42],[0.95,0.42,-0.45,0.42],[-0.9,0.38,1.6,0.38],[0.9,0.38,1.6,0.38]].forEach(function(q){
+      var piv = new THREE.Group(); piv.position.set(q[0],q[1],q[2]); g.add(piv);
+      var w = new THREE.Mesh(new THREE.CylinderGeometry(q[3],q[3],0.32,16), black);
+      w.rotation.z = Math.PI/2; piv.add(w);
+      piv.add(new THREE.Mesh(new THREE.BoxGeometry(0.34,0.08,q[3]*1.5), steel));   // 회전이 보이도록 하는 줄
+      ent.wheels.push(piv);
+    });
+    // 마스트: 바깥 레일은 고정, 안쪽 레일은 올라갈 때 늘어남
+    [-0.45,0.45].forEach(function(xx){ addObj(ent,g, 0.1,3.0,0.1, xx,1.6,-1.35, steel, false); });
+    ent.inner = [];
+    [-0.45,0.45].forEach(function(xx){
+      var m = new THREE.Mesh(new THREE.BoxGeometry(0.07,1,0.08), steel);
+      m.position.set(xx,3.1,-1.35); m.visible = false; g.add(m); ent.inner.push(m);
+    });
+    // 캐리지 + 클램프 팔 (벌어지고 닫힘)
+    var car = new THREE.Group(); car.position.set(0,0.9,-1.5); g.add(car);
+    ent.carriage = car;
+    addObj(ent,car, 1.4,0.5,0.14, 0,0,0, steel, false);
+    ent.arms = [];
+    [-1,1].forEach(function(sx){
+      var arm = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,1.7), orange);
+      arm.position.set(sx*0.85, 0, -0.95); car.add(arm); ent.arms.push(arm);
+      arm.userData.ent = ent; pickables.push(arm);
+    });
+    ent.armX = 0.85; ent.lift = 0.9; ent.odo = 0;
+    ent.group = g; ent.x = x; ent.z = z; ent.h = h || 0;
+    ent.cx = x; ent.cz = z; ent.size = 4; ent.top = 3.2;
+    hallObjs.push(ent);
+    return ent;
+  }
+  function setArms(f, ax){ f.armX = ax; f.arms[0].position.x = -ax; f.arms[1].position.x = ax; }
+  function setLift(f, y){
+    f.lift = y; f.carriage.position.y = y;
+    var ext = y + 0.5 - 3.1;
+    f.inner.forEach(function(m){
+      m.visible = ext > 0.05;
+      if(ext > 0.05){ m.scale.y = ext; m.position.y = 3.1 + ext/2; }
+    });
+  }
+  addForklift('F1','지게차 1', 26.2, 17.3, 0, '화물차 1 상차 담당');
+  addForklift('F2','지게차 2', 11.4, 17.4, Math.PI, '화물차 2 상차 담당');
+  var F3 = addForklift('F3','지게차 3', 34.0, 23.8, Math.PI, '생산 롤 적재 담당');
+
+  // 롤 배출 구간 (동쪽 배출구 → 첫번째 기둥, 화물차 1대 길이 약 10.4m)
+  (function(){
+    var plate = new THREE.Mesh(new THREE.BoxGeometry(10.4,0.08,2.8), new THREE.MeshLambertMaterial({color:0x59606d}));
+    plate.position.set(30.8, FLOOR+0.04, 20.5); hall.add(plate);
+  })();
+
+  /* ---------- 재고 → 칸 배정 ---------- */
+  var stockList = [], stockByKey = {}, unplaced = [], wLo = 950, wHi = 2500, typeList = [], liveLoaded = false, packedNote = '';
+  function num(v){ return Number(String(v == null ? '' : v).replace(/[^0-9.\-]/g,'')) || 0; }
+
+  function itemLabel(o){ return (o.type || '-') + (o.gsm ? ' ' + o.gsm + 'g' : ''); }
+  function parseName(nm){   // "S, 120g/m2, 2500mm" → 지종 S, 평량 120
+    var m = /^\s*([^,\s]+)\s*,\s*(\d+)/.exec(String(nm == null ? '' : nm));
+    return m ? {type:m[1], gsm:Number(m[2])} : {type:'', gsm:0};
+  }
+  // 한 더미(칸)에는 한 품목(지종·평량·지폭)만 쌓으므로 품목 단위로 합산
+  function buildStock(rows){
+    var map = {};
+    rows.forEach(function(r){
+      if(r.code !== undefined && String(r.code) !== '9160') return;
+      var w = num(r.width), n = num(r.rolls);
+      if(!w || !n || n < 0) return;
+      var type = String(r.type == null ? '' : r.type).trim() || '-';
+      var gsm = num(r.gsm);
+      var key = type + '|' + gsm + '|' + w;
+      var o = map[key] || (map[key] = {key:key, type:type, gsm:gsm, w:w, rolls:0, kg:0});
+      o.rolls += n; o.kg += num(r.kg);
+    });
+    stockByKey = map;
+    return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a,b){
+      return a.w - b.w || (a.type < b.type ? -1 : a.type > b.type ? 1 : 0) || a.gsm - b.gsm;
+    });
+  }
+
+  function sampleRows(){
+    var seed = 20261006;
+    function rnd(){
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+    var rows = [];
+    for(var w=950; w<=2500; w+=50){
+      var n = w <= 1500 ? 8 + Math.floor(rnd()*30) : (w <= 1600 ? 30 + Math.floor(rnd()*40) : 5 + Math.floor(rnd()*16));
+      var ns = Math.ceil(n*0.6);
+      rows.push({code:'9160', type:'S', gsm:120, width:w, rolls:ns});
+      if(n - ns > 0) rows.push({code:'9160', type:'K', gsm:150, width:w, rolls:n - ns});
+    }
+    return rows;
+  }
+
+  function putStack(sl, o, t){ sl.w = o.w; sl.max = maxTiers(o.w); sl.key = o.key; sl.type = o.type; sl.gsm = o.gsm; sl.t = t; }
+  function stacksByWidth(items){
+    var byW = {};
+    items.forEach(function(o){
+      var mx = maxTiers(o.w), n = o.rolls, arr = byW[o.w] || (byW[o.w] = []);
+      while(n > 0){ var t = Math.min(mx, n); arr.push({o:o, t:t}); n -= t; }
+    });
+    return byW;
+  }
+  // 한 줄에는 한 지폭만: 지폭이 바뀌면 다음 줄에서 시작. 줄이 부족하면 false.
+  function allocByLines(g, items){
+    var secs = g.sects.map(sect), cols = secs[0].cols;
+    var byW = stacksByWidth(items);
+    var ws = Object.keys(byW).map(Number).sort(function(a,b){ return a-b; });
+    var need = ws.reduce(function(a,w){ return a + Math.ceil(byW[w].length/cols); }, 0);
+    var avail = secs.reduce(function(a,q){ return a + q.lines; }, 0);
+    if(need > avail) return false;
+    var lineRefs = [];
+    if(secs.length > 1){
+      var q2 = Math.ceil(need/secs.length);      // C 확장부 ①②는 줄을 반씩 나눠 양쪽에 모두 채움
+      secs.forEach(function(q){ for(var i=0;i<Math.min(q2,q.lines);i++) lineRefs.push({s:q,i:i}); });
+    } else {
+      for(var i0=0;i0<secs[0].lines;i0++) lineRefs.push({s:secs[0],i:i0});
+    }
+    var p = 0;
+    ws.forEach(function(w){
+      var st = byW[w];
+      for(var k=0;k<st.length;k+=cols){
+        var ln = lineRefs[p++];
+        for(var c=0;c<cols && k+c<st.length;c++) putStack(ln.s.slots[ln.i*cols + c], st[k+c].o, st[k+c].t);
+      }
+    });
+    return true;
+  }
+  // 줄이 모자랄 때만 사용: 칸 단위로 이어서 채움 (일부 줄에 지폭이 섞임)
+  function allocPacked(g, items){
+    var perSect = g.sects.map(function(id){
+      var q = sect(id), arr = [];
+      for(var i=0;i<q.lines;i++){ for(var j=0;j<q.cols;j++) arr.push(q.slots[i*q.cols + j]); }
+      return arr;
+    });
+    var cells = perSect[0];
+    if(perSect.length > 1){
+      var need = items.reduce(function(a,o){ return a + Math.ceil(o.rolls/maxTiers(o.w)); }, 0);
+      var quota = Math.ceil(need / perSect.length);
+      cells = [];
+      perSect.forEach(function(arr){ cells = cells.concat(arr.slice(0, quota)); });
+      if(cells.length < need) cells = [].concat.apply([], perSect);
+    }
+    var ptr = 0;
+    items.forEach(function(o){
+      var mx = maxTiers(o.w), remain = o.rolls;
+      while(remain > 0){
+        var sl = cells[ptr++];
+        if(!sl){ unplaced.push({w:o.w, rolls:remain}); break; }
+        var take = Math.min(mx, remain);
+        putStack(sl, o, take); remain -= take;
+      }
+    });
+  }
+  // 줄이 모자랄 때: 지폭마다 새 줄에서 시작하되, 남은 지폭이 모두 한 줄씩 가질 수 있는 동안만 줄을 나누고
+  // 그렇지 않은 곳만 이어서 채움 (섞이는 줄을 최소화). 섞인 줄 수를 반환.
+  function allocHybrid(g, items){
+    var secs = g.sects.map(sect), cols = secs[0].cols;
+    var byW = stacksByWidth(items);
+    var ws = Object.keys(byW).map(Number).sort(function(a,b){ return a-b; });
+    var lines = [];
+    secs.forEach(function(q){
+      for(var i=0;i<q.lines;i++){ var cl = []; for(var j=0;j<q.cols;j++) cl.push(q.slots[i*q.cols + j]); lines.push(cl); }
+    });
+    var cells = []; lines.forEach(function(cl){ cells = cells.concat(cl); });
+    var ptr = 0;
+    ws.forEach(function(w, wi){
+      var remainW = ws.length - wi, lineIdx = Math.floor(ptr/cols);
+      if(ptr % cols !== 0 && (lines.length - (lineIdx + 1)) >= remainW) ptr = (lineIdx + 1) * cols;
+      byW[w].forEach(function(stk){
+        var sl = cells[ptr++];
+        if(!sl){ unplaced.push({w:w, rolls:stk.t}); return; }
+        putStack(sl, stk.o, stk.t);
+      });
+    });
+    var mixed = 0;
+    lines.forEach(function(cl){
+      var set = {}, n = 0;
+      cl.forEach(function(sl){ if(sl.w && !set[sl.w]){ set[sl.w] = 1; n++; } });
+      if(n > 1) mixed++;
+    });
+    return mixed;
+  }
+  function allocate(){
+    slots.forEach(function(sl){ sl.w = 0; sl.t = 0; sl.max = 0; sl.key = ''; sl.type = ''; sl.gsm = 0; });
+    unplaced = []; packedNote = '';
+    var plan = GROUPS.map(function(){ return []; });
+    function item(o, n){ return {w:o.w, rolls:n, key:o.key, type:o.type, gsm:o.gsm}; }
+    stockList.forEach(function(o){
+      var gs = GROUPS.filter(function(g){ return o.w >= g.min && o.w <= g.max; });
+      if(!gs.length){ unplaced.push({w:o.w, rolls:o.rolls}); return; }
+      if(gs.length === 1){ plan[GROUPS.indexOf(gs[0])].push(item(o, o.rolls)); return; }
+      var first = Math.round(o.rolls * OVERLAP_SHARE), rest = o.rolls - first;
+      if(first > 0) plan[GROUPS.indexOf(gs[0])].push(item(o, first));
+      if(rest > 0)  plan[GROUPS.indexOf(gs[1])].push(item(o, rest));
+    });
+    var packed = [];
+    GROUPS.forEach(function(g, gi){
+      var items = plan[gi].sort(function(a,b){
+        return a.w - b.w || (a.type < b.type ? -1 : a.type > b.type ? 1 : 0) || a.gsm - b.gsm;
+      });
+      if(!allocByLines(g, items)){ var mx = allocHybrid(g, items); packed.push(g.sects.join('·') + ' ' + mx + '줄'); }
+    });
+    if(packed.length) packedNote = '줄이 모자라 일부 줄에 여러 지폭이 섞였습니다 → ' + packed.join(', ');
+    slots.forEach(buildSlot);
+  }
+
+  /* ---------- 색상 ---------- */
+  var colorMode = 'width', filterW = 0, filterT = '';
+  var cLo = new THREE.Color(0xe6d3a8), cHi = new THREE.Color(0x73482a);
+  var cG = new THREE.Color(0x3fae6b), cA = new THREE.Color(0xe0a31c), cR = new THREE.Color(0xd64545);
+  var TYPE_PALETTE = [0xd9a441,0x4f9bd8,0x6bbf7a,0xc86b6b,0x9a7fd1,0xd98aa6,0x5fb3b3,0xa0a46b];
+  function typeHex(t){ var i = typeList.indexOf(t); return TYPE_PALETTE[(i < 0 ? 0 : i) % TYPE_PALETTE.length]; }
+  function colorFor(sl){
+    var c = new THREE.Color();
+    if(colorMode === 'type'){
+      c.setHex(typeHex(sl.type));
+    } else if(colorMode === 'width'){
+      c.copy(cLo).lerp(cHi, wHi > wLo ? (sl.w-wLo)/(wHi-wLo) : 0);
+    } else {
+      var r = sl.max ? sl.t/sl.max : 0;
+      if(r < 0.6) c.copy(cG).lerp(cA, r/0.6); else c.copy(cA).lerp(cR, (r-0.6)/0.4);
+    }
+    return c;
+  }
+  function recolor(){
+    slots.forEach(function(sl){
+      sl.mat.color.copy(colorFor(sl));
+      var dim = (filterW && sl.w !== filterW) || (filterT && sl.type !== filterT);
+      sl.dim = !!dim;
+      sl.mat.transparent = !!dim;
+      sl.mat.opacity = dim ? 0.12 : 1;
+      sl.mat.needsUpdate = true;
+    });
+  }
+  function updateLegend(){
+    var lg = document.getElementById('legend');
+    lg.textContent = '';
+    var t = document.createElement('div');
+    if(colorMode === 'type'){
+      t.textContent = '색상: 지종';
+      lg.appendChild(t);
+      var row = document.createElement('div');
+      typeList.forEach(function(ty){
+        var chip = document.createElement('span');
+        var sw = document.createElement('i'); sw.className = 'sw';
+        sw.style.background = '#' + ('000000' + typeHex(ty).toString(16)).slice(-6);
+        chip.appendChild(sw); chip.appendChild(document.createTextNode(' ' + ty));
+        chip.style.marginRight = '12px';
+        row.appendChild(chip);
+      });
+      lg.appendChild(row);
+      return;
+    }
+    var bar = document.createElement('div'); bar.className = 'bar';
+    var sc = document.createElement('div'); sc.className = 'scale';
+    function sp(x){ var e = document.createElement('span'); e.textContent = x; return e; }
+    if(colorMode === 'width'){
+      t.textContent = '색상: 지폭';
+      bar.style.background = 'linear-gradient(90deg,#e6d3a8,#73482a)';
+      sc.appendChild(sp(wLo)); sc.appendChild(sp(wHi + ' mm'));
+    } else {
+      t.textContent = '색상: 적재율 (현재 단수 ÷ 최대 단수)';
+      bar.style.background = 'linear-gradient(90deg,#3fae6b,#e0a31c 60%,#d64545)';
+      sc.appendChild(sp('낮음')); sc.appendChild(sp('가득'));
+    }
+    lg.appendChild(t); lg.appendChild(bar); lg.appendChild(sc);
+  }
+
+  /* ---------- 라벨 ---------- */
+  var labels = [];
+  function addLabel(text,x,y,z,cls,fn,minor){
+    var d = document.createElement('div');
+    d.className = 'lbl' + (cls ? ' ' + cls : '');
+    d.textContent = text;
+    labelsEl.appendChild(d);
+    var l = {el:d, x:x-OX, y:y, z:z-OZ, fn:fn, minor:!!minor};
+    labels.push(l);
+    return l;
+  }
+  SECT.forEach(function(s){
+    var sz = sectSize(s);
+    s.label = addLabel(s.name, s.x0 + sz.dx/2, 7.2, s.z0 + sz.dz/2, 'sec');
+    s.label.dock = false; s.label.minor = true;
+  });
+  function updateSectLabels(){
+    SECT.forEach(function(s){
+      var ws = s.slots.filter(function(q){ return q.w; }).map(function(q){ return q.w; });
+      var txt = s.name;
+      if(ws.length) txt += ' (' + Math.min.apply(null,ws) + '~' + Math.max.apply(null,ws) + ')';
+      s.label.el.textContent = txt;
+    });
+  }
+  var lblT1 = addLabel('화물차 1 (25t)', 26.4, 5.0, 13.6, '', null, false);
+  var lblT2 = addLabel('화물차 2 (25t)', 11.35, 5.0, 21.35, '', null, false);
+  addLabel('지게차 1', 0, 4.2, 0, '', function(){ var f = FL.F1; return f ? [f.x-OX, 4.2, f.z-OZ] : null; }, true);
+  addLabel('지게차 2', 0, 4.2, 0, '', function(){ var f = FL.F2; return f ? [f.x-OX, 4.2, f.z-OZ] : null; }, true);
+  addLabel('지게차 3', 0, 4.2, 0, '', function(){ return [F3.x-OX, 4.2, F3.z-OZ]; }, true);
+  addLabel('창고 출입구', 0, 6.2, DOOR_C, 'sec');
+  addLabel('롤 배출구', 36, 5.6, 20.5, 'sec');
+  function rollLabelFn(get){      // 움직이는 롤을 따라다니는 이름표
+    return function(){
+      var r = get(); if(!r) return null;
+      var v = new THREE.Vector3();
+      if(r.root.getWorldPosition){ r.root.getWorldPosition(v); } else { v.copy(r.root.position); }
+      return [v.x, v.y + r.len/2 + 1.0, v.z];
+    };
+  }
+  var simLblA = addLabel('', 0, 0, 0, 'sec', rollLabelFn(function(){ return simA.roll; }), false);
+  var simLblB = addLabel('', 0, 0, 0, 'sec', rollLabelFn(function(){ return simB.roll; }), false);
+  var showLabels = true;
+
+  /* ---------- 카메라 ---------- */
+  var st = {target:new THREE.Vector3(0,0,0), theta:-Math.PI/2, phi:0.45, radius:95};
+  function updateCam(){
+    st.phi = clamp(st.phi, 0.06, 1.5);
+    st.radius = clamp(st.radius, 12, 300);
+    var sp = Math.sin(st.phi);
+    cam.position.set(
+      st.target.x + st.radius*sp*Math.sin(st.theta),
+      st.target.y + st.radius*Math.cos(st.phi),
+      st.target.z + st.radius*sp*Math.cos(st.theta)
+    );
+    cam.lookAt(st.target);
+  }
+  function goto(tx,ty,tz,theta,phi,r){ st.target.set(tx,ty,tz); st.theta = theta; st.phi = phi; st.radius = r; updateCam(); }
+  var VIEWS = {
+    base: function(){ goto(0,0,0,-Math.PI/2,0.45,95); },   // 입구(서)에서 안쪽(동)을 보는 방향: 북쪽이 왼쪽, 롤 배출구가 위
+    top:  function(){ goto(0,0,0,-Math.PI/2,0.06,120); }
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(b){
+    b.addEventListener('click', function(){ VIEWS[b.dataset.view](); });
+  });
+
+  /* ---------- 선택 / 호버 ---------- */
+  var selected = null, hovered = null, lit = [];
+  function matsOf(e){ return e.kind === 'slot' ? [e.mat] : e.mats; }
+  function paint(){
+    lit.forEach(function(m){ m.emissive.setHex(0); });
+    lit = [];
+    if(hovered && hovered !== selected){ matsOf(hovered).forEach(function(m){ m.emissive.setHex(0x1f1f1f); lit.push(m); }); }
+    if(selected){ matsOf(selected).forEach(function(m){ m.emissive.setHex(0x444444); lit.push(m); }); }
+  }
+  var ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+  function pick(ev){
+    var r = canvas.getBoundingClientRect();
+    mouse.x = ((ev.clientX - r.left)/r.width)*2 - 1;
+    mouse.y = -((ev.clientY - r.top)/r.height)*2 + 1;
+    ray.setFromCamera(mouse, cam);
+    var hits = ray.intersectObjects(pickables, false);
+    for(var i=0;i<hits.length;i++){
+      var e = hits[i].object.userData.ent;
+      if(e && !e.dim) return e;
+    }
+    return null;
+  }
+
+  /* ---------- 마우스 말풍선 ---------- */
+  var tipEl = document.getElementById('tip');
+  function tipText(e){
+    if(e.kind === 'obj') return e.name;
+    var t = (e.sect.short || e.sect.id) + ' ' + e.line + '라인 ' + e.col + '칸';
+    return e.w ? t + ' · ' + itemLabel(e) + ' · ' + e.w + 'mm · ' + e.t + '/' + e.max + '단' : t + ' · 빈 칸';
+  }
+  function showTip(ev, ent){
+    if(!tipEl) return;
+    if(!ent){ tipEl.style.display = 'none'; return; }
+    var rc = stage.getBoundingClientRect();
+    tipEl.textContent = tipText(ent);
+    tipEl.style.display = 'block';
+    tipEl.style.left = (ev.clientX - rc.left + 14) + 'px';
+    tipEl.style.top = (ev.clientY - rc.top + 14) + 'px';
+  }
+
+  /* ---------- 패널 ---------- */
+  function el(tag, cls, text){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(text !== undefined) e.textContent = text;
+    return e;
+  }
+  var infoEl = document.getElementById('info');
+  var sumEl = document.getElementById('sum');
+  var noteEl = document.getElementById('note');
+  var simCount = 0;
+  var statusNote = '';
+
+  function fmtKg(kg){ return kg >= 1000 ? (kg/1000).toFixed(1) + ' t' : Math.round(kg) + ' kg'; }
+
+  function renderInfo(){
+    infoEl.textContent = '';
+    var e = selected;
+    if(!e){ infoEl.appendChild(el('div','empty','롤 더미나 차량을 클릭하면 정보가 표시됩니다.')); return; }
+    if(e.kind === 'obj'){
+      infoEl.appendChild(el('h2','',e.name));
+      var d2 = el('dl');
+      d2.appendChild(el('dt','','종류')); d2.appendChild(el('dd','',e.type));
+      d2.appendChild(el('dt','','비고')); d2.appendChild(el('dd','',e.note));
+      infoEl.appendChild(d2);
+      return;
+    }
+    infoEl.appendChild(el('h2','', (e.sect.short || e.sect.id) + ' · ' + e.line + '라인 ' + e.col + '칸'));
+    var dl = el('dl');
+    function row(k,v){ dl.appendChild(el('dt','',k)); dl.appendChild(el('dd','',v)); }
+    row('구역', e.sect.name);
+    if(!e.w){ row('상태', '빈 칸'); infoEl.appendChild(dl); return; }
+    row('지종', itemLabel(e));
+    row('지폭', e.w + ' mm');
+    row('단수', e.t + ' / ' + e.max + ' (최대)');
+    row('적재 높이', (e.t*e.w/1000).toFixed(2) + ' m (한도 ' + MAXH + ' m)');
+    row('이 더미 롤', e.t + '개');
+    var tot = stockByKey[e.key];
+    if(tot) row('이 품목 합계', tot.rolls + '롤');
+    infoEl.appendChild(dl);
+    infoEl.appendChild(el('div','small','품목(지종·지폭)별 수량 기준으로 자동 배치한 위치입니다. 한 더미에는 한 품목만 쌓습니다.'));
+  }
+
+  function updateStatus(){
+    var dot = document.getElementById('statDot'), txt = document.getElementById('statTxt');
+    if(!dot || !txt) return;
+    var live = DATA_LABEL.indexOf('구글시트') === 0;
+    dot.style.background = live ? (statusNote ? '#d98a06' : '#2e9e5b') : (DATA_LABEL.indexOf('샘플') === 0 ? '#d63c3c' : '#8d9ab0');
+    txt.textContent = DATA_LABEL + (statusNote ? ' · ' + statusNote : '');
+  }
+  var tab = 'zone';
+  function rangeText(a){
+    var out = [], st0 = a[0], pv = a[0];
+    for(var i=1;i<=a.length;i++){
+      if(i < a.length && a[i] === pv+1){ pv = a[i]; continue; }
+      out.push(st0 === pv ? String(st0) : st0 + '~' + pv);
+      if(i < a.length){ st0 = pv = a[i]; }
+    }
+    return out.join(',') + '라인';
+  }
+  function locText(key){
+    var by = {};
+    slots.forEach(function(sl){ if(sl.key === key && sl.t > 0){ (by[sl.sect.id] = by[sl.sect.id] || {})[sl.line] = 1; } });
+    return Object.keys(by).map(function(id){
+      var ls = Object.keys(by[id]).map(Number).sort(function(a,b){ return a-b; });
+      var sc = sect(id);
+      return (sc && sc.short ? sc.short : id) + ' ' + rangeText(ls);
+    }).join(', ');
+  }
+  function setFilter(w, t){
+    filterW = w || 0; filterT = t || '';
+    wf.value = String(filterW); tf.value = filterT;
+    recolor(); renderSummary();
+  }
+  function focusItem(o){
+    var on = !(filterW === o.w && filterT === o.type);
+    setFilter(on ? o.w : 0, on ? o.type : '');
+    if(on){
+      var first = slots.filter(function(sl){ return sl.key === o.key && sl.t > 0; })[0];
+      if(first) goto(first.x - OX, 0, first.z - OZ, st.theta, 0.95, 45);
+    }
+  }
+
+  function renderStockTable(){
+    var box = el('div');
+    var wset = {}; stockList.forEach(function(o){ wset[o.w] = 1; });
+    box.appendChild(el('div','tot', DATA_LABEL + ' · 지폭 ' + Object.keys(wset).length + '종 · 품목 ' + stockList.length + '건'));
+    var unW = {}; unplaced.forEach(function(q){ unW[q.w] = 1; });
+    var unList = Object.keys(unW).map(Number).sort(function(a,b){ return a-b; });
+    if(unList.length) box.appendChild(el('div','tot','칸 부족으로 미배치: ' + unList.join(', ')));
+    if(filterW || filterT){
+      var clr = el('button','clr','필터 해제 (' + (filterT ? filterT + ' ' : '') + (filterW ? filterW + ' mm' : '') + ')');
+      clr.addEventListener('click', function(){ setFilter(0, ''); });
+      box.appendChild(clr);
+    }
+    var tb = el('table','tbl');
+    var thd = el('thead'), hd = el('tr');
+    ['지종','지폭','롤','위치'].forEach(function(h){ hd.appendChild(el('th','',h)); });
+    thd.appendChild(hd); tb.appendChild(thd);
+    var tbd = el('tbody'); tb.appendChild(tbd);
+    var sumR = 0, sumK = 0, onRow = null;
+    stockList.forEach(function(o){
+      sumR += o.rolls; sumK += o.kg;
+      var isOn = (filterW === o.w && filterT === o.type) || (selected && selected.kind === 'slot' && selected.key === o.key);
+      var r = el('tr','row' + (isOn ? ' on' : ''));
+      if(isOn && !onRow) onRow = r;
+      r.appendChild(el('td','', itemLabel(o)));
+      r.appendChild(el('td','', String(o.w)));
+      r.appendChild(el('td','', String(o.rolls)));
+      r.appendChild(el('td','loc', locText(o.key) || '미배치'));
+      r.addEventListener('click', function(){ focusItem(o); });
+      tbd.appendChild(r);
+    });
+    var ft = el('tr','sum');
+    ft.appendChild(el('td','','합계'));
+    ft.appendChild(el('td','',''));
+    ft.appendChild(el('td','', String(sumR)));
+    ft.appendChild(el('td','loc', sumK ? '총 ' + fmtKg(sumK) : ''));
+    tbd.appendChild(ft);
+    box.appendChild(tb);
+    sumEl.appendChild(box);
+    if(onRow && onRow.scrollIntoView) onRow.scrollIntoView({block:'nearest'});
+  }
+
+  function renderSummary(){
+    sumEl.textContent = '';
+    if(tab === 'stock'){
+      renderStockTable();
+    } else {
+      var totR = 0, totKg = 0;
+      stockList.forEach(function(o){ totR += o.rolls; totKg += o.kg; });
+      sumEl.appendChild(el('div','tot', DATA_LABEL + ' · 롤 ' + totR.toLocaleString('ko-KR') + '개' + (totKg ? ' · ' + fmtKg(totKg) : '')));
+      SECT.forEach(function(s){
+        var r = 0, used = 0, cap = 0;
+        s.slots.forEach(function(q){ r += q.t; if(q.w){ used++; cap += q.max; } });
+        var b = el('button');
+        var t1 = el('div'); t1.appendChild(el('b','',s.name));
+        b.appendChild(t1);
+        b.appendChild(el('div','sub','롤 ' + r + '개 · 칸 ' + used + '/' + s.slots.length + ' · 적재율 ' + (cap ? Math.round(r/cap*100) : 0) + '%'));
+        var mt = el('div','meter'), fl = el('i');
+        fl.style.width = Math.round(used/s.slots.length*100) + '%';
+        mt.appendChild(fl); b.appendChild(mt);
+        b.addEventListener('click', function(){
+          var sz = sectSize(s);
+          goto(s.x0 + sz.dx/2 - OX, 0, s.z0 + sz.dz/2 - OZ, st.theta, 0.95, 42);
+        });
+        sumEl.appendChild(b);
+      });
+      if(unplaced.length){
+        var tl = unplaced.reduce(function(a,q){ return a + q.rolls; }, 0);
+        sumEl.appendChild(el('div','tot','칸이 부족해 배치하지 못한 롤: ' + tl + '개 (지폭 ' + unplaced.map(function(q){ return q.w; }).join(', ') + ')'));
+      }
+    }
+    if(tab !== 'stock' && packedNote) sumEl.appendChild(el('div','tot', packedNote));
+    noteEl.textContent = '데이터: ' + DATA_LABEL + (DATA_LABEL.indexOf('구글시트') === 0 ? ' (' + Math.round(REFRESH_MS/60000) + '분마다 자동 갱신)' : '') + (statusNote ? ' · ' + statusNote : '') + '. 칸 배치는 품목(지종·지폭)별 수량 기준 자동 배정이며 한 줄에는 한 지폭, 한 더미에는 한 품목만 놓습니다. 실제 위치가 아닙니다. 재고가 늘면 롤 배출구 입고, 줄면 화물차 상차로 표시하고, [동작 시연]은 재고에 반영되지 않습니다.';
+    updateStatus();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function(b){
+    b.addEventListener('click', function(){
+      tab = b.dataset.tab;
+      Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function(x){
+        x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+      });
+      renderSummary();
+    });
+  });
+
+  var wf = document.getElementById('wf'), tf = document.getElementById('tf');
+  function buildFilter(){
+    wf.textContent = ''; tf.textContent = '';
+    var byW = {}, byT = {};
+    stockList.forEach(function(it){ byW[it.w] = (byW[it.w] || 0) + it.rolls; byT[it.type] = (byT[it.type] || 0) + it.rolls; });
+    var o = el('option','','전체'); o.value = '0'; wf.appendChild(o);
+    Object.keys(byW).map(Number).sort(function(a,b){ return a-b; }).forEach(function(w){
+      var op = el('option','', w + ' mm (' + byW[w] + '롤)'); op.value = String(w); wf.appendChild(op);
+    });
+    var o2 = el('option','','전체'); o2.value = ''; tf.appendChild(o2);
+    typeList.forEach(function(ty){
+      var op = el('option','', ty + ' (' + byT[ty] + '롤)'); op.value = ty; tf.appendChild(op);
+    });
+    filterW = 0; filterT = '';
+  }
+  wf.addEventListener('change', function(){ filterW = parseInt(wf.value,10) || 0; recolor(); renderSummary(); });
+  tf.addEventListener('change', function(){ filterT = tf.value; recolor(); renderSummary(); });
+  Array.prototype.forEach.call(document.querySelectorAll('#modeSeg button'), function(b){
+    b.addEventListener('click', function(){
+      colorMode = b.dataset.m;
+      Array.prototype.forEach.call(document.querySelectorAll('#modeSeg button'), function(x){
+        x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+      });
+      recolor(); updateLegend();
+    });
+  });
+  var bRoof = document.getElementById('bRoof');
+  bRoof.addEventListener('click', function(){
+    roofGroup.visible = !roofGroup.visible;
+    bRoof.setAttribute('aria-pressed', roofGroup.visible ? 'true' : 'false');
+  });
+  var bLabels = document.getElementById('bLabels');
+  bLabels.addEventListener('click', function(){
+    showLabels = !showLabels;
+    bLabels.setAttribute('aria-pressed', showLabels ? 'true' : 'false');
+    labelsEl.style.display = showLabels ? 'block' : 'none';
+  });
+  var bPanel = document.getElementById('bPanel');
+  bPanel.addEventListener('click', function(){
+    var off = document.getElementById('app').classList.toggle('nopanel');
+    bPanel.setAttribute('aria-pressed', off ? 'false' : 'true');
+    resize();
+  });
+  document.getElementById('bDemo').addEventListener('click', function(){   // 재고에 반영되지 않는 시연
+    var have = slots.filter(function(sl){ return sl.w && sl.t > 0; });
+    if(!have.length) return;
+    var room = have.filter(function(sl){ return sl.t < sl.max; });
+    function pickOne(a){ return a[Math.floor(Math.random()*a.length)]; }
+    if(room.length){
+      var c = pickOne(room);
+      jobsIn.push({kind:'in', key:c.key, w:c.w, type:c.type, gsm:c.gsm, cell:c, idx:c.t, hide:false, demo:true});
+    }
+    var o = pickOne(have);
+    jobsOut.push({kind:'out', key:o.key, w:o.w, type:o.type, gsm:o.gsm, cell:o, idx:o.t - 1, truck: pickTruck(), demo:true});
+  });
+  var bSim = document.getElementById('bSim');
+  bSim.addEventListener('click', function(){
+    sim.on = !sim.on;
+    bSim.setAttribute('aria-pressed', sim.on ? 'true' : 'false');
+  });
+
+  /* ---------- 입력 ---------- */
+  var drag = null;
+  canvas.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  canvas.addEventListener('pointerdown', function(e){
+    canvas.setPointerCapture(e.pointerId);
+    showTip(e, null);
+    drag = {x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY, pan:(e.button === 2 || e.shiftKey), moved:false};
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if(drag){
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.x = e.clientX; drag.y = e.clientY;
+      if(Math.abs(e.clientX-drag.sx) + Math.abs(e.clientY-drag.sy) > 4) drag.moved = true;
+      if(drag.pan){
+        var k = st.radius*0.0016, ct = Math.cos(st.theta), sn = Math.sin(st.theta);
+        st.target.x += -ct*dx*k + (-sn)*dy*k;
+        st.target.z +=  sn*dx*k + (-ct)*dy*k;
+      } else {
+        st.theta -= dx*0.006;
+        st.phi   -= dy*0.006;
+      }
+      updateCam();
+    } else {
+      var h = pick(e);
+      if(h !== hovered){ hovered = h; canvas.style.cursor = h ? 'pointer' : 'default'; paint(); }
+      showTip(e, h);
+    }
+  });
+  canvas.addEventListener('pointerup', function(e){
+    if(drag && !drag.moved && !drag.pan){ selected = pick(e); paint(); renderInfo(); if(tab === 'stock') renderSummary(); }
+    drag = null;
+  });
+  canvas.addEventListener('pointerleave', function(){ showTip(null, null); if(!drag && hovered){ hovered = null; paint(); } });
+  canvas.addEventListener('wheel', function(e){
+    e.preventDefault();
+    st.radius *= Math.exp(e.deltaY*0.001);
+    updateCam();
+  }, {passive:false});
+
+  /* ---------- 테마 / 리사이즈 ---------- */
+  function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function applyTheme(){
+    renderer.setClearColor(cssVar('--scene-bg') || '#dfe4eb');
+    ground.material.color.set(cssVar('--ground') || '#eef0f4');
+    floorMat.color.set(cssVar('--floor') || '#c9ced7');
+  }
+  applyTheme();
+  try{
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if(mq.addEventListener) mq.addEventListener('change', applyTheme);
+  }catch(e){}
+
+  function resize(){
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if(!w || !h) return;
+    renderer.setSize(w, h, false);
+    cam.aspect = w/h;
+    cam.updateProjectionMatrix();
+  }
+  if(window.ResizeObserver){ new ResizeObserver(resize).observe(stage); }
+  window.addEventListener('resize', resize);
+  resize();
+
+  /* ---------- 지게차 작업 ----------
+     재고 증가 → 롤 배출구에서 나와 지게차 3이 자리에 입고
+     재고 감소 → 지게차 1·2가 더미에서 롤을 꺼내 화물차에 상차 */
+  var EXIT_X = 36.0, LANE_Z = 20.5, STOP_X = 25.9, CARRY_Z = -2.9;
+  var SPEED = 2.0, TURN = 2.4;
+  var HOMES = {F1:{x:26.2,z:17.3,h:0}, F2:{x:11.4,z:17.4,h:Math.PI}, F3:{x:34.0,z:23.8,h:Math.PI}};
+  var TRUCKS = {T1:{fl:'F1'}, T2:{fl:'F2'}};
+  var FL = {}; hallObjs.forEach(function(o){ if(o.wheels) FL[o.id] = o; });
+  var jobsIn = [], jobsOut = [], loaded = {T1:0, T2:0}, outToggle = 0;
+  var sim = {on:true};
+  var simA = {state:'idle', t:1.0, roll:null, job:null, path:null, pi:0, u:0, wait:0};
+  var simB = {state:'idle', roll:null, job:null, path:null, pi:0, u:0, f:null};
+
+  /* ---------- 배경 동작: 화물차는 주기적으로 들어왔다 나가고, 지게차는 쉬다가 가끔 자리를 옮김 ----------
+     (실제 출하·차량번호와는 무관한 연출. 재고가 줄면 와 있는 화물차에 상차하고, 없으면 화물차를 불러옴) */
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  var TR = {}, OUT_X = -13;
+  hallObjs.forEach(function(o){ if(o.id === 'T1' || o.id === 'T2') TR[o.id] = {ent:o, z:o.group.position.z, park:o.group.position.x, x:o.group.position.x, state:'parked', t:0, want:false}; });
+  TR.T1.t = rnd(70, 120); TR.T2.t = rnd(130, 200);
+  function setTruckX(T){ T.ent.group.position.set(T.x, FLOOR, T.z); }
+  function pickTruck(){
+    var ids = ['T1','T2'];
+    var pool = ids.filter(function(id){ return TR[id].state === 'parked'; });
+    if(!pool.length) pool = ids.filter(function(id){ return TR[id].state === 'arriving'; });
+    if(!pool.length) pool = ids;
+    outToggle ^= 1;
+    var id = pool[outToggle % pool.length];
+    if(TR[id].state === 'away') TR[id].want = true;
+    return id;
+  }
+  function stepTrucks(dt){
+    ['T1','T2'].forEach(function(id){
+      var T = TR[id];
+      switch(T.state){
+        case 'away':
+          T.t -= dt;
+          if(T.want) T.t = Math.min(T.t, 2.0);
+          if(T.t <= 0){ T.state = 'arriving'; T.x = OUT_X; T.want = false; T.ent.group.visible = true; setTruckX(T); loaded[id] = 0; refreshTruckLabel(id); }
+          break;
+        case 'arriving':                      // 운전석이 출입구를 향한 채 후진해서 들어옴
+          T.x = Math.min(T.park, T.x + 2.2*dt); setTruckX(T);
+          if(T.x >= T.park){ T.state = 'parked'; T.t = rnd(70, 180); }
+          break;
+        case 'parked':
+          T.t -= dt;
+          var busy = jobsOut.some(function(j){ return j.truck === id; }) || (simB.state !== 'idle' && simB.job && simB.job.truck === id);
+          if(T.t <= 0 && !busy) T.state = 'leaving';
+          break;
+        case 'leaving':                       // 앞으로 나감
+          T.x -= 3.0*dt; setTruckX(T);
+          if(T.x <= OUT_X){ T.state = 'away'; T.ent.group.visible = false; T.t = rnd(25, 80); loaded[id] = 0; refreshTruckLabel(id); }
+          break;
+      }
+    });
+  }
+  function truckLblFn(id){ return function(){ var T = TR[id]; return T.state === 'away' ? null : [T.x + 5.2 - OX, 5.0, T.z - OZ]; }; }
+  lblT1.fn = truckLblFn('T1'); lblT2.fn = truckLblFn('T2');
+
+  var wantHome = {F1:false, F2:false, F3:false};
+  var yieldReq = {F1:null, F2:null, F3:null};      // 서 있는 지게차가 작업 중인 지게차 길을 막으면 비켜 달라는 요청
+  var SPOTS = {
+    F1:[{x:23.6,z:17.6,h:Math.PI/2}, {x:28.6,z:17.6,h:-Math.PI/2}, {x:26.2,z:18.4,h:Math.PI}],
+    F2:[{x:14.6,z:17.5,h:Math.PI/2}, {x:8.2,z:17.5,h:-Math.PI/2}, {x:11.4,z:16.8,h:Math.PI}],
+    F3:[{x:34.0,z:23.8,h:Math.PI}, {x:31.0,z:23.6,h:Math.PI}]
+  };
+  var AMB = {F1:{s:'rest',t:rnd(4,10),sp:null}, F2:{s:'rest',t:rnd(8,16),sp:null}, F3:{s:'rest',t:rnd(6,14),sp:null}};
+  function atHome(f){ var H = HOMES[f.id]; return Math.hypot(f.x - H.x, f.z - H.z) < 0.12 && Math.abs(angDiff(f.h, H.h)) < 0.05; }
+  function stepAmbient(dt){
+    for(var fid in FL){ if(FL[fid].movedT > 0) FL[fid].movedT -= dt; }
+    ['F1','F2','F3'].forEach(function(id){
+      var f = FL[id], a = AMB[id], H = HOMES[id];
+      var busy = id === 'F3' ? simA.state !== 'idle' : (simB.state !== 'idle' && simB.f === f);
+      if(busy){ a.s = 'rest'; a.t = rnd(3, 8); return; }
+      var yq = yieldReq[id];
+      if(yq && yq.t > 0){                            // 작업 중인 지게차 길을 막고 있으면 가장 먼 대기 자리로 비켜 줌
+        if(a.ys === null || a.ys === undefined){
+          var bestSp = null, bd = 2.5;                 // 가려는 길(출발→목적지)에서 2.5m 이상 떨어진 자리만
+          SPOTS[id].forEach(function(sp){
+            var ax = yq.from.x, az = yq.from.z, bx = yq.to.x, bz = yq.to.z, vx = bx - ax, vz = bz - az, L2 = vx*vx + vz*vz || 1;
+            var tt = clamp(((sp.x - ax)*vx + (sp.z - az)*vz)/L2, 0, 1), dd = Math.hypot(sp.x - (ax + vx*tt), sp.z - (az + vz*tt));
+            if(dd > bd){ bd = dd; bestSp = sp; }
+          });
+          a.ys = bestSp || false;
+        }
+        if(a.ys){ if(drive(f, a.ys.x, a.ys.z, dt, a.ys.h)) yq.t -= dt; } else yq.t = 0;      // 도착한 뒤부터 시간이 줄어듦
+        a.s = 'rest'; a.t = 2; return;
+      }
+      a.ys = null;
+      if(simA.state !== 'idle' || simB.state !== 'idle'){ a.s = 'rest'; a.t = rnd(3, 8); if(!atHome(f)) drive(f, H.x, H.z, dt, H.h); return; }   // 다른 지게차가 작업 중이면 대기 위치에서 기다림
+      if(wantHome[id]){ a.s = 'rest'; a.t = 2; if(!atHome(f)) drive(f, H.x, H.z, dt, H.h); return; }
+      switch(a.s){
+        case 'rest':
+          a.t -= dt;
+          if(a.t <= 0){
+            if(Math.random() < 0.85){ a.sp = SPOTS[id][Math.floor(Math.random()*SPOTS[id].length)]; a.s = 'go'; }
+            else a.t = rnd(3, 8);
+          }
+          break;
+        case 'go':   if(drive(f, a.sp.x, a.sp.z, dt, a.sp.h)){ a.s = 'wait'; a.t = rnd(2, 6); } break;
+        case 'wait': a.t -= dt; if(a.t <= 0) a.s = 'back'; break;
+        case 'back': if(drive(f, H.x, H.z, dt, H.h)){ a.s = 'rest'; a.t = rnd(3, 9); } break;
+      }
+    });
+  }
+
+  function angDiff(a,b){
+    var d = a - b;
+    while(d > Math.PI) d -= 2*Math.PI;
+    while(d < -Math.PI) d += 2*Math.PI;
+    return d;
+  }
+  function applyF(f){
+    f.group.position.set(f.x, FLOOR, f.z); f.group.rotation.y = f.h;
+    if(f.wheels) f.wheels.forEach(function(w){ w.rotation.x = -f.odo/0.4; });
+  }
+  var SEP = 6.4, SEP_STATIC = 2.4;                // 지게차 중심 사이 최소 거리(m): 움직이는 지게차끼리 / 서 있는 지게차 옆을 지날 때
+  function sepFor(g){ return (g && g.movedT > 0) ? SEP : SEP_STATIC; }
+  function driveBack(f, tx, tz, dt){              // 방향을 유지한 채 후진
+    var dx = tx - f.x, dz = tz - f.z, dist = Math.hypot(dx, dz);
+    if(dist <= 0.05) return true;
+    var step = Math.min(dist, SPEED*0.8*dt), nx = f.x + dx/dist*step, nz = f.z + dz/dist*step;
+    var oldN = nearestOther(f, f.x, f.z), newN = nearestOther(f, nx, nz);
+    if(newN.d < sepFor(newN.g) && newN.d < oldN.d){ f.wait = (f.wait || 0) + dt; return false; }
+    f.wait = 0; f.x = nx; f.z = nz; f.odo -= step; f.movedT = 0.6; applyF(f);
+    return false;
+  }
+  function nearestOther(f, x, z){
+    var m = 1e9, who = null;
+    for(var id in FL){ var g = FL[id]; if(g === f) continue; var d = Math.hypot(x - g.x, z - g.z); if(d < m){ m = d; who = g; } }
+    return {d:m, g:who};
+  }
+  function drive(f, tx, tz, dt, finalH){
+    if(f.backT > 0){                              // 오래 막혔을 때 우선순위가 낮은 쪽이 직선으로 후진해서 길을 내줌
+      f.backT -= dt; f.movedT = 0.6; f.x += Math.sin(f.h)*1.0*dt; f.z += Math.cos(f.h)*1.0*dt; f.odo -= 1.0*dt; applyF(f); return false;
+    }
+    var dx = tx - f.x, dz = tz - f.z, dist = Math.hypot(dx,dz);
+    if(dist > 0.05){
+      var want = Math.atan2(-dx,-dz), diff = angDiff(want, f.h);
+      f.h += clamp(diff, -TURN*dt, TURN*dt);
+      if(Math.abs(angDiff(want, f.h)) < 0.35){
+        var step = Math.min(dist, SPEED*dt);
+        var nx = f.x + dx/dist*step, nz = f.z + dz/dist*step;
+        var oldN = nearestOther(f, f.x, f.z), newN = nearestOther(f, nx, nz);
+        if(newN.d < sepFor(newN.g) && newN.d < oldN.d){      // 다른 지게차에 너무 가까워지면 멈춰서 양보
+          f.wait = (f.wait || 0) + dt;
+          var gB = newN.g;
+          if(gB && !(gB.movedT > 0) && f.wait > 2.0 && !(gB.id === 'F3' ? simA.state !== 'idle' : (simB.state !== 'idle' && simB.f === gB))){
+            yieldReq[gB.id] = {t:5, from:{x:f.x, z:f.z}, to:{x:tx, z:tz}};            // 서 있는 지게차는 길을 비켜 줌
+          }
+          if(f.wait > 6 && gB && String(f.id) > String(gB.id)){ f.backT = 1.8; f.wait = 0; }   // 둘 다 움직이는 중이면 번호가 큰 쪽이 후진해서 양보
+        } else { f.wait = 0; f.x = nx; f.z = nz; f.odo += step; f.movedT = 0.6; }
+      }
+      applyF(f);
+      return false;
+    }
+    if(finalH !== undefined){
+      var d2 = angDiff(finalH, f.h);
+      f.h += clamp(d2, -TURN*dt, TURN*dt);
+      applyF(f);
+      return Math.abs(angDiff(finalH, f.h)) < 0.02;
+    }
+    return true;
+  }
+  function ease(u){ return u<0 ? 0 : u>1 ? 1 : u*u*(3-2*u); }
+  function clampWorld(f){ return {x: f.x - 2.9*Math.sin(f.h), z: f.z - 2.9*Math.cos(f.h)}; }
+  function hideTop(sl, idx, hide){ var m = sl.meshes[idx]; if(m) m.visible = !hide; }
+
+  // 롤: root → tilt(눕힘/세움) → spin(굴러가는 회전) → 원통 (원통 축은 spin의 y축)
+  function makeRoll(wmm, type){
+    var len = wmm/1000;
+    var root = new THREE.Group(), tilt = new THREE.Group(), spin = new THREE.Group();
+    root.add(tilt); tilt.add(spin);
+    var mat = new THREE.MeshLambertMaterial({color: colorMode === 'type' ? typeHex(type) : 0xd8c08f});
+    spin.add(new THREE.Mesh(new THREE.CylinderGeometry(R,R,len,24), mat));
+    var stripe = new THREE.Mesh(new THREE.BoxGeometry(0.05,len+0.03,0.16), new THREE.MeshLambertMaterial({color:0x6b4a2a}));
+    stripe.position.x = R;
+    spin.add(stripe);
+    tilt.rotation.x = Math.PI/2;      // 눕힌 상태: 축이 z 방향
+    return {root:root, tilt:tilt, spin:spin, mat:mat, len:len, w:wmm};
+  }
+
+  // 칸에 접근하는 위치: 각 구역의 통로 쪽 가장자리에서 롤을 집어 놓거나 내림 (안쪽 칸은 롤이 가장자리에서 건너감)
+  function edgeIsLast(q){ return q.id === 'A' || q.id === 'CU' || q.id === 'CD2'; }
+  function blockedToEdge(sl){                    // 이 칸과 통로 가장자리 사이에 다른 롤이 있으면 지게차가 들어갈 수 없음
+    var q = sl.sect, last = edgeIsLast(q);
+    return slots.some(function(o){ return o !== sl && o.sect === q && o.line === sl.line && o.t > 0 && (last ? o.col > sl.col : o.col < sl.col); });
+  }
+  function accessFor(sl){
+    var q = sl.sect, id = q.id, cell = {x:sl.x, z:sl.z}, base;
+    if(id === 'A' || id === 'CU'){
+      var ez = q.z0 + (q.cols-0.5)*P;
+      base = {dir:'N', cell:cell, edge:{x:sl.x,z:ez}, stand:{x:sl.x, z:ez+2.9, h:0}};
+    } else if(id === 'B'){
+      var ez2 = q.z0 + 0.5*P;
+      base = {dir:'S', cell:cell, edge:{x:sl.x,z:ez2}, stand:{x:sl.x, z:ez2-2.9, h:Math.PI}};
+    } else if(id === 'CD1'){
+      var ex = q.x0 + 0.5*P;
+      base = {dir:'E', cell:cell, edge:{x:ex,z:sl.z}, stand:{x:ex-2.9, z:sl.z, h:-Math.PI/2}};
+    } else {
+      var ex2 = q.x0 + (q.cols-0.5)*P;
+      base = {dir:'W', cell:cell, edge:{x:ex2,z:sl.z}, stand:{x:ex2+2.9, z:sl.z, h:Math.PI/2}};
+    }
+    var dd = {N:[0,2.9], S:[0,-2.9], E:[-2.9,0], W:[2.9,0]}[base.dir];
+    var deep = {x:cell.x + dd[0], z:cell.z + dd[1], h:base.stand.h};
+    if(!blockedToEdge(sl) && (Math.abs(deep.x - base.stand.x) > 0.05 || Math.abs(deep.z - base.stand.z) > 0.05)){
+      base.pre = base.stand; base.stand = deep;      // 통로에서 줄을 따라 롤 바로 앞까지 들어감
+    }
+    return base;
+  }
+  // 차량·기둥을 피해 가는 경로 (start: 'F1' | 'F2' | 'F3')
+  function routeTo(start, acc){
+    var r0 = routeToPre(start, acc.pre ? {dir:acc.dir, stand:acc.pre} : acc);
+    if(acc.pre) r0.push({x:acc.stand.x, z:acc.stand.z, h:acc.stand.h, deep:true});
+    return r0;
+  }
+  function routeToPre(start, acc){
+    var st = acc.stand;
+    if(acc.dir === 'N'){
+      if(start === 'F2') return [{x:11.4,z:st.z}, {x:st.x,z:st.z,h:st.h}];
+      var y0 = start === 'F1' ? 17.3 : LANE_Z;
+      return [{x:33.5,z:y0}, {x:33.5,z:st.z}, {x:st.x,z:st.z,h:st.h}];
+    }
+    if(acc.dir === 'S'){
+      if(start === 'F2') return [{x:18.0,z:17.4}, {x:18.0,z:st.z}, {x:st.x,z:st.z,h:st.h}];
+      if(start === 'F1') return [{x:27.4,z:17.3}, {x:27.4,z:st.z}, {x:st.x,z:st.z,h:st.h}];
+      return [{x:28.8,z:st.z}, {x:st.x,z:st.z,h:st.h}];
+    }
+    var pre = start === 'F2' ? [{x:18.0,z:17.4}, {x:18.0,z:23.5}] : start === 'F1' ? [{x:27.4,z:17.3}, {x:27.4,z:23.5}] : [{x:28.8,z:23.5}];
+    return pre.concat([{x:st.x,z:23.5}, {x:st.x,z:st.z,h:st.h}]);
+  }
+  function backRoute(path, home){
+    var r = [], n = path.length;
+    for(var k=n-2;k>=0;k--){
+      if(k === n-2 && path[n-1].deep) r.push({x:path[k].x, z:path[k].z, rev:true});   // 줄 안쪽에서는 후진으로 빠져나옴
+      else r.push({x:path[k].x, z:path[k].z});
+    }
+    r.push({x:home.x, z:home.z, h:home.h});
+    return r;
+  }
+  function refreshTruckLabel(id){
+    var n = loaded[id], lbl = id === 'T1' ? lblT1 : lblT2;
+    lbl.el.textContent = (id === 'T1' ? '화물차 1 (25t)' : '화물차 2 (25t)') + (n ? ' · 상차 ' + n + '롤' : '');
+  }
+
+  // 이전 읽기와 비교해 늘어난 롤은 입고, 줄어든 롤은 상차 작업으로 만든다 (한 번에 품목당 최대 4개)
+  function enqueueEvents(prevByKey, prevSnap){
+    var used = {}, inK = [], outK = [];
+    Object.keys(stockByKey).forEach(function(k){
+      var d = stockByKey[k].rolls - (prevByKey[k] ? prevByKey[k].rolls : 0);
+      for(var i=0;i<Math.min(d,4);i++) inK.push(k);
+    });
+    Object.keys(prevByKey).forEach(function(k){
+      var d = (stockByKey[k] ? stockByKey[k].rolls : 0) - prevByKey[k].rolls;
+      for(var i=0;i<Math.min(-d,4);i++) outK.push(k);
+    });
+    inK.forEach(function(k){
+      var best = -1;
+      slots.forEach(function(sl, i){
+        if(best >= 0 || sl.key !== k) return;
+        var pt = prevSnap[i].key === k ? prevSnap[i].t : 0;
+        if(sl.t > pt + (used['i'+i] || 0)) best = i;
+      });
+      var sl, idx;
+      if(best >= 0){
+        sl = slots[best];
+        var pt2 = prevSnap[best].key === k ? prevSnap[best].t : 0;
+        idx = pt2 + (used['i'+best] || 0);
+        used['i'+best] = (used['i'+best] || 0) + 1;
+      } else {
+        var cand = slots.filter(function(q){ return q.key === k && q.t > 0; });
+        if(!cand.length) return;
+        sl = cand[cand.length-1]; idx = sl.t - 1;
+      }
+      hideTop(sl, idx, true);      // 이미 반영된 새 롤은 도착할 때까지 숨김
+      jobsIn.push({kind:'in', key:k, w:sl.w, type:sl.type, gsm:sl.gsm, cell:sl, idx:idx, hide:true});
+    });
+    outK.forEach(function(k){
+      var best = -1;
+      slots.forEach(function(sl, i){
+        if(best >= 0) return;
+        var ps = prevSnap[i];
+        if(ps.key !== k) return;
+        var nt = sl.key === k ? sl.t : 0;
+        if(ps.t > nt + (used['o'+i] || 0)) best = i;
+      });
+      var sl2, idx2;
+      if(best >= 0){
+        sl2 = slots[best];
+        idx2 = prevSnap[best].t - 1 - (used['o'+best] || 0);
+        used['o'+best] = (used['o'+best] || 0) + 1;
+      } else {
+        var c2 = slots.filter(function(q){ return q.key === k && q.t > 0; });
+        if(!c2.length) return;
+        sl2 = c2[c2.length-1]; idx2 = sl2.t;
+      }
+      var it = prevByKey[k];
+      (function(){                                  // 같은 줄에서 통로에 가장 가까운 롤부터 (안쪽 롤은 앞의 롤 때문에 꺼낼 수 없음)
+        var last = edgeIsLast(sl2.sect), bestO = -1;
+        slots.forEach(function(o, oi){
+          if(o.sect !== sl2.sect || o.line !== sl2.line || !prevSnap[oi] || prevSnap[oi].t <= 0) return;
+          if(bestO < 0 || (last ? o.col > slots[bestO].col : o.col < slots[bestO].col)) bestO = oi;
+        });
+        if(bestO >= 0){
+          var ix = prevSnap[bestO].t - 1 - (used['x'+bestO] || 0);
+          if(ix >= 0){ used['x'+bestO] = (used['x'+bestO] || 0) + 1; sl2 = slots[bestO]; idx2 = ix; }
+        }
+      })();
+      jobsOut.push({kind:'out', key:k, w:it.w, type:it.type, gsm:it.gsm, cell:sl2, idx:idx2, truck: pickTruck()});
+    });
+  }
+
+  // 입고: 롤 배출구 → 지게차 3 → 칸
+  function stepIn(dt){
+    var s = simA, f = F3, r = s.roll, j = s.job;
+    switch(s.state){
+      case 'idle':
+        if(!jobsIn.length) break;
+        if(simB.state !== 'idle') break;                   // 상차 작업 중이면 끝날 때까지 기다림 (같은 통로를 동시에 쓰지 않음)
+        if(!atHome(F3)){ wantHome.F3 = true; break; }
+        wantHome.F3 = false;
+        s.t -= dt; if(s.t > 0) break;
+        s.t = 1.0;
+        j = s.job = jobsIn.shift();
+        j.vis = null;
+        if(blockedToEdge(j.cell)){                         // 통로 쪽에 이미 다른 롤이 있어 안쪽 칸엔 못 들어가면, 가장 바깥 롤 바로 앞 빈 칸에 내려놓음 (롤이 다른 롤 사이를 미끄러지지 않게)
+          var qq = j.cell.sect, lastE = edgeIsLast(qq), lineC = slots.filter(function(o){ return o.sect === qq && o.line === j.cell.line; }), outerC = null;
+          lineC.forEach(function(o){ if(o.t > 0 && o !== j.cell && (!outerC || (lastE ? o.col > outerC.col : o.col < outerC.col))) outerC = o; });
+          if(outerC){ var nc = lastE ? outerC.col + 1 : outerC.col - 1; var fr = lineC.filter(function(o){ return o.col === nc && o.t === 0; })[0]; if(fr) j.vis = fr; }
+        }
+        j.acc = accessFor(j.vis || j.cell);
+        s.roll = makeRoll(j.w, j.type);
+        s.roll.root.position.set(EXIT_X, FLOOR+0.08+R, LANE_Z);
+        hall.add(s.roll.root);
+        simLblA.el.textContent = '입고 ' + itemLabel(j) + ' · ' + j.w + 'mm';
+        s.state = 'rolling';
+        break;
+      case 'rolling':
+        var d0 = EXIT_X - r.root.position.x, d1 = r.root.position.x - STOP_X;
+        r.root.position.x -= Math.max(0.15, Math.min(1.25, 0.4 + d0*0.6, 0.2 + d1*0.55)) * dt;   // 나올 때 가속, 멈출 때 감속
+        r.spin.rotation.y = (EXIT_X - r.root.position.x) / R;
+        if(r.root.position.x <= STOP_X){ r.root.position.x = STOP_X; s.state = 'toRoll'; }
+        break;
+      case 'toRoll':
+        setArms(f, f.armX + clamp((r.len/2 + 0.55) - f.armX, -1.5*dt, 1.5*dt));
+        if(drive(f, STOP_X - CARRY_Z, LANE_Z, dt, Math.PI/2)){
+          hall.remove(r.root); f.group.add(r.root);
+          r.root.rotation.y = Math.PI/2;
+          r.spin.rotation.y = 0;
+          r.root.position.set(0, R+0.08, CARRY_Z);
+          s.u = 0; s.state = 'grab';
+        }
+        break;
+      case 'grab':
+        s.u += dt/1.2;
+        r.tilt.rotation.x = (Math.PI/2) * (1 - ease(s.u));
+        r.root.position.y = (R+0.08) + (0.6 + r.len/2 - (R+0.08)) * ease(s.u);
+        setLift(f, r.root.position.y);
+        setArms(f, (r.len/2 + 0.55) + ((r.len/2 + 0.05) - (r.len/2 + 0.55)) * ease(Math.min(1, s.u/0.35)));
+        if(s.u >= 1){ s.path = routeTo('F3', j.acc); s.pi = 0; s.state = 'carry'; }
+        break;
+      case 'carry':
+        var wp = s.path[s.pi];
+        if(drive(f, wp.x, wp.z, dt, wp.h)){
+          s.pi++;
+          if(s.pi >= s.path.length){ s.u = 0; s.state = 'raise'; }
+        }
+        break;
+      case 'raise':
+        s.u += dt/1.3;
+        var baseH = (j.vis ? 0 : j.idx)*j.w/1000, topY = baseH + 0.35 + r.len/2;
+        r.root.position.y = (0.6 + r.len/2) + (topY - (0.6 + r.len/2)) * ease(s.u);
+        setLift(f, r.root.position.y);
+        if(s.u >= 1){
+          var cp = clampWorld(f), wy = FLOOR + r.root.position.y;
+          f.group.remove(r.root); hall.add(r.root);
+          r.root.rotation.set(0,0,0); r.tilt.rotation.x = 0;
+          r.root.position.set(cp.x, wy, cp.z);
+          var tc = j.vis || j.cell; s.cp = cp; s.d = Math.hypot(tc.x - cp.x, tc.z - cp.z); s.u = 0;
+          s.state = s.d > 0.2 ? 'xfer' : 'place';
+        }
+        break;
+      case 'xfer':      // 안쪽 칸이면 롤이 가장자리에서 해당 칸 위로 건너감
+        s.u += dt / Math.max(0.7, s.d/3);
+        var e1 = ease(Math.min(1, s.u));
+        var tc2 = j.vis || j.cell;
+        r.root.position.x = s.cp.x + (tc2.x - s.cp.x) * e1;
+        r.root.position.z = s.cp.z + (tc2.z - s.cp.z) * e1;
+        setArms(f, f.armX + (0.95 - f.armX) * Math.min(1, 4*dt));
+        if(s.u >= 1){ s.u = 0; s.state = 'place'; }
+        break;
+      case 'place':
+        s.u += dt/0.9;
+        var bh = (j.vis ? 0 : j.idx)*j.w/1000, ty = bh + 0.35 + r.len/2, sy = bh + r.len/2 + 0.02;
+        r.root.position.y = FLOOR + ty + (sy - ty) * ease(Math.min(1, s.u));
+        setArms(f, f.armX + (0.95 - f.armX) * Math.min(1, 4*dt));
+        if(s.u >= 1){
+          if(j.hide){ hideTop(j.cell, j.idx, false); s.wait = 0.4; }          // 실제 입고: 숨겨둔 롤이 그 자리에 나타남
+          else { r.mat.emissive.setHex(0x2a7a3a); s.wait = 3.2; }              // 시연: 잠시 강조 후 사라짐
+          s.state = 'placed';
+        }
+        break;
+      case 'placed':
+        s.wait -= dt;
+        if(s.wait <= 0){
+          hall.remove(r.root); s.roll = null;
+          s.back = backRoute(s.path, HOMES.F3); s.bi = 0;
+          s.state = 'back';
+        }
+        break;
+      case 'back':
+        if(f.lift > 0.92){
+          setLift(f, Math.max(0.9, f.lift - 3.0*dt));
+          setArms(f, f.armX + (0.85 - f.armX) * Math.min(1, 4*dt));
+          break;
+        }
+        if(Math.abs(f.armX - 0.85) > 0.02){ setArms(f, f.armX + (0.85 - f.armX) * Math.min(1, 6*dt)); break; }
+        var bw = s.back[s.bi];
+        if((bw.rev ? driveBack(f, bw.x, bw.z, dt) : drive(f, bw.x, bw.z, dt, bw.h))){ s.bi++; if(s.bi >= s.back.length){ s.state = 'idle'; } }
+        break;
+    }
+  }
+
+  // 상차: 지게차 1·2 → 더미에서 롤 꺼냄 → 화물차에 싣기
+  function stepOut(dt){
+    var s = simB, r = s.roll, j = s.job, f = s.f;
+    switch(s.state){
+      case 'idle':
+        if(!jobsOut.length) break;
+        if(simA.state !== 'idle') break;                   // 입고 작업 중이면 끝날 때까지 기다림
+        var ji = -1;
+        for(var qi=0; qi<jobsOut.length; qi++){ if(TR[jobsOut[qi].truck].state === 'parked'){ ji = qi; break; } }
+        if(ji < 0) break;                                  // 화물차가 아직 도착하지 않음
+        var ff = FL[TRUCKS[jobsOut[ji].truck].fl];
+        if(!atHome(ff)){ wantHome[ff.id] = true; break; }  // 대기 위치에 먼저 돌아온 뒤 시작
+        wantHome[ff.id] = false;
+        j = s.job = jobsOut.splice(ji, 1)[0];
+        f = s.f = ff;
+        j.acc = accessFor(j.cell);
+        s.path = routeTo(f.id, j.acc); s.pi = 0;
+        if(j.demo) hideTop(j.cell, j.idx, true);
+        s.state = 'toStand';
+        break;
+      case 'toStand':
+        setArms(f, f.armX + clamp(0.95 - f.armX, -1.5*dt, 1.5*dt));
+        var wp = s.path[s.pi];
+        if(drive(f, wp.x, wp.z, dt, wp.h)){
+          s.pi++;
+          if(s.pi >= s.path.length){
+            r = s.roll = makeRoll(j.w, j.type);
+            r.tilt.rotation.x = 0;
+            r.root.position.set(j.cell.x, FLOOR + j.idx*j.w/1000 + j.w/2000, j.cell.z);
+            hall.add(r.root);
+            simLblB.el.textContent = '상차 ' + itemLabel(j) + ' · ' + j.w + 'mm';
+            s.u = 0; s.y0 = f.lift; s.state = 'riseOut';
+          }
+        }
+        break;
+      case 'riseOut':   // 마스트를 롤 높이까지 올림
+        s.u += dt/1.0;
+        var tyl = j.idx*j.w/1000 + j.w/2000;
+        setLift(f, s.y0 + (tyl - s.y0) * ease(Math.min(1, s.u)));
+        if(s.u >= 1){ s.u = 0; s.state = 'xferOut'; }
+        break;
+      case 'xferOut':   // 더미 위의 롤이 지게차 클램프 앞으로 이동
+        var cp = clampWorld(f);
+        if(Math.hypot(j.cell.x - cp.x, j.cell.z - cp.z) < 0.25){ s.u = 1; }
+        s.u += dt / Math.max(0.7, Math.hypot(j.cell.x - cp.x, j.cell.z - cp.z)/3);
+        var e2 = ease(Math.min(1, s.u));
+        r.root.position.x = j.cell.x + (cp.x - j.cell.x) * e2;
+        r.root.position.z = j.cell.z + (cp.z - j.cell.z) * e2;
+        if(s.u >= 1){ s.u = 0; s.state = 'gripOut'; }
+        break;
+      case 'gripOut':   // 팔이 닫히며 집음
+        s.u += dt/0.5;
+        setArms(f, 0.95 + ((R + 0.07) - 0.95) * ease(Math.min(1, s.u)));
+        if(s.u >= 1){
+          var yl = r.root.position.y - FLOOR;
+          hall.remove(r.root); f.group.add(r.root);
+          r.root.rotation.set(0,0,0);
+          r.root.position.set(0, yl, CARRY_Z);
+          if(j.demo) hideTop(j.cell, j.idx, false);   // 시연이면 원래 롤을 되돌려 놓음
+          s.u = 0; s.y0 = f.lift; s.state = 'lowerOut';
+        }
+        break;
+      case 'lowerOut':
+        s.u += dt/0.9;
+        var cy = s.y0 + ((0.6 + r.len/2) - s.y0) * ease(Math.min(1, s.u));
+        r.root.position.y = cy; setLift(f, cy);
+        if(s.u >= 1){ s.back = backRoute(s.path, HOMES[f.id]); s.bi = 0; s.state = 'carryBack'; }
+        break;
+      case 'carryBack':
+        var bw = s.back[s.bi];
+        if((bw.rev ? driveBack(f, bw.x, bw.z, dt) : drive(f, bw.x, bw.z, dt, bw.h))){
+          s.bi++;
+          if(s.bi >= s.back.length){ s.u = 0; s.y0 = f.lift; s.state = 'loadUp'; }
+        }
+        break;
+      case 'loadUp':    // 화물차 적재함 높이로 올림
+        s.u += dt/0.9;
+        var ly = s.y0 + (2.4 - s.y0) * ease(Math.min(1, s.u));
+        r.root.position.y = ly; setLift(f, ly);
+        if(s.u >= 1){ s.u = 0; s.state = 'loadIn'; }
+        break;
+      case 'loadIn':    // 적재함 안으로 밀어 넣음
+        s.u += dt/1.0;
+        r.root.position.z = CARRY_Z - 1.7 * ease(Math.min(1, s.u));
+        if(s.u >= 1){
+          f.group.remove(r.root); s.roll = null;
+          loaded[j.truck]++; refreshTruckLabel(j.truck);
+          s.u = 0; s.state = 'release';
+        }
+        break;
+      case 'release':
+        s.u += dt/0.8;
+        setArms(f, (R + 0.07) + (0.95 - (R + 0.07)) * ease(Math.min(1, s.u*2)));
+        setLift(f, Math.max(0.9, f.lift - 3.0*dt));
+        if(s.u >= 1 && f.lift <= 0.92){ setArms(f, 0.85); s.state = 'idle'; }
+        break;
+    }
+  }
+
+  /* ---------- 재고 불러오기 ---------- */
+  function loadStock(rows, label){
+    var prevByKey = stockByKey, wasLive = liveLoaded;
+    var prevSnap = slots.map(function(sl){ return {key:sl.key, t:sl.t}; });
+    DATA_LABEL = label || DATA_LABEL;
+    stockList = buildStock(rows);
+    var seenT = {}; typeList = [];
+    stockList.forEach(function(o){ if(!seenT[o.type]){ seenT[o.type] = 1; typeList.push(o.type); } });
+    typeList.sort();
+    if(stockList.length){ wLo = stockList[0].w; wHi = stockList[stockList.length-1].w; }
+    allocate(); updateSectLabels(); buildFilter();
+    recolor(); updateLegend(); paint(); renderInfo(); renderSummary();
+    liveLoaded = DATA_LABEL.indexOf('구글시트') === 0 && stockList.length > 0;
+    if(wasLive && liveLoaded) enqueueEvents(prevByKey, prevSnap);   // 시트 연동 상태에서 이전 값과 달라진 만큼만 동작 생성
+  }
+  window.loadStock = loadStock;   // loadStock([{code:'9160', type:'S', gsm:120, width:1600, kg:28034, rolls:22}, ...], '재고현황 시트')
+
+  /* ---------- 시작 ---------- */
+  /* ---------- 구글시트(Apps Script 웹 앱) 연동 ----------
+     아래 WEB_APP_URL에 웹 앱 주소(/exec)를 적습니다. 주소 끝에 type= 이 없으면 type=stock3d 가 자동으로 붙습니다. */
+  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwghNkbbkUwabaK97oumvelqyKTGOIhUGd2lrkLiR6fSNGnTKXZ-CWuFzk7he6nVsbPow/exec?type=inventory';
+  var REFRESH_MS = 3*60*1000;   // 자동 새로고침 간격
+
+  function currentUrl(){
+    var u = WEB_APP_URL;
+    return (u && u.indexOf('YOUR_') !== 0) ? u.trim() : '';
+  }
+
+  // 응답 형식 두 가지를 모두 지원: ① ?type=stock3d (헤더 포함 2차원 배열) ② ?type=inventory (객체 배열)
+  function toRows(data){
+    if(!Array.isArray(data)){
+      throw new Error(data && data.error ? String(data.error) : '응답이 배열이 아닙니다. 주소 끝에 ?type=stock3d 가 필요합니다.');
+    }
+    var out = [];
+    if(!data.length) return out;
+    if(Array.isArray(data[0])){
+      var head = data[0].map(String);
+      var ix = function(name, def){ var k = head.indexOf(name); return k >= 0 ? k : def; };
+      var iC = ix('창고코드',1), iN = ix('품목명',4), iT = ix('지종',5), iG = ix('평량',6), iW = ix('지폭',7), iK = ix('재고수량(kg)',8), iR = ix('롤수',9);
+      data.slice(1).forEach(function(r){
+        var pn = parseName(r[iN]);
+        out.push({code:r[iC], type:r[iT] || pn.type, gsm:r[iG] || pn.gsm, width:r[iW], kg:r[iK], rolls:r[iR]});
+      });
+    } else {
+      data.forEach(function(o){
+        var pn2 = parseName(o['품목명']);
+        out.push({code:o['창고코드'], type:o['지종'] || pn2.type, gsm:o['평량'] || pn2.gsm, width:o['지폭'],
+                  kg:(o['재고수량(kg)'] !== undefined ? o['재고수량(kg)'] : o['재고수량']), rolls:o['롤수']});
+      });
+    }
+    return out;
+  }
+
+  function hhmm(){
+    var d = new Date(), p = function(n){ return (n < 10 ? '0' : '') + n; };
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function useSample(reason){
+    statusNote = reason;
+    loadStock(sampleRows(), '샘플 데이터 (시트 미연동)');
+  }
+  var fetching = false, lastSig = '', retryN = 0;
+  function fetchStock(){
+    var base = currentUrl();
+    if(!base){ if(!stockList.length) useSample('연동 주소가 없습니다. 파일의 WEB_APP_URL에 웹 앱 주소를 적어주세요.'); return; }
+    if(fetching) return;
+    fetching = true;
+    var url = base + (base.indexOf('?') >= 0 ? '&' : '?') + (/[?&]type=/.test(base) ? '' : 'type=stock3d&') + '_=' + Date.now();
+    statusNote = '불러오는 중…'; renderSummary();
+    fetch(url).then(function(r){ return r.text(); }).then(function(txt){
+      var data;
+      try{ data = JSON.parse(txt); }
+      catch(e){
+        // JSON이 아니라 HTML이 온 경우: 어떤 페이지인지(제목/첫 문장)를 화면에 보여줌
+        var tm = /<title[^>]*>([^<]*)<\/title>/i.exec(txt);
+        var plain = txt.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,80);
+        throw new Error('서버가 JSON 대신 HTML 페이지를 보냄 → ' + ((tm && tm[1].trim()) || plain || '내용 없음') + ' (로그인·권한·호출 한도 문제일 수 있음)');
+      }
+      var rows = toRows(data);
+      var kept = rows.filter(function(r){ return String(r.code) === '9160'; });
+      if(!kept.length) throw new Error('창고코드 9160 재고가 없습니다.');
+      statusNote = ''; retryN = 0;
+      var sig = JSON.stringify(kept.map(function(r){ return [r.width, r.rolls, r.kg, r.type, r.gsm]; }));
+      var label = '구글시트 연동 (9160) · ' + hhmm() + ' 갱신';
+      if(sig === lastSig && stockList.length){ DATA_LABEL = label; renderSummary(); }   // 변경 없으면 화면은 그대로
+      else { lastSig = sig; loadStock(rows, label); }
+    }).catch(function(err){
+      console.error('재고 연동 실패:', err);
+      var msg = '연동 실패: ' + (err && err.message ? err.message : err);
+      var wait = retryN < 3 ? [20, 60, 120][retryN] : 0;
+      var tail = wait ? ', ' + wait + '초 뒤 재시도 ' + (retryN + 1) + '/3' : '';
+      if(stockList.length && DATA_LABEL.indexOf('구글시트') === 0){ statusNote = msg + ' (이전 데이터 유지' + tail + ')'; renderSummary(); }
+      else useSample(msg + ' → 샘플 표시 중');
+      if(wait){ retryN++; setTimeout(fetchStock, wait*1000); }   // 일시적 오류일 수 있어 간격을 늘려가며 다시 시도
+    }).then(function(){ fetching = false; });
+  }
+  document.getElementById('bRefresh').addEventListener('click', fetchStock);
+  setInterval(function(){ if(currentUrl()){ retryN = 0; fetchStock(); } }, REFRESH_MS);
+
+  loadStock([], '불러오는 중…');
+  fetchStock();
+  updateCam();
+
+  var v3 = new THREE.Vector3();
+  var dockTop = [], dockBot = [];
+  function dockPlace(list, top, w, h){
+    list.sort(function(a,b){ return a.sx - b.sx; });
+    var tb = document.querySelector ? document.querySelector('.toolbar') : null;
+    var y = top ? ((tb && tb.offsetHeight ? tb.offsetHeight : 34) + 20) : (h - 10);
+    var cursor = top ? 8 : 250;                         // 아래쪽은 왼쪽 아래 범례 상자를 피함
+    list.forEach(function(it){
+      var l = it.l, el = l.el;
+      var wd = el.offsetWidth || (el.textContent.length*7 + 16), ht = el.offsetHeight || 20;
+      var cx = Math.min(Math.max(it.sx, cursor + wd/2), w - 8 - wd/2);
+      cursor = cx + wd/2 + 4;
+      el.style.display = 'block'; el.style.left = cx + 'px'; el.style.top = y + 'px';
+      el.style.transform = top ? 'translate(-50%,0)' : 'translate(-50%,-100%)';
+      if(!l.line){ l.line = document.createElement('div'); l.line.className = 'dline'; labelsEl.appendChild(l.line); }
+      var x0 = cx, y0 = top ? y + ht : y - ht, dx = it.sx - x0, dy = it.sy - y0, len = Math.hypot(dx, dy);
+      l.line.style.display = 'block'; l.line.style.left = x0 + 'px'; l.line.style.top = y0 + 'px';
+      l.line.style.width = len + 'px'; l.line.style.transform = 'rotate(' + Math.atan2(dy, dx) + 'rad)';
+    });
+  }
+  function updateLabels(){
+    if(!showLabels) return;
+    var w = stage.clientWidth, h = stage.clientHeight;
+    dockTop.length = 0; dockBot.length = 0;
+    labels.forEach(function(l){
+      if(l.minor && st.radius > 75){ l.el.style.display = 'none'; return; }
+      if(l.fn){ var q = l.fn(); if(!q){ l.el.style.display = 'none'; return; } l.x = q[0]; l.y = q[1]; l.z = q[2]; }
+      v3.set(l.x, l.y, l.z).project(cam);
+      if(v3.z > 1){ l.el.style.display = 'none'; if(l.line) l.line.style.display = 'none'; return; }
+      var sx = (v3.x*0.5+0.5)*w, sy = (-v3.y*0.5+0.5)*h;
+      if(l.dock){ (sy < h/2 ? dockTop : dockBot).push({l:l, sx:sx, sy:sy}); return; }
+      l.el.style.display = 'block'; l.el.style.transform = '';
+      l.el.style.left = sx + 'px'; l.el.style.top = sy + 'px';
+    });
+    dockPlace(dockTop, true, w, h); dockPlace(dockBot, false, w, h);
+  }
+  var cneedle = document.getElementById('cneedle');
+  var last = performance.now();
+  function loop(now){
+    var dt = Math.min(0.05, (now - last)/1000); last = now;
+    if(sim.on){ stepTrucks(dt); stepAmbient(dt); stepIn(dt); stepOut(dt); }
+    if(cneedle) cneedle.style.transform = 'rotate(' + (st.theta*180/Math.PI) + 'deg)';
+    renderer.render(scene, cam);
+    updateLabels();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+<script type="text/plain" id="code-yd">(function(){
+  'use strict';
+
+  /* ---------- 기준값 (초안: 현장 값으로 바꾸면 됨) ---------- */
+  var OX = 62.2855, OZ = 11.1345, FLOOR = 0.2;                       // 야적장 좌표(m) → 장면 중심 보정
+  var RHO = 0.65;                                           // 다져진 고지 더미의 부피당 무게 t/m³ (가정: 최대 높이 4.5m에서 최대 톤수가 구역에 들어가도록 맞춤)
+  var BUCKET_M3 = 8;                                       // 페이로더 버킷 1회 부피 (가정)
+  var TRUCK_T = 20, N_BALES = 20, BALE_T = TRUCK_T / N_BALES;   // 트럭 1대 = 베일 20개(5줄 × 4개), 베일 1개 1t (가정)
+  var TANK_Z = 6, TANK_R = 2.8, INLET_Z = 9.9;             // 원형조 위치, 투입구(지면 높이) 위치
+  var TIP = 6.25;                                          // 페이로더 중심에서 버킷 끝까지 거리 (모형 기준)
+  var MAXH = 4.5;                                          // 더미 최대 높이 m (가정)
+  var REPOSE = 0.42;                                       // 한 칸(0.5m)당 허용 높이차 (안식각 약 40°)
+  var S_NORTH = 0.45, S_OTHER = 0.6;                       // 더미 경사: 원형조 쪽은 완만한 경사로, 나머지는 약 31°
+
+  // 마당 격자 (높이 지도): 0.5m 간격
+  var CELL = 0.5, GX0 = 3, GX1 = 67, GZ0 = 10, GZ1 = 58;
+  var NX = Math.round((GX1-GX0)/CELL), NZ = Math.round((GZ1-GZ0)/CELL), VX = NX + 1, VZ = NZ + 1;
+  var H = new Float32Array(VX*VZ), MASK = new Uint8Array(VX*VZ);
+  function vi(i,j){ return j*VX + i; }
+  function wx(i){ return GX0 + i*CELL; }
+  function wz(j){ return GZ0 + j*CELL; }
+
+  // 야적 구역(쌓일 수 있는 범위): 원형조 1 앞(최대 270t) / 원형조 2~4 앞(1,430t) — 두 구역 사이 x 19~21은 비워 둠
+  var ZONES = [
+    {id:'A', name:'원형조 1 앞',   x0:4,  x1:18, z0:11.5, z1:38, zm1:43, cap:270,  init:190,  seed:11, xc:12.0,  hc:1.5,  zc:17.5},
+    {id:'B', name:'원형조 2~4 앞', x0:24, x1:61, z0:11.5, z1:38, zm1:43, cap:1430, init:1000, seed:23, xc:33.65, hc:12,   zc:17.5}
+  ];
+  var TANKS = [
+    {name:'원형조 1', x:12.0, zone:'A', fed:0},
+    {name:'원형조 2', x:24.5, zone:'B', fed:0},
+    {name:'원형조 3', x:34.0, zone:'B', fed:0},
+    {name:'원형조 4', x:42.8, zone:'B', fed:0}
+  ];
+  function zoneOf(id){ return ZONES.filter(function(z){ return z.id === id; })[0]; }
+  function clamp(v,a,b){ return Math.min(Math.max(v,a),b); }
+  function rndr(a,b){ return a + Math.random()*(b-a); }
+  ZONES.forEach(function(z){
+    for(var j=0;j<VZ;j++){ for(var i=0;i<VX;i++){ var x = wx(i), zz = wz(j); if(x >= z.x0 && x <= z.x1 && zz >= z.z0 && zz <= z.zm1) MASK[vi(i,j)] = 1; } }
+  });
+  function inZone(z,x,zz){ return x >= z.x0 && x <= z.x1 && zz >= z.z0 && zz <= z.zm1; }
+
+  /* ---------- 장면 ---------- */
+  var stage = document.getElementById('stage');
+  var canvas = document.getElementById('c');
+  var labelsEl = document.getElementById('labels');
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var scene = new THREE.Scene();
+  var cam = new THREE.PerspectiveCamera(42, 1, 0.5, 1500);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.6);
+  sun.position.set(-40, 90, 60);
+  scene.add(sun);
+  var yard = new THREE.Group();
+  yard.position.set(-OX, 0, -OZ);
+  scene.add(yard);
+
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(300, 260), new THREE.MeshLambertMaterial({color:0xd9dde4}));
+  ground.rotation.x = -Math.PI/2; ground.position.y = -0.05;
+  ground.visible = false; scene.add(ground);
+  var floorMat = new THREE.MeshLambertMaterial({color:0xc9ced7});
+  var slab = new THREE.Mesh(new THREE.BoxGeometry(70, FLOOR, 68), floorMat);
+  slab.position.set(35, FLOOR/2, 30); yard.add(slab);
+  var pickables = [];
+
+  function box(w,h,d,x,y,z,color,parent,ent){
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color:color}));
+    m.position.set(x,y,z); (parent || yard).add(m);
+    if(ent){ m.userData.ent = ent; pickables.push(m); }
+    return m;
+  }
+  var yellow = new THREE.MeshBasicMaterial({color:0xe8c21a});
+  function bar(x0,z0,x1,z1,mat){
+    var len = Math.hypot(x1-x0, z1-z0);
+    var m = new THREE.Mesh(new THREE.BoxGeometry(len, 0.02, 0.16), mat);
+    m.position.set((x0+x1)/2, FLOOR+0.012, (z0+z1)/2); m.rotation.y = -Math.atan2(z1-z0, x1-x0); yard.add(m);
+  }
+  ZONES.forEach(function(z){        // 구역 표시선 (참고용, 이동 제한 아님)
+    bar(z.x0,16.5,z.x1,16.5,yellow); bar(z.x1,16.5,z.x1,z.zm1,yellow); bar(z.x1,z.zm1,z.x0,z.zm1,yellow); bar(z.x0,z.zm1,z.x0,16.5,yellow);
+  });
+  // 울타리 + 출입구(오른쪽 아래)
+  var GATE = {x:68, z0:44, z1:54, zs:58};                              // 출입구: 오른쪽(동쪽) 울타리의 아래쪽
+  box(66, 0.9, 0.3, 35, 0.65, GATE.zs, 0x8b93a1);                      // 남쪽 울타리
+  box(0.3, 0.9, GATE.zs + 3, 2, 0.65, (GATE.zs - 3)/2, 0x8b93a1);      // 서쪽 울타리
+  box(0.3, 0.9, GATE.z0 + 3, GATE.x, 0.65, (GATE.z0 - 3)/2, 0x8b93a1); // 동쪽 울타리(출입구 위)
+  box(0.3, 0.9, GATE.zs - GATE.z1, GATE.x, 0.65, (GATE.z1 + GATE.zs)/2, 0x8b93a1);   // 동쪽 울타리(출입구 아래)
+
+
+  // 원형조 1~4 + 지면 높이의 투입구(밀어 넣는 입구)
+  TANKS.forEach(function(t, i){
+    t.ent = {kind:'tank', i:i, name:t.name};
+    // 원형조: 솟아 있지 않고 바닥 높이의 낮은 테두리 + 안쪽이 더 낮게 파인 어두운 원 (원료 더미보다 훨씬 낮음)
+    var rim = new THREE.Mesh(new THREE.CylinderGeometry(TANK_R, TANK_R, 0.18, 40), new THREE.MeshLambertMaterial({color:0x9aa7ba}));
+    rim.position.set(t.x, FLOOR + 0.09, TANK_Z); rim.userData.ent = t.ent; yard.add(rim); pickables.push(rim);
+    var well = new THREE.Mesh(new THREE.CylinderGeometry(TANK_R - 0.3, TANK_R - 0.3, 0.06, 40), new THREE.MeshLambertMaterial({color:0x1c2027}));
+    well.position.set(t.x, FLOOR + 0.04, TANK_Z); well.userData.ent = t.ent; yard.add(well); pickables.push(well);
+    box(2.8, 0.03, 2.1, t.x, FLOOR + 0.02, 9.75, 0x6b7385, yard, t.ent);          // 투입구 테두리
+    box(2.2, 0.05, 1.5, t.x, FLOOR + 0.04, 9.75, 0x14171c, yard, t.ent);          // 바닥보다 낮게 파인 투입구(어두운 구멍)
+  });
+
+  /* ---------- 높이 지도 → 변형되는 지형 메쓰 ---------- */
+  var tPos = new Float32Array(VX*VZ*3), tCol = new Float32Array(VX*VZ*3), tIdx = new Uint16Array(NX*NZ*6);
+  for(var jj=0; jj<VZ; jj++){ for(var ii=0; ii<VX; ii++){ var k0 = vi(ii,jj)*3; tPos[k0] = wx(ii); tPos[k0+2] = wz(jj); } }
+  (function(){ var p = 0; for(var j=0;j<NZ;j++){ for(var i=0;i<NX;i++){ var a = vi(i,j), b = vi(i+1,j), c = vi(i,j+1), d = vi(i+1,j+1); tIdx[p++]=a; tIdx[p++]=c; tIdx[p++]=b; tIdx[p++]=b; tIdx[p++]=c; tIdx[p++]=d; } } })();
+  var tGeo = new THREE.BufferGeometry();
+  var aPos = new THREE.BufferAttribute(tPos, 3), aCol = new THREE.BufferAttribute(tCol, 3);
+  tGeo.setAttribute('position', aPos); tGeo.setAttribute('color', aCol);
+  tGeo.setIndex(new THREE.BufferAttribute(tIdx, 1));
+  var tMesh = new THREE.Mesh(tGeo, new THREE.MeshLambertMaterial({vertexColors:true}));
+  tMesh.frustumCulled = false; yard.add(tMesh);
+  var floorCol = new THREE.Color(0xc9ced7);
+  var terrainDirty = true, panelDirty = true;
+
+  function hash2(i,j){ var h = Math.imul(i*374761393 + j*668265263, 1274126177); h = (h ^ (h >>> 13)) >>> 0; return (h % 10007)/10007; }
+  function vnoise(x,z){
+    var xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf*xf*(3-2*xf), v = zf*zf*(3-2*zf);
+    var a = hash2(xi,zi), b = hash2(xi+1,zi), c = hash2(xi,zi+1), d = hash2(xi+1,zi+1);
+    return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+  }
+  function sstep(a,b,x){ var t = clamp((x-a)/(b-a), 0, 1); return t*t*(3-2*t); }
+  // 원료는 투입구 앞 맨바닥(약 5m) 바로 바깥에서 시작해, 쌓일수록 바깥(남쪽, 차량 대기 쪽)으로 차오름. 안쪽(원형조 쪽)이 가장 높고 바깥으로 갈수록 얕아짐
+  function laneLimit(x,z){ return z <= 16.5 ? 0 : Math.min(MAXH * sstep(16.5, 22.5, z), MAXH - 0.05*(z - 16.5)); }
+  function heightAt(x,z){
+    var fx = (x - GX0)/CELL, fz = (z - GZ0)/CELL;
+    if(fx < 0 || fz < 0 || fx > NX || fz > NZ) return 0;
+    var i = Math.min(NX-1, Math.floor(fx)), j = Math.min(NZ-1, Math.floor(fz)), tx = fx - i, tz = fz - j;
+    return (H[vi(i,j)]*(1-tx) + H[vi(i+1,j)]*tx)*(1-tz) + (H[vi(i,j+1)]*(1-tx) + H[vi(i+1,j+1)]*tx)*tz;
+  }
+  function zoneVol(z){ var v = 0; for(var j=0;j<VZ;j++){ for(var i=0;i<VX;i++){ if(inZone(z, wx(i), wz(j))) v += H[vi(i,j)]; } } return v * CELL * CELL; }
+  function tonsOf(z){ return zoneVol(z) * RHO; }
+  function maxH(z){ var m = 0; for(var j=0;j<VZ;j++){ for(var i=0;i<VX;i++){ if(inZone(z, wx(i), wz(j)) && H[vi(i,j)] > m) m = H[vi(i,j)]; } } return m; }
+
+  // 더미 만들기: 원형조 앞 중심선 둘레로 가운데가 가장 높고 가장자리로 갈수록 낮아지는 불규칙한 봉우리.
+  // 양이 적으면 한가운데에 작게, 많아지면 옆으로 길게·바깥으로 넓게 자람 (원형조 쪽은 완만한 경사로)
+  function makeHeap(z, tons){
+    var i, j, k, cells = [];
+    for(j=0;j<VZ;j++){ for(i=0;i<VX;i++){ if(inZone(z, wx(i), wz(j))) H[vi(i,j)] = 0; } }
+    if(tons > 0){
+      var hc = z.hc * sstep(150, 1300, tons);
+      for(j=0;j<VZ;j++){ for(i=0;i<VX;i++){
+        var x = wx(i), zz = wz(j); if(!inZone(z,x,zz) || zz > z.z1) continue;
+        var dx = x - clamp(x, z.xc - hc, z.xc + hc), dz = zz - z.zc;
+        var d = Math.sqrt(dx*dx + dz*dz);
+        d += (vnoise(x*0.12 + z.seed, zz*0.12) - 0.5)*5.0 + (vnoise(x*0.45, zz*0.45) - 0.5)*1.4;   // 가장자리가 들쭉날쭉하게
+        cells.push({k:vi(i,j), d:d, s:(zz < z.zc ? S_NORTH : S_OTHER), n:vnoise(x*0.7, zz*0.7), lim:laneLimit(x,zz)});
+      } }
+      var target = tons / RHO / (CELL*CELL);
+      function sumFor(R){ var s = 0; for(var c=0;c<cells.length;c++){ var cc = cells[c]; if(cc.d < R) s += Math.min(cc.lim, MAXH*Math.tanh(cc.s*(R - cc.d)/MAXH)); } return s; }
+      var lo = 0.5, hi = 90;
+      for(var it=0; it<40; it++){ var mid = (lo+hi)/2; if(sumFor(mid) < target) lo = mid; else hi = mid; }
+      var R = (lo+hi)/2;
+      for(k=0;k<cells.length;k++){ var c2 = cells[k]; if(c2.d < R) H[c2.k] = Math.min(c2.lim, MAXH*Math.tanh(c2.s*(R - c2.d)/MAXH)*(1 + (c2.n - 0.5)*0.14)); }
+      relax(0, NX, 0, NZ); relax(0, NX, 0, NZ);
+      for(var fix=0; fix<4; fix++){                                  // 변한 부피를 목표에 다시 맞춤
+        var vol = zoneVol(z)/(CELL*CELL);
+        if(vol <= 0 || Math.abs(vol - target) < 0.5) break;
+        var f = target/vol;
+        for(k=0;k<cells.length;k++){ H[cells[k].k] = Math.min(cells[k].lim, H[cells[k].k]*f); }
+      }
+    }
+    terrainDirty = true; panelDirty = true;
+  }
+
+  // 부피 더하기/퍼내기 (가우시안 분포). 더할 때 가득 차 있으면 주변으로 번져 부피가 사라지지 않음
+  function spread(cx, cz, sigma, vol, sign){
+    if(sign < 0) return spreadCore(cx, cz, sigma, vol, -1);
+    var moved = 0, remain = vol;
+    for(var a=0; a<6 && remain > 1e-3; a++){ var m = spreadCore(cx, cz, sigma*(1 + 0.8*a), remain, +1); moved += m; remain -= m; }
+    return moved;
+  }
+  function spreadCore(cx, cz, sigma, vol, sign){
+    var r = sigma*3, i0 = Math.max(0, Math.floor((cx - r - GX0)/CELL)), i1 = Math.min(NX, Math.ceil((cx + r - GX0)/CELL));
+    var j0 = Math.max(0, Math.floor((cz - r - GZ0)/CELL)), j1 = Math.min(NZ, Math.ceil((cz + r - GZ0)/CELL));
+    var cells = [], i, j, c;
+    for(j=j0;j<=j1;j++){ for(i=i0;i<=i1;i++){
+      var kk = vi(i,j); if(!MASK[kk]) continue;
+      var d2 = (wx(i)-cx)*(wx(i)-cx) + (wz(j)-cz)*(wz(j)-cz);
+      cells.push({k:kk, w:Math.exp(-d2/(2*sigma*sigma)), lim:laneLimit(wx(i), wz(j))});
+    } }
+    if(!cells.length) return 0;
+    var moved = 0, remain = Math.abs(vol), area = CELL*CELL;
+    for(var pass=0; pass<4 && remain > 1e-4; pass++){
+      var W = 0;
+      for(c=0;c<cells.length;c++){ if(sign > 0 || H[cells[c].k] > 0.001) W += cells[c].w; }
+      if(W <= 0) break;
+      var kf = remain/(W*area);
+      for(c=0;c<cells.length;c++){
+        var cell = cells[c];
+        if(sign > 0){ var add = Math.min(kf*cell.w, cell.lim - H[cell.k]); if(add > 0){ H[cell.k] += add; moved += add*area; } }
+        else if(H[cell.k] > 0.001){ var dh = Math.min(H[cell.k], kf*cell.w); H[cell.k] -= dh; moved += dh*area; }
+      }
+      remain = Math.abs(vol) - moved;
+    }
+    relax(i0-4, i1+4, j0-4, j1+4);
+    terrainDirty = true; panelDirty = true;
+    return moved;
+  }
+  function relax(i0,i1,j0,j1){          // 안식각을 넘는 가파른 곳은 무너져 내림
+    i0 = Math.max(0,i0); j0 = Math.max(0,j0); i1 = Math.min(NX,i1); j1 = Math.min(NZ,j1);
+    for(var it=0; it<3; it++){
+      for(var j=j0;j<=j1;j++){ for(var i=i0;i<=i1;i++){
+        var k = vi(i,j);
+        for(var n=0;n<4;n++){
+          var ni = i + (n === 0 ? 1 : n === 1 ? -1 : 0), nj = j + (n === 2 ? 1 : n === 3 ? -1 : 0);
+          if(ni < 0 || nj < 0 || ni > NX || nj > NZ) continue;
+          var kn = vi(ni,nj); if(!MASK[kn]) continue;
+          var d = H[k] - H[kn];
+          if(d > REPOSE){ var t = (d - REPOSE)*0.35; H[k] -= t; H[kn] += t; }
+        }
+      } }
+    }
+  }
+  function localVol(cx, cz, r){
+    var v = 0;
+    for(var j=0;j<VZ;j++){ for(var i=0;i<VX;i++){ var dx = wx(i)-cx, dz = wz(j)-cz; if(dx*dx + dz*dz <= r*r) v += H[vi(i,j)]; } }
+    return v * CELL * CELL;
+  }
+
+  // 지형 메쓰 갱신 (높이 + 갈색 계열 색)
+  var PAPER = new THREE.Color(0xb08558), PAPER_DK = new THREE.Color(0x6f4f32), tmpC = new THREE.Color();
+  function refreshTerrain(){
+    for(var j=0;j<VZ;j++){ for(var i=0;i<VX;i++){
+      var k = vi(i,j), h = H[k], x = wx(i), z = wz(j);
+      tPos[k*3+1] = FLOOR + 0.02 + h;
+      var t = sstep(0.0, 0.35, h), n = vnoise(x*0.9, z*0.9), n2 = vnoise(x*2.3 + 5, z*2.3);
+      tmpC.copy(PAPER_DK).lerp(PAPER, clamp(0.3 + n*0.45 + n2*0.2 + h*0.05, 0, 1));
+      tmpC.lerp(floorCol, 1 - t);
+      tCol[k*3] = tmpC.r; tCol[k*3+1] = tmpC.g; tCol[k*3+2] = tmpC.b;
+    } }
+    aPos.needsUpdate = true; aCol.needsUpdate = true;
+    tGeo.computeVertexNormals();
+    terrainDirty = false;
+  }
+  ZONES.forEach(function(z){
+    z.ent = {kind:'zone', id:z.id, name:z.name};
+    var hit = new THREE.Mesh(new THREE.BoxGeometry(z.x1 - z.x0, 5, z.zm1 - 16.5), new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
+    hit.position.set((z.x0 + z.x1)/2, FLOOR + 2.5, (16.5 + z.zm1)/2); hit.userData.ent = z.ent; yard.add(hit); pickables.push(hit);
+    makeHeap(z, z.init);
+  });
+  refreshTerrain();
+
+  /* ---------- 이동 (직접 경로 계획: 노란 선과 상관없이, 높은 더미·트럭만 피해서 감) ---------- */
+  function angDiff(a,b){ var d = a-b; while(d > Math.PI) d -= 2*Math.PI; while(d < -Math.PI) d += 2*Math.PI; return d; }
+  function ease(u){ return u<0 ? 0 : u>1 ? 1 : u*u*(3-2*u); }
+  function driveObj(o, tx, tz, dt, fh, spd, turn){
+    var dx = tx - o.x, dz = tz - o.z, dist = Math.hypot(dx,dz);
+    if(dist > 0.08){
+      var want = Math.atan2(-dx,-dz);
+      o.h += clamp(angDiff(want, o.h), -turn*dt, turn*dt); o.h = Math.atan2(Math.sin(o.h), Math.cos(o.h));
+      if(Math.abs(angDiff(want, o.h)) < 0.3){ var st = Math.min(dist, spd*dt); o.x += dx/dist*st; o.z += dz/dist*st; o.odo += st; }
+      return false;
+    }
+    if(fh !== undefined){ o.h += clamp(angDiff(fh, o.h), -turn*dt, turn*dt); o.h = Math.atan2(Math.sin(o.h), Math.cos(o.h)); return Math.abs(angDiff(fh, o.h)) < 0.02; }
+    return true;
+  }
+  function moveObj(o, dist, dt, spd){          // 현재 방향으로 직진(+) / 후진(-)
+    var st = clamp(dist, -spd*dt, spd*dt);
+    o.x += -Math.sin(o.h)*st; o.z += -Math.cos(o.h)*st; o.odo += Math.abs(st);
+  }
+  var trucks = [];                            // 마당에 있는 차량들 (아래에서 정의)
+  function trucksSig(){ var a = ''; for(var q=0;q<trucks.length;q++) a += trucks[q].state + trucks[q].stage + ','; return a; }
+  var SO0 = null, SO1 = null;                    // 투입할 때만 열리는 원형조 앞 띠의 x 범위
+  function blockedAt(x, z, clear){
+    if(x < 3.6 || x > 66.4 || z < 10.8 || z > 55.0) return true;
+    if(z < 16.6 && !(SO0 !== null && x >= SO0 && x <= SO1)) return true;     // 원형조 앞 띠는 평소 다니지 않음
+    var n = Math.ceil(2.0/CELL), i0 = Math.round((x-GX0)/CELL), j0 = Math.round((z-GZ0)/CELL);
+    for(var dj=-n; dj<=n; dj++){ for(var di=-n; di<=n; di++){
+      if(di*di + dj*dj > n*n) continue;
+      var i = i0 + di, j = j0 + dj; if(i < 0 || j < 0 || i > NX || j > NZ) continue;
+      if(H[vi(i,j)] > 0.3) return true;                      // 원료 위로는 다니지 않음
+    } }
+    for(var q=0; q<trucks.length; q++){          // 서 있는 차량(들어오는 중이면 곧 설 자리)은 피함
+      var t = trucks[q], bx, bz;
+      if(t.state === 'enter' || t.state === 'hold'){ bx = t.xp; bz = t.zp; }
+      else if(t.state === 'wait' || t.state === 'cut' || t.state === 'unload' || (t.state === 'leave' && t.stage === 0)){ bx = t.x; bz = t.z; }
+      else continue;
+      if(Math.abs(x - bx) < 5.4 + 1.2 && Math.abs(z - bz) < 1.4 + 3.1) return true;
+    }
+    return false;
+  }
+  function clearLine(x0,z0,x1,z1){
+    var d = Math.hypot(x1-x0, z1-z0), n = Math.max(1, Math.ceil(d/0.7));
+    for(var s=1;s<n;s++){ var t = s/n; if(blockedAt(x0 + (x1-x0)*t, z0 + (z1-z0)*t, 3.0)) return false; }
+    return true;
+  }
+  function plan(fx, fz, tx, tz){
+    var ws = (fz < 17.5 || tz < 17.5);            // 출발/도착이 띠 안(투입)일 때만 통로에서 그 원형조까지 띠를 열어 줌
+    SO0 = ws ? Math.max(4, Math.min(fx, tx, 18) - 4) : null; SO1 = ws ? Math.min(66, Math.max(fx, tx, 24) + 4) : null;
+    var r = plan0(fx, fz, tx, tz);
+    SO0 = SO1 = null;
+    return r;
+  }
+  function plan0(fx, fz, tx, tz){              // 격자 A* + 직선 단축 → 경유점 목록 (못 찾으면 빈 배열)
+    var S = 1.0, X0 = 3, Z0 = 10, W = 64, HH = 45, cache = {};
+    function ci(x){ return clamp(Math.round((x-X0)/S), 0, W); }
+    function cj(z){ return clamp(Math.round((z-Z0)/S), 0, HH); }
+    function key(i,j){ return j*(W+1) + i; }
+    function blk(i,j){ var k = key(i,j); if(cache[k] === undefined) cache[k] = blockedAt(X0 + i*S, Z0 + j*S, 3.0); return cache[k]; }
+    function nearest(i,j){
+      if(!blk(i,j)) return [i,j];
+      for(var r=1;r<14;r++){ for(var dj=-r;dj<=r;dj++){ for(var di=-r;di<=r;di++){
+        if(Math.max(Math.abs(di),Math.abs(dj)) !== r) continue;
+        var a = i+di, b = j+dj; if(a<0||b<0||a>W||b>HH) continue; if(!blk(a,b)) return [a,b];
+      } } }
+      return [i,j];
+    }
+    var s = nearest(ci(fx), cj(fz)), g = nearest(ci(tx), cj(tz));
+    function hh(i,j){ var dx = Math.abs(i-g[0]), dz = Math.abs(j-g[1]); return dx + dz + (1.4142 - 2)*Math.min(dx,dz); }
+    var open = [{i:s[0], j:s[1], f:hh(s[0],s[1])}], gS = {}, came = {}, closed = {}, found = false, guard = 0;
+    gS[key(s[0],s[1])] = 0;
+    while(open.length && guard++ < 8000){
+      var bi = 0; for(var q=1;q<open.length;q++){ if(open[q].f < open[bi].f) bi = q; }
+      var cur = open.splice(bi,1)[0], ck = key(cur.i, cur.j);
+      if(closed[ck]) continue; closed[ck] = true;
+      if(cur.i === g[0] && cur.j === g[1]){ found = true; break; }
+      for(var dj2=-1; dj2<=1; dj2++){ for(var di2=-1; di2<=1; di2++){
+        if(!di2 && !dj2) continue;
+        var ni = cur.i + di2, nj = cur.j + dj2; if(ni<0||nj<0||ni>W||nj>HH) continue;
+        if(blk(ni,nj)) continue;
+        if(di2 && dj2 && (blk(cur.i+di2, cur.j) || blk(cur.i, cur.j+dj2))) continue;
+        var nk = key(ni,nj), ng = gS[ck] + (di2 && dj2 ? 1.4142 : 1);
+        if(gS[nk] === undefined || ng < gS[nk]){ gS[nk] = ng; came[nk] = ck; open.push({i:ni, j:nj, f:ng + hh(ni,nj)}); }
+      } }
+    }
+    if(!found) return [];
+    var path = [], kk = key(g[0], g[1]), sk = key(s[0], s[1]);
+    while(kk !== undefined && kk !== sk){ path.unshift({x:X0 + (kk % (W+1))*S, z:Z0 + Math.floor(kk/(W+1))*S}); kk = came[kk]; }
+    var pts = [{x:fx, z:fz}].concat(path), out = [], a = 0;
+    while(a < pts.length - 1){
+      var b = pts.length - 1;
+      while(b > a + 1 && !clearLine(pts[a].x, pts[a].z, pts[b].x, pts[b].z)) b--;
+      out.push(pts[b]); a = b;
+    }
+    return out;
+  }
+  function pathTo(tx, tz, h){                     // 길을 못 찾으면 null (원료 더미 위로 억지로 가지 않음)
+    var p = plan(L.x, L.z, tx, tz);
+    if(!p.length) return null;
+    p.push({x:tx, z:tz, h:h}); return p;
+  }
+  function pathOr(tx, tz, h){ return pathTo(tx, tz, h) || [{x:tx, z:tz, h:h}]; }
+
+
+  /* ---------- 페이로더 ---------- */
+  var HOME = {x:21, z:30, h:Math.PI/2};          // 대기 자리: 큰 더미와 작은 더미 사이 통로(맨바닥)
+  var L = {x:HOME.x, z:HOME.z, h:HOME.h, odo:0, arm:-0.3, curl:0, wheels:[], load:0};
+  var loader = new THREE.Group(); yard.add(loader);
+  loader.rotation.order = 'YXZ';
+  var ldEnt = {kind:'loader', name:'페이로더'};
+  (function(){
+    var yel = new THREE.MeshLambertMaterial({color:0xf2b705}), dark = new THREE.MeshLambertMaterial({color:0x23282f}), glass = new THREE.MeshLambertMaterial({color:0x35506b}), steel = new THREE.MeshLambertMaterial({color:0x8a93a3});
+    function part(w,h,d,x,y,z,m,parent){ var me = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), m); me.position.set(x,y,z); (parent || loader).add(me); me.userData.ent = ldEnt; pickables.push(me); return me; }
+    part(2.6,1.5,3.3, 0,1.55,1.35, yel);  part(2.5,1.3,2.8, 0,1.35,-1.4, yel);
+    part(1.9,1.7,1.9, 0,3.0,1.1, glass);  part(2.1,0.15,2.1, 0,3.9,1.1, yel);
+    L.beacon = part(0.35,0.35,0.35, 0.7,4.2,1.1, new THREE.MeshLambertMaterial({color:0xff9a1a}));
+    [[-1.45,-1.8],[1.45,-1.8],[-1.45,1.9],[1.45,1.9]].forEach(function(q){
+      var piv = new THREE.Group(); piv.position.set(q[0], 0.95, q[1]); loader.add(piv);
+      var w = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.9, 20), dark); w.rotation.z = Math.PI/2; piv.add(w);
+      piv.add(new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.1, 1.2), steel)); L.wheels.push(piv);
+    });
+    L.armG = new THREE.Group(); L.armG.position.set(0, 1.9, -2.5); loader.add(L.armG);
+    [-1.0, 1.0].forEach(function(sx){ part(0.25,0.35,2.2, sx,0,-1.1, steel, L.armG); });
+    L.buck = new THREE.Group(); L.buck.position.set(0, 0, -2.2); L.armG.add(L.buck);
+    part(3.2,0.15,1.7, 0,-0.45,-0.7, steel, L.buck); part(3.2,1.0,0.15, 0,0.05,0, steel, L.buck);
+    part(0.15,0.8,1.7, -1.5,-0.1,-0.7, steel, L.buck); part(0.15,0.8,1.7, 1.5,-0.1,-0.7, steel, L.buck);
+    // 버킷 앞에서 밀려가는 원료 덩어리 (밀어서 넣을 때 보임)
+    L.pushG = new THREE.Mesh(new THREE.SphereGeometry(1.0, 12, 8), new THREE.MeshLambertMaterial({color:0x8d6a45}));
+    L.pushG.position.set(0, 0.6, -TIP + 0.4); L.pushG.visible = false; loader.add(L.pushG);
+  })();
+  L.pushV = 0;                                   // 밀고 가는 원료 부피(m³)
+  var dtNow = 0.016, PUSH_CAP = 30, sideFlip = 1;      // 한 번에 밀고 가는 양 최대 30m³(약 20t)
+  function carveUnder(){ return; }
+  function applyLoader(){
+    carveUnder();
+    var fx = -Math.sin(L.h), fz = -Math.cos(L.h);
+    loader.position.set(L.x, FLOOR, L.z);                                   // 항상 바닥 높이 (원료 위에 올라타지 않음)
+    loader.rotation.set(0, L.h, 0);
+    L.armG.rotation.x = L.arm; L.buck.rotation.x = L.curl;
+    L.beacon.visible = !J || (Math.floor(performance.now()/450) % 2 === 0);      // 작업 중에는 경광등이 깜빡임
+    L.wheels.forEach(function(w){ w.rotation.x = -L.odo/0.95; });
+  }
+  applyLoader();
+  function setTool(a, c){ L.arm = a; L.curl = c; }
+  function easeTool(dt){ L.arm += (-0.3 - L.arm)*Math.min(1,3*dt); L.curl += (0 - L.curl)*Math.min(1,3*dt); }
+  var labelL = null;
+  function say(t){ if(labelL) labelL.el.textContent = '페이로더 · ' + t; L.say = t; }
+
+  /* ---------- 차량: 계근대 목록의 차량이 마당에 후진으로 들어와 하차 대기 → 목록에서 사라지면 하차 ---------- */
+  var BALE_ROWS = [[0,1],[2,3],[4]];            // 선미(뒤)부터 5줄 → 페이로더가 한 번에 밀어 내리는 줄
+  var TRUCK_TXT = {hold:'입차 대기', enter:'후진 입차', wait:'하차 대기', cut:'반생이 절단', unload:'하차 중 (페이로더가 밀어서 내림)', leave:'출차'};
+  // 하차 자리 3곳 (서쪽 자리부터 채움: 먼저 선 차량 뒤로 지나가지 않도록)
+  var BAYS = [ {id:'A1', zone:'A', xp:11, tr:null}, {id:'B1', zone:'B', xp:32, tr:null}, {id:'B2', zone:'B', xp:48, tr:null} ];
+  var unloadQ = [], pendingQ = [], truckSeq = 0;
+  function removeLabel(l){ var i = labels.indexOf(l); if(i >= 0) labels.splice(i, 1); if(l && l.el && l.el.parentNode) l.el.parentNode.removeChild(l.el); }
+  function makeTruck(info){
+    var tr = {x:84, z:49, h:-Math.PI/2, odo:0, state:'enter', stage:0, u:0, path:null, pi:0, wheels:[], straps:[], bales:[], picks:[], seq:++truckSeq, info:info, tons:info.tons, baleT:info.tons/N_BALES, bay:null, zone:null, xp:0, zp:0, gone:false, release:false, g:new THREE.Group()};
+    var ent = {kind:'truck', name:'차량 ' + info.plate, tr:tr};
+    var cabM = new THREE.MeshLambertMaterial({color:0x2f5fb3}), chM = new THREE.MeshLambertMaterial({color:0x4a5363}), deckM = new THREE.MeshLambertMaterial({color:0x7c8594}), wh = new THREE.MeshLambertMaterial({color:0x22262e}), strapM = new THREE.MeshLambertMaterial({color:0x2a2f38});
+    function reg(me){ me.userData.ent = ent; pickables.push(me); tr.picks.push(me); tr.g.add(me); return me; }
+    function part(w,h,d,x,y,z,m){ var me = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), m); me.position.set(x,y,z); return reg(me); }
+    part(2.5,0.7,8.8, 0,1.0,0.6, chM);  part(2.4,2.1,2.1, 0,2.2,-3.7, cabM);  part(2.7,0.25,6.8, 0,1.5,1.4, deckM);
+    [[-1.3,-3.3],[1.3,-3.3],[-1.3,2.4],[1.3,2.4],[-1.3,4.0],[1.3,4.0]].forEach(function(q){
+      var piv = new THREE.Group(); piv.position.set(q[0], 0.55, q[1]); tr.g.add(piv);
+      var w = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.45,16), wh); w.rotation.z = Math.PI/2; piv.add(w);
+      piv.add(new THREE.Mesh(new THREE.BoxGeometry(0.47,0.08,0.7), chM)); tr.wheels.push(piv);
+    });
+    // 베일 20개: 선미(뒤)에서 앞으로 5줄, 한 줄에 4개 = 가로 2개 × 2단
+    var baleCols = [0x9a6c42, 0x8a5e38];
+    for(var r=0;r<5;r++){ for(var c=0;c<2;c++){ for(var ly=0;ly<2;ly++){
+      var m = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.0, 1.2), new THREE.MeshLambertMaterial({color:baleCols[(r + c + ly) % 2]}));
+      var b = {m:m, r:r, ly:ly, x0:-0.65 + c*1.3, y0:2.125 + ly*1.0, z:4.2 - r*1.3};
+      m.position.set(b.x0, b.y0, b.z); reg(m); tr.bales.push(b);
+    } } }
+    [0.1, 1.7, 3.3].forEach(function(zz){ var sm = new THREE.Mesh(new THREE.BoxGeometry(2.9,0.1,0.1), strapM); sm.position.set(0,3.75,zz); tr.g.add(sm); tr.straps.push(sm); });
+    yard.add(tr.g);
+    return tr;
+  }
+  function resetBales(tr){
+    tr.bales.forEach(function(b){ b.m.position.set(b.x0, b.y0, b.z); b.m.visible = true; });
+    tr.straps.forEach(function(sm){ sm.visible = true; sm.position.y = 3.75; });
+  }
+  function applyTruck(tr){
+    tr.g.position.set(tr.x, FLOOR, tr.z); tr.g.rotation.y = tr.h; tr.g.visible = tr.state !== 'hold';
+    tr.wheels.forEach(function(w){ w.rotation.x = -tr.odo/0.55; });
+  }
+  function driveRev(o, tx, tz, dt, spd, turn){      // 후진: 짐칸(뒤)이 가는 방향을 향함
+    var dx = tx - o.x, dz = tz - o.z, dist = Math.hypot(dx, dz);
+    if(dist <= 0.08) return true;
+    var want = Math.atan2(-dx, -dz) + Math.PI;
+    o.h += clamp(angDiff(want, o.h), -turn*dt, turn*dt); o.h = Math.atan2(Math.sin(o.h), Math.cos(o.h));
+    if(Math.abs(angDiff(want, o.h)) < 0.3){ var stp = Math.min(dist, spd*dt); o.x += dx/dist*stp; o.z += dz/dist*stp; o.odo -= stp; }
+    return false;
+  }
+  function reachOf(z, xc){                      // 원형조 앞 더미가 마당 쪽으로 나온 끝 (z)
+    var best = z.z0 + 1;
+    for(var j=0;j<VZ;j++){
+      var zz = wz(j); if(zz < z.z0 || zz > z.z1) continue;
+      for(var i=0;i<VX;i++){ var x = wx(i); if(Math.abs(x - xc) > 12 || !inZone(z,x,zz)) continue; if(H[vi(i,j)] >= 1.0 && zz > best) best = zz; }
+    }
+    return best;
+  }
+  function plannedTons(z){ var t = tonsOf(z); trucks.forEach(function(tr){ if(tr.zone === z && tr.state !== 'leave' && !tr.gone) t += tr.tons; }); return t; }
+  function chooseBay(tons){                     // 자리가 비어 있고 가장 덜 찬 구역
+    var best = null, bs = 1e9;
+    BAYS.forEach(function(b){
+      if(b.tr) return;
+      var z = zoneOf(b.zone), after = plannedTons(z) + tons, sc = after/z.cap + (after > z.cap ? 10 : 0) + b.xp*1e-4;
+      if(sc < bs){ bs = sc; best = b; }
+    });
+    return best;
+  }
+  function spawnTruck(info, instant){
+    var bay = chooseBay(info.tons);
+    if(!bay){ pendingQ.push(info); return; }     // 자리가 없으면 마당 밖에서 대기
+    var tr = makeTruck(info);
+    tr.bay = bay; bay.tr = tr; tr.zone = zoneOf(bay.zone); tr.xp = bay.xp;
+    tr.zp = clamp(reachOf(tr.zone, tr.xp) + 10, 30, 46);        // 더미 앞에서 8m 떨어진 곳(비어 있으면 노란 구역 안이어도 됨)
+    resetBales(tr);
+    if(instant){ tr.x = tr.xp; tr.z = tr.zp; tr.h = -Math.PI/2; tr.state = 'wait'; }
+    else {                                        // 처음부터 후진으로: 운전석이 출입구(동쪽)를 향한 채 뒤로 들어옴
+      tr.x = 84; tr.z = 49; tr.h = -Math.PI/2; tr.state = 'hold';          // 앞 차량이 출입구를 벗어날 때까지 밖에서 대기
+      tr.path = [{x:70, z:49}, {x:66, z:49}].concat(plan(66, 49, tr.xp + 9, tr.zp + 5)).concat([{x:tr.xp + 9, z:tr.zp + 5}, {x:tr.xp + 4, z:tr.zp + 2}, {x:tr.xp, z:tr.zp}]);
+      tr.pi = 0;
+    }
+    tr.label = addLabel('', 0, 0, 0, '', function(){ return [tr.x - OX, 5.8, tr.z - OZ]; });
+    trucks.push(tr); applyTruck(tr); panelDirty = true;
+  }
+  function trySpawnPending(){ while(pendingQ.length && chooseBay(pendingQ[0].tons)){ spawnTruck(pendingQ.shift(), false); } }
+  function releaseTruck(tr){                    // 목록에서 사라짐 → 하차 시작
+    if(tr.state === 'wait'){ tr.u = 0; tr.state = 'cut'; }
+    else if(tr.state === 'enter' || tr.state === 'hold'){ tr.release = true; }
+  }
+  function removeTruck(tr){
+    tr.gone = true; yard.remove(tr.g);
+    tr.picks.forEach(function(pk){ var i = pickables.indexOf(pk); if(i >= 0) pickables.splice(i, 1); });
+    removeLabel(tr.label);
+    var k = trucks.indexOf(tr); if(k >= 0) trucks.splice(k, 1);
+    panelDirty = true;                          // 하차 자리는 페이로더가 이 차량의 원료를 다 밀어 붙인 뒤에 비움
+  }
+  function yieldTo(tr){                         // 출입구·통로에서 차량끼리 겹치지 않게 양보
+    for(var i=0;i<trucks.length;i++){
+      var o = trucks[i]; if(o === tr) continue;
+      var d = Math.hypot(o.x - tr.x, o.z - tr.z);
+      if((tr.state === 'enter' || tr.state === 'hold') && d < 14 && (((o.state === 'enter' || o.state === 'hold') && o.seq < tr.seq) || (o.state === 'leave' && o.stage === 1))) return true;
+      if(tr.state === 'leave' && d < 14 && o.state === 'leave' && o.stage === 1 && o.seq < tr.seq) return true;
+    }
+    return false;
+  }
+  function stepTruck(tr, dt){
+    var w;
+    switch(tr.state){
+      case 'hold':
+        if(!yieldTo(tr)) tr.state = 'enter';
+        break;
+      case 'enter':
+        if(yieldTo(tr)) break;
+        w = tr.path[tr.pi];
+        if(driveRev(tr, w.x, w.z, dt, 3.0, 1.1)){ tr.pi++; if(tr.pi >= tr.path.length){ tr.h = -Math.PI/2; tr.u = 0; tr.state = tr.release ? 'cut' : 'wait'; } }
+        break;
+      case 'wait': break;                       // 하차 대기: 계근대 목록에서 사라질 때까지
+      case 'cut':
+        tr.u += dt;
+        tr.straps.forEach(function(sm, n){ var f = clamp((tr.u - 0.3*n)/1.0, 0, 1); sm.position.y = 3.75 - 1.8*f; sm.visible = f < 1; });
+        if(tr.u >= 2.2){ unloadQ.push(tr); tr.state = 'unload'; }
+        break;
+      case 'unload': break;
+      case 'leave':
+        if(tr.stage === 0){
+          moveObj(tr, tr.xp + 3 - tr.x, dt, 2.2);                 // 앞으로 조금 빠져나옴
+          if(tr.x >= tr.xp + 3 - 0.05){ tr.stage = 1; tr.pi = 0; tr.path = plan(tr.x, tr.z, 66, 49).concat([{x:66, z:49}, {x:70, z:49}, {x:84, z:49}]); }
+        } else {
+          if(yieldTo(tr)) break;
+          w = tr.path[tr.pi];
+          if(driveObj(tr, w.x, w.z, dt, undefined, 3.5, 1.1)){ tr.pi++; if(tr.pi >= tr.path.length) removeTruck(tr); }
+        }
+        break;
+    }
+  }
+  function stepTrucks(dt){
+    for(var i=trucks.length-1; i>=0; i--) stepTruck(trucks[i], dt);
+    trucks.forEach(function(tr){
+      applyTruck(tr);
+      if(tr.label) tr.label.el.textContent = tr.info.plate + (tr.info.supplier ? ' · ' + tr.info.supplier : '');
+    });
+  }
+
+  /* ---------- 페이로더 작업 ---------- */
+  var J = null, Lt = 2, tankK = 0;
+  function replan(j){                          // 트럭 상태가 바뀌면(들어오는 중/서 있음/나감) 막힌 길이 달라지므로 경로를 다시 계획
+    var sg = trucksSig(); if(j.tstate === sg) return;
+    j.tstate = sg;
+    var g = j.path[j.path.length - 1];
+    var p = plan(L.x, L.z, g.x, g.z);
+    if(!p.length) return;                         // 길을 못 찾으면 기존 경로 유지
+    p.push({x:g.x, z:g.z, h:g.h}); j.path = p; j.pi = 0;
+  }
+  var GOAL_Z = 13.2;                            // 투입구 앞에서 밀어 넣을 때 페이로더 중심 위치(버킷이 투입구 위로 나감)
+  var PUSH_START_Z = GOAL_Z + 2.0;              // 밀어 넣기를 시작하는 위치 (낮게 비워둔 바닥 위)
+  function showCarry(v){ L.pushG.visible = v > 0.3; var sc = Math.cbrt(Math.max(0.01, v))*0.55; L.pushG.scale.set(sc*1.6, sc*0.8, sc*1.1); }
+  // 원형조에 넣기: ① 원료 더미의 가장 바깥쪽 끝을 맨바닥에서 조금씩 파냄 ② 버킷을 바닥에 낮춘 채 원료가 없는 맨바닥 길로 돌아서 원형조 앞으로 이동 ③ 바닥을 따라 밀어 투입구(원료보다 낮은 구멍)에 넣음. 원료 위로는 절대 올라가지 않음
+  var BITE_M3 = 12, PIT_APPROACH_Z = 15.2;
+  function pileNear(x0, x1, z0, z1){ var v = 0; for(var j=0;j<VZ;j++){ var zz = wz(j); if(zz < z0 || zz > z1) continue; for(var i=0;i<VX;i++){ var x = wx(i); if(x >= x0 && x <= x1) v += H[vi(i,j)]; } } return v*CELL*CELL; }
+  function startFeed(){
+    for(var tries=0; tries<TANKS.length; tries++){
+      var ti = tankK % TANKS.length; tankK++;
+      var tk = TANKS[ti], z = zoneOf(tk.zone);
+      if(pileNear(tk.x - 12, tk.x + 12, z.z0, z.z1) < 30) continue;          // 이 원형조 쪽에 원료가 없으면 건너뜀
+      var bx = tk.x, bz = -1;                                                  // 이 원형조 가까운 쪽에서 가장 바깥(남쪽)에 있는 원료 끝
+      for(var xx = Math.max(z.x0 + 1, tk.x - 12); xx <= Math.min(z.x1 - 1, tk.x + 12); xx += 1){
+        for(var zz = z.z1; zz >= 17; zz -= 0.5){ if(heightAt(xx, zz) >= 0.6){ if(zz > bz + 0.01 || (Math.abs(zz - bz) < 0.01 && Math.abs(xx - tk.x) < Math.abs(bx - tk.x))){ bz = zz; bx = xx; } break; } }
+      }
+      if(bz < 0) continue;
+      var sz = bz + 4.7;                                                       // 버킷 끝이 원료 끝에 닿는 맨바닥 자리
+      var busy = false;
+      for(var q=0;q<trucks.length;q++){ var tq = trucks[q]; if(!tq.gone && Math.abs(tq.xp - bx) < 13 && sz + 3.5 > tq.zp - 2.4) busy = true; }
+      if(busy) continue;                                                       // 차량이 하차 자리에 있으면 그 앞에서는 파지 않음
+      var pth = pathTo(bx, sz, 0); if(!pth) continue;
+      J = {type:'feed', tank:ti, bx:bx, sz:sz, state:'toBite', path:pth, pi:0, carry:0, uu:0};
+      say(tk.name + '용 가장 바깥 원료 파러 이동');
+      return true;
+    }
+    return false;
+  }
+  // 하차 작업: 단계 A = 트럭 위 베일을 줄 단위로(위 칸 → 아래 칸 순서) 옆(북쪽)으로 밀어 내림, 단계 B = 내려놓은 원료를 원형조 앞 더미로 밀어 붙임
+  var PASS_A = [];
+  BALE_ROWS.forEach(function(rows){ PASS_A.push({rows:rows, ly:1}); PASS_A.push({rows:rows, ly:0}); });
+  function offOf(rows){ var r0 = rows[0], r1 = rows[rows.length-1]; return ((4.2 - 1.3*r0) + (4.2 - 1.3*r1))/2 * -1; }   // 선미(서쪽) 기준 줄 중심의 x 오프셋
+  function setPasses(j){
+    if(j.phase === 'A'){
+      var pa = PASS_A[j.pass], off = offOf(pa.rows);
+      // 몸통은 트럭 옆면 밖(앞면이 트럭에서 0.25m 떨어진 자리)에 서고, 버킷만 짐칸 위로 들어가 반대편 가장자리 너머까지 밀어냄
+      j.cur = {sx:j.xp + off, sz:j.zp + TIP + 1.55, tz:j.zp + TIP - 1.85, arm:(pa.ly ? 0.62 : 0.14), rows:pa.rows, ly:pa.ly, off:off};
+    } else {
+      var rows = BALE_ROWS[j.pass], off2 = offOf(rows);
+      var dz = clamp(reachOf(j.zone, j.xp) - 2.5, j.zone.z0 + 1, j.zp - 6.8);
+      j.cur = {sx:j.xp + off2, sz:j.zp - 2.8 + TIP - 0.3, tz:dz + TIP - 0.5, dz:dz, arm:-0.3, rows:rows, off:off2};
+    }
+  }
+  function startUnload(){
+    var tr = unloadQ.shift();
+    J = {type:'unload', tr:tr, zone:tr.zone, xp:tr.xp, zp:tr.zp, phase:'A', pass:0, state:'pTo', pi:0, path:null};
+    setPasses(J);
+    J.path = pathOr(J.cur.sx, J.cur.sz, 0); say('트럭 베일 밀어 내리러 이동');
+  }
+  function pushBales(rows, ly){                   // 버킷 끝이 닿은 베일만 북쪽으로 밀려감 (트럭 로컬 +x = 남쪽)
+    var tipZ = L.z - TIP;
+    J.tr.bales.forEach(function(b){
+      if(rows.indexOf(b.r) < 0 || b.ly !== ly || !b.m.visible) return;
+      var xl = Math.min(b.x0, tipZ - J.tr.z - 0.6);
+      b.m.position.x = xl;
+      if(xl < -1.6) b.m.position.y = Math.max(0.5, b.y0 + (xl + 1.6)*1.2);          // 짐칸 가장자리를 넘으면 떨어짐
+    });
+  }
+  function cargoPass(j){
+    var rows = j.cur.rows, n = rows.length*2;                                       // 한 칸(층)에 줄당 2개
+    j.tr.bales.forEach(function(b){ if(rows.indexOf(b.r) >= 0 && b.ly === j.cur.ly) b.m.visible = false; });
+    spread(j.xp + j.cur.off, j.zp - 2.8, 1.8, n*j.tr.baleT/RHO, +1);                    // 짐칸 옆 바닥에 쏟아져 내린 원료
+  }
+  function moundPass(j){
+    var mx = j.xp + j.cur.off, mz = j.zp - 2.8, n = j.cur.rows.length*4;
+    var want = Math.min(n*j.tr.baleT/RHO*1.05, localVol(mx, mz, 3.5));
+    var got = spread(mx, mz, 2.0, want, -1);
+    var put = spread(j.xp + j.cur.off*0.4, j.cur.dz, 2.4, got, +1);
+    if(put < got - 0.01) spread(mx, mz, 3.0, got - put, +1);
+  }
+  function stepLoader(dt){
+    var w; dtNow = dt;
+    if(!J){
+      Lt -= dt; easeTool(dt); applyLoader();
+      if(Lt > 0) return;
+      if(unloadQ.length) startUnload();
+      else if(!startFeed()){ Lt = 3; say('대기'); }
+      return;
+    }
+    if(J.type === 'unload'){
+      switch(J.state){
+        case 'pTo':
+          replan(J); w = J.path[J.pi];
+          if(driveObj(L, w.x, w.z, dt, w.h, 3.0, 1.3)){ J.pi++; if(J.pi >= J.path.length) J.state = 'pFwd'; }
+          break;
+        case 'pFwd':
+          L.arm += (J.cur.arm - L.arm)*Math.min(1, 4*dt); L.curl += (0 - L.curl)*Math.min(1, 4*dt);
+          moveObj(L, L.z - J.cur.tz, dt, 1.4);
+          if(J.phase === 'A') pushBales(J.cur.rows, J.cur.ly);
+          if(L.z <= J.cur.tz + 0.05){ if(J.phase === 'A') cargoPass(J); else moundPass(J); J.state = 'pBack'; }
+          break;
+        case 'pBack':
+          moveObj(L, L.z - J.cur.sz, dt, 1.8);
+          if(L.z >= J.cur.sz - 0.05){
+            J.pass++;
+            if(J.pass < (J.phase === 'A' ? PASS_A.length : BALE_ROWS.length)){ setPasses(J); J.path = [{x:J.cur.sx, z:J.cur.sz, h:0}]; J.pi = 0; J.state = 'pTo'; }
+            else if(J.phase === 'A'){ J.phase = 'B'; J.pass = 0; J.tr.state = 'leave'; J.tr.stage = 0; J.state = 'wait'; say('차량 출차 대기'); }
+            else { if(J.tr.bay) J.tr.bay.tr = null; trySpawnPending(); J.path = pathOr(HOME.x, HOME.z, HOME.h); J.pi = 0; J.state = 'pHome'; say('대기 위치로 이동'); }
+          }
+          break;
+        case 'wait':
+          easeTool(dt);
+          if(J.tr.gone){ setPasses(J); J.path = pathOr(J.cur.sx, J.cur.sz, 0); J.pi = 0; J.state = 'pTo'; say('내려놓은 원료를 원형조 앞 더미로 밀러 이동'); }
+          break;
+        case 'pHome':
+          replan(J); w = J.path[J.pi];
+          if(driveObj(L, w.x, w.z, dt, w.h, 3.0, 1.3)){ J.pi++; if(J.pi >= J.path.length){ J = null; Lt = rndr(12, 25); say('대기'); } }
+          break;
+      }
+    } else {
+      var tk = TANKS[J.tank];
+      switch(J.state){
+        case 'toBite':
+          replan(J); w = J.path[J.pi];
+          if(driveObj(L, w.x, w.z, dt, w.h, 3.0, 1.3)){ J.pi++; if(J.pi >= J.path.length){ J.uu = 0; J.state = 'dig'; setTool(-0.3, 0); say('가장 바깥 원료를 조금 파내는 중'); } }
+          break;
+        case 'dig':           // 버킷을 바닥에 대고 원료 가장자리를 조금만 파냄
+          setTool(-0.3, 0); moveObj(L, 99, dt, 0.8); J.uu += dt*0.8;
+          if(J.carry < BITE_M3){ J.carry += spread(L.x - Math.sin(L.h)*(TIP - 0.6), L.z - Math.cos(L.h)*(TIP - 0.6), 1.7, 7*dt, -1); }
+          showCarry(J.carry);
+          if(J.uu >= 1.4){ J.uu = 0; J.state = 'back'; }
+          break;
+        case 'back':
+          moveObj(L, -99, dt, 1.4); J.uu += dt*1.4; showCarry(J.carry);
+          if(J.uu >= 1.6){
+            J.path = pathTo(tk.x, PIT_APPROACH_Z, 0);
+            if(!J.path){ if(J.carry > 0) spread(J.bx, J.sz - 3, 2.0, J.carry, +1); J.carry = 0; showCarry(0); J.path = pathOr(HOME.x, HOME.z, HOME.h); J.pi = 0; J.state = 'home'; say('길이 막혀 대기 위치로 이동'); }
+            else { J.pi = 0; J.state = 'toPit'; say(tk.name + ' 투입구 앞으로 이동'); }
+          }
+          break;
+        case 'toPit':         // 원료가 없는 맨바닥 길로 원형조 앞까지
+          replan(J); w = J.path[J.pi]; showCarry(J.carry);
+          if(driveObj(L, w.x, w.z, dt, w.h, 3.0, 1.3)){ J.pi++; if(J.pi >= J.path.length){ J.state = 'push'; say(tk.name + ' 투입구로 밀어 넣는 중'); } }
+          break;
+        case 'push':          // 바닥을 따라 투입구까지 밀어 넣음
+          setTool(-0.3, 0); showCarry(J.carry);
+          moveObj(L, L.z - GOAL_Z, dt, 1.0);
+          if(L.z <= GOAL_Z + 0.05){ J.uu = 0; J.state = 'in'; }
+          break;
+        case 'in':
+          J.uu += dt; showCarry(J.carry * Math.max(0, 1 - J.uu/0.8));
+          if(J.uu >= 0.8){ tk.fed += J.carry*RHO; J.carry = 0; showCarry(0); panelDirty = true; J.uu = 0; J.state = 'retreat'; }
+          break;
+        case 'retreat':
+          moveObj(L, -(PIT_APPROACH_Z + 0.8 - L.z), dt, 1.4);
+          if(L.z >= PIT_APPROACH_Z + 0.7){ J.path = pathOr(HOME.x, HOME.z, HOME.h); J.pi = 0; J.state = 'home'; say('대기 위치로 이동'); }
+          break;
+        case 'home':
+          replan(J); w = J.path[J.pi];
+          if(driveObj(L, w.x, w.z, dt, w.h, 3.0, 1.3)){ J.pi++; if(J.pi >= J.path.length){ J = null; Lt = rndr(8, 16); say('대기'); } }
+          break;
+      }
+    }
+    applyLoader();
+  }
+  var anim = true;
+
+  /* ---------- 카메라 (회전/이동/확대) ---------- */
+  var st = {target:new THREE.Vector3(0,0,0), theta:0, phi:0.5, radius:105};
+  function updateCam(){
+    st.phi = clamp(st.phi, 0.06, 1.5); st.radius = clamp(st.radius, 12, 320);
+    var sp = Math.sin(st.phi);
+    cam.position.set(st.target.x + st.radius*sp*Math.sin(st.theta), st.target.y + st.radius*Math.cos(st.phi), st.target.z + st.radius*sp*Math.cos(st.theta));
+    cam.lookAt(st.target);
+  }
+  function goto(tx,ty,tz,th,ph,r){ st.target.set(tx,ty,tz); st.theta = th; st.phi = ph; st.radius = r; updateCam(); }
+  var VIEWS = { base:function(){ goto(0,0,0,0,0.5,105); }, top:function(){ goto(0,0,0,0,0.06,130); } };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(b){ b.addEventListener('click', function(){ VIEWS[b.dataset.view](); }); });
+
+  /* ---------- 라벨 ---------- */
+  var labels = [];
+  function addLabel(text,x,y,z,cls,fn){
+    var d = document.createElement('div'); d.className = 'lbl' + (cls ? ' ' + cls : ''); d.textContent = text; labelsEl.appendChild(d);
+    var l = {el:d, x:x-OX, y:y, z:z-OZ, fn:fn}; labels.push(l); return l;
+  }
+  addLabel('야적 출입구', GATE.x, 2.2, (GATE.z0 + GATE.z1)/2, 'sec');
+  ZONES.forEach(function(z){ z.label = addLabel(z.name, z.xc, 7.0, z.zc, 'sec'); });
+  labelL = addLabel('페이로더 · 대기', 0, 0, 0, '', function(){ return [L.x - OX, 5.4 + heightAt(L.x, L.z), L.z - OZ]; });
+  var showLabels = true;
+  var v3 = new THREE.Vector3();
+  function updateLabels(){
+    if(!showLabels) return;
+    var w = stage.clientWidth, h = stage.clientHeight;
+    labels.forEach(function(l){
+      if(l.fn){ var q = l.fn(); if(!q){ l.el.style.display = 'none'; return; } l.x = q[0]; l.y = q[1]; l.z = q[2]; }
+      v3.set(l.x, l.y, l.z).project(cam);
+      if(v3.z > 1){ l.el.style.display = 'none'; return; }
+      l.el.style.display = 'block';
+      l.el.style.left = ((v3.x*0.5+0.5)*w) + 'px'; l.el.style.top = ((-v3.y*0.5+0.5)*h) + 'px';
+    });
+  }
+
+  /* ---------- 패널 ---------- */
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; }
+  var zonesEl = document.getElementById('zones'), tanksEl = document.getElementById('tanks'), infoEl = document.getElementById('info'), noteEl = document.getElementById('note');
+  function fmtT(t){ return (Math.round(t*10)/10).toLocaleString('ko-KR') + ' t'; }
+  function buildZoneCards(){
+    zonesEl.textContent = '';
+    ZONES.forEach(function(z){
+      var c = el('div','card');
+      var h = el('h2'); var r = el('div','row'); r.appendChild(el('b','',z.name)); z.tonsEl = el('span'); r.appendChild(z.tonsEl); h.appendChild(r); c.appendChild(h);
+      var m = el('div','meter'); z.barEl = el('i'); m.appendChild(z.barEl); c.appendChild(m);
+      z.subEl = el('div','small'); c.appendChild(z.subEl);
+      var inp = el('div','inp');
+      z.inEl = el('input'); z.inEl.type = 'number'; z.inEl.min = '0'; z.inEl.step = '10'; z.inEl.placeholder = '현재 톤수';
+      var set = el('button','','적용');
+      set.addEventListener('click', function(){ var v = parseFloat(z.inEl.value); if(isFinite(v)) makeHeap(z, clamp(v, 0, z.cap)); });
+      inp.appendChild(z.inEl); inp.appendChild(set); c.appendChild(inp);
+      zonesEl.appendChild(c);
+    });
+  }
+  function refreshPanel(){
+    ZONES.forEach(function(z){
+      var t = tonsOf(z);
+      z.tonsEl.textContent = fmtT(t) + ' / ' + fmtT(z.cap);
+      z.barEl.style.width = Math.round(Math.min(1, t / z.cap) * 100) + '%';
+      z.subEl.textContent = '적재율 ' + Math.round(t / z.cap * 100) + '% · 가장 높은 곳 ' + (Math.round(maxH(z)*10)/10) + ' m';
+      if(z.label) z.label.el.textContent = z.name + ' · ' + fmtT(t);
+    });
+    tanksEl.textContent = '';
+    tanksEl.appendChild(el('h2','','원형조 투입 누계 (시연)'));
+    var dl = el('dl');
+    TANKS.forEach(function(t){ dl.appendChild(el('dt','',t.name)); dl.appendChild(el('dd','', fmtT(t.fed) + ' (' + zoneOf(t.zone).name + ')')); });
+    tanksEl.appendChild(dl);
+    refreshVeh();
+    panelDirty = false;
+  }
+  function showInfo(e){
+    infoEl.textContent = '';
+    if(!e){ infoEl.appendChild(el('div','small','구역, 원형조, 차량, 페이로더를 클릭하면 정보가 표시됩니다.')); return; }
+    infoEl.appendChild(el('h2','', e.name));
+    var dl = el('dl');
+    function row(k,v){ dl.appendChild(el('dt','',k)); dl.appendChild(el('dd','',v)); }
+    if(e.kind === 'zone'){ var z = zoneOf(e.id); row('현재', fmtT(tonsOf(z))); row('최대', fmtT(z.cap)); row('높이(최대)', (Math.round(maxH(z)*10)/10) + ' m'); row('원형조', TANKS.filter(function(t){ return t.zone === z.id; }).map(function(t){ return t.name; }).join(', ')); }
+    else if(e.kind === 'tank'){ var t = TANKS[e.i]; row('투입 누계', fmtT(t.fed)); row('공급 구역', zoneOf(t.zone).name); }
+    else if(e.kind === 'truck'){ var tt = e.tr, iv = tt.info; row('차량번호', iv.plate); row('거래처', iv.supplier || '-'); row('상태', TRUCK_TXT[tt.state] || ''); }
+    else { row('상태', (L.say || '대기')); row('원형조 투입', '버킷을 낮춘 채 밀어서 넣음'); }
+    infoEl.appendChild(dl);
+  }
+  noteEl.textContent = '초안입니다. 다져진 고지 더미 0.65 t/m³, 베일 1개 1t(20개 = 20t), 더미 최대 높이 4.5 m는 가정값이고, 도면 치수를 단순화한 모형이라 위치와 크기는 어긋날 수 있습니다. 더미는 원료는 원형조 쪽에서 바깥(차량 대기 쪽)으로 차오르고 안쪽이 가장 높습니다. 페이로더는 원료 위로 올라가지 않고, 맨바닥에서 가장 바깥 원료를 조금씩 파내 원료 없는 바닥 길로 돌아가 원형조 투입구(원료보다 낮은 구멍)로 바닥을 따라 밀어 넣습니다. 원형조 앞 띠(노란 구역 밖)는 평소 다니지 않고, 큰 더미와 작은 더미 사이 통로로만 오가며 투입할 때만 그 통로에서 띠로 들어가 해당 투입구 앞까지 갑니다. 입고 실중량은 계근_원료의 (총중량 − 공차)를 합산한 값이고, 투입 추정은 생산량 ÷ 수율입니다. 원형조 투입 누계는 시연용입니다. 차량은 계근대 목록(getVehicleList)에 나타나면 후진으로 들어와 하차 대기하고, 목록에서 사라지면 하차합니다. 적재량은 (총중량 − 공차 평균)으로 계산합니다.';
+
+  /* ---------- 입력 (회전 / 이동 / 확대 / 말풍선 / 클릭) ---------- */
+  var ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), hovered = null;
+  function pick(ev){
+    var r = canvas.getBoundingClientRect();
+    mouse.x = ((ev.clientX - r.left)/r.width)*2 - 1; mouse.y = -((ev.clientY - r.top)/r.height)*2 + 1;
+    ray.setFromCamera(mouse, cam);
+    var hits = ray.intersectObjects(pickables, false);
+    return hits.length ? hits[0].object.userData.ent : null;
+  }
+  var tipEl = document.getElementById('tip');
+  function showTip(ev, ent){
+    if(!ent){ tipEl.style.display = 'none'; return; }
+    var rc = stage.getBoundingClientRect();
+    tipEl.textContent = ent.kind === 'zone' ? ent.name + ' · ' + fmtT(tonsOf(zoneOf(ent.id))) : ent.name;
+    tipEl.style.display = 'block'; tipEl.style.left = (ev.clientX - rc.left + 14) + 'px'; tipEl.style.top = (ev.clientY - rc.top + 14) + 'px';
+  }
+  var drag = null;
+  canvas.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  canvas.addEventListener('pointerdown', function(e){ canvas.setPointerCapture(e.pointerId); showTip(e, null); drag = {x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY, pan:(e.button === 2 || e.shiftKey), moved:false}; });
+  canvas.addEventListener('pointermove', function(e){
+    if(drag){
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+      if(Math.abs(e.clientX-drag.sx) + Math.abs(e.clientY-drag.sy) > 4) drag.moved = true;
+      if(drag.pan){ var k = st.radius*0.0016, ct = Math.cos(st.theta), sn = Math.sin(st.theta); st.target.x += -ct*dx*k + (-sn)*dy*k; st.target.z += sn*dx*k + (-ct)*dy*k; }
+      else { st.theta -= dx*0.006; st.phi -= dy*0.006; }
+      updateCam();
+    } else { var h = pick(e); if(h !== hovered){ hovered = h; canvas.style.cursor = h ? 'pointer' : 'default'; } showTip(e, h); }
+  });
+  canvas.addEventListener('pointerup', function(e){ if(drag && !drag.moved && !drag.pan){ showInfo(pick(e)); } drag = null; });
+  canvas.addEventListener('pointerleave', function(){ showTip(null, null); });
+  canvas.addEventListener('wheel', function(e){ e.preventDefault(); st.radius *= Math.exp(e.deltaY*0.001); updateCam(); }, {passive:false});
+  document.getElementById('bAnim').addEventListener('click', function(){ anim = !anim; this.setAttribute('aria-pressed', anim ? 'true' : 'false'); });
+  document.getElementById('bTruck').addEventListener('click', function(){ autoDemo = !autoDemo; this.setAttribute('aria-pressed', autoDemo ? 'true' : 'false'); });
+  document.getElementById('bLabels').addEventListener('click', function(){ showLabels = !showLabels; this.setAttribute('aria-pressed', showLabels ? 'true' : 'false'); labelsEl.style.display = showLabels ? 'block' : 'none'; });
+  var bPanel = document.getElementById('bPanel');
+  bPanel.addEventListener('click', function(){ var off = document.getElementById('app').classList.toggle('nopanel'); bPanel.setAttribute('aria-pressed', off ? 'false' : 'true'); resize(); });
+
+  /* ---------- 테마 / 크기 ---------- */
+  function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function applyTheme(){
+    renderer.setClearColor(cssVar('--scene-bg') || '#dfe4eb');
+    ground.material.color.set(cssVar('--ground') || '#d9dde4');
+    var fc = cssVar('--floor') || '#c9ced7';
+    floorMat.color.set(fc); floorCol.set(fc); terrainDirty = true;
+  }
+  applyTheme();
+  try{ var mq = window.matchMedia('(prefers-color-scheme: dark)'); if(mq.addEventListener) mq.addEventListener('change', applyTheme); }catch(e){}
+  function resize(){
+    var w = stage.clientWidth, h = stage.clientHeight; if(!w || !h) return;
+    renderer.setSize(w, h, false); cam.aspect = w/h; cam.updateProjectionMatrix();
+  }
+  if(window.ResizeObserver){ new ResizeObserver(resize).observe(stage); }
+  window.addEventListener('resize', resize); resize();
+
+  /* ---------- 계근대 차량 목록 연동 ---------- */
+  // 계근대 서버(https://scale.dygroup.co.kr:8443/banwol/admin/getVehicleList.do)는 브라우저에서 직접 부르면 CORS로 막혀서, GAS가 대신 받아와 넘겨줌
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwghNkbbkUwabaK97oumvelqyKTGOIhUGd2lrkLiR6fSNGnTKXZ-CWuFzk7he6nVsbPow/exec';
+  var VEHICLE_URL = GAS_URL + '?type=vehicles';
+  var POLL_MS = 20000;                                   // 20초마다 목록 확인
+  var vehicles = {};                                     // 지금 목록에 있는 차량 (키: 계량일자-계량번호)
+  var api = {mode:'demo', msg:'연동 전 · 시연 모드', t:0}, firstOK = true;
+  var demoList = [], demoSeq = 0, demoT = 6, autoDemo = true;
+  function parseVeh(r){
+    var tot = parseFloat(r.TOTWEI), emp = parseFloat(r.EMPAVG), net = (isFinite(tot) && isFinite(emp)) ? (tot - emp)/1000 : NaN;
+    if(!(net > 3 && net < 40)) net = TRUCK_T;            // 값이 이상하면 기본 20t
+    var tm = String(r.INTIME || ''); tm = tm.length >= 6 ? tm.substr(0,2) + ':' + tm.substr(2,2) : '';
+    return {key:String(r.WEIDAT || '') + '-' + String(r.WEINUM != null ? r.WEINUM : r.CARNUM), plate:String(r.CARNUM || '?'), supplier:String(r.JSNAME || ''), time:tm, tons:net};
+  }
+  function releaseVehicle(inf){
+    var i = pendingQ.indexOf(inf); if(i >= 0){ pendingQ.splice(i, 1); return; }
+    for(var k=0;k<trucks.length;k++){ if(trucks[k].info === inf){ releaseTruck(trucks[k]); return; } }
+  }
+  function applyList(list, instant){                    // 새로 생긴 차량 → 입차, 목록에서 사라진 차량 → 하차 시작
+    var seen = {};
+    list.forEach(function(r){ var inf = parseVeh(r); seen[inf.key] = 1; if(!vehicles[inf.key]){ vehicles[inf.key] = inf; spawnTruck(inf, instant); } });
+    Object.keys(vehicles).forEach(function(k){ if(!seen[k]){ var inf = vehicles[k]; delete vehicles[k]; releaseVehicle(inf); } });
+    panelDirty = true;
+  }
+  var vehBusy = false;
+  function pollVehicles(){
+    if(!window.fetch || vehBusy) return;                 // 앞선 요청이 아직 안 끝났으면 겹쳐 부르지 않음
+    vehBusy = true;
+    var ctrl = window.AbortController ? new AbortController() : null, to = ctrl ? setTimeout(function(){ ctrl.abort(); }, 40000) : null;
+    fetch(VEHICLE_URL, {credentials:'omit', cache:'no-store', signal:ctrl ? ctrl.signal : undefined})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){ if(j && j.error) throw new Error(j.error); return j; })
+      .then(function(j){
+        if(to) clearTimeout(to);
+        var list = (j && j.list) ? j.list : (Array.isArray(j) ? j : []);
+        vehBusy = false;
+        api = {mode:'ok', msg:'계근대 목록 연동 중', t:Date.now()};
+        demoList = []; applyList(list, firstOK); firstOK = false; panelDirty = true;
+      })
+      .catch(function(e){
+        if(to) clearTimeout(to); vehBusy = false;
+        var em = e && e.message ? e.message : String(e);
+        if(/abort/i.test(em)) em = '40초 안에 응답이 없음 (GAS가 계근대 서버 응답을 기다리는 중일 수 있음)';
+        api = {mode:'fail', msg:'연동 실패 (' + em + ') · 다음 확인 때 자동 재시도, 시연 모드 유지', t:Date.now()};
+        panelDirty = true;
+      });
+  }
+  function demoRecord(){
+    var d = new Date(), pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    demoSeq++;
+    return {TOTWEI:String(Math.round(rndr(33500, 38500))), EMPAVG:15930, CARNUM:String(Math.floor(rndr(1000, 9999))), JSNAME:['신성진철강','한빛자원','대양산업'][demoSeq % 3], WEIDAT:'D', WEINUM:demoSeq, INTIME:pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()), _life:-1};
+  }
+  function demoAdd(){ if(api.mode === 'ok') return; demoList.push(demoRecord()); applyList(demoList, false); }
+  function demoRemove(){ if(api.mode === 'ok' || !demoList.length) return; demoList.shift(); applyList(demoList, false); }
+  function truckByKey(k){ for(var i=0;i<trucks.length;i++){ if(trucks[i].info.key === k) return trucks[i]; } return null; }
+  function demoStep(dt){                                 // 시연: 가끔 차량이 목록에 생기고, 하차 대기 후 목록에서 사라짐
+    if(api.mode === 'ok') return;
+    if(autoDemo){ demoT -= dt; if(demoT <= 0){ demoT = rndr(25, 50); if(demoList.length < 3 && pendingQ.length === 0) demoAdd(); } }
+    var drop = [];
+    demoList.forEach(function(r){
+      var tr = truckByKey('D-' + r.WEINUM);
+      if(autoDemo && tr && tr.state === 'wait'){ if(r._life < 0) r._life = rndr(18, 32); r._life -= dt; if(r._life <= 0) drop.push(r); }
+    });
+    if(drop.length){ demoList = demoList.filter(function(r){ return drop.indexOf(r) < 0; }); applyList(demoList, false); }
+  }
+  var vehEl = document.getElementById('veh');
+  function refreshVeh(){
+    vehEl.textContent = '';
+    vehEl.appendChild(el('h2', '', '계근대 차량 목록'));
+    var stt = el('div', 'small', (api.mode === 'demo' ? '○ ' : '● ') + api.msg + (api.mode !== 'demo' && api.t ? ' · ' + new Date(api.t).toLocaleTimeString('ko-KR') : ''));
+    stt.style.color = api.mode === 'ok' ? '#2e9e5b' : api.mode === 'fail' ? '#d9822b' : ''; vehEl.appendChild(stt);
+    var keys = Object.keys(vehicles);
+    if(!keys.length) vehEl.appendChild(el('div', 'small', '현재 목록에 차량 없음'));
+    else {
+      var dl = el('dl'); dl.style.marginTop = '6px';
+      keys.forEach(function(k){
+        var inf = vehicles[k], tr = null; for(var i=0;i<trucks.length;i++){ if(trucks[i].info === inf) tr = trucks[i]; }
+        dl.appendChild(el('dt', '', inf.plate));
+        dl.appendChild(el('dd', '', (inf.supplier || '-') + (tr ? '' : ' (마당 밖 대기)')));
+      });
+      vehEl.appendChild(dl);
+    }
+    var inp = el('div', 'inp'), a = el('button', '', '시연 차량 입차'), b = el('button', '', '맨 앞 차량 퇴장');
+    a.disabled = b.disabled = (api.mode === 'ok');
+    a.addEventListener('click', demoAdd); b.addEventListener('click', demoRemove);
+    inp.appendChild(a); inp.appendChild(b); vehEl.appendChild(inp);
+  }
+  // 외부에서 직접 목록을 넣을 때: setVehicles([{CARNUM:'7331', TOTWEI:'36610', EMPAVG:15930, JSNAME:'...', WEIDAT:'20261007', WEINUM:32, INTIME:'074601'}])
+  window.setVehicles = function(list){ api = {mode:'ok', msg:'외부에서 목록 전달', t:Date.now()}; applyList(list || [], firstOK); firstOK = false; };
+
+  /* ---------- 오늘 입고(계근 실중량) · 생산 · 수율 ---------- */
+  var tdEl = document.getElementById('today');
+  var td = {raw:{ok:false, kg:0, n:0, t:0, msg:'불러오는 중'}, mfg:{ok:false, found:false, g:0, i:0, kg:0, t:0, upd:'', msg:'불러오는 중'}, yieldPct:80};
+  try{ var ys = parseFloat(localStorage.getItem('yardYield')); if(ys > 0 && ys <= 100) td.yieldPct = ys; }catch(e){}
+  function numOf(v){ var n = parseFloat(String(v == null ? '' : v).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; }
+  function fmtKg(v){ return Math.round(v).toLocaleString('ko-KR') + ' kg'; }
+  var tdRef = {};
+  function buildToday(){
+    tdEl.textContent = '';
+    tdEl.appendChild(el('h2', '', '오늘 원료 입고 · 투입'));
+    tdRef.rawBig = el('div', ''); tdRef.rawBig.style.cssText = 'font-size:20px;font-weight:700;margin:2px 0';
+    tdRef.rawSub = el('div', 'small'); tdEl.appendChild(tdRef.rawBig); tdEl.appendChild(tdRef.rawSub);
+    var hr = el('div', 'small'); hr.style.marginTop = '10px'; hr.textContent = '생산 (반월1호기 + 반월2호기)'; tdEl.appendChild(hr);
+    tdRef.prod = el('div', ''); tdRef.prod.style.cssText = 'font-size:16px;font-weight:600'; tdEl.appendChild(tdRef.prod);
+    var inp = el('div', 'inp');
+    var lab = el('span', 'small', '수율'); lab.style.alignSelf = 'center';
+    tdRef.yIn = el('input'); tdRef.yIn.type = 'number'; tdRef.yIn.min = '1'; tdRef.yIn.max = '100'; tdRef.yIn.step = '0.5'; tdRef.yIn.value = String(td.yieldPct);
+    var pct = el('span', 'small', '%'); pct.style.alignSelf = 'center';
+    tdRef.yIn.addEventListener('input', function(){ var v = parseFloat(tdRef.yIn.value); if(v > 0 && v <= 100){ td.yieldPct = v; try{ localStorage.setItem('yardYield', String(v)); }catch(e){} updateToday(); } });
+    inp.appendChild(lab); inp.appendChild(tdRef.yIn); inp.appendChild(pct); tdEl.appendChild(inp);
+    tdRef.used = el('div', ''); tdRef.used.style.cssText = 'font-size:16px;font-weight:600;margin-top:6px'; tdEl.appendChild(tdRef.used);
+    tdRef.diff = el('div', 'small'); tdRef.diff.style.marginTop = '4px'; tdEl.appendChild(tdRef.diff);
+    tdRef.st = el('div', 'small'); tdRef.st.style.marginTop = '8px'; tdEl.appendChild(tdRef.st);
+  }
+  function updateToday(){
+    var r = td.raw, m = td.mfg;
+    tdRef.rawBig.textContent = r.ok ? fmtT(r.kg/1000) + ' · ' + r.n + '대' : '-';
+    tdRef.rawSub.textContent = r.ok ? '입고 실중량 (계근_원료 반월, 총중량 − 공차 합계)' : '입고 실중량: ' + r.msg;
+    tdRef.prod.textContent = m.ok ? (m.found ? fmtKg(m.kg) : '오늘 생산 기록 없음') : '-';
+    var used = (m.ok && m.found) ? m.kg/(td.yieldPct/100) : null;
+    tdRef.used.textContent = used != null ? '원료 투입 추정 ' + fmtKg(used) : '원료 투입 추정 -';
+    if(used != null && r.ok){ var d = r.kg - used; tdRef.diff.textContent = '입고 − 투입 = ' + (d >= 0 ? '+' : '−') + fmtT(Math.abs(d)/1000) + ' (오늘 야적 증감 추정)'; }
+    else tdRef.diff.textContent = '';
+    tdRef.st.textContent = (r.ok ? '입고 ' + new Date(r.t).toLocaleTimeString('ko-KR') : '입고 ' + r.msg) + (m.ok ? ' · 생산 ' + (m.upd ? m.upd : new Date(m.t).toLocaleTimeString('ko-KR')) : ' · 생산 ' + m.msg);
+  }
+  function pollToday(){
+    if(!window.fetch) return;
+    fetch(GAS_URL + '?action=weighing_today&type=raw', {credentials:'omit', cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){
+        if(j && j.notReady) throw new Error('시트 준비 중');
+        var rows = (j && j.banwol) || [], kg = 0, n = 0;
+        rows.forEach(function(x){ var net = numOf(x.TOTWEI) - numOf(x.RECCNT); if(net > 0){ kg += net; n++; } });
+        td.raw = {ok:true, kg:kg, n:n, t:Date.now(), msg:''}; updateToday();
+      })
+      .catch(function(e){ td.raw.ok = false; td.raw.msg = '연동 실패 (' + (e && e.message ? e.message : e) + ')'; updateToday(); });
+    fetch(GAS_URL + '?type=mfgToday', {credentials:'omit', cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){
+        if(j && j.error) throw new Error(j.error);
+        td.mfg = {ok:true, found:!!j.found, g:numOf(j.g), i:numOf(j.i), kg:numOf(j.kg), t:Date.now(), upd:String(j.updatedAt || ''), msg:''}; updateToday();
+      })
+      .catch(function(e){ var em = e && e.message ? e.message : String(e); td.mfg.ok = false; td.mfg.msg = (em === 'unknown type') ? 'GAS에 mfgToday 블록이 아직 없음 (추가 후 새 버전 배포 필요)' : '연동 실패 (' + em + ')'; updateToday(); });
+  }
+
+  /* ---------- 시작 ---------- */
+  buildZoneCards(); refreshPanel(); updateCam();
+  setInterval(pollVehicles, POLL_MS); pollVehicles();
+  buildToday(); updateToday(); setInterval(pollToday, 60000); pollToday();
+  var cneedle = document.getElementById('cneedle');
+  var last = performance.now(), acc = 0, lastSig = '';
+  function loop(now){
+    var dt = Math.min(0.05, (now - last)/1000); last = now;
+    if(anim){ stepTrucks(dt); stepLoader(dt); demoStep(dt); }
+    acc += dt;
+    if(acc > 0.12){ acc = 0; var sg = trucksSig() + '|' + Object.keys(vehicles).length + '|' + pendingQ.length + api.mode; if(sg !== lastSig){ lastSig = sg; panelDirty = true; } if(terrainDirty) refreshTerrain(); if(panelDirty) refreshPanel(); }
+    if(cneedle) cneedle.style.transform = 'rotate(' + (st.theta*180/Math.PI) + 'deg)';
+    renderer.render(scene, cam);
+    updateLabels();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // 외부 값 연동용: setYard({A:190, B:1000})  (톤)
+  window.setYard = function(v){
+    ZONES.forEach(function(z){ if(v && typeof v[z.id] === 'number') makeHeap(z, clamp(v[z.id], 0, z.cap)); });
+  };
+})();
+</script>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- 데이터 ---------- */
+  // 좌표는 도면 이미지의 픽셀 좌표(x0,y0,x1,y1). 1px ≈ 0.163m (전체 가로 155,000mm 기준)
+  var S = 0.163, CX = 611.5, CY = 466.5;
+
+  var CAT = {
+    prod:  {name:'생산설비',   color:0x4f7cd8},
+    tank:  {name:'탱크·조',    color:0x2fa3a3},
+    store: {name:'창고·보관',  color:0xd9a441},
+    yard:  {name:'야적',       color:0xa07856},
+    env:   {name:'환경·처리',  color:0x8e6bbf},
+    supp:  {name:'지원시설',   color:0x4fae7b},
+    util:  {name:'부대설비',   color:0x8a94a6}
+  };
+  var STATUS = {
+    ok:    {name:'정상', color:'#2e9e5b'},
+    warn:  {name:'주의', color:'#d98a06'},
+    check: {name:'점검', color:'#d63c3c'}
+  };
+
+  var Z = [];
+  function box(id,name,cat,h,parts,lbl){ Z.push({id:id,name:name,cat:cat,h:h,parts:parts,lbl:!!lbl}); }
+  function cyl(id,name,cat,h,c,lbl){ Z.push({id:id,name:name,cat:cat,h:h,circ:c,lbl:!!lbl}); }
+
+  box('pm1','PM-1 초지기','prod',8,[[480,217,1043,313]],1);
+  var pm1c = ['CHEST','CHEST','#3 백수 PIT','#3 백수 PIT','#3 백수 PIT','REFINER CHEST','MACHINE CHEST','MACHINE CHEST'];
+  pm1c.forEach(function(n,i){
+    box('pm1c'+(i+1),'PM-1 '+n,'tank',4,[[278+25*i,217,278+25*i+24,290]]);
+  });
+  box('pm2','PM-2 초지기','prod',8,[[400,320,1005,422]],1);
+  var pm2c = ['PULPER CHEST','SCREEN CHEST','REFINER CHEST','MACHINE CHEST'];
+  pm2c.forEach(function(n,i){
+    box('pm2c'+(i+1),'PM-2 '+n,'tank',4,[[280+30*i,332,280+30*i+29,400]]);
+  });
+  box('dcpanel','D.C MOTOR PANEL','util',3,[[665,419,735,429]]);
+  box('fan','COOLING FAN','util',3,[[808,417,855,429]]);
+  [[303,435],[380,435],[438,435],[492,435]].forEach(function(p,i){
+    cyl('rt'+(i+1),'PM-2 하부 원형조 '+(i+1),'tank',5,[p[0],p[1],17]);
+  });
+  cyl('settle1','1차 침전조','tank',5,[212,258,48],1);
+  cyl('tank9','원형조 (Φ9000)','tank',5,[212,158,27]);
+  cyl('settle2','제2차 침전조','tank',5,[578,165,35]);
+  cyl('bctank','B/C 유 TANK','tank',6,[645,160,30]);
+  box('hukgi','흑기조','tank',6,[[248,140,542,200]],1);
+  box('mainmotor','MAIN MOTOR','util',5,[[718,155,770,200]]);
+  box('wwtp','폐수처리장','env',3,[[170,328,258,482]],1);
+  cyl('wwtank','폐수 소형조','env',4,[170,472,14]);
+  box('scrapbox','폐사 보관함','env',4,[[175,485,235,555]]);
+  box('wastebox','폐기물 보관함','env',4,[[147,555,235,625]]);
+  box('paper','파지(원료) 야적','yard',5,[[433,514,706,685]],1);
+  box('incin','소각로','env',8,[[148,645,240,672],[148,735,700,797]],1);
+  box('wh','창고','store',0.25,[[822,425,1043,635],[935,635,1043,717]],1);
+  (function(z){ z.color=0xaab1bd; z.ly=11; z.my=13.5; z.hLabel='지붕 최고 약 12 m (가정)'; })(Z[Z.length-1]);
+  box('whgate','창고 출입구 (추정)','util',0.35,[[816,590,826,632]]);
+  Z[Z.length-1].color = 0x3fb27f;
+
+  // 창고 내부: CCTV 사진 기준 추정 (종이 롤 지름 약 1.3m, 폭 약 1.5m, 2~3단 적재)
+  var RH = 1.5, RR = 0.65;
+  function rolls(id,name,rect,levels){
+    Z.push({id:id,name:name,cat:'store',color:0xcdb48a,rolls:{rect:rect,levels:levels},h:levels*RH+0.25,lbl:false});
+  }
+  rolls('wr1','롤 적재구역 1',[985,432,1040,500],2);
+  rolls('wr2','롤 적재구역 2',[985,515,1040,600],2);
+  rolls('wr3','롤 적재구역 3',[865,600,930,632],3);
+  rolls('wr4','롤 적재구역 4',[945,640,1040,712],2);
+  rolls('wr5','롤 적재구역 5',[830,432,862,500],2);
+  rolls('wr6','롤 적재구역 6',[830,515,862,575],2);
+  Z.push({id:'fl1',name:'지게차 (샘플 위치)',cat:'util',color:0xe07a1f,h:3,pos:[915,520],rot:0.5,lbl:false,
+    model:[
+      {w:1.8,h:1.1,d:2.6,x:0,y:0.85,z:0.4},
+      {w:1.6,h:1.5,d:1.5,x:0,y:2.0,z:0.6},
+      {w:1.5,h:2.6,d:0.2,x:0,y:1.6,z:-1.2},
+      {w:1.4,h:1.2,d:0.9,x:0,y:1.0,z:-2.0}
+    ]});
+  box('bearing','베어링창고','store',6,[[1043,378,1068,500]]);
+  box('workshop','공작실','supp',6,[[1043,215,1068,372]],1);
+  box('office','사무실','supp',8,[[795,648,905,715]],1);
+  box('scale','계량대','util',1.2,[[765,658,783,705]]);
+  box('cafe','식당','supp',5,[[930,718,995,755]],1);
+  box('kitchen','주방','supp',5,[[995,718,1045,755]]);
+  box('guard','경비실','supp',3.5,[[700,757,735,775]]);
+  box('garden','화단','util',0.6,[[805,760,1080,775]]);
+
+  // 샘플 상태값 (실제 데이터 연동 시 이 부분을 교체)
+  var DEFAULT_STATUS = {wh:'warn', incin:'check'};
+
+  /* ---------- 저장 ---------- */
+  var KEY = 'banwol3d:v1';
+  function loadStore(){
+    try{ var o = JSON.parse(localStorage.getItem(KEY) || '{}'); return {status:o.status||{}, memo:o.memo||{}}; }
+    catch(e){ return {status:{}, memo:{}}; }
+  }
+  function saveStore(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+  var store = loadStore();
+  function getStatus(z){ return store.status[z.id] || DEFAULT_STATUS[z.id] || 'ok'; }
+
+  /* ---------- Three.js 기본 ---------- */
+  var stage = document.getElementById('stage');
+  var canvas = document.getElementById('c');
+  var labelsEl = document.getElementById('labels');
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var scene = new THREE.Scene();
+  var cam = new THREE.PerspectiveCamera(42, 1, 1, 2500);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.65);
+  sun.position.set(-80, 160, 120);
+  scene.add(sun);
+
+  function toW(px,py){ return [(px-CX)*S, (py-CY)*S]; }
+
+  // 바닥(부지)
+  var gx0=143, gy0=130, gx1=1080, gy1=803;
+  var gw=(gx1-gx0)*S, gd=(gy1-gy0)*S;
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(gw, gd), new THREE.MeshLambertMaterial({color:0xf4f5f7}));
+  ground.rotation.x = -Math.PI/2;
+  var gc = toW((gx0+gx1)/2,(gy0+gy1)/2);
+  ground.position.set(gc[0], -0.05, gc[1]);
+  scene.add(ground);
+  var outlineMat = new THREE.LineBasicMaterial({color:0x888888});
+  var outline = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(gc[0]-gw/2,0,gc[1]-gd/2), new THREE.Vector3(gc[0]+gw/2,0,gc[1]-gd/2),
+    new THREE.Vector3(gc[0]+gw/2,0,gc[1]+gd/2), new THREE.Vector3(gc[0]-gw/2,0,gc[1]+gd/2)
+  ]), outlineMat);
+  scene.add(outline);
+
+  // 구역 생성
+  var pickables = [];
+  var edgeMat = new THREE.LineBasicMaterial({color:0x1b2330, transparent:true, opacity:0.55});
+  var edgeSelMat = new THREE.LineBasicMaterial({color:0x1d4ed8});
+  var markerGeo = new THREE.SphereGeometry(1.7, 16, 12);
+
+  Z.forEach(function(z){
+    z.mat = new THREE.MeshLambertMaterial({color:(z.color !== undefined ? z.color : CAT[z.cat].color)});
+    z.group = new THREE.Group();
+    z.edges = [];
+    z.count = 0;
+    var minx=1e9, maxx=-1e9, minz=1e9, maxz=-1e9, area=0;
+
+    function addMesh(geo, x, y, zz, noEdge, parent){
+      var host = parent || z.group;
+      var m = new THREE.Mesh(geo, z.mat);
+      m.position.set(x, y, zz);
+      m.userData.zone = z;
+      host.add(m);
+      if(!noEdge){
+        var e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+        e.position.copy(m.position);
+        host.add(e);
+        z.edges.push(e);
+      }
+      pickables.push(m);
+    }
+    (z.parts || []).forEach(function(p){
+      var w=(p[2]-p[0])*S, d=(p[3]-p[1])*S;
+      var c = toW((p[0]+p[2])/2, (p[1]+p[3])/2);
+      addMesh(new THREE.BoxGeometry(w, z.h, d), c[0], z.h/2, c[1]);
+      minx=Math.min(minx,c[0]-w/2); maxx=Math.max(maxx,c[0]+w/2);
+      minz=Math.min(minz,c[1]-d/2); maxz=Math.max(maxz,c[1]+d/2);
+      area += w*d;
+    });
+    if(z.circ){
+      var r = z.circ[2]*S, c2 = toW(z.circ[0], z.circ[1]);
+      addMesh(new THREE.CylinderGeometry(r, r, z.h, 40), c2[0], z.h/2, c2[1]);
+      minx=c2[0]-r; maxx=c2[0]+r; minz=c2[1]-r; maxz=c2[1]+r;
+      area = Math.PI*r*r;
+    }
+    if(z.rolls){
+      var rc = z.rolls.rect, pitch = RR*2 + 0.06;
+      var w0=(rc[2]-rc[0])*S, d0=(rc[3]-rc[1])*S, o = toW(rc[0], rc[1]);
+      var nc = Math.max(1, Math.floor(w0/pitch)), nr = Math.max(1, Math.floor(d0/pitch));
+      var cg = new THREE.CylinderGeometry(RR, RR, RH, 14);
+      for(var l=0; l<z.rolls.levels; l++){
+        for(var i=0; i<nc; i++){
+          for(var j=0; j<nr; j++){
+            addMesh(cg, o[0]+RR+i*pitch, 0.25+(l+0.5)*RH, o[1]+RR+j*pitch, true);
+            z.count++;
+          }
+        }
+      }
+      minx=o[0]; maxx=o[0]+w0; minz=o[1]; maxz=o[1]+d0; area=w0*d0;
+    }
+    if(z.model){
+      var mg = new THREE.Group();
+      var pp = toW(z.pos[0], z.pos[1]);
+      mg.position.set(pp[0], 0.25, pp[1]);
+      mg.rotation.y = z.rot || 0;
+      z.model.forEach(function(it){
+        addMesh(new THREE.BoxGeometry(it.w, it.h, it.d), it.x, it.y, it.z, false, mg);
+      });
+      z.group.add(mg);
+      minx=pp[0]-2; maxx=pp[0]+2; minz=pp[1]-2; maxz=pp[1]+2; area=1.8*3.6;
+    }
+    z.cx=(minx+maxx)/2; z.cz=(minz+maxz)/2;
+    z.size=Math.max(maxx-minx, maxz-minz);
+    z.area=area;
+    scene.add(z.group);
+
+    z.marker = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({color:0xffffff}));
+    z.marker.position.set(z.cx, (z.my || (z.h+3.6)), z.cz);
+    z.marker.visible = false;
+    scene.add(z.marker);
+  });
+
+  /* ---------- 창고 내부 구조 (벽·기둥·지붕·바닥선) — 클릭 대상 아님 ---------- */
+  var whDetail = new THREE.Group(); scene.add(whDetail);
+  var roofGroup = new THREE.Group(); scene.add(roofGroup);
+  (function(){
+    var X0=822, X1=1043, Y0=425, Y1=635, EX0=935, EY1=717;
+    var WH=9, RIDGE=12, T=0.35;
+    var wallMat = new THREE.MeshLambertMaterial({color:0xaeb6c3, transparent:true, opacity:0.38, depthWrite:false});
+    var colMat  = new THREE.MeshLambertMaterial({color:0xf2c200});
+    var lineMat = new THREE.MeshBasicMaterial({color:0xe8c21a});
+    var trussMat = new THREE.LineBasicMaterial({color:0x4a5363});
+    var roofMat = new THREE.MeshLambertMaterial({color:0x8f98a8, transparent:true, opacity:0.2, side:THREE.DoubleSide, depthWrite:false});
+
+    function wall(x0,y0,x1,y1,hh,yb){
+      var w=Math.max((x1-x0)*S,T), d=Math.max((y1-y0)*S,T);
+      var c=toW((x0+x1)/2,(y0+y1)/2);
+      var m=new THREE.Mesh(new THREE.BoxGeometry(w,hh,d), wallMat);
+      m.position.set(c[0], yb+hh/2, c[1]);
+      whDetail.add(m);
+    }
+    wall(X1,Y0,X1,EY1,WH,0);        // 동쪽 벽
+    wall(EX0,EY1,X1,EY1,WH,0);      // 확장부 남쪽 벽
+    wall(EX0,Y1,EX0,EY1,WH,0);      // 확장부 서쪽 벽
+    wall(X0,Y1,EX0,Y1,WH,0);        // 본관 남쪽 벽
+    wall(X0,Y0,X0,590,WH,0);        // 서쪽 벽 (출입구 북쪽)
+    wall(X0,590,X0,632,WH-6,6);     // 출입구 상부(인방)
+    wall(X0,632,X0,Y1,WH,0);        // 서쪽 벽 (출입구 남쪽)
+
+    function col(px,py){
+      var c=toW(px,py);
+      var m=new THREE.Mesh(new THREE.BoxGeometry(0.55,WH,0.55), colMat);
+      m.position.set(c[0], WH/2, c[1]);
+      whDetail.add(m);
+    }
+    var cys=[430,480,535,590,630];
+    cys.forEach(function(y){ col(X0+3,y); col(X1-3,y); });
+    [480,590].forEach(function(y){ col((X0+X1)/2,y); });
+    [[940,675],[1040,675],[990,712]].forEach(function(q){ col(q[0],q[1]); });
+
+    // 바닥 구획선 (통로 표시)
+    function fline(px0,py0,px1,py1){
+      var a=toW(px0,py0), b=toW(px1,py1);
+      var len=Math.hypot(b[0]-a[0], b[1]-a[1]);
+      var m=new THREE.Mesh(new THREE.BoxGeometry(len,0.03,0.2), lineMat);
+      m.position.set((a[0]+b[0])/2, 0.27, (a[1]+b[1])/2);
+      m.rotation.y = -Math.atan2(b[1]-a[1], b[0]-a[0]);
+      whDetail.add(m);
+    }
+    fline(868,432,868,632);
+    fline(978,432,978,632);
+    fline(868,508,978,508);
+
+    // 지붕 트러스 (맞배지붕, 용마루는 남북 방향)
+    var xW=toW(X0,0)[0], xE=toW(X1,0)[0], xC=(xW+xE)/2;
+    var zN=toW(0,Y0)[1], zS=toW(0,Y1)[1];
+    var pts=[];
+    function seg(a,b){ pts.push(new THREE.Vector3(a[0],a[1],a[2]), new THREE.Vector3(b[0],b[1],b[2])); }
+    cys.forEach(function(y){
+      var z=toW(0,y)[1];
+      seg([xW,WH,z],[xC,RIDGE,z]); seg([xC,RIDGE,z],[xE,WH,z]);
+      seg([xW,WH,z],[xE,WH,z]);   seg([xC,RIDGE,z],[xC,WH,z]);
+    });
+    [[xW,WH],[xC,RIDGE],[xE,WH],[(xW+xC)/2,(WH+RIDGE)/2],[(xC+xE)/2,(WH+RIDGE)/2]].forEach(function(q){
+      seg([q[0],q[1],zN],[q[0],q[1],zS]);
+    });
+    roofGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), trussMat));
+
+    function quad(a,b,c,d){
+      var g=new THREE.BufferGeometry();
+      var v=[a,b,c, a,c,d], arr=[];
+      v.forEach(function(p){ arr.push(p[0],p[1],p[2]); });
+      g.setAttribute('position', new THREE.Float32BufferAttribute(arr,3));
+      g.computeVertexNormals();
+      return new THREE.Mesh(g, roofMat);
+    }
+    roofGroup.add(quad([xW,WH,zN],[xC,RIDGE,zN],[xC,RIDGE,zS],[xW,WH,zS]));
+    roofGroup.add(quad([xC,RIDGE,zN],[xE,WH,zN],[xE,WH,zS],[xC,RIDGE,zS]));
+    var ex0=toW(EX0,0)[0], ezS=toW(0,EY1)[1];
+    roofGroup.add(quad([ex0,WH,zS],[xE,WH,zS],[xE,WH,ezS],[ex0,WH,ezS]));
+  })();
+
+  /* ---------- 카메라 (간단한 오빗) ---------- */
+  var st = {target:new THREE.Vector3(0,0,0), theta:0, phi:0.95, radius:235};
+  function clamp(v,a,b){ return Math.min(Math.max(v,a),b); }
+  function updateCam(){
+    st.phi = clamp(st.phi, 0.06, 1.48);
+    st.radius = clamp(st.radius, 35, 600);
+    var sp = Math.sin(st.phi);
+    cam.position.set(
+      st.target.x + st.radius*sp*Math.sin(st.theta),
+      st.target.y + st.radius*Math.cos(st.phi),
+      st.target.z + st.radius*sp*Math.cos(st.theta)
+    );
+    cam.lookAt(st.target);
+  }
+  function setView(t,p,r){ st.target.set(0,0,0); st.theta=t; st.phi=p; st.radius=r; updateCam(); }
+
+  /* ---------- 라벨 ---------- */
+  var showAll = false;
+  Z.forEach(function(z){
+    var d = document.createElement('div');
+    d.className = 'lbl';
+    d.textContent = z.name;
+    d.style.display = 'none';
+    labelsEl.appendChild(d);
+    z.label = d;
+  });
+  var v3 = new THREE.Vector3();
+  function updateLabels(){
+    var w = stage.clientWidth, h = stage.clientHeight;
+    Z.forEach(function(z){
+      var show = showAll || z.lbl || z === selected || z === hovered;
+      if(!show){ z.label.style.display='none'; return; }
+      v3.set(z.cx, (z.ly || (z.h+0.5)), z.cz).project(cam);
+      if(v3.z > 1){ z.label.style.display='none'; return; }
+      z.label.style.display = 'block';
+      z.label.style.left = ((v3.x*0.5+0.5)*w) + 'px';
+      z.label.style.top  = ((-v3.y*0.5+0.5)*h) + 'px';
+      z.label.className = 'lbl' + ((z===selected||z===hovered) ? ' on' : '');
+    });
+  }
+
+  /* ---------- 선택 / 호버 ---------- */
+  var selected = null, hovered = null;
+  function paint(){
+    Z.forEach(function(z){
+      var e = 0x000000;
+      if(z === selected) e = 0x3a3a3a; else if(z === hovered) e = 0x1c1c1c;
+      z.mat.emissive.setHex(e);
+      z.edges.forEach(function(l){ l.material = (z===selected) ? edgeSelMat : edgeMat; });
+    });
+  }
+  function refreshMarkers(){
+    Z.forEach(function(z){
+      var s = getStatus(z);
+      z.marker.visible = (s !== 'ok');
+      if(s !== 'ok') z.marker.material.color.set(STATUS[s].color);
+    });
+  }
+
+  /* ---------- 패널 ---------- */
+  var infoEl = document.getElementById('info');
+  var listEl = document.getElementById('list');
+
+  function el(tag, cls, text){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function renderInfo(){
+    infoEl.textContent = '';
+    if(!selected){
+      infoEl.appendChild(el('div','empty','구역을 클릭하거나 아래 목록에서 선택하세요.'));
+      return;
+    }
+    var z = selected;
+    infoEl.appendChild(el('h2', '', z.name));
+    var dl = el('dl');
+    function row(k,v){ dl.appendChild(el('dt','',k)); dl.appendChild(el('dd','',v)); }
+    row('분류', CAT[z.cat].name);
+    row('면적', '약 ' + Math.round(z.area).toLocaleString('ko-KR') + ' ㎡');
+    row('높이', z.hLabel || (z.h + ' m (가정)'));
+    if(z.count) row('롤 수', '약 ' + z.count + '개 (추정)');
+    infoEl.appendChild(dl);
+
+    var seg = el('div','seg');
+    Object.keys(STATUS).forEach(function(k){
+      var b = el('button','',STATUS[k].name);
+      b.dataset.s = k;
+      b.setAttribute('aria-pressed', getStatus(z)===k ? 'true' : 'false');
+      b.addEventListener('click', function(){
+        store.status[z.id] = k; saveStore();
+        refreshMarkers(); renderInfo(); renderList();
+      });
+      seg.appendChild(b);
+    });
+    infoEl.appendChild(seg);
+
+    var ta = el('textarea');
+    ta.placeholder = '메모';
+    ta.value = store.memo[z.id] || '';
+    ta.addEventListener('input', function(){ store.memo[z.id] = ta.value; saveStore(); });
+    infoEl.appendChild(ta);
+  }
+
+  function renderList(){
+    listEl.textContent = '';
+    Z.forEach(function(z){
+      var b = el('button');
+      var sw = el('span','sw'); sw.style.background = '#' + ('000000'+(z.color !== undefined ? z.color : CAT[z.cat].color).toString(16)).slice(-6);
+      b.appendChild(sw);
+      b.appendChild(el('span','',z.name));
+      var s = getStatus(z);
+      if(s !== 'ok'){
+        var d = el('span','dot st'); d.style.background = STATUS[s].color; d.title = STATUS[s].name;
+        b.appendChild(d);
+      }
+      if(z === selected) b.setAttribute('aria-current','true');
+      b.addEventListener('click', function(){ select(z, true); });
+      listEl.appendChild(b);
+    });
+  }
+
+  function select(z, focus){
+    selected = z;
+    if(z && focus){
+      st.target.set(z.cx, 0, z.cz);
+      st.radius = Math.max(65, z.size*2.4);
+      updateCam();
+    }
+    paint(); renderInfo(); renderList();
+  }
+
+  /* ---------- 범례 ---------- */
+  (function(){
+    var lg = document.getElementById('legend');
+    Object.keys(CAT).forEach(function(k){
+      var s = el('span');
+      var sw = el('i','sw'); sw.style.background = '#' + ('000000'+CAT[k].color.toString(16)).slice(-6);
+      s.appendChild(sw); s.appendChild(document.createTextNode(CAT[k].name));
+      lg.appendChild(s);
+    });
+    ['warn','check'].forEach(function(k){
+      var s = el('span');
+      var d = el('i','dot'); d.style.background = STATUS[k].color;
+      s.appendChild(d); s.appendChild(document.createTextNode(STATUS[k].name));
+      lg.appendChild(s);
+    });
+  })();
+
+  /* ---------- 입력 ---------- */
+  var ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+  function pick(ev){
+    var r = canvas.getBoundingClientRect();
+    mouse.x = ((ev.clientX - r.left)/r.width)*2 - 1;
+    mouse.y = -((ev.clientY - r.top)/r.height)*2 + 1;
+    ray.setFromCamera(mouse, cam);
+    var hit = ray.intersectObjects(pickables, false)[0];
+    return hit ? hit.object.userData.zone : null;
+  }
+
+  var drag = null;
+  canvas.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  canvas.addEventListener('pointerdown', function(e){
+    canvas.setPointerCapture(e.pointerId);
+    drag = {x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY, pan:(e.button===2 || e.shiftKey), moved:false};
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if(drag){
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.x = e.clientX; drag.y = e.clientY;
+      if(Math.abs(e.clientX-drag.sx) + Math.abs(e.clientY-drag.sy) > 4) drag.moved = true;
+      if(drag.pan){
+        var k = st.radius*0.0016, ct = Math.cos(st.theta), sn = Math.sin(st.theta);
+        st.target.x += -ct*dx*k + (-sn)*dy*k;
+        st.target.z +=  sn*dx*k + (-ct)*dy*k;
+      } else {
+        st.theta -= dx*0.006;
+        st.phi   -= dy*0.006;
+      }
+      updateCam();
+    } else {
+      var z = pick(e);
+      if(z !== hovered){ hovered = z; canvas.style.cursor = z ? 'pointer' : 'default'; paint(); }
+    }
+  });
+  canvas.addEventListener('pointerup', function(e){
+    if(drag && !drag.moved && !drag.pan){ select(pick(e), false); }
+    drag = null;
+  });
+  canvas.addEventListener('pointerleave', function(){ if(!drag && hovered){ hovered = null; paint(); } });
+  canvas.addEventListener('wheel', function(e){
+    e.preventDefault();
+    st.radius *= Math.exp(e.deltaY*0.001);
+    updateCam();
+  }, {passive:false});
+
+  document.getElementById('bReset').addEventListener('click', function(){ setView(0,0.95,235); });
+  document.getElementById('bTop').addEventListener('click', function(){ setView(0,0.06,270); });
+  document.getElementById('bWh').addEventListener('click', function(){
+    var w = Z.filter(function(q){ return q.id === 'wh'; })[0];
+    // PM-2 쪽(북)에서 남쪽을 보는 CCTV 방향
+    st.target.set(w.cx, 0, w.cz);
+    st.theta = Math.PI; st.phi = 1.2; st.radius = 58;
+    updateCam();
+  });
+  var bl = document.getElementById('bLabels');
+  bl.addEventListener('click', function(){
+    showAll = !showAll;
+    bl.setAttribute('aria-pressed', showAll ? 'true' : 'false');
+  });
+
+  /* ---------- 테마 / 리사이즈 ---------- */
+  function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function applyTheme(){
+    renderer.setClearColor(cssVar('--scene-bg') || '#dfe4eb');
+    ground.material.color.set(cssVar('--ground') || '#f4f5f7');
+    edgeMat.color.set(cssVar('--edge') || '#1b2330');
+    outlineMat.color.set(cssVar('--muted') || '#888888');
+  }
+  applyTheme();
+  try{
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if(mq.addEventListener) mq.addEventListener('change', applyTheme);
+  }catch(e){}
+
+  function resize(){
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if(!w || !h) return;
+    renderer.setSize(w, h, false);
+    cam.aspect = w/h;
+    cam.updateProjectionMatrix();
+  }
+  if(window.ResizeObserver){ new ResizeObserver(resize).observe(stage); }
+  window.addEventListener('resize', resize);
+  resize();
+
+  /* ---------- 시작 ---------- */
+  refreshMarkers();
+  renderInfo();
+  renderList();
+  paint();
+  updateCam();
+
+  function loop(t){
+    var s = 1 + Math.sin(t*0.004)*0.18;
+    Z.forEach(function(z){ if(z.marker.visible) z.marker.scale.setScalar(s); });
+    renderer.render(scene, cam);
+    syncCams();
+    updateLabels();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+
+  /* ---------- 창고 재고 · 원료 야적을 이 지도 장면 안에서 직접 실행 ---------- */
+  ['wh','whgate','wr1','wr2','wr3','wr4','wr5','wr6','fl1','paper','rt1','rt2','rt3','rt4'].forEach(function(id){   // 지도의 단순 모형은 숨기고 상세 모형이 대신 움직임 (클릭 선택은 그대로)
+    var zz = Z.filter(function(q){ return q.id === id; })[0]; if(zz){ zz.group.visible = false; zz.lbl = false; }
+  });
+  whDetail.visible = false; roofGroup.visible = false;
+  (function(){ var inc = Z.filter(function(q){ return q.id === 'incin'; })[0]; if(inc){ var c2 = toW((148+700)/2, (735+797)/2); inc.cx = c2[0]; inc.cz = c2[1]; inc.marker.position.set(inc.cx, inc.marker.position.y, inc.cz); } })();   // 소각로 점검 표시는 남은 건물 중앙에
+
+  var realDoc = document, realWin = window, MODS = {};
+  function dummyEl(){ return {style:{}, dataset:{}, children:[], classList:{add:function(){},remove:function(){},toggle:function(){return false;},contains:function(){return false;}},
+    appendChild:function(c){return c;}, removeChild:function(){}, addEventListener:function(){}, removeEventListener:function(){}, setAttribute:function(){}, getAttribute:function(){return null;},
+    setPointerCapture:function(){}, getBoundingClientRect:function(){return {left:0,top:0,width:1,height:1};}, clientWidth:1, clientHeight:1, offsetWidth:0, offsetHeight:0,
+    querySelector:function(){return null;}, querySelectorAll:function(){return [];}, textContent:'', innerHTML:'', value:''}; }
+  function startModule(key){
+    var pane = realDoc.getElementById('pane-' + key), lbl = realDoc.getElementById(key + '-labels');
+    var idset = {}; (pane.getAttribute('data-ids') || '').split(',').forEach(function(i){ if(i) idset[i] = 1; });
+    var root = new THREE.Group(); scene.add(root);
+    var camP = new THREE.PerspectiveCamera(42, 1, 0.5, 2500);
+    function sel(s){ Object.keys(idset).forEach(function(i){ s = s.split('#' + i).join('#' + key + '-' + i); }); return s; }
+    var doc = {
+      getElementById: function(id){ if(id === 'stage') return stage; if(id === 'labels') return lbl; if(idset[id]) return realDoc.getElementById(key + '-' + id) || dummyEl(); return dummyEl(); },
+      createElement: function(t){ return realDoc.createElement(t); }, createTextNode: function(t){ return realDoc.createTextNode(t); },
+      querySelectorAll: function(s){ return pane.querySelectorAll(sel(s)); }, querySelector: function(s){ return pane.querySelector(sel(s)); },
+      documentElement: realDoc.documentElement, body: realDoc.body
+    };
+    var win = new Proxy(realWin, {
+      get: function(t, p){ var v = t[p]; return (typeof v === 'function' && p !== 'ResizeObserver') ? v.bind(t) : v; },
+      set: function(t, p, v){ t[p] = v; return true; }
+    });
+    var T2 = Object.create(THREE);
+    T2.Scene = function(){ return root; };
+    T2.PerspectiveCamera = function(){ return camP; };
+    T2.WebGLRenderer = function(){ return {setPixelRatio:function(){}, setSize:function(){}, setClearColor:function(){}, render:function(){}, domElement:dummyEl()}; };
+    T2.AmbientLight = function(){ return new THREE.Object3D(); };
+    T2.DirectionalLight = function(){ return new THREE.Object3D(); };
+    var code = realDoc.getElementById('code-' + key).textContent;
+    MODS[key] = {root:root, cam:camP};
+    new Function('document', 'window', 'THREE', code)(doc, win, T2);
+  }
+  function syncCams(){
+    Object.keys(MODS).forEach(function(k){
+      var c = MODS[k].cam;
+      c.position.copy(cam.position); c.quaternion.copy(cam.quaternion);
+      c.projectionMatrix.copy(cam.projectionMatrix); c.projectionMatrixInverse.copy(cam.projectionMatrixInverse);
+      c.matrixWorld.copy(cam.matrixWorld); c.matrixWorldInverse.copy(cam.matrixWorldInverse); c.aspect = cam.aspect;
+    });
+  }
+  ['wh','yd'].forEach(function(k){ try{ startModule(k); }catch(e){ console.error('모듈 실행 오류 ' + k, e); } });
+
+  // 패널 탭 / 카메라 이동
+  var FLY = {wh:{t:[52.31,0,10.24], th:Math.PI, ph:1.0, r:62}, yd:{t:[-27.29,0,16.87], th:0, ph:0.95, r:96}};
+  function fly(k){ var f = FLY[k]; st.target.set(f.t[0], f.t[1], f.t[2]); st.theta = f.th; st.phi = f.ph; st.radius = f.r; updateCam(); }
+  function showTab(k){
+    Array.prototype.forEach.call(realDoc.querySelectorAll('#ptabs button'), function(b){ b.setAttribute('aria-pressed', b.dataset.pt === k ? 'true' : 'false'); });
+    Array.prototype.forEach.call(realDoc.querySelectorAll('.ptab'), function(p){ p.hidden = (p.dataset.pt !== k); });
+  }
+  Array.prototype.forEach.call(realDoc.querySelectorAll('#ptabs button'), function(b){ b.addEventListener('click', function(){ showTab(b.dataset.pt); }); });
+  Array.prototype.forEach.call(realDoc.querySelectorAll('.fly'), function(b){ b.addEventListener('click', function(){ fly(b.dataset.fly); }); });
+  realDoc.getElementById('bFlyWh').addEventListener('click', function(){ fly('wh'); showTab('wh'); });
+  realDoc.getElementById('bFlyYd').addEventListener('click', function(){ fly('yd'); showTab('yd'); });
+  showTab('map');
+
+  // 외부 데이터 연동용: applyStatus({wh:'warn', pm1:'ok', ...})
+  window.applyStatus = function(map){
+    Object.keys(map||{}).forEach(function(id){ if(STATUS[map[id]]) store.status[id] = map[id]; });
+    refreshMarkers(); renderInfo(); renderList();
+  };
+})();
+</script>
+</body>
+</html>
