@@ -1798,7 +1798,7 @@ textarea{
   /* ---------- 시작 ---------- */
   /* ---------- 구글시트(Apps Script 웹 앱) 연동 ----------
      아래 WEB_APP_URL에 웹 앱 주소(/exec)를 적습니다. 주소 끝에 type= 이 없으면 type=stock3d 가 자동으로 붙습니다. */
-  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwoaUhIiJ2DjSm8MoW-KdIKAI2Qavr5V1q4ainxWB-s_Ch0-_0qqbS2bMKniSOg5K2TWA/exec/exec?type=inventory';
+  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwoaUhIiJ2DjSm8MoW-KdIKAI2Qavr5V1q4ainxWB-s_Ch0-_0qqbS2bMKniSOg5K2TWA/exec?type=inventory';
   var REFRESH_MS = 3*60*1000;   // 자동 새로고침 간격
 
   function currentUrl(){
@@ -2525,7 +2525,7 @@ textarea{
     }
   }
   function startUnload(){
-    var tr = unloadQ.shift();
+    var tr = unloadQ.shift(); logEv(tr.info.plate + ' 페이로더 하차 시작');
     J = {type:'unload', tr:tr, zone:tr.zone, xp:tr.xp, zp:tr.zp, phase:'A', pass:0, state:'pTo', pi:0, path:null};
     setPasses(J);
     J.path = pathOr(J.cur.sx, J.cur.sz, 0); say('트럭 베일 밀어 내리러 이동');
@@ -2791,13 +2791,24 @@ textarea{
     return {key:String(r.WEIDAT || '') + '-' + String(r.WEINUM != null ? r.WEINUM : r.CARNUM), plate:String(r.CARNUM || '?'), supplier:String(r.JSNAME || ''), time:tm, tons:net};
   }
   function releaseVehicle(inf){
+    logEv(inf.plate + ' 목록에서 사라짐 → 하차 시작');
     var i = pendingQ.indexOf(inf); if(i >= 0){ pendingQ.splice(i, 1); return; }
     for(var k=0;k<trucks.length;k++){ if(trucks[k].info === inf){ releaseTruck(trucks[k]); return; } }
   }
-  function applyList(list, instant){                    // 새로 생긴 차량 → 입차, 목록에서 사라진 차량 → 하차 시작
+  var evLog = [], missN = {}, MISS_NEED = 3;           // 목록에서 연속 3번(약 1분) 안 보여야 '계근 완료'로 보고 하차 시작
+  function logEv(m){ evLog.unshift(new Date().toLocaleTimeString('ko-KR') + ' ' + m); if(evLog.length > 8) evLog.pop(); panelDirty = true; }
+  function applyList(list, instant, force){             // 새로 생긴 차량 → 입차, 목록에서 사라진 차량 → 하차 시작
     var seen = {};
-    list.forEach(function(r){ var inf = parseVeh(r); seen[inf.key] = 1; if(!vehicles[inf.key]){ vehicles[inf.key] = inf; spawnTruck(inf, instant); } });
-    Object.keys(vehicles).forEach(function(k){ if(!seen[k]){ var inf = vehicles[k]; delete vehicles[k]; releaseVehicle(inf); } });
+    list.forEach(function(r){
+      var inf = parseVeh(r); seen[inf.key] = 1; delete missN[inf.key];
+      if(!vehicles[inf.key]){ vehicles[inf.key] = inf; spawnTruck(inf, instant); logEv(inf.plate + ' 목록에 나타남'); }
+    });
+    Object.keys(vehicles).forEach(function(k){
+      if(seen[k]) return;
+      missN[k] = (missN[k] || 0) + 1;
+      if(!force && missN[k] < MISS_NEED){ panelDirty = true; return; }       // 한두 번 빠진 것만으로는 아직 하차시키지 않음
+      var inf = vehicles[k]; delete vehicles[k]; delete missN[k]; releaseVehicle(inf);
+    });
     panelDirty = true;
   }
   var vehBusy = false;
@@ -2828,8 +2839,8 @@ textarea{
     demoSeq++;
     return {TOTWEI:String(Math.round(rndr(33500, 38500))), EMPAVG:15930, CARNUM:String(Math.floor(rndr(1000, 9999))), JSNAME:['신성진철강','한빛자원','대양산업'][demoSeq % 3], WEIDAT:'D', WEINUM:demoSeq, INTIME:pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()), _life:-1};
   }
-  function demoAdd(){ if(api.mode === 'ok') return; demoList.push(demoRecord()); applyList(demoList, false); }
-  function demoRemove(){ if(api.mode === 'ok' || !demoList.length) return; demoList.shift(); applyList(demoList, false); }
+  function demoAdd(){ if(api.mode === 'ok') return; demoList.push(demoRecord()); applyList(demoList, false, true); }
+  function demoRemove(){ if(api.mode === 'ok' || !demoList.length) return; demoList.shift(); applyList(demoList, false, true); }
   function truckByKey(k){ for(var i=0;i<trucks.length;i++){ if(trucks[i].info.key === k) return trucks[i]; } return null; }
   function demoStep(dt){                                 // 시연: 가끔 차량이 목록에 생기고, 하차 대기 후 목록에서 사라짐
     if(api.mode === 'ok') return;
@@ -2839,7 +2850,7 @@ textarea{
       var tr = truckByKey('D-' + r.WEINUM);
       if(autoDemo && tr && tr.state === 'wait'){ if(r._life < 0) r._life = rndr(18, 32); r._life -= dt; if(r._life <= 0) drop.push(r); }
     });
-    if(drop.length){ demoList = demoList.filter(function(r){ return drop.indexOf(r) < 0; }); applyList(demoList, false); }
+    if(drop.length){ demoList = demoList.filter(function(r){ return drop.indexOf(r) < 0; }); applyList(demoList, false, true); }
   }
   var vehEl = document.getElementById('veh');
   function refreshVeh(){
@@ -2854,10 +2865,11 @@ textarea{
       keys.forEach(function(k){
         var inf = vehicles[k], tr = null; for(var i=0;i<trucks.length;i++){ if(trucks[i].info === inf) tr = trucks[i]; }
         dl.appendChild(el('dt', '', inf.plate));
-        dl.appendChild(el('dd', '', (inf.supplier || '-') + (tr ? '' : ' (마당 밖 대기)')));
+        dl.appendChild(el('dd', '', (inf.supplier || '-') + (tr ? '' : ' (마당 밖 대기)') + (missN[k] ? ' · 목록에서 ' + missN[k] + '/' + MISS_NEED + '회 안 보임' : '')));
       });
       vehEl.appendChild(dl);
     }
+    if(evLog.length){ var lg = el('div', 'small', '최근 이벤트'); lg.style.marginTop = '8px'; vehEl.appendChild(lg); evLog.forEach(function(m){ vehEl.appendChild(el('div', 'small', m)); }); }
     var inp = el('div', 'inp'), a = el('button', '', '시연 차량 입차'), b = el('button', '', '맨 앞 차량 퇴장');
     a.disabled = b.disabled = (api.mode === 'ok');
     a.addEventListener('click', demoAdd); b.addEventListener('click', demoRemove);
