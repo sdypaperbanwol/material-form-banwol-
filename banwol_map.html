@@ -253,7 +253,7 @@ textarea{
     <div id="wh-sum"></div>
     <div class="note" id="wh-note"></div>
   </div>
-  <div class="ptab mod-yd" data-pt="yd" id="pane-yd" data-ids="bAnim,bLabels,bPanel,bTruck,info,legend,note,tanks,today,veh,zones" hidden><div class="modbar"><button class="tb" id="yd-bAnim" aria-pressed="true">동작</button><button class="tb" id="yd-bTruck" aria-pressed="true">시연 자동 입차</button><button class="tb" id="yd-bLabels" aria-pressed="true">이름</button><button class="tb fly" data-fly="yd">이 위치로 카메라 이동</button></div>
+  <div class="ptab mod-yd" data-pt="yd" id="pane-yd" data-ids="bAnim,bLabels,bPanel,bTruck,info,legend,note,tanks,today,veh,zones" hidden><div class="modbar"><button class="tb" id="yd-bAnim" aria-pressed="true">동작</button><button class="tb" id="yd-bTruck" aria-pressed="false">시연 자동 입차</button><button class="tb" id="yd-bLabels" aria-pressed="true">이름</button><button class="tb fly" data-fly="yd">이 위치로 카메라 이동</button></div>
     <div class="head">
       <h1>파지(원료) 야적 · 원형조 1~4</h1>
       <p>초안 4 · 차량은 계근대 목록 연동 · 톤수는 직접 입력</p>
@@ -939,7 +939,7 @@ textarea{
     if(!dot || !txt) return;
     var live = DATA_LABEL.indexOf('구글시트') === 0;
     dot.style.background = live ? (statusNote ? '#d98a06' : '#2e9e5b') : (DATA_LABEL.indexOf('샘플') === 0 ? '#d63c3c' : '#8d9ab0');
-    txt.textContent = DATA_LABEL + (statusNote ? ' · ' + statusNote : '');
+    txt.textContent = DATA_LABEL + (statusNote ? ' · ' + statusNote : '') + incarNote();
   }
   var tab = 'zone';
   function rangeText(a){
@@ -1111,7 +1111,8 @@ textarea{
       jobsIn.push({kind:'in', key:c.key, w:c.w, type:c.type, gsm:c.gsm, cell:c, idx:c.t, hide:false, demo:true});
     }
     var o = pickOne(have);
-    jobsOut.push({kind:'out', key:o.key, w:o.w, type:o.type, gsm:o.gsm, cell:o, idx:o.t - 1, truck: pickTruck(), demo:true});
+    window.__whDemo = true; var dtk = pickTruck(); window.__whDemo = false;
+    jobsOut.push({kind:'out', key:o.key, w:o.w, type:o.type, gsm:o.gsm, cell:o, idx:o.t - 1, truck: dtk, demo:true});
   });
   var bSim = document.getElementById('bSim');
   bSim.addEventListener('click', function(){
@@ -1199,45 +1200,115 @@ textarea{
      (실제 출하·차량번호와는 무관한 연출. 재고가 줄면 와 있는 화물차에 상차하고, 없으면 화물차를 불러옴) */
   function rnd(a,b){ return a + Math.random()*(b-a); }
   var TR = {}, OUT_X = -13;
-  hallObjs.forEach(function(o){ if(o.id === 'T1' || o.id === 'T2') TR[o.id] = {ent:o, z:o.group.position.z, park:o.group.position.x, x:o.group.position.x, state:'parked', t:0, want:false}; });
+  hallObjs.forEach(function(o){ if(o.id === 'T1' || o.id === 'T2') TR[o.id] = {ent:o, z:o.group.position.z, z0:o.group.position.z, park:o.group.position.x, x:o.group.position.x, state:'away', t:0, want:false, h:0, legs:null, li:0, pi:0, u:0}; });
   TR.T1.t = rnd(70, 120); TR.T2.t = rnd(130, 200);
-  function setTruckX(T){ T.ent.group.position.set(T.x, FLOOR, T.z); }
+  ['T1','T2'].forEach(function(id){ TR[id].ent.group.visible = false; });      // 상차 차량이 없으면 화물차도 없음
+
+  /* ---------- 실제 입차현황 연동: 입차현황 시트에서 창고코드 9160 + 상태 '상차시작'인 차량만 화물차로 표시 ----------
+     1대면 1대, 2대면 2대가 들어와 해당 차량번호로 서 있고, 3대째부터는 밖에서 대기하다가 자리가 나면 들어옴.
+     목록에서 사라지면(상차 끝) 그 차량은 나감. 연동 전이거나 실패하면 이전의 연출용 동작을 유지 */
+  var incarLive = {on:false, plate:{T1:null, T2:null}, queue:[], present:[], err:'', n:0};
+  function incarUrl(){ return WEB_APP_URL.split('?')[0] + '?type=incar'; }
+  function applyIncar(rows){
+    var seen = [], mark = {};
+    rows.forEach(function(r){
+      var wc = String(r['창고코드'] == null ? '' : r['창고코드']).trim(), stt = String(r['상태'] == null ? '' : r['상태']).trim();
+      if(wc !== '9160' || stt !== '상차시작') return;
+      var pl = String(r['차량번호'] == null ? '' : r['차량번호']).trim();
+      if(!pl || mark[pl]) return; mark[pl] = 1; seen.push(pl);
+    });
+    incarLive.on = true; incarLive.err = ''; incarLive.present = seen; incarLive.n = seen.length;
+    incarLive.queue = incarLive.queue.filter(function(p){ return mark[p]; });          // 목록에서 사라진 대기 차량은 뺌
+    seen.forEach(function(pl){
+      if(incarLive.plate.T1 === pl || incarLive.plate.T2 === pl || incarLive.queue.indexOf(pl) >= 0) return;
+      if(!incarLive.plate.T1 && TR.T1.state === 'away') incarLive.plate.T1 = pl;          // 비어 있는(나가는 중이 아닌) 자리에만 배정
+      else if(!incarLive.plate.T2 && TR.T2.state === 'away') incarLive.plate.T2 = pl;
+      else incarLive.queue.push(pl);                                                   // 자리가 없으면 밖에서 대기 (자리가 나면 들어옴)
+    });
+    refreshTruckLabel('T1'); refreshTruckLabel('T2'); refreshQueueLabel(); updateStatus();
+  }
+  var incarBusy = false;
+  function pollIncar(){
+    if(incarBusy || !window.fetch) return;
+    incarBusy = true;
+    var ctrl = window.AbortController ? new AbortController() : null, to = ctrl ? setTimeout(function(){ ctrl.abort(); }, 40000) : null;
+    fetch(incarUrl() + '&_=' + Date.now(), {credentials:'omit', cache:'no-store', signal:ctrl ? ctrl.signal : undefined})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){ if(to) clearTimeout(to); incarBusy = false; if(!Array.isArray(j)) throw new Error((j && j.error) || '형식 오류'); applyIncar(j); })
+      .catch(function(e){ if(to) clearTimeout(to); incarBusy = false; incarLive.err = String(e && e.message ? e.message : e).replace(/aborted.*/i, '응답 시간 초과'); updateStatus(); });   // 실패하면 이전 상태 유지
+  }
+  function incarNote(){
+    if(incarLive.on) return ' · 입차현황 연동 (상차시작 ' + incarLive.n + '대' + (incarLive.queue.length ? ', 밖 대기 ' + incarLive.queue.length : '') + ')' + (incarLive.err ? ' · 갱신 실패(이전 유지)' : '');
+    return incarLive.err ? ' · 입차현황 연동 실패 (' + incarLive.err + ') · 연출용 차량' : ' · 입차현황 확인 중';
+  }
+  function setTruckX(T){ setTruckPose(T); }
   function pickTruck(){
     var ids = ['T1','T2'];
-    var pool = ids.filter(function(id){ return TR[id].state === 'parked'; });
-    if(!pool.length) pool = ids.filter(function(id){ return TR[id].state === 'arriving'; });
-    if(!pool.length) pool = ids;
-    outToggle ^= 1;
-    var id = pool[outToggle % pool.length];
-    if(TR[id].state === 'away') TR[id].want = true;
-    return id;
+    var cand = ids.filter(function(id){ return incarLive.plate[id] && (TR[id].state === 'parked' || TR[id].state === 'arriving'); });
+    if(!cand.length && window.__whDemo){ incarLive.on = true; if(!incarLive.plate.T1) incarLive.plate.T1 = '시연 차량'; cand = ['T1']; }
+    if(!cand.length) return null;
+    outToggle ^= 1; return cand[outToggle % cand.length];
   }
+  var WBH = {x:-7.82, scale:41.81, gate:61.61, out:96};      // 창고 좌표: 계근대 차선 / 계근대 중심 / 회사 출입문(남쪽 경계)
+  function angD(a,b){ var d = a - b; while(d > Math.PI) d -= 2*Math.PI; while(d < -Math.PI) d += 2*Math.PI; return d; }
+  function tMove(T, tx, tz, dt, spd, rev){
+    var dx = tx - T.x, dz = tz - T.z, dist = Math.hypot(dx, dz);
+    if(dist < 0.12) return true;
+    var want = Math.atan2(-dx, -dz) + (rev ? Math.PI : 0);
+    T.h += clamp(angD(want, T.h), -1.0*dt, 1.0*dt); T.h = Math.atan2(Math.sin(T.h), Math.cos(T.h));
+    if(Math.abs(angD(want, T.h)) < 0.3){ var st = Math.min(dist, spd*dt); T.x += dx/dist*st; T.z += dz/dist*st; }
+    return false;
+  }
+  function setTruckPose(T){
+    var th = T.h - Math.PI/2, cx = T.x + 5.2*Math.cos(th), cz = T.z - 5.2*Math.sin(th);
+    var onS = Math.abs(cx - WBH.x) < 2.6 ? clamp((5.4 - Math.abs(cz - WBH.scale))/1.6, 0, 1) : 0;      // 계근대(높이 1.2m) 위에 올라탐
+    T.ent.group.position.set(T.x, FLOOR + 1.2*onS, T.z); T.ent.group.rotation.y = th;
+  }
+  function hRun(T, dt){
+    var leg = T.legs[T.li];
+    if(!leg) return true;
+    if(leg.stop){ T.u += dt; if(T.u >= leg.stop){ T.li++; T.pi = 0; T.u = 0; } return T.li >= T.legs.length; }
+    var pts = leg.fwd || leg.rev, w = pts[T.pi];
+    if(tMove(T, w.x, w.z, dt, leg.rev ? 2.4 : 3.2, !!leg.rev)){ T.pi++; if(T.pi >= pts.length){ T.li++; T.pi = 0; } }
+    return T.li >= T.legs.length;
+  }
+  function hLegsIn(T){ var X = WBH.x, zr = T.z0;
+    return [ {fwd:[{x:X, z:WBH.gate}, {x:X, z:WBH.scale - 5.2}]}, {stop:4}, {fwd:[{x:X, z:zr - 9}]}, {rev:[{x:-13, z:zr - 2}, {x:-13, z:zr}, {x:T.park, z:zr}]} ];
+  }
+  function hLegsOut(T){ var X = WBH.x, zr = T.z0;
+    return [ {fwd:[{x:-13, z:zr}, {x:X, z:zr + 4}, {x:X, z:WBH.scale - 8}, {x:X, z:WBH.scale + 5.2}]}, {stop:4}, {fwd:[{x:X, z:WBH.gate}, {x:X, z:WBH.out}]} ];
+  }
+  function hMoving(id){ return ['T1','T2'].some(function(o){ return o !== id && (TR[o].state === 'arriving' || TR[o].state === 'leaving'); }); }
   function stepTrucks(dt){
     ['T1','T2'].forEach(function(id){
       var T = TR[id];
       switch(T.state){
-        case 'away':
-          T.t -= dt;
-          if(T.want) T.t = Math.min(T.t, 2.0);
-          if(T.t <= 0){ T.state = 'arriving'; T.x = OUT_X; T.want = false; T.ent.group.visible = true; setTruckX(T); loaded[id] = 0; refreshTruckLabel(id); }
+        case 'away':                                   // 입차현황에 상차시작 차량이 배정됐을 때만 들어옴
+          if(!incarLive.on) break;
+          if(!incarLive.plate[id] && incarLive.queue.length){ incarLive.plate[id] = incarLive.queue.shift(); refreshQueueLabel(); }
+          if(incarLive.plate[id] && !hMoving(id)){
+            T.state = 'arriving'; T.x = WBH.x; T.z = WBH.out; T.h = 0; T.legs = hLegsIn(T); T.li = 0; T.pi = 0; T.u = 0;
+            T.ent.group.visible = true; setTruckPose(T); loaded[id] = 0; refreshTruckLabel(id);
+          }
           break;
-        case 'arriving':                      // 운전석이 출입구를 향한 채 후진해서 들어옴
-          T.x = Math.min(T.park, T.x + 2.2*dt); setTruckX(T);
-          if(T.x >= T.park){ T.state = 'parked'; T.t = rnd(70, 180); }
+        case 'arriving':
+          if(hRun(T, dt)){ T.x = T.park; T.z = T.z0; T.h = Math.PI/2; T.state = 'parked'; }
+          setTruckPose(T);
           break;
         case 'parked':
-          T.t -= dt;
           var busy = jobsOut.some(function(j){ return j.truck === id; }) || (simB.state !== 'idle' && simB.job && simB.job.truck === id);
-          if(T.t <= 0 && !busy) T.state = 'leaving';
+          if(incarLive.on && (!incarLive.plate[id] || incarLive.present.indexOf(incarLive.plate[id]) < 0) && !busy && !hMoving(id)){
+            T.state = 'leaving'; T.legs = hLegsOut(T); T.li = 0; T.pi = 0; T.u = 0;
+          }
           break;
-        case 'leaving':                       // 앞으로 나감
-          T.x -= 3.0*dt; setTruckX(T);
-          if(T.x <= OUT_X){ T.state = 'away'; T.ent.group.visible = false; T.t = rnd(25, 80); loaded[id] = 0; refreshTruckLabel(id); }
+        case 'leaving':
+          if(hRun(T, dt)){ T.state = 'away'; T.ent.group.visible = false; loaded[id] = 0; incarLive.plate[id] = null; refreshTruckLabel(id); }
+          else setTruckPose(T);
           break;
       }
     });
   }
-  function truckLblFn(id){ return function(){ var T = TR[id]; return T.state === 'away' ? null : [T.x + 5.2 - OX, 5.0, T.z - OZ]; }; }
+  function truckLblFn(id){ return function(){ var T = TR[id]; if(T.state === 'away') return null; var th = T.h - Math.PI/2; return [T.x + 5.2*Math.cos(th) - OX, 5.2, T.z - 5.2*Math.sin(th) - OZ]; }; }
   lblT1.fn = truckLblFn('T1'); lblT2.fn = truckLblFn('T2');
 
   var wantHome = {F1:false, F2:false, F3:false};
@@ -1423,8 +1494,11 @@ textarea{
   }
   function refreshTruckLabel(id){
     var n = loaded[id], lbl = id === 'T1' ? lblT1 : lblT2;
-    lbl.el.textContent = (id === 'T1' ? '화물차 1 (25t)' : '화물차 2 (25t)') + (n ? ' · 상차 ' + n + '롤' : '');
+    var base = (incarLive.on && incarLive.plate[id]) ? incarLive.plate[id] + ' · 상차 시작' : (id === 'T1' ? '화물차 1 (25t)' : '화물차 2 (25t)');
+    lbl.el.textContent = base + (n ? ' · 상차 ' + n + '롤' : '');
   }
+  var lblQ = addLabel('', 0, 0, 0, '', function(){ return (incarLive.on && incarLive.queue.length) ? [-8 - OX, 4.2, DOOR_C - OZ] : null; }, false);
+  function refreshQueueLabel(){ lblQ.el.textContent = incarLive.queue.length ? '밖에서 대기 ' + incarLive.queue.join(', ') : ''; }
 
   // 이전 읽기와 비교해 늘어난 롤은 입고, 줄어든 롤은 상차 작업으로 만든다 (한 번에 품목당 최대 4개)
   function enqueueEvents(prevByKey, prevSnap){
@@ -1489,7 +1563,8 @@ textarea{
           if(ix >= 0){ used['x'+bestO] = (used['x'+bestO] || 0) + 1; sl2 = slots[bestO]; idx2 = ix; }
         }
       })();
-      jobsOut.push({kind:'out', key:k, w:it.w, type:it.type, gsm:it.gsm, cell:sl2, idx:idx2, truck: pickTruck()});
+      var tkId = pickTruck(); if(!tkId) return;                     // 상차 차량이 없으면 상차 동작을 만들지 않음
+      jobsOut.push({kind:'out', key:k, w:it.w, type:it.type, gsm:it.gsm, cell:sl2, idx:idx2, truck: tkId});
     });
   }
 
@@ -1723,7 +1798,7 @@ textarea{
   /* ---------- 시작 ---------- */
   /* ---------- 구글시트(Apps Script 웹 앱) 연동 ----------
      아래 WEB_APP_URL에 웹 앱 주소(/exec)를 적습니다. 주소 끝에 type= 이 없으면 type=stock3d 가 자동으로 붙습니다. */
-  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwghNkbbkUwabaK97oumvelqyKTGOIhUGd2lrkLiR6fSNGnTKXZ-CWuFzk7he6nVsbPow/exec?type=inventory';
+  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwoaUhIiJ2DjSm8MoW-KdIKAI2Qavr5V1q4ainxWB-s_Ch0-_0qqbS2bMKniSOg5K2TWA/exec/exec?type=inventory';
   var REFRESH_MS = 3*60*1000;   // 자동 새로고침 간격
 
   function currentUrl(){
@@ -1804,6 +1879,7 @@ textarea{
 
   loadStock([], '불러오는 중…');
   fetchStock();
+  setInterval(pollIncar, 20000); pollIncar();
   updateCam();
 
   var v3 = new THREE.Vector3();
@@ -2276,8 +2352,10 @@ textarea{
     tr.bales.forEach(function(b){ b.m.position.set(b.x0, b.y0, b.z); b.m.visible = true; });
     tr.straps.forEach(function(sm){ sm.visible = true; sm.position.y = 3.75; });
   }
+  var WB_Y = {x:88.77, z:46.18}, GATE_Y = 65.98;       // 계근대 중심 / 회사 출입문(남쪽 경계) 위치
   function applyTruck(tr){
-    tr.g.position.set(tr.x, FLOOR, tr.z); tr.g.rotation.y = tr.h; tr.g.visible = tr.state !== 'hold';
+    var onS = Math.abs(tr.x - WB_Y.x) < 2.4 ? clamp((5.4 - Math.abs(tr.z - WB_Y.z))/1.6, 0, 1) : 0;      // 계근대(높이 1.2m) 위에 올라탐
+    tr.g.position.set(tr.x, FLOOR + 1.2*onS, tr.z); tr.g.rotation.y = tr.h; tr.g.visible = tr.state !== 'hold';
     tr.wheels.forEach(function(w){ w.rotation.x = -tr.odo/0.55; });
   }
   function driveRev(o, tx, tz, dt, spd, turn){      // 후진: 짐칸(뒤)이 가는 방향을 향함
@@ -2315,9 +2393,11 @@ textarea{
     resetBales(tr);
     if(instant){ tr.x = tr.xp; tr.z = tr.zp; tr.h = -Math.PI/2; tr.state = 'wait'; }
     else {                                        // 처음부터 후진으로: 운전석이 출입구(동쪽)를 향한 채 뒤로 들어옴
-      tr.x = 84; tr.z = 49; tr.h = -Math.PI/2; tr.state = 'hold';          // 앞 차량이 출입구를 벗어날 때까지 밖에서 대기
-      tr.path = [{x:70, z:49}, {x:66, z:49}].concat(plan(66, 49, tr.xp + 9, tr.zp + 5)).concat([{x:tr.xp + 9, z:tr.zp + 5}, {x:tr.xp + 4, z:tr.zp + 2}, {x:tr.xp, z:tr.zp}]);
-      tr.pi = 0;
+      tr.x = WB_Y.x; tr.z = 96; tr.h = 0; tr.state = 'hold';               // 앞 차량이 비킬 때까지 회사 밖에서 대기
+      var rv = [{x:70, z:49}, {x:66, z:49}].concat(plan(66, 49, tr.xp + 9, tr.zp + 5)).concat([{x:tr.xp + 9, z:tr.zp + 5}, {x:tr.xp + 4, z:tr.zp + 2}, {x:tr.xp, z:tr.zp}]);
+      // 회사 출입문 → 계근대(잠시 정지) → 야적 출입구 앞에서 후진으로 들어감
+      tr.legs = [ {fwd:[{x:WB_Y.x, z:GATE_Y + 2}, {x:WB_Y.x, z:WB_Y.z}]}, {stop:4}, {fwd:[{x:WB_Y.x, z:38}, {x:85.5, z:34.5}]}, {rev:[{x:82, z:44}, {x:80, z:49}].concat(rv)} ];
+      tr.li = 0; tr.pi = 0; tr.u = 0;
     }
     tr.label = addLabel('', 0, 0, 0, '', function(){ return [tr.x - OX, 5.8, tr.z - OZ]; });
     trucks.push(tr); applyTruck(tr); panelDirty = true;
@@ -2343,6 +2423,15 @@ textarea{
     }
     return false;
   }
+  function runLegs(tr, dt){                      // 차량이 구간(앞으로/후진/정지)을 차례로 지나가게 함
+    var leg = tr.legs[tr.li];
+    if(!leg) return true;
+    if(leg.stop){ tr.u += dt; if(tr.u >= leg.stop){ tr.li++; tr.pi = 0; tr.u = 0; } return tr.li >= tr.legs.length; }
+    var pts = leg.fwd || leg.rev, w = pts[tr.pi];
+    var done = leg.rev ? driveRev(tr, w.x, w.z, dt, 3.0, 1.1) : driveObj(tr, w.x, w.z, dt, undefined, 3.0, 1.1);
+    if(done){ tr.pi++; if(tr.pi >= pts.length){ tr.li++; tr.pi = 0; } }
+    return tr.li >= tr.legs.length;
+  }
   function stepTruck(tr, dt){
     var w;
     switch(tr.state){
@@ -2351,8 +2440,7 @@ textarea{
         break;
       case 'enter':
         if(yieldTo(tr)) break;
-        w = tr.path[tr.pi];
-        if(driveRev(tr, w.x, w.z, dt, 3.0, 1.1)){ tr.pi++; if(tr.pi >= tr.path.length){ tr.h = -Math.PI/2; tr.u = 0; tr.state = tr.release ? 'cut' : 'wait'; } }
+        if(runLegs(tr, dt)){ tr.h = -Math.PI/2; tr.u = 0; tr.state = tr.release ? 'cut' : 'wait'; }
         break;
       case 'wait': break;                       // 하차 대기: 계근대 목록에서 사라질 때까지
       case 'cut':
@@ -2364,11 +2452,14 @@ textarea{
       case 'leave':
         if(tr.stage === 0){
           moveObj(tr, tr.xp + 3 - tr.x, dt, 2.2);                 // 앞으로 조금 빠져나옴
-          if(tr.x >= tr.xp + 3 - 0.05){ tr.stage = 1; tr.pi = 0; tr.path = plan(tr.x, tr.z, 66, 49).concat([{x:66, z:49}, {x:70, z:49}, {x:84, z:49}]); }
+          if(tr.x >= tr.xp + 3 - 0.05){
+            tr.stage = 1; tr.li = 0; tr.pi = 0; tr.u = 0;
+            // 야적 출입구 → 계근대(잠시 정지) → 회사 출입문으로 나감
+            tr.legs = [ {fwd:plan(tr.x, tr.z, 66, 49).concat([{x:66, z:49}, {x:70, z:49}, {x:80, z:49}, {x:84, z:40}, {x:WB_Y.x, z:35}])}, {fwd:[{x:WB_Y.x, z:WB_Y.z}]}, {stop:4}, {fwd:[{x:WB_Y.x, z:GATE_Y + 2}, {x:WB_Y.x, z:96}]} ];
+          }
         } else {
           if(yieldTo(tr)) break;
-          w = tr.path[tr.pi];
-          if(driveObj(tr, w.x, w.z, dt, undefined, 3.5, 1.1)){ tr.pi++; if(tr.pi >= tr.path.length) removeTruck(tr); }
+          if(runLegs(tr, dt)) removeTruck(tr);
         }
         break;
     }
@@ -2687,12 +2778,12 @@ textarea{
 
   /* ---------- 계근대 차량 목록 연동 ---------- */
   // 계근대 서버(https://scale.dygroup.co.kr:8443/banwol/admin/getVehicleList.do)는 브라우저에서 직접 부르면 CORS로 막혀서, GAS가 대신 받아와 넘겨줌
-  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwghNkbbkUwabaK97oumvelqyKTGOIhUGd2lrkLiR6fSNGnTKXZ-CWuFzk7he6nVsbPow/exec';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwoaUhIiJ2DjSm8MoW-KdIKAI2Qavr5V1q4ainxWB-s_Ch0-_0qqbS2bMKniSOg5K2TWA/exec';
   var VEHICLE_URL = GAS_URL + '?type=vehicles';
   var POLL_MS = 20000;                                   // 20초마다 목록 확인
   var vehicles = {};                                     // 지금 목록에 있는 차량 (키: 계량일자-계량번호)
   var api = {mode:'demo', msg:'연동 전 · 시연 모드', t:0}, firstOK = true;
-  var demoList = [], demoSeq = 0, demoT = 6, autoDemo = true;
+  var demoList = [], demoSeq = 0, demoT = 6, autoDemo = false;
   function parseVeh(r){
     var tot = parseFloat(r.TOTWEI), emp = parseFloat(r.EMPAVG), net = (isFinite(tot) && isFinite(emp)) ? (tot - emp)/1000 : NaN;
     if(!(net > 3 && net < 40)) net = TRUCK_T;            // 값이 이상하면 기본 20t
@@ -3450,6 +3541,7 @@ textarea{
   // 패널 탭 / 카메라 이동
   var FLY = {wh:{t:[52.31,0,10.24], th:Math.PI, ph:1.0, r:62}, yd:{t:[-27.29,0,16.87], th:0, ph:0.95, r:96}};
   function fly(k){ var f = FLY[k]; st.target.set(f.t[0], f.t[1], f.t[2]); st.theta = f.th; st.phi = f.ph; st.radius = f.r; updateCam(); }
+  window.mapCamera = function(x, z, r, th, ph){ st.target.set(x, 0, z); st.radius = r; if(th !== undefined) st.theta = th; if(ph !== undefined) st.phi = ph; updateCam(); };   // 카메라를 원하는 곳으로 옮기는 보조 함수
   function showTab(k){
     Array.prototype.forEach.call(realDoc.querySelectorAll('#ptabs button'), function(b){ b.setAttribute('aria-pressed', b.dataset.pt === k ? 'true' : 'false'); });
     Array.prototype.forEach.call(realDoc.querySelectorAll('.ptab'), function(p){ p.hidden = (p.dataset.pt !== k); });
