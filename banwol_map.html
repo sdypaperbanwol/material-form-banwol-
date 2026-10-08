@@ -94,6 +94,15 @@ textarea{
 .note{padding:8px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}
 
 .modlabels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.modtip{position:absolute;display:none;pointer-events:none;background:var(--panel);color:var(--text);border:1px solid var(--accent);border-radius:5px;padding:3px 9px;font-size:12px;white-space:nowrap;z-index:6}
+#app.nopanel{grid-template-columns:1fr 0}
+#app.nopanel #panel{display:none}
+.toolbar{gap:4px}
+.tb{border-radius:4px;padding:4px 11px;font-size:13px}
+.ptabs button{border-radius:4px;font-size:13px}
+.note summary{cursor:pointer;color:var(--muted);user-select:none}
+.note details,details.note{padding:8px 16px}
+.note > div,details.note > div{margin-top:6px;line-height:1.55}
 .ptabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line)}
 .ptabs button{flex:1;background:var(--chip);border:1px solid var(--line);border-radius:5px;padding:4px 0}
 .ptabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -212,28 +221,28 @@ textarea{
     <div class="toolbar">
       <button class="tb" id="bReset">기본 시점</button>
       <button class="tb" id="bTop">평면</button>
-      <button class="tb" id="bWh">창고 CCTV 시점</button>
-      <button class="tb" id="bFlyWh">창고 보기</button>
-      <button class="tb" id="bFlyYd">원료 야적 보기</button>
-      <button class="tb" id="bLabels" aria-pressed="false">이름 전체 표시</button>
+      <button class="tb" id="bFlyWh">창고</button>
+      <button class="tb" id="bFlyYd">원료</button>
+      <button class="tb" id="bLabels" aria-pressed="false">이름</button>
+      <button class="tb" id="bPanel" aria-pressed="true">패널</button>
     </div>
     <div class="legend" id="legend"></div>
     <div class="hint">왼쪽 드래그: 회전 · 오른쪽 드래그: 이동 · 휠: 확대</div>
   </div>
   <aside id="panel">
-  <div class="ptabs" id="ptabs"><button data-pt="map" aria-pressed="true">지도</button><button data-pt="wh" aria-pressed="false">창고 재고</button><button data-pt="yd" aria-pressed="false">원료 야적</button></div>
+  <div class="ptabs" id="ptabs"><button data-pt="map" aria-pressed="true">지도</button><button data-pt="wh" aria-pressed="false">창고</button><button data-pt="yd" aria-pressed="false">원료</button></div>
   <div class="ptab" data-pt="map">
     <div class="head">
       <h1>반월공장 3D 통합 배치도</h1>
-      <p>1층 평면도 기준의 단순 모형</p>
+      <p>1층 평면도 기준의 단순 모형 · 빌드 10 (10/08 09:29)</p>
     </div>
     <div id="info"></div>
     <div id="list"></div>
-    <div class="note">높이와 상태값은 임의의 샘플입니다. 상태·메모는 이 브라우저에만 저장됩니다.</div>
+    <details class="note"><summary>안내</summary><div>높이와 상태값은 임의의 샘플입니다. 상태·메모는 이 브라우저에만 저장됩니다.</div></details>
   </div>
-  <div class="ptab mod-wh" data-pt="wh" id="pane-wh" data-ids="bDemo,bLabels,bPanel,bRefresh,bRoof,bSim,info,legend,modeSeg,note,statDot,statTxt,sum,tabs,tf,wf" hidden><div class="modbar"><button class="tb" id="wh-bRoof" aria-pressed="true">지붕</button><button class="tb" id="wh-bSim" aria-pressed="true">동작 애니메이션</button><button class="tb" id="wh-bDemo">동작 시연</button><button class="tb" id="wh-bLabels" aria-pressed="true">이름</button><button class="tb" id="wh-bRefresh">재고 새로고침</button><button class="tb fly" data-fly="wh">이 위치로 카메라 이동</button></div><div class="legend" id="wh-legend"></div>
+  <div class="ptab mod-wh" data-pt="wh" id="pane-wh" data-ids="bDemo,bLabels,bPanel,bRefresh,bRoof,bSim,info,legend,modeSeg,note,statDot,statTxt,sum,tabs,tf,wf" hidden><div class="modbar"><button class="tb" id="wh-bRoof" aria-pressed="true">지붕</button><button class="tb" id="wh-bSim" aria-pressed="true">동작 애니메이션</button><button class="tb" id="wh-bDemo">동작 시연</button><button class="tb" id="wh-bLabels" aria-pressed="true">이름</button><button class="tb" id="wh-bRefresh">재고 새로고침</button></div><div class="legend" id="wh-legend"></div>
     <div class="head">
-      <h1>반월공장 창고 3D 재고 배치</h1>
+      <h1>창고</h1>
       <p><span class="dot2" id="wh-statDot"></span><span id="wh-statTxt">불러오는 중…</span></p>
     </div>
     <div class="ctrl">
@@ -251,19 +260,19 @@ textarea{
     <div id="wh-info"></div>
     <div class="tabs" id="wh-tabs"><button data-tab="zone" aria-pressed="true">구역</button><button data-tab="stock" aria-pressed="false">재고표</button></div>
     <div id="wh-sum"></div>
-    <div class="note" id="wh-note"></div>
+    <details class="note"><summary>안내</summary><div id="wh-note"></div></details>
   </div>
-  <div class="ptab mod-yd" data-pt="yd" id="pane-yd" data-ids="bAnim,bLabels,bPanel,bTruck,info,legend,note,tanks,today,veh,zones" hidden><div class="modbar"><button class="tb" id="yd-bAnim" aria-pressed="true">동작</button><button class="tb" id="yd-bTruck" aria-pressed="false">시연 자동 입차</button><button class="tb" id="yd-bLabels" aria-pressed="true">이름</button><button class="tb fly" data-fly="yd">이 위치로 카메라 이동</button></div>
+  <div class="ptab mod-yd" data-pt="yd" id="pane-yd" data-ids="bAnim,bLabels,bPanel,bTruck,info,legend,note,tanks,today,veh,zones" hidden><div class="modbar"><button class="tb" id="yd-bAnim" aria-pressed="true">동작</button><button class="tb" id="yd-bTruck" aria-pressed="false">시연 자동 입차</button><button class="tb" id="yd-bLabels" aria-pressed="true">이름</button></div>
     <div class="head">
-      <h1>파지(원료) 야적 · 원형조 1~4</h1>
-      <p>초안 4 · 차량은 계근대 목록 연동 · 톤수는 직접 입력</p>
+      <h1>원료 · 원형조 1~4</h1>
+      <p>계근대 목록 연동 · 구역 톤수는 직접 입력</p>
     </div>
     <div id="yd-zones"></div>
     <div class="card" id="yd-veh"></div>
     <div class="card" id="yd-today"></div>
     <div class="card" id="yd-tanks"></div>
     <div class="card" id="yd-info"><div class="small">구역, 원형조, 차량, 페이로더를 클릭하면 정보가 표시됩니다.</div></div>
-    <div class="note" id="yd-note"></div>
+    <details class="note"><summary>안내</summary><div id="yd-note"></div></details>
   </div>
 </aside>
 </div>
@@ -1209,15 +1218,41 @@ textarea{
      목록에서 사라지면(상차 끝) 그 차량은 나감. 연동 전이거나 실패하면 이전의 연출용 동작을 유지 */
   var incarLive = {on:false, plate:{T1:null, T2:null}, queue:[], present:[], err:'', n:0};
   function incarUrl(){ return WEB_APP_URL.split('?')[0] + '?type=incar'; }
+  var incarLogEl = null;
+  function logIncar(rows, seen){                         // 어떤 행이 왜 표시/제외됐는지 패널에서 확인 (접힌 상태)
+    var tx = document.getElementById('statTxt');
+    if(!tx || !tx.parentNode || !tx.parentNode.parentNode) return;
+    if(!incarLogEl){
+      var d = document.createElement('details'), sm = document.createElement('summary');
+      d.className = 'note'; sm.textContent = '입차현황 인식 내역'; incarLogEl = document.createElement('div');
+      d.appendChild(sm); d.appendChild(incarLogEl); tx.parentNode.parentNode.appendChild(d);
+    }
+    incarLogEl.textContent = '';
+    function add(t){ var e = document.createElement('div'); e.textContent = t; incarLogEl.appendChild(e); }
+    var w = rows.filter(function(r){ return String(r['창고코드'] == null ? '' : r['창고코드']).trim() === '9160'; });
+    add('받은 행 ' + rows.length + '개 · 창고코드 9160 ' + w.length + '개 · 상차시작 ' + seen.length + '대 (조건: 창고코드 9160 + 상태 상차시작)');
+    w.slice(0, 14).forEach(function(r){
+      var stt = String(r['상태'] == null ? '' : r['상태']).trim(), pl = String(r['차량번호'] == null ? '' : r['차량번호']).trim();
+      add(pl + ' · ' + stt + ' · 사업장 ' + (r['사업장코드'] == null ? '-' : r['사업장코드']) + ' · ' + (r['업데이트시각'] || '') + (stt !== '상차시작' ? ' → 제외(상태가 상차시작 아님)' : (function(){ var li = rollInfo(r); return !li ? ' → 표시 (롤 정보 없음)' : (li.curWh === '9160' || !li.curWh ? ' → 표시 (지금 9160에서 상차 · 스캔 ' + li.scanned + '/' + li.total + ' · 롤 9160 ' + li.w9160 + '개 / 9190 ' + li.w9190 + '개)' : ' → 제외 (지금 ' + li.curWh + ' 창고에서 상차 · 스캔 ' + li.scanned + '/' + li.total + ')'); })()));
+    });
+    add('마지막 확인 ' + new Date().toLocaleTimeString('ko-KR'));
+  }
+  var loadByPlan = {}, lastIncarRows = null, loadTried = false, pendingIncar = null;
+  function releasePending(){ loadTried = true; if(pendingIncar){ var pj = pendingIncar; pendingIncar = null; applyIncar(pj); } }               // 거래계획번호별 롤 구성: {total, w9160, w9190}  (시트 '상차롤' → type=loaditems)
+  function planOf(r){ return String(r['거래계획번호'] == null ? '' : r['거래계획번호']).trim(); }
+  function rollInfo(r){ return loadByPlan[planOf(r)] || null; }
   function applyIncar(rows){
+    lastIncarRows = rows;
     var seen = [], mark = {};
     rows.forEach(function(r){
       var wc = String(r['창고코드'] == null ? '' : r['창고코드']).trim(), stt = String(r['상태'] == null ? '' : r['상태']).trim();
       if(wc !== '9160' || stt !== '상차시작') return;
+      var li = rollInfo(r); if(li && li.curWh && li.curWh !== '9160') return;          // 지금 9190(2창고)에서 싣는 중이면 표시하지 않음
       var pl = String(r['차량번호'] == null ? '' : r['차량번호']).trim();
       if(!pl || mark[pl]) return; mark[pl] = 1; seen.push(pl);
     });
     incarLive.on = true; incarLive.err = ''; incarLive.present = seen; incarLive.n = seen.length;
+    logIncar(rows, seen);
     incarLive.queue = incarLive.queue.filter(function(p){ return mark[p]; });          // 목록에서 사라진 대기 차량은 뺌
     seen.forEach(function(pl){
       if(incarLive.plate.T1 === pl || incarLive.plate.T2 === pl || incarLive.queue.indexOf(pl) >= 0) return;
@@ -1225,6 +1260,13 @@ textarea{
       else if(!incarLive.plate.T2 && TR.T2.state === 'away') incarLive.plate.T2 = pl;
       else incarLive.queue.push(pl);                                                   // 자리가 없으면 밖에서 대기 (자리가 나면 들어옴)
     });
+    if(!incarLive.init){                                // 처음 받은 목록: 이미 와 있는 차량은 계근대·입차 동작 없이 바로 창고 안에
+      incarLive.init = true;
+      ['T1','T2'].forEach(function(id){
+        var T = TR[id];
+        if(incarLive.plate[id] && T.state === 'away'){ T.state = 'parked'; T.x = T.park; T.z = T.z0; T.h = Math.PI/2; T.ent.group.visible = true; setTruckPose(T); loaded[id] = 0; }
+      });
+    }
     refreshTruckLabel('T1'); refreshTruckLabel('T2'); refreshQueueLabel(); updateStatus();
   }
   var incarBusy = false;
@@ -1234,11 +1276,11 @@ textarea{
     var ctrl = window.AbortController ? new AbortController() : null, to = ctrl ? setTimeout(function(){ ctrl.abort(); }, 40000) : null;
     fetch(incarUrl() + '&_=' + Date.now(), {credentials:'omit', cache:'no-store', signal:ctrl ? ctrl.signal : undefined})
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function(j){ if(to) clearTimeout(to); incarBusy = false; if(!Array.isArray(j)) throw new Error((j && j.error) || '형식 오류'); applyIncar(j); })
+      .then(function(j){ if(to) clearTimeout(to); incarBusy = false; if(!Array.isArray(j)) throw new Error((j && j.error) || '형식 오류'); if(!loadTried){ pendingIncar = j; return; } applyIncar(j); })
       .catch(function(e){ if(to) clearTimeout(to); incarBusy = false; incarLive.err = String(e && e.message ? e.message : e).replace(/aborted.*/i, '응답 시간 초과'); updateStatus(); });   // 실패하면 이전 상태 유지
   }
   function incarNote(){
-    if(incarLive.on) return ' · 입차현황 연동 (상차시작 ' + incarLive.n + '대' + (incarLive.queue.length ? ', 밖 대기 ' + incarLive.queue.length : '') + ')' + (incarLive.err ? ' · 갱신 실패(이전 유지)' : '');
+    if(incarLive.on) return ' · 입차현황 연동 (상차시작 ' + incarLive.n + '대' + (incarLive.present.length ? ': ' + incarLive.present.join(', ') : '') + (incarLive.queue.length ? ', 밖 대기 ' + incarLive.queue.length : '') + ')' + (incarLive.err ? ' · 갱신 실패(이전 유지)' : '');
     return incarLive.err ? ' · 입차현황 연동 실패 (' + incarLive.err + ') · 연출용 차량' : ' · 입차현황 확인 중';
   }
   function setTruckX(T){ setTruckPose(T); }
@@ -1279,6 +1321,12 @@ textarea{
     return [ {fwd:[{x:-13, z:zr}, {x:X, z:zr + 4}, {x:X, z:WBH.scale - 8}, {x:X, z:WBH.scale + 5.2}]}, {stop:4}, {fwd:[{x:X, z:WBH.gate}, {x:X, z:WBH.out}]} ];
   }
   function hMoving(id){ return ['T1','T2'].some(function(o){ return o !== id && (TR[o].state === 'arriving' || TR[o].state === 'leaving'); }); }
+  function abortOutJob(){                                   // 진행 중이던 상차 동작을 중단하고 지게차를 대기 상태로
+    var s = simB, f = s.f;
+    if(s.roll){ try{ if(s.roll.root.parent) s.roll.root.parent.remove(s.roll.root); }catch(e){} s.roll = null; }
+    s.job = null; s.state = 'idle'; s.u = 0;
+    if(f){ setArms(f, 0.85); setLift(f, 0.9); }
+  }
   function stepTrucks(dt){
     ['T1','T2'].forEach(function(id){
       var T = TR[id];
@@ -1296,8 +1344,14 @@ textarea{
           setTruckPose(T);
           break;
         case 'parked':
-          var busy = jobsOut.some(function(j){ return j.truck === id; }) || (simB.state !== 'idle' && simB.job && simB.job.truck === id);
-          if(incarLive.on && (!incarLive.plate[id] || incarLive.present.indexOf(incarLive.plate[id]) < 0) && !busy && !hMoving(id)){
+          var gone = incarLive.on && (!incarLive.plate[id] || incarLive.present.indexOf(incarLive.plate[id]) < 0);
+          if(!gone){ T.goneAt = 0; break; }
+          if(!T.goneAt) T.goneAt = Date.now();
+          // 상차가 끝난 차량의 남은 상차 동작은 화면 연출일 뿐이라 버림 (재고 숫자·롤 위치는 이미 반영됨). 지금 하고 있는 한 건만 마무리
+          for(var qi = jobsOut.length - 1; qi >= 0; qi--){ if(jobsOut[qi].truck === id) jobsOut.splice(qi, 1); }
+          var curJob = simB.state !== 'idle' && simB.job && simB.job.truck === id;
+          if(curJob && Date.now() - T.goneAt > 45000){ abortOutJob(); curJob = false; }     // 45초가 지나도 안 끝나면(지게차가 걸린 경우) 강제로 정리
+          if(!curJob && !hMoving(id)){
             T.state = 'leaving'; T.legs = hLegsOut(T); T.li = 0; T.pi = 0; T.u = 0;
           }
           break;
@@ -1798,7 +1852,7 @@ textarea{
   /* ---------- 시작 ---------- */
   /* ---------- 구글시트(Apps Script 웹 앱) 연동 ----------
      아래 WEB_APP_URL에 웹 앱 주소(/exec)를 적습니다. 주소 끝에 type= 이 없으면 type=stock3d 가 자동으로 붙습니다. */
-  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwoaUhIiJ2DjSm8MoW-KdIKAI2Qavr5V1q4ainxWB-s_Ch0-_0qqbS2bMKniSOg5K2TWA/exec?type=inventory';
+  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzbcasgRsHb3l6ny66A6_s6eUzw9rC5PCgZBs7EBL081DVxur_XAUqcAT555c_J62Hu/exec?type=inventory';
   var REFRESH_MS = 3*60*1000;   // 자동 새로고침 간격
 
   function currentUrl(){
@@ -1880,6 +1934,24 @@ textarea{
   loadStock([], '불러오는 중…');
   fetchStock();
   setInterval(pollIncar, 20000); pollIncar();
+  var loadBusy = false;
+  function pollLoadItems(){                                // 거래계획번호별 '지금 싣는 창고'(시트 '상차판정')를 읽음
+    if(!window.fetch || loadBusy) return;
+    loadBusy = true;
+    var lc = window.AbortController ? new AbortController() : null, lto = lc ? setTimeout(function(){ lc.abort(); }, 30000) : null;
+    fetch(WEB_APP_URL.split('?')[0] + '?type=loadstate&_=' + Date.now(), {credentials:'omit', cache:'no-store', signal: lc ? lc.signal : undefined})
+      .then(function(r){ if(lto) clearTimeout(lto); loadBusy = false; if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){
+        if(!Array.isArray(j)) throw new Error('형식 오류');
+        var m = {};
+        j.forEach(function(p){ if(p && p.plan) m[String(p.plan).trim()] = {total:+p.total || 0, w9160:+p.w9160 || 0, w9190:+p.w9190 || 0, scanned:+p.scanned || 0, curWh:String(p.curWh || '')}; });
+        loadByPlan = m;
+        if(!loadTried) releasePending(); else if(lastIncarRows) applyIncar(lastIncarRows);       // 롤 구성이 바뀌면 표시 차량을 다시 판정
+      })
+      .catch(function(){ if(lto) clearTimeout(lto); loadBusy = false; if(!loadTried) releasePending(); });                                // 시트가 없거나 실패하면 기존 방식(창고코드만)으로 계속
+  }
+  setInterval(pollLoadItems, 30000); pollLoadItems();
+  setTimeout(function(){ if(!loadTried) releasePending(); }, 12000);              // 롤 목록 응답이 너무 늦으면 기존 방식으로 먼저 진행
   updateCam();
 
   var v3 = new THREE.Vector3();
@@ -2204,7 +2276,7 @@ textarea{
     } }
     for(var q=0; q<trucks.length; q++){          // 서 있는 차량(들어오는 중이면 곧 설 자리)은 피함
       var t = trucks[q], bx, bz;
-      if(t.state === 'enter' || t.state === 'hold'){ bx = t.xp; bz = t.zp; }
+      if(t.state === 'enter' || t.state === 'hold' || t.state === 'reloc'){ bx = t.xp; bz = t.zp; }
       else if(t.state === 'wait' || t.state === 'cut' || t.state === 'unload' || (t.state === 'leave' && t.stage === 0)){ bx = t.x; bz = t.z; }
       else continue;
       if(Math.abs(x - bx) < 5.4 + 1.2 && Math.abs(z - bz) < 1.4 + 3.1) return true;
@@ -2375,18 +2447,20 @@ textarea{
     return best;
   }
   function plannedTons(z){ var t = tonsOf(z); trucks.forEach(function(tr){ if(tr.zone === z && tr.state !== 'leave' && !tr.gone) t += tr.tons; }); return t; }
-  function chooseBay(tons){                     // 자리가 비어 있고 가장 덜 찬 구역
-    var best = null, bs = 1e9;
-    BAYS.forEach(function(b){
-      if(b.tr) return;
-      var z = zoneOf(b.zone), after = plannedTons(z) + tons, sc = after/z.cap + (after > z.cap ? 10 : 0) + b.xp*1e-4;
-      if(sc < bs){ bs = sc; best = b; }
-    });
-    return best;
+  function chooseBay(tons, ord){                // 이미 와 있는 더 일찍 입차한 차량보다 뒤(동쪽) 자리만 배정 → 자리 순서가 항상 입차 순서
+    var maxIdx = -1;
+    trucks.forEach(function(t){ if(t.bay && !t.gone && t.info.ord < ord){ var ix = BAYS.indexOf(t.bay); if(ix > maxIdx) maxIdx = ix; } });
+    var any = null;
+    for(var i = maxIdx + 1; i < BAYS.length; i++){
+      var b = BAYS[i]; if(b.tr) continue;
+      if(!any) any = b;
+      var z = zoneOf(b.zone); if(plannedTons(z) + tons <= z.cap) return b;
+    }
+    return any;
   }
   function spawnTruck(info, instant){
-    var bay = chooseBay(info.tons);
-    if(!bay){ pendingQ.push(info); return; }     // 자리가 없으면 마당 밖에서 대기
+    var bay = chooseBay(info.tons, info.ord);
+    if(!bay){ pendingQ.push(info); pendingQ.sort(function(a, b){ return a.ord < b.ord ? -1 : (a.ord > b.ord ? 1 : 0); }); return; }     // 자리가 없으면 마당 밖에서 대기 (먼저 입차한 차량부터 들어옴)
     var tr = makeTruck(info);
     tr.bay = bay; bay.tr = tr; tr.zone = zoneOf(bay.zone); tr.xp = bay.xp;
     tr.zp = clamp(reachOf(tr.zone, tr.xp) + 10, 30, 46);        // 더미 앞에서 8m 떨어진 곳(비어 있으면 노란 구역 안이어도 됨)
@@ -2402,10 +2476,10 @@ textarea{
     tr.label = addLabel('', 0, 0, 0, '', function(){ return [tr.x - OX, 5.8, tr.z - OZ]; });
     trucks.push(tr); applyTruck(tr); panelDirty = true;
   }
-  function trySpawnPending(){ while(pendingQ.length && chooseBay(pendingQ[0].tons)){ spawnTruck(pendingQ.shift(), false); } }
+  function trySpawnPending(){ while(pendingQ.length && chooseBay(pendingQ[0].tons, pendingQ[0].ord)){ spawnTruck(pendingQ.shift(), false); } }
   function releaseTruck(tr){                    // 목록에서 사라짐 → 하차 시작
     if(tr.state === 'wait'){ tr.u = 0; tr.state = 'cut'; }
-    else if(tr.state === 'enter' || tr.state === 'hold'){ tr.release = true; }
+    else if(tr.state === 'enter' || tr.state === 'hold' || tr.state === 'reloc'){ tr.release = true; }
   }
   function removeTruck(tr){
     tr.gone = true; yard.remove(tr.g);
@@ -2442,11 +2516,14 @@ textarea{
         if(yieldTo(tr)) break;
         if(runLegs(tr, dt)){ tr.h = -Math.PI/2; tr.u = 0; tr.state = tr.release ? 'cut' : 'wait'; }
         break;
+      case 'reloc':                             // 앞 자리가 비어서 앞으로 옮겨 가는 중
+        if(runLegs(tr, dt)){ tr.h = -Math.PI/2; tr.u = 0; tr.state = tr.release ? 'cut' : 'wait'; panelDirty = true; }
+        break;
       case 'wait': break;                       // 하차 대기: 계근대 목록에서 사라질 때까지
       case 'cut':
         tr.u += dt;
         tr.straps.forEach(function(sm, n){ var f = clamp((tr.u - 0.3*n)/1.0, 0, 1); sm.position.y = 3.75 - 1.8*f; sm.visible = f < 1; });
-        if(tr.u >= 2.2){ unloadQ.push(tr); tr.state = 'unload'; }
+        if(tr.u >= 2.2){ unloadQ.push(tr); unloadQ.sort(function(a, b){ return a.info.ord < b.info.ord ? -1 : (a.info.ord > b.info.ord ? 1 : 0); }); tr.state = 'unload'; }   // 동시에 끝난 차량은 먼저 입차한 순서로 하차
         break;
       case 'unload': break;
       case 'leave':
@@ -2464,8 +2541,26 @@ textarea{
         break;
     }
   }
+  function relocate(tr, b){                     // 서 있는 차량이 앞 자리로: 앞으로 조금 나왔다가 후진으로 새 자리에 들어감
+    var old = tr.bay, ox = tr.x, oz = tr.z;
+    if(old) old.tr = null;
+    b.tr = tr; tr.bay = b; tr.zone = zoneOf(b.zone); tr.xp = b.xp;
+    tr.zp = clamp(reachOf(tr.zone, tr.xp) + 10, 30, 46);
+    tr.legs = [ {fwd:[{x:ox + 4, z:oz}]}, {rev:[{x:tr.xp + 9, z:tr.zp + 2}, {x:tr.xp + 4, z:tr.zp + 1}, {x:tr.xp, z:tr.zp}]} ];
+    tr.li = 0; tr.pi = 0; tr.u = 0; tr.state = 'reloc'; panelDirty = true;
+  }
+  function rebalance(){                         // 앞 자리가 비어 있으면, 뒤 자리에 있는 차량 중 가장 먼저 입차한 차량부터 앞으로
+    for(var q=0;q<trucks.length;q++){ var st = trucks[q].state; if(st === 'enter' || st === 'hold' || st === 'leave' || st === 'reloc') return; }
+    for(var i=0;i<BAYS.length;i++){
+      if(BAYS[i].tr) continue;
+      var cand = null;
+      trucks.forEach(function(t){ if(t.state === 'wait' && !t.release && t.bay && BAYS.indexOf(t.bay) > i && (!cand || t.info.ord < cand.info.ord)) cand = t; });
+      if(cand){ relocate(cand, BAYS[i]); return; }
+    }
+  }
   function stepTrucks(dt){
     for(var i=trucks.length-1; i>=0; i--) stepTruck(trucks[i], dt);
+    rebalance(); if(pendingQ.length) trySpawnPending();
     trucks.forEach(function(tr){
       applyTruck(tr);
       if(tr.label) tr.label.el.textContent = tr.info.plate + (tr.info.supplier ? ' · ' + tr.info.supplier : '');
@@ -2656,7 +2751,7 @@ textarea{
     var d = document.createElement('div'); d.className = 'lbl' + (cls ? ' ' + cls : ''); d.textContent = text; labelsEl.appendChild(d);
     var l = {el:d, x:x-OX, y:y, z:z-OZ, fn:fn}; labels.push(l); return l;
   }
-  addLabel('야적 출입구', GATE.x, 2.2, (GATE.z0 + GATE.z1)/2, 'sec');
+  addLabel('원료 출입구', GATE.x, 2.2, (GATE.z0 + GATE.z1)/2, 'sec');
   ZONES.forEach(function(z){ z.label = addLabel(z.name, z.xc, 7.0, z.zc, 'sec'); });
   labelL = addLabel('페이로더 · 대기', 0, 0, 0, '', function(){ return [L.x - OX, 5.4 + heightAt(L.x, L.z), L.z - OZ]; });
   var showLabels = true;
@@ -2687,7 +2782,7 @@ textarea{
       var inp = el('div','inp');
       z.inEl = el('input'); z.inEl.type = 'number'; z.inEl.min = '0'; z.inEl.step = '10'; z.inEl.placeholder = '현재 톤수';
       var set = el('button','','적용');
-      set.addEventListener('click', function(){ var v = parseFloat(z.inEl.value); if(isFinite(v)) makeHeap(z, clamp(v, 0, z.cap)); });
+      set.addEventListener('click', function(){ var v = parseFloat(z.inEl.value); if(isFinite(v)){ makeHeap(z, clamp(v, 0, z.cap)); saveBase(); } });
       inp.appendChild(z.inEl); inp.appendChild(set); c.appendChild(inp);
       zonesEl.appendChild(c);
     });
@@ -2778,17 +2873,17 @@ textarea{
 
   /* ---------- 계근대 차량 목록 연동 ---------- */
   // 계근대 서버(https://scale.dygroup.co.kr:8443/banwol/admin/getVehicleList.do)는 브라우저에서 직접 부르면 CORS로 막혀서, GAS가 대신 받아와 넘겨줌
-  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwoaUhIiJ2DjSm8MoW-KdIKAI2Qavr5V1q4ainxWB-s_Ch0-_0qqbS2bMKniSOg5K2TWA/exec';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbzbcasgRsHb3l6ny66A6_s6eUzw9rC5PCgZBs7EBL081DVxur_XAUqcAT555c_J62Hu/exec';
   var VEHICLE_URL = GAS_URL + '?type=vehicles';
   var POLL_MS = 20000;                                   // 20초마다 목록 확인
   var vehicles = {};                                     // 지금 목록에 있는 차량 (키: 계량일자-계량번호)
   var api = {mode:'demo', msg:'연동 전 · 시연 모드', t:0}, firstOK = true;
   var demoList = [], demoSeq = 0, demoT = 6, autoDemo = false;
   function parseVeh(r){
-    var tot = parseFloat(r.TOTWEI), emp = parseFloat(r.EMPAVG), net = (isFinite(tot) && isFinite(emp)) ? (tot - emp)/1000 : NaN;
+    var tot = parseFloat(r.TOTWEI), emp = parseFloat(r.EMPAVG), net = (isFinite(tot) && isFinite(emp) && emp > 0) ? (tot - emp)/1000 : NaN;     // 공차 평균이 0이면(모름) 기본 20t
     if(!(net > 3 && net < 40)) net = TRUCK_T;            // 값이 이상하면 기본 20t
     var tm = String(r.INTIME || ''); tm = tm.length >= 6 ? tm.substr(0,2) + ':' + tm.substr(2,2) : '';
-    return {key:String(r.WEIDAT || '') + '-' + String(r.WEINUM != null ? r.WEINUM : r.CARNUM), plate:String(r.CARNUM || '?'), supplier:String(r.JSNAME || ''), time:tm, tons:net};
+    return {key:String(r.WEIDAT || '') + '-' + String(r.WEINUM != null ? r.WEINUM : r.CARNUM), plate:String(r.CARNUM || '?'), supplier:String(r.JSNAME || ''), time:tm, tons:net, ord:String(r.WEIDAT || '') + ('000000' + String(r.INTIME || '')).slice(-6)};   // ord: 입차시간 순서
   }
   function releaseVehicle(inf){
     logEv(inf.plate + ' 목록에서 사라짐 → 하차 시작');
@@ -2799,6 +2894,8 @@ textarea{
   function logEv(m){ evLog.unshift(new Date().toLocaleTimeString('ko-KR') + ' ' + m); if(evLog.length > 8) evLog.pop(); panelDirty = true; }
   function applyList(list, instant, force){             // 새로 생긴 차량 → 입차, 목록에서 사라진 차량 → 하차 시작
     var seen = {};
+    function ordOf(r){ return String(r.WEIDAT || '') + ('000000' + String(r.INTIME || '')).slice(-6); }
+    list = list.slice().sort(function(a, b){ var x = ordOf(a), y = ordOf(b); return x < y ? -1 : (x > y ? 1 : 0); });      // 먼저 입차한 차량부터 자리 배정
     list.forEach(function(r){
       var inf = parseVeh(r); seen[inf.key] = 1; delete missN[inf.key];
       if(!vehicles[inf.key]){ vehicles[inf.key] = inf; spawnTruck(inf, instant); logEv(inf.plate + ' 목록에 나타남'); }
@@ -2830,7 +2927,7 @@ textarea{
         if(to) clearTimeout(to); vehBusy = false;
         var em = e && e.message ? e.message : String(e);
         if(/abort/i.test(em)) em = '40초 안에 응답이 없음 (GAS가 계근대 서버 응답을 기다리는 중일 수 있음)';
-        api = {mode:'fail', msg:'연동 실패 (' + em + ') · 다음 확인 때 자동 재시도, 시연 모드 유지', t:Date.now()};
+        api = {mode:'fail', msg:'연동 실패 (' + em + ') · 다음 확인 때 다시 시도', t:Date.now()};
         panelDirty = true;
       });
   }
@@ -2858,22 +2955,23 @@ textarea{
     vehEl.appendChild(el('h2', '', '계근대 차량 목록'));
     var stt = el('div', 'small', (api.mode === 'demo' ? '○ ' : '● ') + api.msg + (api.mode !== 'demo' && api.t ? ' · ' + new Date(api.t).toLocaleTimeString('ko-KR') : ''));
     stt.style.color = api.mode === 'ok' ? '#2e9e5b' : api.mode === 'fail' ? '#d9822b' : ''; vehEl.appendChild(stt);
-    var keys = Object.keys(vehicles);
+    var keys = Object.keys(vehicles).sort(function(a, b){ return vehicles[a].ord < vehicles[b].ord ? -1 : (vehicles[a].ord > vehicles[b].ord ? 1 : 0); });   // 입차시간 순
     if(!keys.length) vehEl.appendChild(el('div', 'small', '현재 목록에 차량 없음'));
     else {
       var dl = el('dl'); dl.style.marginTop = '6px';
-      keys.forEach(function(k){
+      keys.forEach(function(k, idx){
         var inf = vehicles[k], tr = null; for(var i=0;i<trucks.length;i++){ if(trucks[i].info === inf) tr = trucks[i]; }
-        dl.appendChild(el('dt', '', inf.plate));
-        dl.appendChild(el('dd', '', (inf.supplier || '-') + (tr ? '' : ' (마당 밖 대기)') + (missN[k] ? ' · 목록에서 ' + missN[k] + '/' + MISS_NEED + '회 안 보임' : '')));
+        dl.appendChild(el('dt', '', (idx + 1) + '. ' + inf.plate));
+        dl.appendChild(el('dd', '', (inf.time ? '입차 ' + inf.time + ' · ' : '') + (inf.supplier || '-') + (tr ? '' : ' (마당 밖 대기 · 빈 자리가 나면 입장)') + (missN[k] ? ' · 목록에서 ' + missN[k] + '/' + MISS_NEED + '회 안 보임' : '')));
       });
       vehEl.appendChild(dl);
     }
     if(evLog.length){ var lg = el('div', 'small', '최근 이벤트'); lg.style.marginTop = '8px'; vehEl.appendChild(lg); evLog.forEach(function(m){ vehEl.appendChild(el('div', 'small', m)); }); }
-    var inp = el('div', 'inp'), a = el('button', '', '시연 차량 입차'), b = el('button', '', '맨 앞 차량 퇴장');
-    a.disabled = b.disabled = (api.mode === 'ok');
-    a.addEventListener('click', demoAdd); b.addEventListener('click', demoRemove);
-    inp.appendChild(a); inp.appendChild(b); vehEl.appendChild(inp);
+    if(api.mode !== 'ok'){                                  // 실제 계근대 목록이 연동되면 시연 버튼은 보이지 않음
+      var inp = el('div', 'inp'), a = el('button', '', '시연 차량 입차'), b = el('button', '', '맨 앞 차량 퇴장');
+      a.addEventListener('click', demoAdd); b.addEventListener('click', demoRemove);
+      inp.appendChild(a); inp.appendChild(b); vehEl.appendChild(inp);
+    }
   }
   // 외부에서 직접 목록을 넣을 때: setVehicles([{CARNUM:'7331', TOTWEI:'36610', EMPAVG:15930, JSNAME:'...', WEIDAT:'20261007', WEINUM:32, INTIME:'074601'}])
   window.setVehicles = function(list){ api = {mode:'ok', msg:'외부에서 목록 전달', t:Date.now()}; applyList(list || [], firstOK); firstOK = false; };
@@ -2900,6 +2998,7 @@ textarea{
     inp.appendChild(lab); inp.appendChild(tdRef.yIn); inp.appendChild(pct); tdEl.appendChild(inp);
     tdRef.used = el('div', ''); tdRef.used.style.cssText = 'font-size:16px;font-weight:600;margin-top:6px'; tdEl.appendChild(tdRef.used);
     tdRef.diff = el('div', 'small'); tdRef.diff.style.marginTop = '4px'; tdEl.appendChild(tdRef.diff);
+    tdRef.est = el('div', 'small'); tdRef.est.style.marginTop = '8px'; tdEl.appendChild(tdRef.est);
     tdRef.st = el('div', 'small'); tdRef.st.style.marginTop = '8px'; tdEl.appendChild(tdRef.st);
   }
   function updateToday(){
@@ -2911,6 +3010,7 @@ textarea{
     tdRef.used.textContent = used != null ? '원료 투입 추정 ' + fmtKg(used) : '원료 투입 추정 -';
     if(used != null && r.ok){ var d = r.kg - used; tdRef.diff.textContent = '입고 − 투입 = ' + (d >= 0 ? '+' : '−') + fmtT(Math.abs(d)/1000) + ' (오늘 야적 증감 추정)'; }
     else tdRef.diff.textContent = '';
+    updateEst();
     tdRef.st.textContent = (r.ok ? '입고 ' + new Date(r.t).toLocaleTimeString('ko-KR') : '입고 ' + r.msg) + (m.ok ? ' · 생산 ' + (m.upd ? m.upd : new Date(m.t).toLocaleTimeString('ko-KR')) : ' · 생산 ' + m.msg);
   }
   function pollToday(){
@@ -2921,16 +3021,58 @@ textarea{
         if(j && j.notReady) throw new Error('시트 준비 중');
         var rows = (j && j.banwol) || [], kg = 0, n = 0;
         rows.forEach(function(x){ var net = numOf(x.TOTWEI) - numOf(x.RECCNT); if(net > 0){ kg += net; n++; } });
-        td.raw = {ok:true, kg:kg, n:n, t:Date.now(), msg:''}; updateToday();
+        td.raw = {ok:true, kg:kg, n:n, t:Date.now(), msg:''}; updateToday(); trackStep();
       })
       .catch(function(e){ td.raw.ok = false; td.raw.msg = '연동 실패 (' + (e && e.message ? e.message : e) + ')'; updateToday(); });
     fetch(GAS_URL + '?type=mfgToday', {credentials:'omit', cache:'no-store'})
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(j){
         if(j && j.error) throw new Error(j.error);
-        td.mfg = {ok:true, found:!!j.found, g:numOf(j.g), i:numOf(j.i), kg:numOf(j.kg), t:Date.now(), upd:String(j.updatedAt || ''), msg:''}; updateToday();
+        td.mfg = {ok:true, found:!!j.found, g:numOf(j.g), i:numOf(j.i), kg:numOf(j.kg), t:Date.now(), upd:String(j.updatedAt || ''), msg:''}; updateToday(); trackStep();
       })
       .catch(function(e){ var em = e && e.message ? e.message : String(e); td.mfg.ok = false; td.mfg.msg = (em === 'unknown type') ? 'GAS에 mfgToday 블록이 아직 없음 (추가 후 새 버전 배포 필요)' : '연동 실패 (' + em + ')'; updateToday(); });
+  }
+
+  /* ---------- 예상 재고: 기준 톤수 + 오늘 입고 − 오늘 투입 (구역 톤수 '적용'을 누른 시점이 기준) ---------- */
+  var BASE_KEY = 'banwolYardBase', base = null;
+  try{ base = JSON.parse(localStorage.getItem(BASE_KEY) || 'null'); }catch(e){ base = null; }
+  function ymd(){ var d = new Date(); return d.getFullYear() + ('0' + (d.getMonth()+1)).slice(-2) + ('0' + d.getDate()).slice(-2); }
+  function usedKg(){ return (td.mfg.ok && td.mfg.found && td.yieldPct > 0) ? td.mfg.kg/(td.yieldPct/100) : null; }
+  function saveBase(){
+    var u = usedKg();
+    base = {date:ymd(), A:tonsOf(zoneOf('A')), B:tonsOf(zoneOf('B')), inKg:(td.raw.ok ? td.raw.kg : 0), useKg:(u == null ? 0 : u), at:Date.now(), last:null};
+    try{ localStorage.setItem(BASE_KEY, JSON.stringify(base)); }catch(e){}
+    td.est = null; updateToday();
+  }
+  function rescaleZone(z, tgt){                          // 모양은 그대로 두고 전체 높이를 같은 비율로 키우거나 줄임
+    tgt = clamp(tgt, 0, z.cap); var cur = tonsOf(z);
+    if(Math.abs(tgt - cur) < 1.5) return;
+    if(cur < 1 || tgt < 1 || tgt/cur > 1.3 || tgt/cur < 0.77){ makeHeap(z, tgt); return; }
+    var f = tgt/cur;
+    for(var j=0;j<VZ;j++){ for(var i=0;i<VX;i++){ var k = vi(i,j); if(MASK[k] && H[k] > 0 && inZone(z, wx(i), wz(j))) H[k] = Math.min(MAXH, H[k]*f); } }
+    terrainDirty = true; panelDirty = true;
+  }
+  function trackStep(){
+    if(!base || !td.raw.ok) return;
+    var today = ymd();
+    if(base.date !== today){                             // 날짜가 바뀌면 마지막 예상치를 새 기준으로 삼고, 오늘 입고·투입은 0부터 다시 셈
+      var le = base.last || {A:base.A, B:base.B};
+      base = {date:today, A:le.A, B:le.B, inKg:0, useKg:0, at:Date.now(), last:null};
+    }
+    var u = usedKg(), dIn = (td.raw.kg - base.inKg)/1000, dUse = (u == null ? 0 : (u - base.useKg)/1000), t0 = base.A + base.B;
+    if(t0 <= 0) return;
+    var tot = Math.max(0, t0 + dIn - dUse);
+    base.last = {A:tot*base.A/t0, B:tot*base.B/t0}; td.est = {tot:tot, dIn:dIn, dUse:dUse};
+    try{ localStorage.setItem(BASE_KEY, JSON.stringify(base)); }catch(e){}
+    rescaleZone(zoneOf('A'), base.last.A); rescaleZone(zoneOf('B'), base.last.B);
+    updateToday();
+  }
+  function updateEst(){
+    if(!tdRef.est) return;
+    if(!base){ tdRef.est.textContent = '구역 톤수를 입력하고 [적용]을 누르면 그 시점이 기준이 되어, 이후 입고·투입이 더미에 자동 반영됩니다.'; return; }
+    var e = td.est, t0 = base.A + base.B, d = new Date(base.at);
+    tdRef.est.textContent = '기준 ' + fmtT(t0) + ' (' + (d.getMonth()+1) + '/' + d.getDate() + ' ' + d.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}) + ')' +
+      (e ? ' + 입고 ' + fmtT(e.dIn) + ' − 투입 ' + fmtT(e.dUse) + ' = 예상 ' + fmtT(e.tot) : ' · 입고·생산 불러오는 중');
   }
 
   /* ---------- 시작 ---------- */
@@ -2970,7 +3112,7 @@ textarea{
     prod:  {name:'생산설비',   color:0x4f7cd8},
     tank:  {name:'탱크·조',    color:0x2fa3a3},
     store: {name:'창고·보관',  color:0xd9a441},
-    yard:  {name:'야적',       color:0xa07856},
+    yard:  {name:'원료',       color:0xa07856},
     env:   {name:'환경·처리',  color:0x8e6bbf},
     supp:  {name:'지원시설',   color:0x4fae7b},
     util:  {name:'부대설비',   color:0x8a94a6}
@@ -2985,12 +3127,12 @@ textarea{
   function box(id,name,cat,h,parts,lbl){ Z.push({id:id,name:name,cat:cat,h:h,parts:parts,lbl:!!lbl}); }
   function cyl(id,name,cat,h,c,lbl){ Z.push({id:id,name:name,cat:cat,h:h,circ:c,lbl:!!lbl}); }
 
-  box('pm1','PM-1 초지기','prod',8,[[480,217,1043,313]],1);
+  box('pm1','PM-1 초지기','prod',8,[[278,217,1043,313]],1);
   var pm1c = ['CHEST','CHEST','#3 백수 PIT','#3 백수 PIT','#3 백수 PIT','REFINER CHEST','MACHINE CHEST','MACHINE CHEST'];
   pm1c.forEach(function(n,i){
     box('pm1c'+(i+1),'PM-1 '+n,'tank',4,[[278+25*i,217,278+25*i+24,290]]);
   });
-  box('pm2','PM-2 초지기','prod',8,[[400,320,1005,422]],1);
+  box('pm2','PM-2 초지기','prod',8,[[280,320,1005,422]],1);
   var pm2c = ['PULPER CHEST','SCREEN CHEST','REFINER CHEST','MACHINE CHEST'];
   pm2c.forEach(function(n,i){
     box('pm2c'+(i+1),'PM-2 '+n,'tank',4,[[280+30*i,332,280+30*i+29,400]]);
@@ -3010,8 +3152,8 @@ textarea{
   cyl('wwtank','폐수 소형조','env',4,[170,472,14]);
   box('scrapbox','폐사 보관함','env',4,[[175,485,235,555]]);
   box('wastebox','폐기물 보관함','env',4,[[147,555,235,625]]);
-  box('paper','파지(원료) 야적','yard',5,[[433,514,706,685]],1);
-  box('incin','소각로','env',8,[[148,645,240,672],[148,735,700,797]],1);
+  box('paper','원료','yard',5,[[433,514,706,685]],1);
+  box('incin','소각로','env',8,[[143,625,242,735],[143,735,700,797]],1);
   box('wh','창고','store',0.25,[[822,425,1043,635],[935,635,1043,717]],1);
   (function(z){ z.color=0xaab1bd; z.ly=11; z.my=13.5; z.hLabel='지붕 최고 약 12 m (가정)'; })(Z[Z.length-1]);
   box('whgate','창고 출입구 (추정)','util',0.35,[[816,590,826,632]]);
@@ -3446,13 +3588,6 @@ textarea{
 
   document.getElementById('bReset').addEventListener('click', function(){ setView(0,0.95,235); });
   document.getElementById('bTop').addEventListener('click', function(){ setView(0,0.06,270); });
-  document.getElementById('bWh').addEventListener('click', function(){
-    var w = Z.filter(function(q){ return q.id === 'wh'; })[0];
-    // PM-2 쪽(북)에서 남쪽을 보는 CCTV 방향
-    st.target.set(w.cx, 0, w.cz);
-    st.theta = Math.PI; st.phi = 1.2; st.radius = 58;
-    updateCam();
-  });
   var bl = document.getElementById('bLabels');
   bl.addEventListener('click', function(){
     showAll = !showAll;
@@ -3521,7 +3656,7 @@ textarea{
     var camP = new THREE.PerspectiveCamera(42, 1, 0.5, 2500);
     function sel(s){ Object.keys(idset).forEach(function(i){ s = s.split('#' + i).join('#' + key + '-' + i); }); return s; }
     var doc = {
-      getElementById: function(id){ if(id === 'stage') return stage; if(id === 'labels') return lbl; if(idset[id]) return realDoc.getElementById(key + '-' + id) || dummyEl(); return dummyEl(); },
+      getElementById: function(id){ if(id === 'stage') return stage; if(id === 'labels') return lbl; if(id === 'c') return MODS[key].canvasProxy; if(id === 'tip') return MODS[key].tip; if(idset[id]) return realDoc.getElementById(key + '-' + id) || dummyEl(); return dummyEl(); },
       createElement: function(t){ return realDoc.createElement(t); }, createTextNode: function(t){ return realDoc.createTextNode(t); },
       querySelectorAll: function(s){ return pane.querySelectorAll(sel(s)); }, querySelector: function(s){ return pane.querySelector(sel(s)); },
       documentElement: realDoc.documentElement, body: realDoc.body
@@ -3537,7 +3672,12 @@ textarea{
     T2.AmbientLight = function(){ return new THREE.Object3D(); };
     T2.DirectionalLight = function(){ return new THREE.Object3D(); };
     var code = realDoc.getElementById('code-' + key).textContent;
-    MODS[key] = {root:root, cam:camP};
+    var tipEl = realDoc.createElement('div'); tipEl.className = 'modtip'; stage.appendChild(tipEl);       // 롤·차량 위에 올렸을 때 말풍선
+    var proxy = dummyEl(), PL = {};                                                                      // 모듈의 캔버스 입력을 받아 두는 대역
+    proxy.addEventListener = function(t, f){ (PL[t] = PL[t] || []).push(f); };
+    proxy.getBoundingClientRect = function(){ return realDoc.getElementById('c').getBoundingClientRect(); };
+    proxy.emit = function(t, e){ (PL[t] || []).forEach(function(f){ try{ f(e); }catch(err){ console.error(err); } }); };
+    MODS[key] = {root:root, cam:camP, canvasProxy:proxy, tip:tipEl};
     new Function('document', 'window', 'THREE', code)(doc, win, T2);
   }
   function syncCams(){
@@ -3549,10 +3689,26 @@ textarea{
     });
   }
   ['wh','yd'].forEach(function(k){ try{ startModule(k); }catch(e){ console.error('모듈 실행 오류 ' + k, e); } });
+  // 지도 캔버스의 마우스 입력 중 '올려 보기'와 '클릭 선택'만 창고·원료 모듈에 전달 (회전·이동은 지도가 그대로 처리)
+  (function(){
+    var cv = realDoc.getElementById('c'), down = null;
+    function fwd(t, e){ Object.keys(MODS).forEach(function(k){ MODS[k].canvasProxy.emit(t, e); }); }
+    function fake(e){ return {clientX:e.clientX, clientY:e.clientY, button:e.button, shiftKey:e.shiftKey, pointerId:e.pointerId, preventDefault:function(){}}; }
+    cv.addEventListener('pointermove', function(e){ if(e.buttons) return; fwd('pointermove', fake(e)); });
+    cv.addEventListener('pointerdown', function(e){ down = {x:e.clientX, y:e.clientY, b:e.button, s:e.shiftKey}; fwd('pointerleave', fake(e)); });
+    cv.addEventListener('pointerup', function(e){
+      if(down && down.b === 0 && !down.s && Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) <= 4){ fwd('pointerdown', fake(e)); fwd('pointerup', fake(e)); }
+      down = null;
+    });
+    cv.addEventListener('pointerleave', function(e){ fwd('pointerleave', fake(e)); });
+  })();
 
   // 패널 탭 / 카메라 이동
-  var FLY = {wh:{t:[52.31,0,10.24], th:Math.PI, ph:1.0, r:62}, yd:{t:[-27.29,0,16.87], th:0, ph:0.95, r:96}};
-  function fly(k){ var f = FLY[k]; st.target.set(f.t[0], f.t[1], f.t[2]); st.theta = f.th; st.phi = f.ph; st.radius = f.r; updateCam(); }
+  var FLY = {wh:{t:[52.31,0,16.74], th:0, ph:0.06, r:70}, yd:{t:[-27.29,0,18.87], th:0, ph:0.06, r:80}};
+  function fly(k){
+    var f = FLY[k]; st.target.set(f.t[0], f.t[1], f.t[2]); st.theta = f.th; st.phi = f.ph; st.radius = f.r; updateCam();
+    if(k === 'wh'){ var rb = realDoc.getElementById('wh-bRoof'); if(rb && rb.getAttribute('aria-pressed') === 'true') rb.click(); }     // 위에서 볼 때는 지붕을 걷어 안이 보이게
+  }
   window.mapCamera = function(x, z, r, th, ph){ st.target.set(x, 0, z); st.radius = r; if(th !== undefined) st.theta = th; if(ph !== undefined) st.phi = ph; updateCam(); };   // 카메라를 원하는 곳으로 옮기는 보조 함수
   function showTab(k){
     Array.prototype.forEach.call(realDoc.querySelectorAll('#ptabs button'), function(b){ b.setAttribute('aria-pressed', b.dataset.pt === k ? 'true' : 'false'); });
@@ -3562,6 +3718,10 @@ textarea{
   Array.prototype.forEach.call(realDoc.querySelectorAll('.fly'), function(b){ b.addEventListener('click', function(){ fly(b.dataset.fly); }); });
   realDoc.getElementById('bFlyWh').addEventListener('click', function(){ fly('wh'); showTab('wh'); });
   realDoc.getElementById('bFlyYd').addEventListener('click', function(){ fly('yd'); showTab('yd'); });
+  (function(){
+    var appEl = realDoc.getElementById('app'), bp = realDoc.getElementById('bPanel');
+    bp.addEventListener('click', function(){ var off = appEl.classList.toggle('nopanel'); bp.setAttribute('aria-pressed', off ? 'false' : 'true'); });
+  })();
   showTab('map');
 
   // 외부 데이터 연동용: applyStatus({wh:'warn', pm1:'ok', ...})
