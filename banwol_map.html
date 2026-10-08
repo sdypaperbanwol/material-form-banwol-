@@ -2763,9 +2763,10 @@ textarea{
   ZONES.forEach(function(z){ z.label = addLabel(z.name, z.xc, 7.0, z.zc, 'sec'); });
   labelL = addLabel('페이로더 · 대기', 0, 0, 0, '', function(){ return [L.x - OX, 5.4 + heightAt(L.x, L.z), L.z - OZ]; });
   var showLabels = true;
-  labels.forEach(function(l){ if(!l.fn && l.el.textContent === '원료 출입구') l.stat = true; });         // 톤수 이름표는 데이터라 그대로 두고, 출입구 이름만 눌렀을 때 표시
+    labels.forEach(function(l){ if(!l.fn && l.el.className.split(' ').indexOf('sec') >= 0) l.stat = true; });         // 출입구·톤수 이름표 모두 눌렀을 때만 표시
+  ZONES.forEach(function(z){ z.label.box = {x0:z.x0 - OX - 2, x1:z.x1 - OX + 2, z0:z.z0 - OZ - 7, z1:z.zm1 - OZ + 2}; });   // 더미(와 원형조) 어디를 눌러도 그 구역 톤수 표시
   if(window.__regReveal) window.__regReveal({
-    at: function(px, pz, R, ms){ var now = Date.now(); labels.forEach(function(l){ if(!l.stat) return; var dx = l.x - px, dz = l.z - pz; l.reveal = (dx*dx + dz*dz <= R*R) ? now + ms : 0; }); },
+        at: function(px, pz, R, ms){ var now = Date.now(); labels.forEach(function(l){ if(!l.stat) return; var dx = l.x - px, dz = l.z - pz, hit = l.box ? (px >= l.box.x0 && px <= l.box.x1 && pz >= l.box.z0 && pz <= l.box.z1) : (dx*dx + dz*dz <= R*R); l.reveal = hit ? now + ms : 0; }); },
     all: function(on){ labels.forEach(function(l){ if(l.stat) l.reveal = on ? Date.now() + 36e8 : 0; }); }
   });
   var v3 = new THREE.Vector3();
