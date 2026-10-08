@@ -234,7 +234,7 @@ textarea{
   <div class="ptab" data-pt="map">
     <div class="head">
       <h1>반월공장 3D 통합 배치도</h1>
-      <p>1층 평면도 기준의 단순 모형 · 빌드 10 (10/08 09:29)</p>
+      <p>1층 평면도 기준의 단순 모형 · 빌드 12 (10/08 10:07)</p>
     </div>
     <div id="info"></div>
     <div id="list"></div>
@@ -837,6 +837,11 @@ textarea{
   var simLblA = addLabel('', 0, 0, 0, 'sec', rollLabelFn(function(){ return simA.roll; }), false);
   var simLblB = addLabel('', 0, 0, 0, 'sec', rollLabelFn(function(){ return simB.roll; }), false);
   var showLabels = true;
+  labels.forEach(function(l){ if(!l.fn && l.el.className.split(' ').indexOf('sec') >= 0) l.stat = true; });       // 출입구·롤 배출구 같은 시설 이름
+  if(window.__regReveal) window.__regReveal({
+    at: function(px, pz, R, ms){ var now = Date.now(); labels.forEach(function(l){ if(!l.stat) return; var dx = l.x - px, dz = l.z - pz; l.reveal = (dx*dx + dz*dz <= R*R) ? now + ms : 0; }); },
+    all: function(on){ labels.forEach(function(l){ if(l.stat) l.reveal = on ? Date.now() + 36e8 : 0; }); }
+  });
 
   /* ---------- 카메라 ---------- */
   var st = {target:new THREE.Vector3(0,0,0), theta:-Math.PI/2, phi:0.45, radius:95};
@@ -1271,7 +1276,7 @@ textarea{
   }
   var incarBusy = false;
   function pollIncar(){
-    if(incarBusy || !window.fetch) return;
+    if(incarBusy || !window.fetch || window.document.hidden) return;
     incarBusy = true;
     var ctrl = window.AbortController ? new AbortController() : null, to = ctrl ? setTimeout(function(){ ctrl.abort(); }, 40000) : null;
     fetch(incarUrl() + '&_=' + Date.now(), {credentials:'omit', cache:'no-store', signal:ctrl ? ctrl.signal : undefined})
@@ -1895,6 +1900,7 @@ textarea{
   }
   var fetching = false, lastSig = '', retryN = 0;
   function fetchStock(){
+    if(window.document.hidden) return;
     var base = currentUrl();
     if(!base){ if(!stockList.length) useSample('연동 주소가 없습니다. 파일의 WEB_APP_URL에 웹 앱 주소를 적어주세요.'); return; }
     if(fetching) return;
@@ -1936,7 +1942,7 @@ textarea{
   setInterval(pollIncar, 20000); pollIncar();
   var loadBusy = false;
   function pollLoadItems(){                                // 거래계획번호별 '지금 싣는 창고'(시트 '상차판정')를 읽음
-    if(!window.fetch || loadBusy) return;
+    if(!window.fetch || loadBusy || window.document.hidden) return;
     loadBusy = true;
     var lc = window.AbortController ? new AbortController() : null, lto = lc ? setTimeout(function(){ lc.abort(); }, 30000) : null;
     fetch(WEB_APP_URL.split('?')[0] + '?type=loadstate&_=' + Date.now(), {credentials:'omit', cache:'no-store', signal: lc ? lc.signal : undefined})
@@ -1951,7 +1957,8 @@ textarea{
       .catch(function(){ if(lto) clearTimeout(lto); loadBusy = false; if(!loadTried) releasePending(); });                                // 시트가 없거나 실패하면 기존 방식(창고코드만)으로 계속
   }
   setInterval(pollLoadItems, 30000); pollLoadItems();
-  setTimeout(function(){ if(!loadTried) releasePending(); }, 12000);              // 롤 목록 응답이 너무 늦으면 기존 방식으로 먼저 진행
+  setTimeout(function(){ if(!loadTried) releasePending(); }, 12000);
+  window.document.addEventListener('visibilitychange', function(){ if(!window.document.hidden){ pollIncar(); pollLoadItems(); retryN = 0; fetchStock(); } });              // 롤 목록 응답이 너무 늦으면 기존 방식으로 먼저 진행
   updateCam();
 
   var v3 = new THREE.Vector3();
@@ -1979,6 +1986,7 @@ textarea{
     var w = stage.clientWidth, h = stage.clientHeight;
     dockTop.length = 0; dockBot.length = 0;
     labels.forEach(function(l){
+      if(l.stat && !(l.reveal > Date.now())){ l.el.style.display = 'none'; if(l.line) l.line.style.display = 'none'; return; }      // 시설 이름: 눌렀을 때만
       if(l.minor && st.radius > 75){ l.el.style.display = 'none'; return; }
       if(l.fn){ var q = l.fn(); if(!q){ l.el.style.display = 'none'; return; } l.x = q[0]; l.y = q[1]; l.z = q[2]; }
       v3.set(l.x, l.y, l.z).project(cam);
@@ -2755,11 +2763,17 @@ textarea{
   ZONES.forEach(function(z){ z.label = addLabel(z.name, z.xc, 7.0, z.zc, 'sec'); });
   labelL = addLabel('페이로더 · 대기', 0, 0, 0, '', function(){ return [L.x - OX, 5.4 + heightAt(L.x, L.z), L.z - OZ]; });
   var showLabels = true;
+  labels.forEach(function(l){ if(!l.fn && l.el.textContent === '원료 출입구') l.stat = true; });         // 톤수 이름표는 데이터라 그대로 두고, 출입구 이름만 눌렀을 때 표시
+  if(window.__regReveal) window.__regReveal({
+    at: function(px, pz, R, ms){ var now = Date.now(); labels.forEach(function(l){ if(!l.stat) return; var dx = l.x - px, dz = l.z - pz; l.reveal = (dx*dx + dz*dz <= R*R) ? now + ms : 0; }); },
+    all: function(on){ labels.forEach(function(l){ if(l.stat) l.reveal = on ? Date.now() + 36e8 : 0; }); }
+  });
   var v3 = new THREE.Vector3();
   function updateLabels(){
     if(!showLabels) return;
     var w = stage.clientWidth, h = stage.clientHeight;
     labels.forEach(function(l){
+      if(l.stat && !(l.reveal > Date.now())){ l.el.style.display = 'none'; return; }       // 시설 이름: 눌렀을 때만
       if(l.fn){ var q = l.fn(); if(!q){ l.el.style.display = 'none'; return; } l.x = q[0]; l.y = q[1]; l.z = q[2]; }
       v3.set(l.x, l.y, l.z).project(cam);
       if(v3.z > 1){ l.el.style.display = 'none'; return; }
@@ -2910,7 +2924,7 @@ textarea{
   }
   var vehBusy = false;
   function pollVehicles(){
-    if(!window.fetch || vehBusy) return;                 // 앞선 요청이 아직 안 끝났으면 겹쳐 부르지 않음
+    if(!window.fetch || vehBusy || window.document.hidden) return;                 // 앞선 요청이 아직 안 끝났으면 겹쳐 부르지 않음
     vehBusy = true;
     var ctrl = window.AbortController ? new AbortController() : null, to = ctrl ? setTimeout(function(){ ctrl.abort(); }, 40000) : null;
     fetch(VEHICLE_URL, {credentials:'omit', cache:'no-store', signal:ctrl ? ctrl.signal : undefined})
@@ -3014,7 +3028,7 @@ textarea{
     tdRef.st.textContent = (r.ok ? '입고 ' + new Date(r.t).toLocaleTimeString('ko-KR') : '입고 ' + r.msg) + (m.ok ? ' · 생산 ' + (m.upd ? m.upd : new Date(m.t).toLocaleTimeString('ko-KR')) : ' · 생산 ' + m.msg);
   }
   function pollToday(){
-    if(!window.fetch) return;
+    if(!window.fetch || window.document.hidden) return;
     fetch(GAS_URL + '?action=weighing_today&type=raw', {credentials:'omit', cache:'no-store'})
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(j){
@@ -3079,6 +3093,7 @@ textarea{
   buildZoneCards(); refreshPanel(); updateCam();
   setInterval(pollVehicles, POLL_MS); pollVehicles();
   buildToday(); updateToday(); setInterval(pollToday, 60000); pollToday();
+  window.document.addEventListener('visibilitychange', function(){ if(!window.document.hidden){ pollVehicles(); pollToday(); } });
   var cneedle = document.getElementById('cneedle');
   var last = performance.now(), acc = 0, lastSig = '';
   function loop(now){
@@ -3124,8 +3139,8 @@ textarea{
   };
 
   var Z = [];
-  function box(id,name,cat,h,parts,lbl){ Z.push({id:id,name:name,cat:cat,h:h,parts:parts,lbl:!!lbl}); }
-  function cyl(id,name,cat,h,c,lbl){ Z.push({id:id,name:name,cat:cat,h:h,circ:c,lbl:!!lbl}); }
+  function box(id,name,cat,h,parts,lbl){ Z.push({id:id,name:name,cat:cat,h:h,parts:parts,lbl:false}); }
+  function cyl(id,name,cat,h,c,lbl){ Z.push({id:id,name:name,cat:cat,h:h,circ:c,lbl:false}); }
 
   box('pm1','PM-1 초지기','prod',8,[[278,217,1043,313]],1);
   var pm1c = ['CHEST','CHEST','#3 백수 PIT','#3 백수 PIT','#3 백수 PIT','REFINER CHEST','MACHINE CHEST','MACHINE CHEST'];
@@ -3592,6 +3607,7 @@ textarea{
   bl.addEventListener('click', function(){
     showAll = !showAll;
     bl.setAttribute('aria-pressed', showAll ? 'true' : 'false');
+    Object.keys(REV).forEach(function(k){ REV[k].all(showAll); });
   });
 
   /* ---------- 테마 / 리사이즈 ---------- */
@@ -3644,7 +3660,8 @@ textarea{
   whDetail.visible = false; roofGroup.visible = false;
   (function(){ var inc = Z.filter(function(q){ return q.id === 'incin'; })[0]; if(inc){ var c2 = toW((148+700)/2, (735+797)/2); inc.cx = c2[0]; inc.cz = c2[1]; inc.marker.position.set(inc.cx, inc.marker.position.y, inc.cz); } })();   // 소각로 점검 표시는 남은 건물 중앙에
 
-  var realDoc = document, realWin = window, MODS = {};
+  var realDoc = document, realWin = window, MODS = {}, REV = {}, curKey = '';
+  window.__regReveal = function(api){ REV[curKey] = api; };
   function dummyEl(){ return {style:{}, dataset:{}, children:[], classList:{add:function(){},remove:function(){},toggle:function(){return false;},contains:function(){return false;}},
     appendChild:function(c){return c;}, removeChild:function(){}, addEventListener:function(){}, removeEventListener:function(){}, setAttribute:function(){}, getAttribute:function(){return null;},
     setPointerCapture:function(){}, getBoundingClientRect:function(){return {left:0,top:0,width:1,height:1};}, clientWidth:1, clientHeight:1, offsetWidth:0, offsetHeight:0,
@@ -3678,6 +3695,7 @@ textarea{
     proxy.getBoundingClientRect = function(){ return realDoc.getElementById('c').getBoundingClientRect(); };
     proxy.emit = function(t, e){ (PL[t] || []).forEach(function(f){ try{ f(e); }catch(err){ console.error(err); } }); };
     MODS[key] = {root:root, cam:camP, canvasProxy:proxy, tip:tipEl};
+    curKey = key;
     new Function('document', 'window', 'THREE', code)(doc, win, T2);
   }
   function syncCams(){
@@ -3696,8 +3714,19 @@ textarea{
     function fake(e){ return {clientX:e.clientX, clientY:e.clientY, button:e.button, shiftKey:e.shiftKey, pointerId:e.pointerId, preventDefault:function(){}}; }
     cv.addEventListener('pointermove', function(e){ if(e.buttons) return; fwd('pointermove', fake(e)); });
     cv.addEventListener('pointerdown', function(e){ down = {x:e.clientX, y:e.clientY, b:e.button, s:e.shiftKey}; fwd('pointerleave', fake(e)); });
+    var rcast = new THREE.Raycaster();
     cv.addEventListener('pointerup', function(e){
-      if(down && down.b === 0 && !down.s && Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) <= 4){ fwd('pointerdown', fake(e)); fwd('pointerup', fake(e)); }
+      if(down && down.b === 0 && !down.s && Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) <= 4){
+        fwd('pointerdown', fake(e)); fwd('pointerup', fake(e));
+        // 눌러서 시설 이름 보기: 누른 자리 근처의 이름만 잠깐 표시 (다른 곳을 누르면 사라짐)
+        var rc = cv.getBoundingClientRect();
+        rcast.setFromCamera({x:((e.clientX - rc.left)/rc.width)*2 - 1, y:-((e.clientY - rc.top)/rc.height)*2 + 1}, cam);
+        var o = rcast.ray.origin, d = rcast.ray.direction;
+        if(Math.abs(d.y) > 1e-6){
+          var tt = -o.y/d.y;
+          if(tt > 0){ var R = 6 + st.radius*0.02; Object.keys(REV).forEach(function(k){ REV[k].at(o.x + d.x*tt, o.z + d.z*tt, R, 7000); }); }
+        }
+      }
       down = null;
     });
     cv.addEventListener('pointerleave', function(e){ fwd('pointerleave', fake(e)); });
