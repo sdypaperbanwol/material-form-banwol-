@@ -2724,12 +2724,19 @@ function buildProductDetail(car4, plant){
       const primary = rem[PRIMARY_WH] || 0;
       const od = it['ROLL수량'] || 0, pk = it['상차량'] || 0;
       const color = pk >= od && od > 0 ? '#1d4ed8' : pk > 0 ? '#f59e0b' : '#9ca3af';
-      const stock = primary > 0
-        ? `<span style="color:#15803d">본창고 ${primary}R</span>`
-        : `<span style="color:#dc2626">본창고 없음</span>`;
-      return `<div style="display:flex;gap:10px;font-size:11px;padding:2px 0">
-        <span style="flex:1;color:#555">${it['품목명']}</span>
-        <span style="color:${color};font-weight:600">${pk}/${od}R</span>${stock}</div>`;
+           const others = Object.entries(rem)
+        .filter(([k, v]) => String(k) !== String(PRIMARY_WH) && v > 0)
+        .map(([k, v]) => {
+          const nm = (__inventoryData.find(iv => String(iv['창고코드']) === String(k)) || {})['창고명'] || k;
+          return `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:600">${nm.replace(/^반월\s*/, '')} ${v}R</span>`;
+        }).join('');
+      const primaryBadge = primary > 0
+        ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:600">✅ 본창고 ${primary}R</span>`
+        : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fee2e2;color:#dc2626;font-weight:600">❌ 본창고 없음</span>`;
+      return `<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:11px;padding:3px 0">
+        <span style="flex:1;min-width:80px;color:#555">${it['품목명']}</span>
+        <span style="color:${color};font-weight:600">${pk}/${od}R</span>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${primaryBadge}${others}</div></div>`;
     }).join('');
 
     return `<div style="padding:5px 0">
