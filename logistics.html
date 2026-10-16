@@ -2732,11 +2732,12 @@ function buildProductDetail(car4, plant){
         }).join('');
       const primaryBadge = primary > 0
         ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:600">✅ 본창고 ${primary}R</span>`
-        : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fee2e2;color:#dc2626;font-weight:600">❌ 본창고 없음</span>`;
-            return `<div style="display:grid;grid-template-columns:72px 46px 1fr;align-items:center;column-gap:6px;font-size:11px;padding:3px 0">
+               : `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#fee2e2;color:#dc2626;font-weight:600">❌ 본창고 0R</span>`;
+                 return `<div style="display:grid;grid-template-columns:68px 42px 82px 1fr;align-items:center;column-gap:6px;font-size:11px;padding:3px 0">
         <span style="color:#555;white-space:nowrap">${it['품목명']}</span>
-        <span style="color:${color};font-weight:600;white-space:nowrap;text-align:left">${pk}/${od}R</span>
-        <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:3px">${primaryBadge}${others}</div></div>`;
+        <span style="color:${color};font-weight:600;white-space:nowrap">${pk}/${od}R</span>
+        <div>${primaryBadge}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${others}</div></div>`;
     }).join('');
 
     return `<div style="padding:5px 0">
