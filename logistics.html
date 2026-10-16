@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>공장 내 차량 현황</title>
   <link rel="icon" href="data:,">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
   <style>
   :root{
     --ink:#222; --muted:#666; --line:#e6e6e6; --bg:#f7f8fa; --card:#fff;
@@ -212,6 +212,20 @@
     background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd;
   }
     #watchPanelEl { display: none !important; }
+  .kpi-bar{ display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden }
+  .kpi-bar:empty{ display:none }
+  .kpi-item{ position:relative; padding:12px 14px 9px; border-left:1px solid var(--line) }
+  .kpi-item:first-child{ border-left:0 }
+  .kpi-item::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--kc) }
+  .kpi-item .l{ font-size:11px; color:var(--muted) }
+  .kpi-item .v{ font-size:13px; color:var(--muted); margin-top:2px; white-space:nowrap }
+  .kpi-item .v b{ font-size:18px; color:var(--ink) }
+  @media(max-width:600px){
+    .kpi-bar{ grid-template-columns:repeat(2,1fr) }
+    .kpi-item:nth-child(3){ border-left:0 }
+    .kpi-item:nth-child(n+3){ border-top:1px solid var(--line) }
+  }
   </style>
 </head>
 <body>
@@ -280,14 +294,15 @@
     </div>
     <span class="cong-updated" id="congUpdated"></span>
   </div>
-  <div class="cong-grid" id="congGrid" style="cursor:pointer"></div>
-  <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">항목 클릭 시 상세 보기</div>
+  <div class="cong-grid" id="congGrid"></div>
 </section>
 
-  
+
+
+<section class="grid" id="sections"></section>
+
 <section class="grid" id="weighingPanel" style="display:none"></section>
-<section class="grid" id="sections" style="display:none"></section>
-<section id="analyticPanel" style="display:none"></section>
+
 <section id="dispatchPanel" style="display:none">
   <div class="grid">
     <div class="col">
@@ -508,6 +523,18 @@ async function refreshAvgDurMapAsync(){
   const pf = document.getElementById('plantFilter')?.value || 'all';
   __avgDurMap=calcAvgDurMap(pf);
 }
+
+function todayCount(tp, pf){
+  const t = todayKST();
+  const c = __anCache[`all_${t}_${t}`];
+  if(!c || c.mode !== 'all-daily') return null;
+  const d = c.data[tp] || {};
+  let rows = [];
+  if(pf !== 'sihwa')  rows.push(...(d.banwol || []));
+  if(pf !== 'banwol') rows.push(...(d.sihwa  || []));
+  return rows.filter(r => !isMonoDigit(r.CARNUM)).length;
+}
+
 function renderCongPanel(data, plantFilter){
   const grid = document.getElementById('congGrid');
   if(!grid || !data || !data.sections) return;
@@ -572,22 +599,19 @@ return true;
     const worstPct = showB && showS ? Math.max(pctB, pctS) : showB ? pctB : pctS;
     const borderColor = worstPct >= 100 ? '#fca5a5' : worstPct >= 60 ? '#fcd34d' : '#d1fae5';
 
+       const nToday = todayCount(t.tp, plantFilter);
     return `<div class="cong-cell" style="border-color:${borderColor}">
       <div class="cong-type">${t.label}</div>
       ${rowB}${rowS}
+      <div class="cong-today" style="font-size:9px;color:var(--muted);margin-top:4px;padding-top:4px;border-top:1px solid #f1f1f4">${nToday != null ? `오늘 ${nToday}건` : ''}</div>
     </div>`;
   }).join('');
 
 document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
+
 document.querySelectorAll('#congGrid .cong-cell').forEach((cell, idx) => {
-  const types = ['product','raw','sub','container'];
-  cell.addEventListener('click', () => setTypeTab(types[idx]));
   cell.style.cursor = 'pointer';
-  cell.style.transition = 'box-shadow .15s, border-color .15s';
-  if(!('ontouchstart' in window)){
-    cell.addEventListener('mouseenter', () => cell.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)');
-    cell.addEventListener('mouseleave', () => cell.style.boxShadow = '');
-  }
+  cell.addEventListener('click', () => setTypeTab(['product','raw','sub','container'][idx]));
 });
 }
 function last4(s){ const d=String(s||'').replace(/\D+/g,''); return d.length>=4?d.slice(-4):d.length>0?d.padStart(4,'0'):''; }
@@ -924,19 +948,23 @@ if(isSub){
         ? `<td style="text-align:left;vertical-align:middle;padding:4px 6px">${subItemInner}</td>`
         : '';
 
+      const prodClickable = sec.title === '제품 상차중' && !isUnDispatched;
+      const prodKey = `${r.plant}_${car4}`;
+      const prodOpen = prodClickable && __prodExpanded.has(prodKey);
+      const prodAttr = prodClickable ? ` style="cursor:pointer" onclick="prodToggle('${prodKey}')"` : '';
       const plantClass = r.plant==='반월' ? 'bw-row' : 'sh-row';
 
       // ★ 차량번호 셀 — 집게차/단설 뱃지
       const carCellContent = carCellHtml(r.car, r, sec.title);
       const carCellStyle = isFour&&last4(r.car)===dqq ? 'cell-hit' : '';
 
-     return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"': isUnDispatched?' style="opacity:0.35;background:#f5f5f5"':''}>
+          return `<tr class="${[sep?'plant-sep':'',watched?'watch-hit':'',plantClass].filter(Boolean).join(' ')}"${isAbnormal?' style="opacity:0.35"': isUnDispatched?' style="opacity:0.35;background:#f5f5f5"': prodAttr}>
         <td>${seq++}</td>
         <td class="${carCellStyle}" style="vertical-align:middle">${carCellContent}</td>
         <td>${fmtTime(r.time)}</td>
         ${estTd}
-        ${isSub ? subItemTd : `<td style="color:#185FA5;font-size:12px">${r.totwei?Number(String(r.totwei).replace(/[^\d.]/g,'')).toLocaleString()+'kg':'—'}</td>`}
-      </tr>`;
+               ${isSub ? subItemTd : `<td style="color:#185FA5;font-size:12px">${r.totwei?Number(String(r.totwei).replace(/[^\d.]/g,'')).toLocaleString()+'kg':'—'}</td>`}
+      </tr>${prodOpen ? `<tr><td colspan="5" style="text-align:left;white-space:normal;padding:6px 14px;background:#fafbfd">${buildProductDetail(car4, r.plant)}</td></tr>` : ''}`;
     }).join(''):'<tr><td colspan="5" class="empty">(데이터 없음)</td></tr>';
 
 const sc=rows.filter(r=>{
@@ -1011,25 +1039,11 @@ return `<article class="card">
 
   elSections.innerHTML=`
     <div class="col">${LEFT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>
-    <div class="col">${RIGHT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>`;
+        <div class="col">${RIGHT.map(t=>byTitle[t]).filter(Boolean).map(buildSec).join('')}</div>`;
   syncWatch(allCars);
+  applyTypeFilter();
 
-  if (__currentTypeTab) {
-    const showMap = {
-      product:   ['제품 상차중'],
-      raw:       ['원료 하차중','원료 대기'],
-      sub:       ['부자재 입차중'],
-      container: ['컨테이너 입차중'],
-    };
-    const show = showMap[__currentTypeTab];
-    if (show && document.getElementById('sections').style.display !== 'none') {
-      document.querySelectorAll('article.card').forEach(card => {
-        const h3 = card.querySelector('h3');
-        if (!h3) return;
-        card.style.display = show.includes(h3.textContent.trim()) ? '' : 'none';
-      });
-    }
-  }
+
 
 
 
@@ -1040,6 +1054,7 @@ return `<article class="card">
     updateCongPanel(data, plantSel);
   }
   refreshAvgDurMap(plantSel);
+
 }
 
   const badge=document.getElementById('searchSummary');
@@ -1124,7 +1139,48 @@ function updateCarSearchPanel(carNum4, liveData){
     panel.style.display='block';
   }
 }
+// ═══ 품목별 KPI (건수 / 평균 체류 / 피크 시간대) ═══
+function renderKpiPanel(){
+  const el = document.getElementById('kpiPanel'); if(!el) return;
+  const pf = document.getElementById('plantFilter').value || 'all';
+  const t = todayKST();
+  const cached = __anCache[`all_${t}_${t}`];
+  if(!cached || cached.mode !== 'all-daily'){ el.innerHTML = ''; return; }
 
+  el.innerHTML = AN_TYPES.map(cfg => {
+    const d = cached.data[cfg.key] || {};
+    let rows = [];
+    if(pf !== 'sihwa')  rows.push(...(d.banwol || []));
+    if(pf !== 'banwol') rows.push(...(d.sihwa  || []));
+    rows = rows.filter(r => !isMonoDigit(r.CARNUM));
+
+    const durs = rows.map(r => effectiveDurMin(r.INTIME, r.OUTIME, cfg.key))
+                     .filter(v => v != null && v > 0 && v <= 480);
+    const avg = durs.length ? Math.round(durs.reduce((s,v)=>s+v,0)/durs.length) : null;
+
+    return `<div class="kpi-item" style="--kc:${cfg.dc}">
+      <div class="l">${cfg.label}</div>
+      <div class="v"><b>${rows.length}</b>건 · 평균 ${avg != null ? avg + '분' : '-'}</div>
+    </div>`;
+  }).join('');
+}
+
+// 오늘 캐시 갱신 (KPI·체류시간·히스토리용)
+async function refreshTodayCache(){
+  const t = todayKST(); __anFrom = t; __anTo = t;
+  const types = ['product','raw','sub','container'];
+  try{
+    const dataByType = {};
+    await Promise.all(types.map(async tp => {
+      const d = await api({action:'get_weigh_cache', type:tp, dateFrom:t, dateTo:t});
+      __anCache[`${tp}_${t}_${t}`] = { mode:'daily', data:d };
+      dataByType[tp] = d;
+    }));
+    __anCache[`all_${t}_${t}`] = { mode:'all-daily', types, data:dataByType };
+    __avgDurMap = calcAvgDurMap(document.getElementById('plantFilter').value || 'all');
+    rerenderCache();
+  }catch(e){}
+}
 function updateCongPanel(data, plantFilter){
   if(!data || !data.sections) return;
   const sectionMap = {};
@@ -1176,7 +1232,13 @@ return true;
 
     // 테두리 색만 업데이트
     const borderColor = worstPct >= 100 ? '#fca5a5' : worstPct >= 60 ? '#fcd34d' : '#d1fae5';
-    cell.style.borderColor = borderColor;
+      cell.style.borderColor = borderColor;
+
+    const todayEl = cell.querySelector('.cong-today');
+    if(todayEl){
+      const n = todayCount(t.tp, plantFilter);
+      todayEl.textContent = n != null ? `오늘 ${n}건` : '';
+    }
   });
 
   document.getElementById('congUpdated').textContent = data.updatedAt ? `${data.updatedAt} 기준` : '';
@@ -2266,73 +2328,61 @@ function setTab(tabName){
   const liveActive = tabName==='live', dispActive = tabName==='dispatch';
   document.getElementById('btnViewLive').classList.toggle('active', liveActive);
   document.getElementById('btnViewDispatch').classList.toggle('active', dispActive);
-  document.getElementById('sections').style.display = liveActive ? 'grid' : 'none';
-  elWeighPanel.style.display = 'none';
+  if(liveActive) applyTypeFilter(); else document.getElementById('sections').style.display = 'none';
 
-  document.getElementById('analyticPanel').style.display = 'none';
   document.getElementById('dispatchPanel').style.display = dispActive ? 'block' : 'none';
   document.getElementById('congPanel').style.display = liveActive ? 'block' : 'none';
   const tabDesc = document.getElementById('tabDesc');
-  if(tabDesc){
-    tabDesc.textContent = liveActive
-      ? '입차·분석 자동갱신'
-      : '배차 · TMS 연동';
-  }
+  if(tabDesc) tabDesc.textContent = liveActive ? '입차·분석 자동갱신' : '배차 · TMS 연동';
   const q=(document.getElementById('searchInput').value||'').replace(/\D/g,'').slice(-4);
   if(!/^\d{4}$/.test(q)) document.getElementById('carSearchPanel').style.display='none';
 }
-let __currentTypeTab = null; // 'product' → null로 변경
+let __currentTypeTab = null;
+const TYPE_SHOW = {
+  product:   ['제품 상차중'],
+  raw:       ['원료 하차중','원료 대기'],
+  sub:       ['부자재 입차중'],
+  container: ['컨테이너 입차중'],
+};
 
-function setTypeTab(type) {
-  // 같은 타입 다시 클릭하면 닫기
-  if (__currentTypeTab === type) {
-    __currentTypeTab = null;
-    document.getElementById('sections').style.display = 'none';
-
-    document.getElementById('analyticPanel').style.display = 'none';
-    // KPI 셀 선택 해제
-    document.querySelectorAll('#congGrid .cong-cell').forEach(c => c.style.outline = '');
-    return;
-  }
-
-  __currentTypeTab = type;
-  document.getElementById('sections').style.display = 'grid';
-  document.getElementById('analyticPanel').style.display = 'block';
-
-  const showMap = {
-    product:   ['제품 상차중'],
-    raw:       ['원료 하차중','원료 대기'],
-    sub:       ['부자재 입차중'],
-    container: ['컨테이너 입차중'],
-  };
-  const show = showMap[type];
-
-  // KPI 셀 선택 표시
-  if (__lastData) {
-    render(__lastData);
-    document.querySelectorAll('article.card').forEach(card => {
-      const h3 = card.querySelector('h3');
-      if (!h3) return;
-      card.style.display = show.includes(h3.textContent.trim()) ? '' : 'none';
-    });
-  }
-
-  // KPI 셀 선택 표시
-  const typeOrder = ['product','raw','sub','container'];
-  document.querySelectorAll('#congGrid .cong-cell').forEach((c, idx) => {
-    c.style.outline = typeOrder[idx] === type ? '2px solid var(--brand)' : '';
+function applyTypeFilter(){
+  const sec = document.getElementById('sections');
+  const liveOn = document.getElementById('btnViewLive').classList.contains('active');
+  if(!liveOn || !__currentTypeTab){ sec.style.display = 'none'; return; }
+  const show = TYPE_SHOW[__currentTypeTab];
+  sec.style.display = 'grid';
+  sec.style.gridTemplateColumns = '1fr';
+  sec.querySelectorAll('article.card').forEach(card => {
+    const h3 = card.querySelector('h3');
+    card.style.display = (h3 && show.includes(h3.textContent.trim())) ? '' : 'none';
   });
+  sec.querySelectorAll('.col').forEach(col => {
+    const anyVisible = [...col.querySelectorAll('article.card')].some(c => c.style.display !== 'none');
+    col.style.display = anyVisible ? '' : 'none';
+  });
+}
 
-  loadAnalytic(type, false);
+function setTypeTab(type){
+  __currentTypeTab = (__currentTypeTab === type) ? null : type;
+  applyTypeFilter();
+  const order = ['product','raw','sub','container'];
+  document.querySelectorAll('#congGrid .cong-cell').forEach((c, idx) => {
+    c.style.outline = order[idx] === __currentTypeTab ? '2px solid var(--brand)' : '';
+  });
 }
 // ═══ 이벤트 ═══
+// plantFilter change (btnViewAnalytic이 없는 요소라 원래 에러 나던 부분이라 같이 고침)
 document.getElementById('plantFilter').addEventListener('change',e=>{
   localStorage.setItem(LS.plant,e.target.value);
-  const live=document.getElementById('btnViewLive').classList.contains('active');
-  const an=document.getElementById('btnViewAnalytic').classList.contains('active');
-  if(live) rerenderCache(); else if(an) loadAnalytic(__anType,true);
-const dispActive = document.getElementById('btnViewDispatch').classList.contains('active');
-if(dispActive) renderDispatch();
+  if(document.getElementById('btnViewLive').classList.contains('active')) rerenderCache();
+  else renderDispatch();
+});
+
+// 입차·분석 탭 버튼
+document.getElementById('btnViewLive').addEventListener('click', async ()=>{
+  setTab('live');
+  await loadDispatch().catch(()=>{});
+  rerenderCache();
 });
 function doSearch(){
   const val=document.getElementById('searchInput').value||'';
@@ -2372,13 +2422,6 @@ document.getElementById('watchClearBtn').addEventListener('click',async()=>{
   try{ await api({action:'clear_watch'}); Object.keys(watchList).forEach(k=>delete watchList[k]); renderWatchTags(); rerenderCache(); showToast('감시 목록 삭제됨'); }
   catch(e){ showToast('오류 발생'); }
 });
-document.getElementById('btnViewLive').addEventListener('click', async ()=>{
-  setTab('live');
-  await loadDispatch().catch(()=>{});
-  rerenderCache();
-  loadAnalytic(__currentTypeTab === 'all' ? 'product' : __currentTypeTab, false);
-});
-
   document.getElementById('btnViewDispatch').addEventListener('click', () => {
 setTab('dispatch');
 loadDispatch();
@@ -2413,21 +2456,10 @@ rerenderCache();
     if(document.hidden) return;
     try{
       const data = await api({action:'snapshot_live'});
-      if(data && data.sections){
-        __lastData = data;
-        elUpdated.textContent=`업데이트: ${data.updatedAt||'-'}`;
-       if(document.getElementById('btnViewLive').classList.contains('active')){
-  if(!document.querySelector('#congGrid .cong-cell')){
-    renderCongPanel(data, plantSel);
-  } else {
-    updateCongPanel(data, plantSel);
-  }
-  refreshAvgDurMap(plantSel);
-}
-        
-      }
+      if(data && data.sections){ __lastData = data; rerenderCache(); }
     }catch(e){}
   }, 60000);
+  setInterval(()=>{ if(!document.hidden) refreshTodayCache(); }, 5*60*1000);
   setTimeout(() => checkCooldown(), 0);
 })();
 
@@ -2664,6 +2696,46 @@ const detailHtml = isExpanded ? `
         ${detailHtml}
       </div>`;
   }).join('');
+}
+
+// ═══ 입차탭 제품 행 클릭 → 배차 정보 ═══
+const __prodExpanded = new Set();
+window.prodToggle = function(key){
+  if(__prodExpanded.has(key)) __prodExpanded.delete(key); else __prodExpanded.add(key);
+  rerenderCache();
+};
+
+function buildProductDetail(car4, plant){
+  const PRIMARY_WH = plant === '시화' ? '2260' : '9160';
+  const orders = (__dispatchData?.active || []).filter(o =>
+    o['배차여부'] === 'Y' &&
+    String(o['사업장'] || '').includes(plant) &&
+    String(o['차량번호'] || '').replace(/\D/g,'').slice(-4) === car4
+  );
+  if(!orders.length) return '<span style="color:var(--muted);font-size:11px">배차 정보 없음</span>';
+
+  return orders.map(o => {
+    const ord = Number(o['ROLL수량'] || 0), pick = Number(o['상차량'] || 0);
+    let items = [];
+    try { const ri = o['품목목록']; items = Array.isArray(ri) ? ri : JSON.parse(ri || '[]'); } catch(e) {}
+
+    const itemsHtml = items.map(it => {
+      const rem = calcRemainingStock(it['품목명'], plant, PRIMARY_WH);
+      const primary = rem[PRIMARY_WH] || 0;
+      const od = it['ROLL수량'] || 0, pk = it['상차량'] || 0;
+      const color = pk >= od && od > 0 ? '#1d4ed8' : pk > 0 ? '#f59e0b' : '#9ca3af';
+      const stock = primary > 0
+        ? `<span style="color:#15803d">본창고 ${primary}R</span>`
+        : `<span style="color:#dc2626">본창고 없음</span>`;
+      return `<div style="display:flex;gap:10px;font-size:11px;padding:2px 0">
+        <span style="flex:1;color:#555">${it['품목명']}</span>
+        <span style="color:${color};font-weight:600">${pk}/${od}R</span>${stock}</div>`;
+    }).join('');
+
+    return `<div style="padding:5px 0">
+      <div style="font-size:12px;margin-bottom:3px"><b>${o['납품처명'] || ''}</b>
+        <span style="color:var(--muted)"> · 상차 ${pick}/${ord}R</span></div>${itemsHtml}</div>`;
+  }).join('<div style="border-top:1px dashed #e5e7eb"></div>');
 }
 function sortOrders(rows) {
   return [...rows].sort((a, b) => {
