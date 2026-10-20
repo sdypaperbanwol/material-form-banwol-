@@ -43,6 +43,9 @@
   .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--sub); padding:2px 6px; background:none; border:none; }
   .type-photo svg, .row-photo svg { width:18px; height:18px; }
   .row { display:flex; align-items:center; gap:8px; padding:8px 14px 8px 11px; border-top:1px solid var(--line); border-left:3px solid transparent; }
+  .row.single { background:#f8f9fb; border-top:none; }
+  .row.single .size { font-weight:600; }
+  .row.single.sel { background:var(--accent-l); }
   .row.sel { border-left-color:var(--accent); background:var(--accent-l); }
   .row.sel .size { font-weight:600; }
   .row.out .size { color:var(--sub); }
@@ -112,7 +115,7 @@
       <span class="who" id="who"></span>
     </div>
     <p class="guide">+로 수량을 담고, 다 담았으면 맨 아래 장바구니에서 한 번에 신청합니다. +만 눌러서는 신청되지 않습니다.</p>
-    <input id="search" class="search" type="search" placeholder="품목 검색 (예: 장갑, 빗자루, ㅈㄱ, 265)" autocomplete="off" />
+    <input id="search" class="search" type="search" placeholder="품목 검색 (예: 장갑, 빗자루, ㅈㄱ)" autocomplete="off" />
     <div id="catList"></div>
   </div>
 </div>
@@ -146,7 +149,7 @@
 <div id="overlay" class="hidden"><span id="overlayText">처리 중입니다...</span></div>
 
 <script>
-const endpoint = 'https://script.google.com/macros/s/AKfycbwG6HR4QkPU1eroqiTYdeF-upxx3Wto5268or3nQdBrEIzxq48QffGBthh_MDVnXRfT/exec';
+const endpoint = 'https://script.google.com/macros/s/AKfycbwM3by2zYXaxdjrjrbjNFFD_DlbvyP3H9IJZa7bEG5oCMGkig4QgRtsjyN2b8_Gtaxw/exec';
 const CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
 
@@ -267,7 +270,7 @@ function filterCategories(query) {
     const types = [];
     cat.types.forEach(type => {
       const sizes = type.sizes.filter(z => matches(query, cat.name, type.name, z.size));
-      if (sizes.length) types.push({ name: type.name, sizes });
+      if (sizes.length) types.push({ name: type.name, sizes, total: type.sizes.length });
     });
     if (types.length) out.push({ name: cat.name, types });
   });
@@ -317,10 +320,50 @@ function renderCategories() {
   updateBadges();
 }
 
+function makeRow(cat, type, s, single) {
+  const key = keyOf(cat.name, type.name, s.size);
+  const row = el('div', 'row' + (single ? ' single' : '') + (s.stock > 0 ? '' : ' out') + (cart[key] ? ' sel' : ''));
+  row.appendChild(el('div', 'size', single ? type.name : s.size));
+
+  const getList = () => single ? singlePhotos(cat.name, type.name, s.size) : sizePhotos(cat.name, type.name, s.size);
+  const pb = el('button', 'row-photo hidden'); pb.innerHTML = CAM;
+  pb.dataset.cat = cat.name; pb.dataset.type = type.name; pb.dataset.size = s.size;
+  if (single) pb.dataset.single = '1';
+  pb.setAttribute('aria-label', '사진 보기');
+  pb.addEventListener('click', () => openPhotoList((single ? type.name : s.size) + ' 사진', getList(), cat.name));
+  if (getList().length) pb.classList.remove('hidden');
+  row.appendChild(pb);
+  row.appendChild(el('span', 'stock' + (s.stock > 0 ? '' : ' none'), s.stock > 0 ? `재고 ${s.stock}` : '구매요청'));
+
+  const q = el('div', 'qty');
+  const minus = el('button', '', '−');
+  const input = el('input');
+  input.type = 'number'; input.min = '0'; input.max = '9999'; input.inputMode = 'numeric';
+  input.value = cart[key] ? cart[key].qty : 0;
+  input.dataset.key = key;
+  if (cart[key]) input.classList.add('on');
+  const plus = el('button', '', '+');
+  const meta = { category: cat.name, type: type.name, size: s.size };
+  minus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) - 1));
+  plus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) + 1));
+  input.addEventListener('change', () => setQty(key, meta, parseInt(input.value) || 0));
+  q.append(minus, input, plus);
+  row.appendChild(q);
+  return row;
+}
+
 function buildBody(cat, autoOpen) {
   const body = el('div', 'cat-body');
   cat.types.forEach(type => {
     const tbox = el('div', 'type-box');
+
+    // 소분류가 원래 1개뿐인 중분류는 펼치지 않고 한 줄로 바로 보여줌
+    if ((type.total || type.sizes.length) === 1) {
+      tbox.appendChild(makeRow(cat, type, type.sizes[0], true));
+      body.appendChild(tbox);
+      return;
+    }
+
     const tt = el('button', 'type-toggle');
     tt.appendChild(el('span', '', type.name));
     const tp = el('span', 'type-photo hidden'); tp.innerHTML = CAM;
@@ -336,34 +379,7 @@ function buildBody(cat, autoOpen) {
     tbox.appendChild(tt);
 
     const tbody = el('div', 'type-body hidden');
-    type.sizes.forEach(s => {
-      const key = keyOf(cat.name, type.name, s.size);
-      const row = el('div', 'row' + (s.stock > 0 ? '' : ' out') + (cart[key] ? ' sel' : ''));
-      row.appendChild(el('div', 'size', s.size));
-      const pb = el('button', 'row-photo hidden'); pb.innerHTML = CAM;
-      pb.dataset.cat = cat.name; pb.dataset.type = type.name; pb.dataset.size = s.size;
-      pb.setAttribute('aria-label', '사진 보기');
-      pb.addEventListener('click', () => openPhotoList(s.size + ' 사진', sizePhotos(cat.name, type.name, s.size), cat.name));
-      if (sizePhotos(cat.name, type.name, s.size).length) pb.classList.remove('hidden');
-      row.appendChild(pb);
-      row.appendChild(el('span', 'stock' + (s.stock > 0 ? '' : ' none'), s.stock > 0 ? `재고 ${s.stock}` : '구매요청'));
-
-      const q = el('div', 'qty');
-      const minus = el('button', '', '−');
-      const input = el('input');
-      input.type = 'number'; input.min = '0'; input.max = '9999'; input.inputMode = 'numeric';
-      input.value = cart[key] ? cart[key].qty : 0;
-      input.dataset.key = key;
-      if (cart[key]) input.classList.add('on');
-      const plus = el('button', '', '+');
-      const meta = { category: cat.name, type: type.name, size: s.size };
-      minus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) - 1));
-      plus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) + 1));
-      input.addEventListener('change', () => setQty(key, meta, parseInt(input.value) || 0));
-      q.append(minus, input, plus);
-      row.appendChild(q);
-      tbody.appendChild(row);
-    });
+    type.sizes.forEach(s => tbody.appendChild(makeRow(cat, type, s, false)));
     tbox.appendChild(tbody);
     if (autoOpen) { tbox.classList.add('open'); tbody.classList.remove('hidden'); }
     tt.addEventListener('click', () => {
@@ -468,12 +484,18 @@ function typePhotos(cat, type) {
     return rest.some(x => same(x, type)) && !rest.some(x => sizes.some(z => same(z, x)));
   });
 }
+// 소분류가 1개뿐인 줄: 중분류 이름 사진과 소분류 이름 사진을 모두 보여줌
+function singlePhotos(cat, type, size) {
+  const a = typePhotos(cat, type), b = sizePhotos(cat, type, size);
+  return a.concat(b.filter(x => !a.includes(x)));
+}
 function refreshPhotoButtons() {
   document.querySelectorAll('.type-photo').forEach(b => {
     b.classList.toggle('hidden', typePhotos(b.dataset.cat, b.dataset.type).length === 0);
   });
   document.querySelectorAll('.row-photo').forEach(b => {
-    b.classList.toggle('hidden', sizePhotos(b.dataset.cat, b.dataset.type, b.dataset.size).length === 0);
+    const list = b.dataset.single ? singlePhotos(b.dataset.cat, b.dataset.type, b.dataset.size) : sizePhotos(b.dataset.cat, b.dataset.type, b.dataset.size);
+    b.classList.toggle('hidden', list.length === 0);
   });
 }
 // 사진 순서 = 신청 화면의 중분류 순서 (시트 순서). 못 찾으면 맨 뒤
