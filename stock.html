@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>재고 관리</title>
+<style>
+  :root { --ink:#1d2433; --sub:#6b7280; --line:#e5e7eb; --line-s:#cbd0d8; --bg:#f6f7f9; --accent:#1f4e8c; --accent-l:#eaf1fb; --warn:#b45309; --danger:#b91c1c; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,'Segoe UI','Malgun Gothic',sans-serif; background:var(--bg); color:var(--ink); margin:0; padding:0 0 40px; font-size:15px; }
+  .wrap { max-width:640px; margin:0 auto; padding:14px; }
+  h2 { margin:6px 0 12px; font-size:1.2rem; font-weight:600; }
+  .hidden { display:none !important; }
+  button { font-family:inherit; cursor:pointer; }
+  button:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  .primary { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:14px; font-size:1rem; width:100%; }
+  .primary:disabled { background:#c3c8d0; }
+  .mini { background:#fff; border:1px solid var(--line-s); color:var(--ink); border-radius:8px; padding:7px 11px; font-size:.85rem; }
+  input.txt { display:block; width:100%; padding:13px 14px; font-size:1rem; border:1px solid var(--line-s); border-radius:10px; background:#fff; margin-bottom:10px; }
+  #pinMsg { color:var(--danger); font-size:.9rem; min-height:1.2em; margin-top:8px; }
+
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .filters { display:flex; gap:8px; margin:-2px 0 12px; }
+  .chip { background:#fff; border:1px solid var(--line-s); border-radius:16px; padding:6px 12px; font-size:.85rem; color:var(--ink); }
+  .chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  .cat { background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+  .head { width:100%; display:flex; align-items:center; gap:8px; background:none; border:none; padding:14px; text-align:left; font-size:1.02rem; font-weight:600; color:inherit; }
+  .arrow { margin-left:auto; color:var(--sub); transition:transform .15s; }
+  .open > .head .arrow { transform:rotate(90deg); }
+  .body { border-top:1px solid var(--line); }
+  .type { border-top:1px solid var(--line); }
+  .type:first-child { border-top:none; }
+  .thead { width:100%; display:flex; align-items:center; gap:8px; background:#f8f9fb; border:none; padding:12px 14px; font-size:.97rem; font-weight:600; text-align:left; color:inherit; }
+  .cnt { margin-left:auto; font-size:.8rem; font-weight:400; color:var(--sub); }
+  .cnt + .arrow { margin-left:4px; }
+  .type.open .thead .arrow { transform:rotate(90deg); }
+  .srow { width:100%; display:flex; align-items:center; gap:10px; background:#fff; border:none; border-top:1px solid var(--line); padding:10px 14px; text-align:left; color:inherit; }
+  .srow:active { background:var(--bg); }
+  .sname { flex:1; min-width:0; word-break:break-word; }
+  .sname small { display:block; color:var(--sub); font-size:.78rem; margin-top:1px; }
+  .cur { font-size:1.15rem; font-weight:600; min-width:34px; text-align:right; }
+  .cur.zero { color:var(--warn); }
+  .ed { color:var(--sub); font-size:.85rem; }
+  .empty { text-align:center; color:var(--sub); padding:24px 0; }
+
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
+  .sheet { background:#fff; width:100%; max-width:640px; max-height:92vh; overflow:auto; border-radius:16px 16px 0 0; padding:16px; animation:up .2s ease-out; }
+  @keyframes up { from { transform:translateY(24px); opacity:0; } to { transform:none; opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { .sheet { animation:none; } }
+  .close { float:right; background:none; border:none; font-size:1.4rem; color:var(--sub); }
+  .sheet h3 { margin:0 0 4px; font-size:1.05rem; }
+  .path { color:var(--sub); font-size:.85rem; margin-bottom:12px; }
+  .kv { display:flex; gap:8px; margin-bottom:14px; }
+  .kv div { flex:1; background:var(--bg); border-radius:10px; padding:8px 10px; font-size:.8rem; color:var(--sub); }
+  .kv b { display:block; font-size:1.15rem; color:var(--ink); font-weight:600; margin-top:2px; }
+  .lbl { font-size:.85rem; color:var(--sub); margin:2px 0 6px; }
+  .step { display:flex; border:1px solid var(--line-s); border-radius:10px; overflow:hidden; margin-bottom:10px; }
+  .step button { width:56px; height:50px; font-size:1.4rem; border:none; background:#fff; color:var(--ink); }
+  .step button:active { background:var(--bg); }
+  .step input { flex:1; min-width:0; height:50px; text-align:center; font-size:1.3rem; font-weight:600; border:none; border-left:1px solid var(--line-s); border-right:1px solid var(--line-s); border-radius:0; -moz-appearance:textfield; }
+  .step input::-webkit-outer-spin-button, .step input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .chips button { flex:1 1 0; min-width:48px; background:#fff; border:1px solid var(--line-s); border-radius:8px; padding:9px 0; font-size:.95rem; }
+  .chips button.in { color:var(--accent); }
+  .chips button.out { color:var(--warn); }
+  #preview { background:var(--accent-l); color:var(--accent); border-radius:10px; padding:10px 12px; font-size:.92rem; margin-bottom:12px; }
+  #preview.same { background:var(--bg); color:var(--sub); }
+  #shMsg { color:var(--danger); font-size:.88rem; min-height:1.1em; margin-top:8px; }
+
+  #toast { position:fixed; left:50%; bottom:calc(30px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:#1d2433; color:#fff; padding:9px 16px; border-radius:20px; font-size:.9rem; z-index:300; max-width:90%; text-align:center; pointer-events:none; opacity:0; transition:opacity .15s; }
+  #toast.show { opacity:1; }
+  #overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:center; justify-content:center; }
+  #overlay span { background:#fff; padding:16px 28px; border-radius:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="pinView">
+    <h2>재고 관리</h2>
+    <p style="margin:0 0 8px;color:var(--sub)">PIN을 입력하세요</p>
+    <input id="pin" class="txt" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" />
+    <button id="pinBtn" class="primary">확인</button>
+    <div id="pinMsg"></div>
+  </div>
+
+  <div id="mainView" class="hidden">
+    <div class="topbar">
+      <h2 style="margin:0">재고 관리</h2>
+      <button id="reload" class="mini">새로고침</button>
+    </div>
+    <input id="search" class="txt" type="search" placeholder="품목 검색 (예: 장갑, 255, ㅈㄱ)" autocomplete="off" />
+    <div class="filters">
+      <button id="fAll" class="chip on">전체</button>
+      <button id="fZero" class="chip">현재고 0만</button>
+    </div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<div id="sheet" class="modal hidden">
+  <div class="sheet">
+    <button class="close" id="closeSheet" aria-label="닫기">✕</button>
+    <h3 id="shTitle"></h3>
+    <div class="path" id="shPath"></div>
+    <div class="kv">
+      <div>월초재고<b id="shBase"></b></div>
+      <div>출고<b id="shOut"></b></div>
+      <div>현재고<b id="shCur"></b></div>
+    </div>
+    <div class="lbl">바꿀 월초재고 (입고는 +, 망실은 −)</div>
+    <div class="step">
+      <button id="dec" aria-label="1 빼기">−</button>
+      <input id="newBase" type="number" min="0" max="99999" inputmode="numeric" />
+      <button id="inc" aria-label="1 더하기">+</button>
+    </div>
+    <div class="chips">
+      <button class="out" data-d="-10">−10</button><button class="out" data-d="-5">−5</button><button class="out" data-d="-1">−1</button>
+      <button class="in" data-d="1">+1</button><button class="in" data-d="5">+5</button><button class="in" data-d="10">+10</button>
+    </div>
+    <div id="preview"></div>
+    <input id="memo" class="txt" placeholder="메모 (선택: 입고, 망실 등)" maxlength="100" autocomplete="off" />
+    <button id="save" class="primary">저장</button>
+    <div id="shMsg"></div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="overlay" class="hidden"><span id="overlayText">처리 중입니다...</span></div>
+
+<script>
+const endpoint = 'https://script.google.com/macros/s/AKfycbyx5hqzNRvhKF924P3NbWFCzt4z0MM6jrnpZPavIypW4LMLl-7HY8VuMvsKd276dDm8/exec';
+const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
+
+let pin = '';
+let items = [];
+let editing = null;
+let saving = false;
+let zeroOnly = false;
+const openKeys = new Set();
+
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+function showOverlay(m) { $('overlayText').textContent = m || '처리 중입니다...'; $('overlay').classList.remove('hidden'); }
+function hideOverlay() { $('overlay').classList.add('hidden'); }
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+function post(params) {
+  return fetch(endpoint, { method: 'POST', headers: FORM, body: new URLSearchParams(params) }).then(r => r.json());
+}
+
+/* ───────── 검색 (index와 같은 방식: 띄어쓰기 단어 모두 포함, 초성 가능) ───────── */
+function norm(s) { return String(s || '').normalize('NFC').replace(/[\s\u00a0]+/g, '').replace(/（/g, '(').replace(/）/g, ')').toLowerCase(); }
+const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+function chosung(str) {
+  let out = '';
+  for (const ch of str) { const c = ch.charCodeAt(0); out += (c >= 0xAC00 && c <= 0xD7A3) ? CHO[Math.floor((c - 0xAC00) / 588)] : ch; }
+  return out;
+}
+function matches(query, ...texts) {
+  const tokens = query.split(/\s+/).filter(Boolean).map(norm);
+  if (!tokens.length) return true;
+  const hay = norm(texts.join(' ')); const hayCho = chosung(hay);
+  return tokens.every(t => hay.includes(t) || (/^[ㄱ-ㅎ]+$/.test(t) && hayCho.includes(t)));
+}
+
+/* ───────── PIN / 불러오기 ───────── */
+async function load() {
+  const d = await post({ mode: 'stockList', pin });
+  if (d.result !== 'success') throw new Error(d.message || '불러오기 실패');
+  items = d.items;
+}
+async function unlock(auto) {
+  if (!auto) pin = $('pin').value.trim();
+  if (!pin) return;
+  $('pinBtn').disabled = true;
+  $('pinMsg').textContent = '확인 중입니다...';
+  try {
+    await load();
+    try { sessionStorage.setItem('stockPin', pin); } catch (e) {}
+    $('pinView').classList.add('hidden');
+    $('mainView').classList.remove('hidden');
+    render();
+  } catch (e) {
+    try { sessionStorage.removeItem('stockPin'); } catch (e2) {}
+    $('pinMsg').textContent = e.message;
+    $('pinBtn').disabled = false;
+  }
+}
+$('pinBtn').addEventListener('click', () => unlock(false));
+$('pin').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(false); });
+try { const sp = sessionStorage.getItem('stockPin'); if (sp) { pin = sp; unlock(true); } } catch (e) {}
+
+async function reload() {
+  showOverlay('불러오는 중입니다...');
+  try { await load(); render(); toast('새로고침했어요'); }
+  catch (e) { alert(e.message); }
+  finally { hideOverlay(); }
+}
+$('reload').addEventListener('click', reload);
+
+/* ───────── 목록 ───────── */
+function setFilter(z) {
+  zeroOnly = z;
+  $('fAll').classList.toggle('on', !z); $('fZero').classList.toggle('on', z);
+  render();
+}
+$('fAll').addEventListener('click', () => setFilter(false));
+$('fZero').addEventListener('click', () => setFilter(true));
+let searchTimer = null;
+$('search').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(render, 150); });
+
+function render() {
+  const q = $('search').value;
+  const searching = !!q.trim() || zeroOnly;
+  const list = $('list');
+  list.innerHTML = '';
+
+  const shown = items.filter(i => (!zeroOnly || i.cur <= 0) && matches(q, i.category, i.type, i.size));
+  if (!shown.length) { list.appendChild(el('div', 'empty', '해당하는 품목이 없습니다.')); return; }
+
+  const cats = new Map();
+  shown.forEach(i => {
+    if (!cats.has(i.category)) cats.set(i.category, new Map());
+    const tm = cats.get(i.category);
+    if (!tm.has(i.type)) tm.set(i.type, []);
+    tm.get(i.type).push(i);
+  });
+
+  cats.forEach((types, catName) => {
+    const ckey = 'c|' + catName;
+    const box = el('div', 'cat');
+    const head = el('button', 'head');
+    head.appendChild(el('span', '', catName));
+    head.appendChild(el('span', 'arrow', '›'));
+    box.appendChild(head);
+    const body = el('div', 'body');
+    const setOpen = o => { box.classList.toggle('open', o); body.classList.toggle('hidden', !o); o ? openKeys.add(ckey) : openKeys.delete(ckey); };
+
+    types.forEach((rows, typeName) => {
+      const tkey = 't|' + catName + '|' + typeName;
+      const tbox = el('div', 'type');
+      const th = el('button', 'thead');
+      th.appendChild(el('span', '', typeName));
+      th.appendChild(el('span', 'cnt', `${rows.length}종`));
+      th.appendChild(el('span', 'arrow', '›'));
+      tbox.appendChild(th);
+      const tbody = el('div', 'tbody');
+      rows.forEach(it => {
+        const r = el('button', 'srow');
+        const nm = el('div', 'sname', it.size);
+        nm.appendChild(el('small', '', `월초 ${it.base} · 출고 ${it.out}`));
+        r.appendChild(nm);
+        r.appendChild(el('span', 'cur' + (it.cur <= 0 ? ' zero' : ''), String(it.cur)));
+        r.appendChild(el('span', 'ed', '수정'));
+        r.addEventListener('click', () => openSheet(it));
+        tbody.appendChild(r);
+      });
+      tbox.appendChild(tbody);
+      const setTOpen = o => { tbox.classList.toggle('open', o); tbody.classList.toggle('hidden', !o); o ? openKeys.add(tkey) : openKeys.delete(tkey); };
+      th.addEventListener('click', () => setTOpen(!tbox.classList.contains('open')));
+      setTOpen(searching || openKeys.has(tkey));
+      body.appendChild(tbox);
+    });
+
+    box.appendChild(body);
+    head.addEventListener('click', () => setOpen(!box.classList.contains('open')));
+    setOpen(searching || openKeys.has(ckey));
+    list.appendChild(box);
+  });
+}
+
+/* ───────── 수정 시트 ───────── */
+function openSheet(it) {
+  editing = it;
+  $('shTitle').textContent = it.size;
+  $('shPath').textContent = `${it.category} > ${it.type}`;
+  $('shBase').textContent = it.base; $('shOut').textContent = it.out; $('shCur').textContent = it.cur;
+  $('newBase').value = it.base;
+  $('memo').value = '';
+  $('shMsg').textContent = '';
+  updatePreview();
+  $('sheet').classList.remove('hidden');
+}
+function closeSheet() { $('sheet').classList.add('hidden'); editing = null; }
+function curVal() {
+  const v = parseInt($('newBase').value, 10);
+  return isNaN(v) ? null : v;
+}
+function setVal(v) { $('newBase').value = Math.max(0, Math.min(99999, v)); updatePreview(); }
+function updatePreview() {
+  const v = curVal();
+  const p = $('preview');
+  const btn = $('save');
+  if (v === null || !editing) { p.textContent = '숫자를 입력하세요'; p.className = 'same'; btn.disabled = true; btn.textContent = '저장'; return; }
+  const diff = v - editing.base;
+  const est = v - editing.out;
+  if (diff === 0) { p.textContent = '바뀐 내용이 없습니다'; p.className = 'same'; btn.disabled = true; btn.textContent = '저장'; return; }
+  p.className = '';
+  p.textContent = `월초재고 ${editing.base} → ${v} (${diff > 0 ? '+' : ''}${diff}) · 현재고 예상 ${est}`;
+  btn.disabled = false;
+  btn.textContent = `저장 (월초재고 ${editing.base} → ${v})`;
+}
+$('closeSheet').addEventListener('click', closeSheet);
+$('dec').addEventListener('click', () => setVal((curVal() ?? 0) - 1));
+$('inc').addEventListener('click', () => setVal((curVal() ?? 0) + 1));
+$('newBase').addEventListener('input', updatePreview);
+document.querySelectorAll('.chips button').forEach(b =>
+  b.addEventListener('click', () => setVal((curVal() ?? editing.base) + parseInt(b.dataset.d, 10))));
+
+async function save() {
+  if (saving || !editing) return;
+  const v = curVal();
+  if (v === null || v === editing.base) return;
+  saving = true; $('save').disabled = true; $('shMsg').textContent = '';
+  showOverlay('저장 중입니다...');
+  const it = editing;
+  try {
+    const d = await post({
+      mode: 'stockSet', pin, row: it.row, category: it.category, type: it.type, size: it.size,
+      oldBase: it.base, newBase: v, memo: $('memo').value.trim()
+    });
+    if (d.result === 'success') {
+      const before = it.base;
+      it.base = d.base; it.out = d.out; it.cur = d.cur;
+      closeSheet(); render();
+      toast(`${it.size} 월초재고 ${before} → ${d.base} 저장`);
+    } else if (d.result === 'conflict') {
+      hideOverlay();
+      alert(d.message);
+      await load(); closeSheet(); render();
+    } else {
+      throw new Error(d.message || '저장 실패');
+    }
+  } catch (e) {
+    $('shMsg').textContent = '저장되지 않았습니다. ' + e.message + ' (네트워크 문제라면 새로고침해서 값이 바뀌었는지 먼저 확인하세요.)';
+    $('save').disabled = false;
+  } finally {
+    saving = false; hideOverlay();
+  }
+}
+$('save').addEventListener('click', save);
+</script>
+</body>
+</html>
