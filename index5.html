@@ -42,8 +42,8 @@
   .cnt { margin-left:auto; font-size:.8rem; font-weight:400; color:var(--sub); }
   .cnt + .arrow { margin-left:4px; }
   .type-box.open .type-toggle .arrow { transform:rotate(90deg); }
-  .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--accent); padding:4px 8px; background:none; border:none; }
-  .type-photo svg, .row-photo svg { width:22px; height:22px; }
+  .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--sub); padding:2px 6px; background:none; border:none; }
+  .type-photo svg, .row-photo svg { width:18px; height:18px; }
   .row { display:flex; align-items:center; gap:8px; padding:8px 14px 8px 11px; border-top:1px solid var(--line); border-left:3px solid transparent; }
   .row.sel { border-left-color:var(--accent); background:var(--accent-l); }
   .row.sel .size { font-weight:600; }
@@ -243,7 +243,8 @@ function renderEmployees() {
   const box = $('empListBox');
   box.innerHTML = '';
   const list = empList
-    .filter(e => matches(q, e.team, e.empName, e.empId));
+    .filter(e => matches(q, e.team, e.empName, e.empId))
+    .sort((a, b) => (a.team || '').localeCompare(b.team || '', 'ko') || (a.empName || '').localeCompare(b.empName || '', 'ko'));
   if (!list.length) { box.appendChild(el('div', 'empty', '검색 결과가 없습니다.')); return; }
   list.forEach(emp => {
     const b = el('button', 'emp-btn');
@@ -518,14 +519,17 @@ function sizePhotos(cat, type, size) {
     return !rest.some(x => typeNames.some(n => same(n, x)) && !same(x, type));
   });
 }
-// 중분류 단위 사진: 파일명에 중분류 이름만 있고 소분류(사이즈) 이름은 없는 것
+// 중분류 단위 사진: 파일명이 '대분류_중분류'(또는 끝에 번호만 붙은 것)인 것. 소분류까지 적힌 파일은 그 소분류가 목록에 있을 때만 소분류 줄에 붙음
 function typePhotos(cat, type) {
   const c = categories.find(x => x.name === cat);
   const t = c && c.types.find(x => x.name === type);
   const sizes = t ? t.sizes.map(z => z.size) : [];
   return photosFor(cat).filter(p => {
     const rest = (p.parts || []).slice(1);
-    return rest.some(x => same(x, type)) && !rest.some(x => sizes.some(z => same(z, x)));
+    if (!same(rest[0], type)) return false;      // 파일명의 첫 조각이 중분류 이름이어야 함
+    if (rest.length === 1) return true;          // 대분류_중분류.jpg
+    // 대분류_중분류_2.jpg 처럼 끝에 한두 자리 번호만 붙은 경우 (사이즈 이름이면 제외)
+    return rest.length === 2 && /^\d{1,2}$/.test(rest[1]) && !sizes.some(z => same(z, rest[1]));
   });
 }
 // 소분류가 1개뿐인 줄: 중분류 이름 사진과 소분류 이름 사진을 모두 보여줌
