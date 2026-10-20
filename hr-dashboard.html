@@ -976,6 +976,19 @@
     if (m) m.remove();
   }
 
+function birthYM(e) {
+  let bd = e.birthDate;
+  if (!bd && DATA.byMonth) {
+    for (const m of DATA.byMonth) {
+      const p = (m.people || []).find(x => x.name === e.name);
+      if (p) { bd = p.birthDate; break; }
+    }
+  }
+  if (!bd) return '';
+  const m = String(bd).match(/(\d{4})\D+(\d{1,2})/);
+  return m ? `${m[1]}년 ${parseInt(m[2], 10)}월생` : bd;
+}
+ 
   // ── 개인 상세 모달 ─────────────────────────
   function showEmployeeDetail(name) {
     const e = DATA.employees.find(x => x.name === name);
@@ -987,7 +1000,7 @@
         ${e.employmentNote ? `<div class="row"><span>고용형태</span><span style="color:#b8860b;font-weight:700;">${e.employmentNote}</span></div>` : ''}
         <div class="row"><span>부서</span><span>${e.dept}</span></div>
         <div class="row"><span>직급</span><span>${e.position}</span></div>
-        <div class="row"><span>나이</span><span>${e.age ?? '-'}</span></div>
+        <div class="row"><span>나이</span><span>${e.age ?? '-'}${birthYM(e) ? ` <span style="color:var(--text-mute);font-size:11.5px;">(${birthYM(e)})</span>` : ''}</span></div>
         <div class="row"><span>근속(년)</span><span>${e.tenure ?? '-'} ${e.groupJoinDate ? '<span style="color:var(--text-mute);font-size:11.5px;">(그룹입사 기준)</span>' : ''}</span></div>
         <div class="row"><span>그룹입사일</span><span>${e.groupJoinDate || '-'}</span></div>
         <div class="row"><span>입사일</span><span>${e.joinDate || '-'}</span></div>
