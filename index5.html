@@ -243,8 +243,7 @@ function renderEmployees() {
   const box = $('empListBox');
   box.innerHTML = '';
   const list = empList
-    .filter(e => matches(q, e.team, e.empName, e.empId))
-    .sort((a, b) => (a.team || '').localeCompare(b.team || '', 'ko') || (a.empName || '').localeCompare(b.empName || '', 'ko'));
+    .filter(e => matches(q, e.team, e.empName, e.empId));
   if (!list.length) { box.appendChild(el('div', 'empty', '검색 결과가 없습니다.')); return; }
   list.forEach(emp => {
     const b = el('button', 'emp-btn');
