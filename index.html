@@ -1,727 +1,579 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>자재 신청</title>
-  <style>
-    body { font-family: 'sans-serif'; background:#f7f7f7; text-align:center; padding:1rem; margin:0; }
-    .hidden { display:none!important; }
-    .step { margin-top:1.5rem; }
-    .button-list { display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:2rem; }
-    button { padding:0.6rem 1.2rem; font-size:1rem; border-radius:6px; border:none; background:#ddd; cursor:pointer; width:70%; max-width:300px; }
-    button:hover { background:#4CAF50!important; color:white; }
-    .selected { background:#4CAF50!important; color:white; font-weight:bold; }
-    button:disabled { background:#ccc; color:#777; cursor:not-allowed; }
-    .has-stock { background:#c8e6c9!important; color:#1b5e20!important; font-weight:bold; }
-    .no-stock { background:#eeeeee!important; color:#777!important; }
-    #quantity-display { font-size:2rem; margin-bottom:1rem; font-weight:bold; }
-    #record-buttons:not(.hidden) { display:flex; justify-content:center; gap:0.8rem; margin:0.5rem 0 1rem 0; flex-wrap:wrap; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>자재 신청</title>
+<style>
+  :root { --ink:#1d2433; --sub:#6b7280; --line:#e5e7eb; --line-s:#cbd0d8; --bg:#f6f7f9; --accent:#1f4e8c; --accent-l:#eaf1fb; --warn:#b45309; --danger:#b91c1c; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,'Segoe UI','Malgun Gothic',sans-serif; background:var(--bg); color:var(--ink); margin:0; padding:0 0 104px; font-size:15px; }
+  .wrap { max-width:640px; margin:0 auto; padding:14px; }
+  h2 { margin:6px 0 12px; font-size:1.2rem; font-weight:600; }
+  .hidden { display:none !important; }
+  button { font-family:inherit; cursor:pointer; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 
-    /* 오버레이 (공통) */
-    #submitOverlay, #loadingOverlay, #initialLoadingOverlay {
-      position: fixed; top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.5);
-      display: none; justify-content: center; align-items: center;
-      z-index: 9999;
-      color: white; font-size: 1.4rem;
-    }
-    #submitOverlay { z-index: 10050; }
-    #initialLoadingOverlay { display:flex; }
-    #submitOverlay span {
-      background:white; padding:20px 40px; border-radius:12px; font-size:1.3rem;
-      box-shadow:0 4px 12px rgba(0,0,0,0.3); color:#000;
-    }
+  /* 로그인 */
+  #notice { background:#fff7e6; border:1px solid #f3dfb3; color:#7a5200; padding:10px 12px; border-radius:10px; font-size:.9rem; white-space:pre-wrap; margin-bottom:12px; }
+  .login-box input { display:block; width:100%; padding:14px; font-size:1.05rem; margin:8px 0; border:1px solid var(--line-s); border-radius:10px; }
+  .primary { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:14px; font-size:1rem; width:100%; }
+  .primary:disabled { background:#c3c8d0; }
+  #loginMsg { color:var(--danger); font-size:.9rem; min-height:1.2em; margin-top:8px; }
 
-    .list-preview-container { max-height:300px; overflow-y:auto; background:#f9f9f9; padding:1rem; border-radius:10px; font-size:0.95rem; }
-    .list-item-row { display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0; border-bottom:1px solid #e0e0e0; }
-    .list-item-text { flex:1; text-align:left; word-break:break-word; padding-right:0.5rem; }
-    .delete-btn { font-size:0.8rem; background:transparent; border:none; color:#888; cursor:pointer; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s; padding:0; box-sizing:border-box; }
-    .delete-btn:hover { background:#ffe5e5; color:#d00; }
-    .button-row { display:flex; justify-content:center; gap:1rem; margin:1rem auto; flex-wrap:wrap; }
-    .half-btn { flex:1 1 30%; max-width:180px; min-width:140px; padding:0.6rem 0.8rem; font-size:1rem; border:none; border-radius:8px; background:#ddd; cursor:pointer; }
-    .half-btn:hover { background:#4CAF50; color:#fff; }
-    .numpad-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.6rem; margin:1rem auto; width:fit-content; }
-    .numpad-grid button { padding:1rem; font-size:1.5rem; border-radius:10px; background:#e0e0e0; border:none; cursor:pointer; transition:background .2s; }
-    .numpad-grid button:hover { background:#ccc; }
+  /* 상단 */
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .who { font-size:.85rem; color:var(--sub); }
+  .guide { color:var(--sub); font-size:.84rem; margin:0 0 10px; line-height:1.5; }
+  .search { width:100%; padding:12px 14px; font-size:1rem; border:1px solid var(--line-s); border-radius:10px; margin-bottom:12px; background:#fff; }
 
-    /* 로그인창 */
-    #login-section { display:block; }
-    #login-section input {
-      padding:1.00rem; font-size:1.05rem; margin:0.8rem auto;
-      width:80%; max-width:300px; display:block; border-radius:6px; border:1px solid #ccc;
-    }
-    #login-section button {
-      padding:1.0rem 1.2rem; font-size:1.05rem; margin-top:1rem;
-      border-radius:8px; background-color:#4CAF50; color:white; border:none; cursor:pointer;
-      width:80%; max-width:300px;
-    }
-  </style>
+  /* 목록 */
+  .cat { background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+  .cat.open { border-color:var(--line-s); }
+  .cat-head { display:flex; }
+  .cat-toggle { flex:1; display:flex; align-items:center; gap:8px; text-align:left; background:none; border:none; padding:15px 14px; font-size:1.02rem; font-weight:600; color:inherit; }
+  .arrow { margin-left:auto; color:var(--sub); transition:transform .15s; }
+  .cat.open > .cat-head .arrow { transform:rotate(90deg); }
+  .badge { background:var(--accent); color:#fff; font-size:.72rem; font-weight:600; border-radius:10px; padding:1px 7px; }
+  .cat-body { border-top:1px solid var(--line); }
+  .type-box { border-top:1px solid var(--line); }
+  .type-box:first-child { border-top:none; }
+  .type-toggle { width:100%; display:flex; align-items:center; gap:8px; background:#f8f9fb; border:none; padding:12px 14px; font-size:.97rem; font-weight:600; text-align:left; color:inherit; }
+  .type-box.open .type-toggle .arrow { transform:rotate(90deg); }
+  .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--sub); padding:2px 6px; background:none; border:none; }
+  .type-photo svg, .row-photo svg { width:18px; height:18px; }
+  .row { display:flex; align-items:center; gap:8px; padding:8px 14px 8px 11px; border-top:1px solid var(--line); border-left:3px solid transparent; }
+  .row.sel { border-left-color:var(--accent); background:var(--accent-l); }
+  .row.sel .size { font-weight:600; }
+  .row.out .size { color:var(--sub); }
+  .size { flex:1; min-width:0; word-break:break-word; }
+  .stock { font-size:.8rem; color:var(--sub); white-space:nowrap; }
+  .stock.none { color:var(--warn); }
+  .qty { display:flex; border:1px solid var(--line-s); border-radius:8px; overflow:hidden; background:#fff; }
+  .qty button { width:36px; height:36px; font-size:1.2rem; border:none; background:#fff; color:var(--ink); }
+  .qty button:active { background:var(--bg); }
+  .qty input { width:44px; height:36px; text-align:center; font-size:1rem; border:none; border-left:1px solid var(--line-s); border-right:1px solid var(--line-s); border-radius:0; padding:0; background:#fff; -moz-appearance:textfield; }
+  .qty input::-webkit-outer-spin-button, .qty input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .qty input.on { font-weight:600; color:var(--accent); }
+  .hint { font-size:.8rem; color:var(--warn); margin:0; padding:8px 14px; border-top:1px solid var(--line); }
+
+  /* 하단 바 */
+  #cartBar { position:fixed; left:0; right:0; bottom:0; padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px)); background:#fff; border-top:1px solid var(--line); z-index:50; }
+  #cartBar .primary { max-width:612px; display:block; margin:0 auto; }
+  .primary .sub { display:block; margin-top:3px; font-size:.78rem; font-weight:400; color:#dbe6f5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #toast { position:fixed; left:50%; bottom:calc(100px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:#1d2433; color:#fff; padding:9px 16px; border-radius:20px; font-size:.9rem; z-index:60; max-width:90%; text-align:center; pointer-events:none; opacity:0; transition:opacity .15s; }
+  #toast.show { opacity:1; }
+
+  /* 모달 */
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
+  .sheet { background:#fff; width:100%; max-width:640px; max-height:88vh; overflow:auto; border-radius:16px 16px 0 0; padding:16px; animation:up .2s ease-out; }
+  @keyframes up { from { transform:translateY(24px); opacity:0; } to { transform:none; opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { .sheet { animation:none; } }
+  .sheet h3 { margin:0 0 10px; font-size:1.05rem; }
+  .close { float:right; background:none; border:none; font-size:1.4rem; color:var(--sub); }
+  .cart-row { display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .cart-row .t { flex:1; min-width:0; font-size:.92rem; word-break:break-word; }
+  .cart-row .t small { display:block; color:var(--sub); }
+  .cart-row .t small.w { color:var(--warn); }
+  .del { background:none; border:none; color:var(--sub); font-size:1.1rem; padding:6px; }
+  textarea { width:100%; margin:12px 0; padding:10px; font-size:1rem; font-family:inherit; border:1px solid var(--line-s); border-radius:10px; resize:none; }
+  .photo-item { margin-bottom:18px; }
+  .photo-item .cap { font-weight:600; margin-bottom:4px; }
+  .photo-item img { width:100%; border:1px solid var(--line); border-radius:10px; min-height:80px; background:#f0f0f0; }
+
+  #overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:center; justify-content:center; color:#000; }
+  #overlay span { background:#fff; padding:18px 32px; border-radius:12px; font-size:1.05rem; }
+  #boot { position:fixed; inset:0; background:var(--bg); z-index:300; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:var(--sub); font-size:.95rem; }
+  .spin { width:34px; height:34px; border:3px solid var(--line-s); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation:none; } }
+  .empty { text-align:center; color:var(--sub); padding:24px 0; }
+</style>
 </head>
 <body>
-<div id="initialLoadingOverlay">⏳ 로딩 중입니다...</div>
+<div id="boot"><div class="spin"></div><div>불러오는 중입니다...</div></div>
+<div class="wrap">
 
-<h2 id="title">🔎 신청·조사 시스템</h2>
+  <!-- 로그인 -->
+  <div id="loginView" class="login-box">
+    <h2>자재 신청</h2>
+    <div id="notice" class="hidden"></div>
+    <p style="margin:0">사번과 이름을 입력하세요</p>
+    <input id="empId" placeholder="사번" inputmode="numeric" autocomplete="off" />
+    <input id="empName" placeholder="이름" autocomplete="off" />
+    <button id="loginBtn" class="primary">로그인</button>
+    <div id="loginMsg"></div>
+  </div>
 
-<div id="record-buttons" class="hidden">
-  <button onclick="openMyRecords()" style="font-size:0.9rem;font-weight:bold;background:#fff;color:#007bff;border:1px solid #007bff;border-radius:6px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='#fff'">📄 내 신청 내역</button>
-  <button onclick="openTeamRecords()" style="font-size:0.9rem;font-weight:bold;background:#fff;color:#28a745;border:1px solid #28a745;border-radius:6px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,0.1);" onmouseover="this.style.background='#eaffea'" onmouseout="this.style.background='#fff'">👥 팀 신청 내역</button>
+  <!-- 신청 -->
+  <div id="mainView" class="hidden">
+    <div class="topbar">
+      <h2 style="margin:0">자재 신청</h2>
+      <span class="who" id="who"></span>
+    </div>
+    <p class="guide">+로 수량을 담고, 다 담았으면 맨 아래 장바구니에서 한 번에 신청합니다. +만 눌러서는 신청되지 않습니다.</p>
+    <input id="search" class="search" type="search" placeholder="품목 검색 (예: 장갑, 빗자루, ㅈㄱ, 265)" autocomplete="off" />
+    <div id="catList"></div>
+  </div>
 </div>
 
-<!-- 로그인 -->
-<div id="login-section">
-  <div id="inlineNoticeBox" style="background:#fff3cd;border:1px solid #ffeeba;padding:10px;margin:10px 0;border-radius:6px;color:#856404;font-size:0.9rem;display:none;white-space:pre-wrap;"></div>
-  <p>사번과 이름을 입력하세요</p>
-  <input id="empId" placeholder="사번" />
-  <input id="empName" placeholder="이름" />
-  <button onclick="handleLogin()">로그인</button>
-  <div id="loginMsg"></div>
-  <div id="loginLoadingText" class="hidden">🔐 로그인 중입니다...</div>
+<!-- 하단 장바구니 바 -->
+<div id="cartBar" class="hidden">
+  <button id="openCart" class="primary" disabled>품목을 담아주세요</button>
 </div>
 
-<!-- 신청 폼 -->
-<div id="form-section" class="hidden">
-  <!-- 1단계 -->
-  <div id="step-category" class="step">
-    <h3>1단계: 대분류 선택</h3>
-    <div id="category-buttons" class="button-list"></div>
-  </div>
-
-  <!-- 사진 모달 -->
-  <div id="photoModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999;overflow:auto;">
-    <div style="background:white;margin:40px auto;padding:20px;border-radius:10px;max-width:600px;">
-      <span id="closeModal" style="position:fixed;top:20px;right:20px;font-size:28px;cursor:pointer;z-index:1000;background:white;padding:4px 10px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">✖</span>
-      <div id="photoContent"></div>
-    </div>
-  </div>
-
-  <!-- 2단계 -->
-  <div id="step-type" class="step hidden">
-    <h3>2단계: 중분류 선택</h3>
-    <div id="type-buttons" class="button-list"></div>
-    <button type="button" id="viewPhotosType" style="background:#007bff;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;margin-top:6px;">항목 사진 보기</button>
-    <div class="button-row"><button class="half-btn" onclick="goBackTo('category')">⬅ 뒤로가기</button></div>
-  </div>
-
-  <!-- 3단계 -->
-  <div id="step-size" class="step hidden">
-    <h3>3단계: 소분류 선택</h3>
-    <p style="font-size:0.85rem;color:#666;margin:0.5rem 0;">⚠️ 재고가 없더라도 선택 후 신청하시면 구매 요청으로 자동 처리됩니다.</p>
-    <div id="size-buttons" class="button-list"></div>
-    <div class="button-row"><button class="half-btn" onclick="goBackTo('type')">⬅ 뒤로가기</button></div>
-  </div>
-
-  <!-- 4단계 -->
-  <div id="step-quantity" class="step hidden">
-    <h3>4단계: 수량 입력</h3>
-    <div class="numpad-container" style="margin:0 auto;">
-      <div id="quantity-display">0</div>
-      <div id="numpad" class="numpad-grid">
-        <button onclick="appendQuantity('1')">1</button><button onclick="appendQuantity('2')">2</button><button onclick="appendQuantity('3')">3</button>
-        <button onclick="appendQuantity('4')">4</button><button onclick="appendQuantity('5')">5</button><button onclick="appendQuantity('6')">6</button>
-        <button onclick="appendQuantity('7')">7</button><button onclick="appendQuantity('8')">8</button><button onclick="appendQuantity('9')">9</button>
-        <button onclick="clearQuantity()">C</button><button onclick="appendQuantity('0')">0</button><button onclick="backspaceQuantity()">←</button>
-      </div>
-    </div>
-
-    <textarea id="remarks" placeholder="비고 (요청사항)" rows="2" style="width:100%;max-width:400px;margin:1.5rem auto 1rem auto;padding:0.6rem;font-size:1rem;border-radius:6px;border:1px solid #ccc;display:block;resize:none;"></textarea>
-
-    <div class="button-row"><button class="half-btn" onclick="addItemToList()">🛒 장바구니 담기</button></div>
-
-    <div class="list-preview-container" style="margin:0 auto;text-align:center;">
-      <ul id="itemListPreview" style="display:inline-block;text-align:left;font-size:0.9rem;"></ul>
-    </div>
-
-    <p style="font-size:0.9rem;color:#666;margin-top:0.5rem;">🛍 담은 항목을 확인하셨다면 <b>전체 신청하기</b>를 눌러주세요.</p>
-
-    <div class="button-row"><button class="half-btn" onclick="submitAllRequests()">✅ 전체 신청하기</button></div>
-    <div class="button-row"><button class="half-btn" onclick="goBackTo('category')">📦 다른 물품 추가</button></div>
-    <div class="button-row"><button class="half-btn" onclick="goBackTo('size')">⬅ 뒤로가기</button></div>
-  </div>
-
-  <!-- 내역 모달 -->
-  <div id="myRecordsModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
-    <button onclick="closeMyRecords()" style="position:fixed;top:20px;right:20px;font-size:22px;font-weight:bold;border:none;background:none;cursor:pointer;color:white;z-index:10000;">✖</button>
-    <div style="position:relative;margin:60px auto 0;background:white;padding:20px 24px 30px;border-radius:10px;max-width:800px;width:95%;max-height:80vh;overflow:auto;">
-      <h3 style="margin-top:0;margin-bottom:15px;">📄 신청 내역</h3>
-      <table id="myRecordsTable" style="width:100%;font-size:14px;border-collapse:collapse;">
-        <thead><tr></tr></thead><tbody></tbody>
-      </table>
-    </div>
+<!-- 장바구니 모달 -->
+<div id="cartModal" class="modal hidden">
+  <div class="sheet">
+    <button class="close" id="closeCart" aria-label="닫기">✕</button>
+    <h3>장바구니</h3>
+    <div id="cartList"></div>
+    <textarea id="remarks" rows="2" placeholder="비고 (요청사항, 선택)"></textarea>
+    <button id="submitBtn" class="primary">이대로 신청하기</button>
   </div>
 </div>
+
+<!-- 사진 모달 -->
+<div id="photoModal" class="modal hidden">
+  <div class="sheet">
+    <button class="close" id="closePhoto" aria-label="닫기">✕</button>
+    <h3 id="photoTitle">사진</h3>
+    <div id="photoContent"></div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="overlay" class="hidden"><span id="overlayText">처리 중입니다...</span></div>
 
 <script>
-  const endpoint = 'https://script.google.com/macros/s/AKfycbwAZDOQJ_b6IDOr6kTh7hSgp8Q4UYMKHjUtMuEHygPEqxVbaB0mNmI-O5wtx3HWelbe/exec';
+const endpoint = 'https://script.google.com/macros/s/AKfycbwG6HR4QkPU1eroqiTYdeF-upxx3Wto5268or3nQdBrEIzxq48QffGBthh_MDVnXRfT/exec';
+const CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
 
-  let loginInfo = { empId: '', empName: '' };
-  let itemData = {};
-  let zMeta = {};
-  let itemList = [];
-  let selected = { category: '', type: '', size: '', zcode: '' };
-  let quantityValue = "";
-
-  /* 공지 렌더 유틸 */
-  function renderNoticeTo(el, text) {
-    if (!el) return;
-    const safe = String(text || '').replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))
-                                   .replace(/\n/g, '<br/>');
-    el.innerHTML = safe;
-  }
-
-  // 로그인
-  function handleLogin() {
-    const empId = document.getElementById('empId').value.trim();
-    const empName = document.getElementById('empName').value.trim();
-    if (!empId || !empName) return alert("사번과 이름을 입력해주세요.");
-
-    document.getElementById('loginLoadingText').classList.remove('hidden');
-    document.querySelector('#login-section button').style.display = 'none';
-
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ empId, empName })
-    })
-    .then(res => res.json())
-    .then(async data => {
-      document.getElementById('loginLoadingText').classList.add('hidden');
-     if (data.result === 'success') {
-  loginInfo = { empId, empName };
-  document.getElementById('login-section').classList.add('hidden');
-  document.getElementById('form-section').classList.remove('hidden');
-  document.getElementById('title').innerText = "🔎 신청·조사 시스템";
-  document.getElementById('record-buttons').classList.remove('hidden');
-  document.getElementById('loadingOverlay').style.display = 'flex';
-  // ★ zinfo + 물품목록 병렬 로드
-  const [zMetaResult] = await Promise.allSettled([
-    fetch(`${endpoint}?mode=zinfo`).then(r => r.json()).catch(() => ({})),
-    loadItems()
-  ]);
-  zMeta = zMetaResult.status === 'fulfilled' ? (zMetaResult.value || {}) : {};
-} else {
-        document.getElementById('loginMsg').innerText = '로그인 실패 또는 권한 없음';
-        document.querySelector('#login-section button').style.display = 'inline-block';
-      }
-    })
-    .catch(error => {
-      document.getElementById('loginLoadingText').classList.add('hidden');
-      document.getElementById('loginMsg').innerText = '서버 오류: ' + error.message;
-      document.querySelector('#login-section button').style.display = 'block';
-    });
-  }
-
-  // 목록 로드
- async function loadItems() {
-  return fetch(endpoint)
-      .then(res => res.json())
-      .then(data => {
-        itemData = data;
-        const container = document.getElementById('category-buttons');
-        container.innerHTML = '';
-        Object.keys(data).forEach(cat => {
-          const btn = document.createElement('button');
-          const activationCode = data[cat].activation; // Y/Z1/Z2/Z3
-
-          if (activationCode && activationCode.startsWith('Z')) {
-            const code = activationCode.toUpperCase();
-            const titleFromMeta = zMeta?.[code]?.title;
-            btn.innerText = titleFromMeta || cat;
-            btn.style.backgroundColor = "#fff9c4";
-            btn.style.color = "#f57f17";
-            btn.style.fontWeight = "bold";
-            btn.style.border = "1px solid #fbc02d";
-          } else {
-            btn.innerText = cat;
-          }
-
-          btn.onclick = () => {
-            selected.category = cat;
-            selected.zcode = activationCode || '';
-            if (activationCode === "Z2") openZ2UniformModal();
-            else if (activationCode === "Z1" || activationCode === "Z3") openZ1Modal();
-            else { updateSelection(container, btn); selectCategory(cat); }
-          };
-
-          container.appendChild(btn);
-        });
-        document.getElementById('loadingOverlay').style.display = 'none';
-      })
-      .catch(error => {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert('❌ 항목 목록 불러오기 실패: ' + error.message);
-      });
-  }
-
-  // 단계 이동
-  function selectCategory(cat) {
-    const types = itemData[cat].types;
-    const container = document.getElementById('type-buttons');
-    container.innerHTML = '';
-    types.forEach(type => {
-      const btn = document.createElement('button');
-      btn.innerText = type;
-      btn.onclick = () => { selected.type = type; updateSelection(container, btn); selectType(type); };
-      container.appendChild(btn);
-    });
-    showStep('type');
-  }
-  function selectType(type) {
-    const container = document.getElementById('size-buttons');
-    container.innerHTML = '';
-    const stockMap = itemData[selected.category].stockMap;
-    const sizeKeys = Object.keys(stockMap).filter(k => k.startsWith(type + '__'));
-    sizeKeys.forEach(k => {
-      const size = k.split('__')[1];
-      const stock = stockMap[k];
-      const btn = document.createElement('button');
-      btn.innerText = `${size} (재고: ${stock})`;
-      if (stock > 0) btn.classList.add('has-stock'); else btn.classList.add('no-stock');
-      btn.onclick = () => { selected.size = size; updateSelection(container, btn); selectSize(size); };
-      container.appendChild(btn);
-    });
-    showStep('size');
-  }
-  function selectSize() { showStep('quantity'); }
-  function showStep(step) {
-    ['category','type','size','quantity'].forEach(s => document.getElementById('step-'+s).classList.add('hidden'));
-    document.getElementById('step-'+step).classList.remove('hidden');
-    const rb = document.getElementById('record-buttons');
-    if (step === 'category') rb.classList.remove('hidden'); else rb.classList.add('hidden');
-  }
-  function goBackTo(step) { showStep(step); }
-
-  // 장바구니 / 일괄 신청 (일반품목)
-  function addItemToList() {
-    const quantity = quantityValue;
-    const remarks = document.getElementById('remarks').value;
-    if (!quantity || parseInt(quantity) <= 0) return alert("신청 수량을 입력해주세요.");
-
-    const stockKey = `${selected.type}__${selected.size}`;
-    const currentStock = parseInt(itemData[selected.category]?.stockMap?.[stockKey] || "0", 10);
-    const requestedQty = parseInt(quantity, 10);
-    const 지급수량 = Math.min(requestedQty, currentStock);
-    const 구매요청수량 = Math.max(0, requestedQty - currentStock);
-
-    if (구매요청수량 > 0) {
-      if (currentStock > 0) alert(`⚠️ 현재 ${currentStock}개만 지급 가능하며, 나머지 ${구매요청수량}개는 구매 요청으로 접수됩니다.`);
-      else alert(`⚠️ 현재 재고가 없어 ${구매요청수량}개 전량 구매 요청으로 접수됩니다.`);
+// 속도 점검용: 주소 끝에 ?debug 를 붙이면 화면 왼쪽 아래에 단계별 걸린 시간(ms)이 표시됨
+const T0 = performance.now();
+const timings = {};
+function mark(k) {
+  timings[k] = Math.round(performance.now() - T0);
+  if (location.search.includes('debug')) {
+    let d = document.getElementById('dbg');
+    if (!d) {
+      d = document.createElement('div'); d.id = 'dbg';
+      d.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:999;background:#000c;color:#fff;font:11px monospace;padding:6px 8px;border-radius:6px;white-space:pre';
+      document.body.appendChild(d);
     }
-
-    const item = {
-      name: `${loginInfo.empId} ${loginInfo.empName}`,
-      category: selected.category,
-      subcategory: selected.type,
-      size: selected.size,
-      quantity: requestedQty,
-      remarks
-    };
-
-    itemList.push(item);
-    renderItemList();
-    quantityValue = ""; updateQuantityDisplay();
-    document.getElementById('remarks').value = '';
+    d.textContent = Object.entries(timings).map(([a, b]) => a + ': ' + b + 'ms').join('\n');
   }
+}
+mark('시작');
 
-  function renderItemList() {
-    const previewContainer = document.getElementById('itemListPreview');
-    previewContainer.innerHTML = '';
-    if (itemList.length === 0) {
-      const empty = document.createElement('div');
-      empty.innerText = "➕ 항목을 추가하면 여기에 표시됩니다.";
-      empty.style.textAlign="center"; empty.style.color="#aaa"; empty.style.padding="1rem";
-      previewContainer.appendChild(empty);
+let user = null;
+let categories = [];
+let stockIdx = {};          // key -> 재고
+let photos = {};            // 대분류 -> [{type,url,name}]
+let cart = {};              // key -> {category,type,size,qty}
+let itemsPromise = null;
+let submitting = false;
+
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+const keyOf = (c, t, s) => [c, t, s].join('||');
+function showOverlay(msg) { $('overlayText').textContent = msg || '처리 중입니다...'; $('overlay').classList.remove('hidden'); }
+function hideOverlay() { $('overlay').classList.add('hidden'); }
+
+/* ───────── 데이터 로드 (페이지 열자마자 시작) ───────── */
+function loadItems() {
+  return fetch(endpoint + '?mode=items').then(r => r.json()).then(d => {
+    if (d.result !== 'success') throw new Error('목록 오류');
+    categories = d.categories;
+    stockIdx = {};
+    categories.forEach(c => c.types.forEach(t => t.sizes.forEach(s => { stockIdx[keyOf(c.name, t.name, s.size)] = s.stock; })));
+  });
+}
+function loadPhotos() {
+  fetch(endpoint + '?mode=photos').then(r => r.json()).then(d => {
+    if (d && !d.result) { photos = d; mark('사진목록'); refreshPhotoButtons(); }
+  }).catch(() => {});
+}
+function loadNotice() {
+  return fetch(endpoint + '?mode=notice').then(r => r.json()).then(d => {
+    const n = (d.notice || '').trim();
+    if (n) { const b = $('notice'); b.textContent = n; b.classList.remove('hidden'); }
+  }).catch(() => {});
+}
+function hideBoot() { mark('로딩화면닫힘'); $('boot').classList.add('hidden'); }
+
+itemsPromise = loadItems();
+itemsPromise.then(() => { mark('물품목록'); loadPhotos(); }).catch(() => {});
+// 공지까지 불러오면 로딩 화면을 닫음 (서버가 느려도 최대 5초까지만 기다림)
+const noticeP = loadNotice();
+noticeP.then(() => mark('공지'));
+Promise.race([noticeP, new Promise(r => setTimeout(r, 5000))]).then(hideBoot);
+
+/* ───────── 로그인 ───────── */
+async function handleLogin() {
+  const empId = $('empId').value.trim();
+  const empName = $('empName').value.trim();
+  if (!empId || !empName) { $('loginMsg').textContent = '사번과 이름을 입력해주세요.'; return; }
+  $('loginBtn').disabled = true;
+  $('loginMsg').textContent = '로그인 중입니다...';
+  try {
+    const res = await fetch(endpoint, { method: 'POST', headers: FORM, body: new URLSearchParams({ empId, empName }) });
+    const data = await res.json();
+    if (data.result !== 'success') {
+      $('loginMsg').textContent = data.result === 'disabled' ? '신청 권한이 없는 계정입니다.' : '사번 또는 이름이 맞지 않습니다.';
+      $('loginBtn').disabled = false;
       return;
     }
-    itemList.forEach((item, index) => {
-      const row = document.createElement('div'); row.className = 'list-item-row';
-      const text = document.createElement('div'); text.className = 'list-item-text';
-      text.innerText = `${item.category} > ${item.subcategory} > ${item.size} - ${item.quantity}개` + (item.remarks ? ` (${item.remarks})` : '');
-      const delBtn = document.createElement('button'); delBtn.className='delete-btn'; delBtn.innerText='✕';
-      delBtn.onclick = () => { itemList.splice(index, 1); renderItemList(); };
-      row.appendChild(text); row.appendChild(delBtn); previewContainer.appendChild(row);
+    user = { empId, empName };
+    $('loginMsg').textContent = '목록을 불러오는 중...';
+    try { await itemsPromise; }
+    catch (e) { itemsPromise = loadItems(); await itemsPromise; }   // 실패 시 한 번 재시도
+    $('who').textContent = `${empName} (${empId})`;
+    $('loginView').classList.add('hidden');
+    $('mainView').classList.remove('hidden');
+    renderCategories();
+  } catch (e) {
+    $('loginMsg').textContent = '서버 오류: ' + e.message;
+    $('loginBtn').disabled = false;
+  }
+}
+$('loginBtn').addEventListener('click', handleLogin);
+['empId', 'empName'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); }));
+
+/* ───────── 아코디언 목록 ───────── */
+/* ───────── 검색 ───────── */
+const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+function chosung(str) {
+  let out = '';
+  for (const ch of str) {
+    const c = ch.charCodeAt(0);
+    out += (c >= 0xAC00 && c <= 0xD7A3) ? CHO[Math.floor((c - 0xAC00) / 588)] : ch;
+  }
+  return out;
+}
+// 띄어쓴 단어가 전부 포함되면 일치. 초성(ㅈㄱ → 장갑)도 허용
+function matches(query, ...texts) {
+  const tokens = query.split(/\s+/).filter(Boolean).map(norm);
+  if (!tokens.length) return true;
+  const hay = norm(texts.join(' '));
+  const hayCho = chosung(hay);
+  return tokens.every(t => hay.includes(t) || (/^[ㄱ-ㅎ]+$/.test(t) && hayCho.includes(t)));
+}
+function filterCategories(query) {
+  if (!query.trim()) return categories;
+  const out = [];
+  categories.forEach(cat => {
+    const types = [];
+    cat.types.forEach(type => {
+      const sizes = type.sizes.filter(z => matches(query, cat.name, type.name, z.size));
+      if (sizes.length) types.push({ name: type.name, sizes });
     });
-  }
-
-  async function submitAllRequests() {
-    if (itemList.length === 0) return alert("신청 항목이 없습니다.");
-    document.getElementById('submitOverlay').style.display = 'flex';
-    try {
-      for (const item of itemList) {
-        const stockKey = `${item.subcategory}__${item.size}`;
-        const stockMap = itemData[item.category]?.stockMap || {};
-        const currentStock = parseInt(stockMap[stockKey]) || 0;
-        const quantity = parseInt(item.quantity);
-        const 지급수량 = Math.min(quantity, currentStock);
-        const 구매요청수량 = Math.max(quantity - currentStock, 0);
-
-        const payload = {
-          name: item.name,
-          category: item.category,
-          subcategory: item.subcategory,
-          size: item.size,
-          quantity,
-          remarks: item.remarks,
-          지급수량,
-          구매요청수량
-        };
-
-        await fetch(endpoint, {
-          method:'POST',
-          headers:{'Content-Type':'application/x-www-form-urlencoded'},
-          body:new URLSearchParams(payload)
-        });
-      }
-      alert("✅ 모든 항목이 신청되었습니다.");
-      location.reload();
-    } catch (error) {
-      alert("❌ 네트워크 오류: " + error.message);
-    } finally {
-      document.getElementById('submitOverlay').style.display = 'none';
-    }
-  }
-
-  // 숫자 키패드
-  function appendQuantity(num) { if (quantityValue.length < 4) { quantityValue += num; updateQuantityDisplay(); } }
-  function clearQuantity() { quantityValue = ""; updateQuantityDisplay(); }
-  function backspaceQuantity() { quantityValue = quantityValue.slice(0,-1); updateQuantityDisplay(); }
-  function updateQuantityDisplay() { document.getElementById("quantity-display").innerText = quantityValue || "0"; }
-
-  // 사진 모달
-  document.getElementById("viewPhotosType").addEventListener("click", () => {
-    const category = selected.category; if (!category) return alert("먼저 대분류를 선택해주세요.");
-    document.getElementById("loadingOverlay").style.display = "flex";
-    fetch(`${endpoint}?mode=photo`)
-      .then(res => res.json())
-      .then(photoMap => {
-        const urls = photoMap[category];
-        const container = document.getElementById("photoContent"); container.innerHTML = "";
-        if (!urls || urls.length === 0) {
-          container.innerHTML = "<p>해당 항목의 사진이 없습니다.</p>";
-        } else {
-          urls.forEach(url => {
-            const fileName = url.split("/").pop().split(".")[0];
-            const wrapper = document.createElement("div");
-            wrapper.style.marginBottom="20px";
-            wrapper.innerHTML = `<div style="font-weight:bold;margin-bottom:5px;">${fileName}</div><img src="${url}" style="max-width:100%;border:1px solid #ccc;border-radius:8px;" />`;
-            container.appendChild(wrapper);
-          });
-        }
-        document.getElementById("photoModal").style.display = "block";
-      })
-      .catch(err => alert("❌ 사진 불러오기 실패: " + err.message))
-      .finally(() => document.getElementById("loadingOverlay").style.display = "none");
+    if (types.length) out.push({ name: cat.name, types });
   });
-  document.getElementById("closeModal").addEventListener("click", () => { document.getElementById("photoModal").style.display = "none"; });
+  return out;
+}
+let searchTimer = null;
+$('search').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderCategories, 150);
+});
 
-  // 공지 로딩(상단 박스)
-  document.addEventListener("DOMContentLoaded", () => {
-    const box = document.getElementById("inlineNoticeBox");
-    const loading = document.getElementById("initialLoadingOverlay");
-    fetch(`${endpoint}?mode=notice`)
-      .then(res => res.json())
-      .then(data => {
-        const notice = data.notice?.trim();
-        if (notice) { box.textContent = notice; box.style.display = "block"; }
-      })
-      .catch(err => console.warn("공지사항 로딩 실패:", err))
-      .finally(() => { loading.style.display = 'none'; });
+function renderCategories() {
+  const list = $('catList');
+  const query = $('search').value;
+  const searching = !!query.trim();
+  const shown = filterCategories(query);
+  list.innerHTML = '';
+  if (!categories.length) { list.appendChild(el('div', 'empty', '신청 가능한 품목이 없습니다.')); return; }
+  if (!shown.length) { list.appendChild(el('div', 'empty', `'${query.trim()}' 검색 결과가 없습니다.`)); return; }
+
+  shown.forEach(cat => {
+    const box = el('div', 'cat');
+    const head = el('div', 'cat-head');
+    const toggle = el('button', 'cat-toggle');
+    toggle.appendChild(el('span', '', cat.name));
+    const badge = el('span', 'badge hidden', '0');
+    badge.dataset.badge = cat.name;
+    toggle.appendChild(badge);
+    toggle.appendChild(el('span', 'arrow', '›'));
+    head.appendChild(toggle);
+    box.appendChild(head);
+
+    let body = null;
+    if (searching) {                      // 검색 중에는 결과를 모두 펼쳐서 보여줌
+      body = buildBody(cat, true);
+      box.classList.add('open');
+      box.appendChild(body);
+    }
+    toggle.addEventListener('click', () => {
+      const open = box.classList.toggle('open');
+      if (open && !body) { body = buildBody(cat, false); box.appendChild(body); }
+      if (body) body.classList.toggle('hidden', !open);
+    });
+    list.appendChild(box);
   });
+  refreshPhotoButtons();
+  updateBadges();
+}
 
-  // 내역 보기
-  function openMyRecords() {
-    const empId = loginInfo.empId;
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(`${endpoint}?mode=myrecords&empId=${encodeURIComponent(empId)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.result !== "success") {
-          document.getElementById('loadingOverlay').style.display = 'none';
-          return alert("❌ 신청 내역을 불러올 수 없습니다.");
-        }
-        renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10, 8]);
-      })
-      .catch(err => {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("❌ 네트워크 오류: " + err.message);
-      })
-      .finally(() => { document.getElementById('loadingOverlay').style.display = 'none'; });
-  }
-  function openTeamRecords() {
-    const empId = loginInfo.empId;
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    fetch(`${endpoint}?mode=teamrecords&empId=${encodeURIComponent(empId)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.result === "forbidden") {
-          document.getElementById('loadingOverlay').style.display = 'none';
-          return alert("⚠️ 팀 내역 조회 권한이 없습니다.");
-        }
-        if (data.result !== "success") {
-          document.getElementById('loadingOverlay').style.display = 'none';
-          return alert("❌ 팀 신청 내역을 불러올 수 없습니다.");
-        }
-        renderRecordsTable(data, [0, 2, 4, 5, 6, 9, 10]);
-      })
-      .catch(err => {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert("❌ 네트워크 오류: " + err.message);
-      })
-      .finally(() => { document.getElementById('loadingOverlay').style.display = 'none'; });
-  }
-  function renderRecordsTable(data, colIndexes) {
-    const thead = document.querySelector("#myRecordsTable thead");
-    const tbody = document.querySelector("#myRecordsTable tbody");
-    thead.innerHTML = "<tr>" + colIndexes.map(i => `<th style="border:1px solid #ccc;background:#f0f0f0;padding:4px;text-align:center;">${data.header[i]}</th>`).join("") + "</tr>";
-    tbody.innerHTML = data.records.map(row => "<tr>" + colIndexes.map(i => `<td style="border:1px solid #ccc;padding:6px;text-align:center;">${i===0?formatDate(row[i]):row[i]}</td>`).join("") + "</tr>").join("");
-    document.getElementById("myRecordsModal").style.display = "flex";
-  }
-  function closeMyRecords() { document.getElementById("myRecordsModal").style.display = "none"; }
-  function formatDate(raw) {
-    const d = new Date(raw);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-  function updateSelection(container, selectedBtn) {
-    Array.from(container.children).forEach(btn => btn.classList.remove('selected'));
-    selectedBtn.classList.add('selected');
-  }
+function buildBody(cat, autoOpen) {
+  const body = el('div', 'cat-body');
+  cat.types.forEach(type => {
+    const tbox = el('div', 'type-box');
+    const tt = el('button', 'type-toggle');
+    tt.appendChild(el('span', '', type.name));
+    const tp = el('span', 'type-photo hidden'); tp.innerHTML = CAM;
+    tp.dataset.cat = cat.name; tp.dataset.type = type.name;
+    tp.setAttribute('role', 'button'); tp.setAttribute('aria-label', '사진 보기');
+    tp.addEventListener('click', e => { e.stopPropagation(); openPhotoList(type.name + ' 사진', typePhotos(cat.name, type.name), cat.name); });
+    if (typePhotos(cat.name, type.name).length) tp.classList.remove('hidden');
+    tt.appendChild(tp);
+    const tb = el('span', 'badge hidden', '0');
+    tb.dataset.tbadge = cat.name + '||' + type.name;
+    tt.appendChild(tb);
+    tt.appendChild(el('span', 'arrow', '›'));
+    tbox.appendChild(tt);
 
-  // Z1/Z3 모달 — 헤더/공지 동적 반영, 수량 제한 없음
-  function openZ1Modal() {
-    const code = (selected.zcode || 'Z1').toUpperCase();
-    const headerEl = document.getElementById('z1Header');
-    const headerTxt = zMeta?.[code]?.header || '📅 정기 신청 (Z1/Z3)';
-    if (headerEl) headerEl.innerText = headerTxt;
-    const notice = zMeta?.[code]?.notice || zMeta?.Z1?.notice || '';
-    renderNoticeTo(document.getElementById('z1RuleText'), notice);
+    const tbody = el('div', 'type-body hidden');
+    type.sizes.forEach(s => {
+      const key = keyOf(cat.name, type.name, s.size);
+      const row = el('div', 'row' + (s.stock > 0 ? '' : ' out') + (cart[key] ? ' sel' : ''));
+      row.appendChild(el('div', 'size', s.size));
+      const pb = el('button', 'row-photo hidden'); pb.innerHTML = CAM;
+      pb.dataset.cat = cat.name; pb.dataset.type = type.name; pb.dataset.size = s.size;
+      pb.setAttribute('aria-label', '사진 보기');
+      pb.addEventListener('click', () => openPhotoList(s.size + ' 사진', sizePhotos(cat.name, type.name, s.size), cat.name));
+      if (sizePhotos(cat.name, type.name, s.size).length) pb.classList.remove('hidden');
+      row.appendChild(pb);
+      row.appendChild(el('span', 'stock' + (s.stock > 0 ? '' : ' none'), s.stock > 0 ? `재고 ${s.stock}` : '구매요청'));
 
-    const listContainer = document.getElementById("z1-item-list");
-    listContainer.innerHTML = "";
-    const stockMap = itemData[selected.category]?.stockMap || {};
-    const names = Object.keys(stockMap).map(k => k.split("__")[0]).filter((v,i,self)=>self.indexOf(v)===i);
-    if (names.length === 0) {
-      listContainer.innerHTML = "<p>등록된 항목이 없습니다.</p>";
-      return;
+      const q = el('div', 'qty');
+      const minus = el('button', '', '−');
+      const input = el('input');
+      input.type = 'number'; input.min = '0'; input.max = '9999'; input.inputMode = 'numeric';
+      input.value = cart[key] ? cart[key].qty : 0;
+      input.dataset.key = key;
+      if (cart[key]) input.classList.add('on');
+      const plus = el('button', '', '+');
+      const meta = { category: cat.name, type: type.name, size: s.size };
+      minus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) - 1));
+      plus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) + 1));
+      input.addEventListener('change', () => setQty(key, meta, parseInt(input.value) || 0));
+      q.append(minus, input, plus);
+      row.appendChild(q);
+      tbody.appendChild(row);
+    });
+    tbox.appendChild(tbody);
+    if (autoOpen) { tbox.classList.add('open'); tbody.classList.remove('hidden'); }
+    tt.addEventListener('click', () => {
+      const open = tbox.classList.toggle('open');
+      tbody.classList.toggle('hidden', !open);
+    });
+    body.appendChild(tbox);
+  });
+  body.appendChild(el('p', 'hint', '재고가 없거나 모자란 수량은 구매 요청으로 자동 접수됩니다.'));
+  updateBadges();
+  return body;
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+function setQty(key, meta, qty) {
+  qty = Math.max(0, Math.min(9999, qty));
+  const prev = cart[key] ? cart[key].qty : 0;
+  if (qty === 0) delete cart[key]; else cart[key] = { ...meta, qty };
+  document.querySelectorAll('input[data-key]').forEach(i => {
+    if (i.dataset.key === key) { i.value = qty; i.classList.toggle('on', qty > 0); i.closest('.row').classList.toggle('sel', qty > 0); }
+  });
+  updateBadges();
+  if (qty !== prev) {
+    const label = `${meta.type} ${meta.size}`;
+    toast(qty === 0 ? `${label} 뺐어요` : qty > prev ? `${label} ${qty}개 담았어요` : `${label} ${qty}개로 줄였어요`);
+  }
+  if (!$('cartModal').classList.contains('hidden')) renderCart();
+}
+
+function updateBadges() {
+  const items = Object.values(cart);
+  const perCat = {}, perType = {};
+  let total = 0;
+  items.forEach(i => {
+    perCat[i.category] = (perCat[i.category] || 0) + 1;
+    const tk = i.category + '||' + i.type;
+    perType[tk] = (perType[tk] || 0) + 1;
+    total += i.qty;
+  });
+  document.querySelectorAll('[data-badge]').forEach(b => {
+    const n = perCat[b.dataset.badge] || 0;
+    b.textContent = n; b.classList.toggle('hidden', n === 0);
+  });
+  document.querySelectorAll('[data-tbadge]').forEach(b => {
+    const n = perType[b.dataset.tbadge] || 0;
+    b.textContent = n; b.classList.toggle('hidden', n === 0);
+  });
+  const btn = $('openCart');
+  btn.disabled = items.length === 0;
+  btn.textContent = '';
+  if (items.length) {
+    btn.appendChild(document.createTextNode(`장바구니 보기 (${items.length}종 · 총 ${total}개)`));
+    btn.appendChild(el('span', 'sub', items.map(i => `${i.type} ${i.size} ${i.qty}`).join(', ')));
+  } else {
+    btn.textContent = '품목을 담아주세요';
+  }
+  $('cartBar').classList.toggle('hidden', !user);
+}
+
+/* ───────── 사진 ───────── */
+// 비교용 정규화: 한글 조합 방식(NFC/NFD), 공백, 전각 괄호 차이를 무시
+function norm(s) {
+  return String(s || '').normalize('NFC').replace(/[\s\u00a0]+/g, '').replace(/（/g, '(').replace(/）/g, ')').toLowerCase();
+}
+const same = (a, b) => norm(a) === norm(b);
+
+function photosFor(cat) {
+  const nc = norm(cat);
+  let out = [];
+  Object.keys(photos).forEach(k => {
+    const nk = norm(k);
+    if (nk && (nk === nc || nc.includes(nk) || nk.includes(nc))) out = out.concat(photos[k]);
+  });
+  return out;
+}
+// 소분류(사이즈) 단위 사진: 파일명 조각 중 소분류 이름이 있는 것
+function sizePhotos(cat, type, size) {
+  const c = categories.find(x => x.name === cat);
+  const typeNames = c ? c.types.map(t => t.name) : [];
+  return photosFor(cat).filter(p => {
+    const rest = (p.parts || []).slice(1);
+    if (!rest.some(x => same(x, size))) return false;
+    // 다른 중분류 이름이 같이 있으면 그 중분류 사진이므로 제외
+    return !rest.some(x => typeNames.some(n => same(n, x)) && !same(x, type));
+  });
+}
+// 중분류 단위 사진: 파일명에 중분류 이름만 있고 소분류(사이즈) 이름은 없는 것
+function typePhotos(cat, type) {
+  const c = categories.find(x => x.name === cat);
+  const t = c && c.types.find(x => x.name === type);
+  const sizes = t ? t.sizes.map(z => z.size) : [];
+  return photosFor(cat).filter(p => {
+    const rest = (p.parts || []).slice(1);
+    return rest.some(x => same(x, type)) && !rest.some(x => sizes.some(z => same(z, x)));
+  });
+}
+function refreshPhotoButtons() {
+  document.querySelectorAll('.type-photo').forEach(b => {
+    b.classList.toggle('hidden', typePhotos(b.dataset.cat, b.dataset.type).length === 0);
+  });
+  document.querySelectorAll('.row-photo').forEach(b => {
+    b.classList.toggle('hidden', sizePhotos(b.dataset.cat, b.dataset.type, b.dataset.size).length === 0);
+  });
+}
+// 사진 순서 = 신청 화면의 중분류 순서 (시트 순서). 못 찾으면 맨 뒤
+function typeRank(cat, type) {
+  const c = categories.find(x => x.name === cat);
+  if (!c) return 999;
+  if (!type) return -1;
+  const i = c.types.findIndex(t => same(t.name, type));
+  return i < 0 ? 999 : i;
+}
+function openPhotos(cat) {
+  const list = photosFor(cat).slice().sort((x, y) =>
+    (typeRank(cat, x.type) - typeRank(cat, y.type)) || x.name.localeCompare(y.name, 'ko'));
+  openPhotoList(cat + ' 사진', list, cat);
+}
+function openPhotoList(title, list, cat) {
+  $('photoTitle').textContent = title;
+  const box = $('photoContent');
+  box.innerHTML = '';
+  if (!list.length) box.appendChild(el('div', 'empty', '등록된 사진이 없습니다.'));
+  list.forEach(p => {
+    const item = el('div', 'photo-item');
+    item.appendChild(el('div', 'cap', (p.parts || []).slice(1).join(' · ') || cat));
+    const img = el('img');
+    img.loading = 'lazy'; img.alt = p.name; img.src = p.url;
+    item.appendChild(img);
+    box.appendChild(item);
+  });
+  $('photoModal').classList.remove('hidden');
+}
+$('closePhoto').addEventListener('click', () => $('photoModal').classList.add('hidden'));
+
+/* ───────── 장바구니 / 신청 ───────── */
+function renderCart() {
+  const box = $('cartList');
+  box.innerHTML = '';
+  const items = Object.entries(cart);
+  if (!items.length) { box.appendChild(el('div', 'empty', '담은 항목이 없습니다.')); return; }
+  items.forEach(([key, i]) => {
+    const stock = stockIdx[key] || 0;
+    const give = Math.min(i.qty, stock);
+    const req = i.qty - give;
+    const row = el('div', 'cart-row');
+    const t = el('div', 't');
+    t.appendChild(el('span', '', `${i.category} > ${i.type} > ${i.size} × ${i.qty}`));
+    if (req > 0) t.appendChild(el('small', 'w', give > 0 ? `지급 ${give} / 구매요청 ${req}` : `재고 없음 → 구매요청 ${req}`));
+    const del = el('button', 'del', '✕');
+    del.setAttribute('aria-label', '삭제');
+    del.addEventListener('click', () => setQty(key, i, 0));
+    row.append(t, del);
+    box.appendChild(row);
+  });
+}
+$('openCart').addEventListener('click', () => { renderCart(); $('cartModal').classList.remove('hidden'); });
+$('closeCart').addEventListener('click', () => $('cartModal').classList.add('hidden'));
+
+async function submitOrder() {
+  if (submitting) return;
+  const items = Object.values(cart);
+  if (!items.length) { $('cartModal').classList.add('hidden'); return; }
+
+  submitting = true;
+  $('submitBtn').disabled = true;
+  showOverlay('신청 중입니다...');
+
+  let serverReplied = false;
+  try {
+    const body = new URLSearchParams({
+      mode: 'batch',
+      name: `${user.empId} ${user.empName}`,
+      remarks: $('remarks').value.trim(),
+      items: JSON.stringify(items.map(i => ({ category: i.category, subcategory: i.type, size: i.size, quantity: i.qty })))
+    });
+    const res = await fetch(endpoint, { method: 'POST', headers: FORM, body });
+    const data = await res.json();
+    serverReplied = true;
+    if (data.result !== 'success') throw new Error(data.message || '서버 오류');
+
+    hideOverlay();
+    alert(`${data.count || items.length}건 신청되었습니다.`);
+    cart = {};
+    $('remarks').value = '';
+    $('cartModal').classList.add('hidden');
+    itemsPromise = loadItems();                       // 재고 갱신
+    try { await itemsPromise; } catch (e) {}
+    renderCategories();
+  } catch (e) {
+    hideOverlay();
+    if (serverReplied) {
+      alert('신청 실패: ' + e.message + '\n\n신청되지 않았으니 확인 후 다시 시도해주세요.');
+    } else {
+      alert('신청이 접수됐는지 확인하지 못했습니다.\n(' + e.message + ')\n\n중복 신청을 막기 위해, 다시 누르기 전에 담당자에게 접수 여부를 확인해주세요.');
     }
-
-    names.forEach(name => {
-      const row = document.createElement("div");
-      row.style.display="flex";
-      row.style.alignItems="center";
-      row.style.justifyContent="space-between";
-      row.style.marginBottom="10px";
-      const inputId = `z1_qty_${name}`;
-      row.innerHTML = `
-        <div style="flex:1;">${name}</div>
-        <input type="number" id="${inputId}" placeholder="수량" min="0" value="1"
-               style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
-      `;
-      listContainer.appendChild(row);
-    });
-
-    document.getElementById("modalZ1").style.display = "block";
+  } finally {
+    submitting = false;
+    $('submitBtn').disabled = false;
+    hideOverlay();
   }
-  function closeZ1Modal() { document.getElementById("modalZ1").style.display = "none"; }
-
-  // ★ Z1/Z3 즉시 전송 (수량 제한 없이)
-  async function submitZ1() {
-    const remarks = document.getElementById("z1-remarks").value;
-    const stockMap = itemData[selected.category]?.stockMap || {};
-    const names = Object.keys(stockMap).map(k => k.split("__")[0]).filter((v,i,self)=>self.indexOf(v)===i);
-    const itemsToSubmit = [];
-
-    names.forEach(name => {
-      const qtyInput = document.getElementById("z1_qty_" + name);
-      const qty = parseInt(qtyInput?.value || "0");
-      if (qty > 0) {
-        itemsToSubmit.push({
-          name: `${loginInfo.empId} ${loginInfo.empName}`,
-          category: selected.category,
-          zcode: (selected.zcode || 'Z1'),
-          subcategory: name,
-          size: "개",
-          quantity: qty,
-          remarks
-        });
-      }
-    });
-
-    if (itemsToSubmit.length === 0) return alert("수량을 1개 이상 입력해주세요.");
-    document.getElementById('submitOverlay').style.display = 'flex';
-
-    try {
-      for (const item of itemsToSubmit) {
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            name: item.name,
-            category: item.category,
-            zcode: item.zcode,
-            subcategory: item.subcategory,
-            size: item.size,
-            quantity: item.quantity,
-            remarks: item.remarks,
-            지급수량: item.quantity,
-            구매요청수량: 0
-          })
-        });
-      }
-      alert("✅ 신청이 완료되었습니다.");
-      closeZ1Modal();
-    } catch (err) {
-      alert("❌ 신청 실패: " + err.message);
-    } finally {
-      document.getElementById('submitOverlay').style.display = 'none';
-    }
-  }
-
-  // Z2 유니폼 모달 — 수량 제한/검증 없음
-  function openZ2UniformModal() {
-    const headerEl = document.getElementById('z2Header');
-    const headerTxt = zMeta?.Z2?.header || '👕 유니폼 일괄 신청 (Z2)';
-    if (headerEl) headerEl.innerText = headerTxt;
-
-    const z2Notice = zMeta?.Z2?.notice || '';
-    renderNoticeTo(document.getElementById('z2RuleText'), z2Notice);
-
-    const wrap = document.getElementById("z2UniformContent");
-    wrap.innerHTML = "";
-    const stockMap = itemData[selected.category]?.stockMap || {};
-    const byType = {};
-    Object.keys(stockMap).forEach(k => {
-      const [type, size] = k.split("__");
-      if (!byType[type]) byType[type] = [];
-      byType[type].push({ size, stock: stockMap[k] });
-    });
-
-    (Object.keys(byType)).forEach(type => {
-      const sizes = byType[type].sort((a,b) => a.size.localeCompare(b.size, 'ko', {numeric:true}));
-      const section = document.createElement("div");
-      section.style.marginBottom = "16px";
-      section.innerHTML = `<h4 style="text-align:left;margin:8px 0;">${type}</h4>`;
-      const table = document.createElement("table"); table.style.width="100%"; table.style.borderCollapse="collapse";
-      const thead = document.createElement("thead"); const tbody = document.createElement("tbody");
-      thead.innerHTML = `
-        <tr>
-          <th style="border:1px solid #ddd;padding:6px;background:#f7f7f7;">사이즈</th>
-          <th style="border:1px solid #ddd;padding:6px;background:#f7f7f7;">재고</th>
-          <th style="border:1px solid #ddd;padding:6px;background:#f7f7f7;">신청 수량</th>
-        </tr>`;
-      sizes.forEach(({size, stock}) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td style="border:1px solid #ddd;padding:6px;text-align:center;">${size}</td>
-          <td style="border:1px solid #ddd;padding:6px;text-align:center;">${stock}</td>
-          <td style="border:1px solid #ddd;padding:6px;text-align:center;">
-            <input type="number" min="0" value="0" data-z2-type="${type}" data-z2-size="${size}"
-                   style="width:80px;text-align:center;border:1px solid #ccc;border-radius:6px;padding:4px;">
-          </td>`;
-        tbody.appendChild(row);
-      });
-      table.appendChild(thead); table.appendChild(tbody);
-      section.appendChild(table); wrap.appendChild(section);
-    });
-
-    document.getElementById("modalZ2Uniform").style.display = "block";
-  }
-  function closeZ2UniformModal() { document.getElementById("modalZ2Uniform").style.display = "none"; }
-
-  let isSubmittingZ2Uniform = false;
-
-  async function submitZ2Uniform() {
-    if (isSubmittingZ2Uniform) return;
-
-    const inputs = document.querySelectorAll('#z2UniformContent input[type="number"][data-z2-type][data-z2-size]');
-    const remarks = document.getElementById("z2UniformRemarks").value || "";
-    const itemsToSubmit = [];
-
-    inputs.forEach(inp => {
-      const qty = parseInt(inp.value || "0", 10);
-      if (qty > 0) {
-        itemsToSubmit.push({
-          name: `${loginInfo.empId} ${loginInfo.empName}`,
-          category: selected.category,
-          zcode: (selected.zcode || 'Z2'),
-          subcategory: inp.dataset.z2Type,
-          size: inp.dataset.z2Size,
-          quantity: qty,
-          remarks
-        });
-      }
-    });
-
-    if (itemsToSubmit.length === 0) return alert("수량을 1개 이상 입력해주세요.");
-
-    const overlay = document.getElementById('submitOverlay');
-    const overlaySpan = overlay.querySelector('span');
-    const prevText = overlaySpan.textContent;
-    overlaySpan.textContent = '👕 신청 중입니다..';
-    overlay.style.display = 'flex';
-
-    const submitBtn = document.getElementById('z2UniformSubmitBtn');
-    if (submitBtn) submitBtn.disabled = true;
-    isSubmittingZ2Uniform = true;
-
-    try {
-      for (const item of itemsToSubmit) {
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            name: item.name,
-            category: item.category,
-            zcode: item.zcode,
-            subcategory: item.subcategory,
-            size: item.size,
-            quantity: item.quantity,
-            remarks: item.remarks,
-            지급수량: item.quantity,
-            구매요청수량: 0
-          })
-        });
-      }
-      alert("✅ 유니폼 신청이 완료되었습니다.");
-      closeZ2UniformModal();
-    } catch (err) {
-      alert("❌ 신청 실패: " + err.message);
-    } finally {
-      overlaySpan.textContent = prevText;
-      overlay.style.display = 'none';
-      if (submitBtn) submitBtn.disabled = false;
-      isSubmittingZ2Uniform = false;
-    }
-  }
+}
+$('submitBtn').addEventListener('click', submitOrder);
 </script>
-
-<!-- 오버레이들 -->
-<div id="submitOverlay"><span>📤 신청 중입니다...</span></div>
-<div id="loadingOverlay">⏳ 로딩 중입니다...</div>
-
-<!-- Z1 모달 -->
-<div id="modalZ1" class="z-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
-  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:600px;width:90%;position:relative;">
-    <button onclick="closeZ1Modal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
-    <h3 id="z1Header">📅 정기 신청 (Z1/Z3)</h3>
-    <p id="z1RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;"></p>
-    <div id="z1-item-list"></div>
-    <textarea id="z1-remarks" placeholder="공통 비고 입력 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
-    <button onclick="submitZ1()" style="margin-top:10px;">✅ 신청하기</button>
-  </div>
-</div>
-
-<!-- Z2 유니폼 모달 -->
-<div id="modalZ2Uniform" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;">
-  <div style="background:white;margin:60px auto;padding:20px;border-radius:10px;max-width:800px;width:95%;max-height:80vh;overflow:auto;position:relative;">
-    <button onclick="closeZ2UniformModal()" style="position:absolute;top:10px;right:10px;font-size:22px;background:none;border:none;cursor:pointer;line-height:1;">✖</button>
-    <h3 id="z2Header">👕 유니폼 일괄 신청 (Z2)</h3>
-    <p id="z2RuleText" style="background:#fff3cd;padding:10px;border:1px solid #ffeeba;border-radius:6px;color:#856404;font-size:0.85rem;margin-bottom:10px;"></p>
-    <div id="z2UniformContent"></div>
-    <textarea id="z2UniformRemarks" placeholder="공통 비고 (선택)" rows="2" style="width:100%;margin-top:10px;"></textarea>
-    <button id="z2UniformSubmitBtn" onclick="submitZ2Uniform()" style="margin-top:10px;">✅ 신청하기</button>
-  </div>
-</div>
-
 </body>
 </html>
