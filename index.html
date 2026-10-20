@@ -39,15 +39,12 @@
   .type-box { border-top:1px solid var(--line); }
   .type-box:first-child { border-top:none; }
   .type-toggle { width:100%; display:flex; align-items:center; gap:8px; background:#f8f9fb; border:none; padding:12px 14px; font-size:.97rem; font-weight:600; text-align:left; color:inherit; }
+  .cnt { margin-left:auto; font-size:.8rem; font-weight:400; color:var(--sub); }
+  .cnt + .arrow { margin-left:4px; }
   .type-box.open .type-toggle .arrow { transform:rotate(90deg); }
   .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--sub); padding:2px 6px; background:none; border:none; }
   .type-photo svg, .row-photo svg { width:18px; height:18px; }
   .row { display:flex; align-items:center; gap:8px; padding:8px 14px 8px 11px; border-top:1px solid var(--line); border-left:3px solid transparent; }
-  .row.single { border-top:none; }
-  .type-body .row { padding-left:19px; }
-  .type-toggle .arrow { color:var(--accent); font-size:1.15rem; }
-  .cnt { margin-left:auto; font-size:.8rem; font-weight:400; color:var(--sub); }
-  .cnt + .arrow { margin-left:4px; }
   .row.sel { border-left-color:var(--accent); background:var(--accent-l); }
   .row.sel .size { font-weight:600; }
   .row.out .size { color:var(--sub); }
@@ -154,7 +151,7 @@
 const endpoint = 'https://script.google.com/macros/s/AKfycbwM3by2zYXaxdjrjrbjNFFD_DlbvyP3H9IJZa7bEG5oCMGkig4QgRtsjyN2b8_Gtaxw/exec';
 const CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
-const INLINE_SINGLE = true;   // false 로 바꾸면 소분류 1개짜리도 예전처럼 눌러서 펼침
+const INLINE_SINGLE = false;  // true 로 바꾸면 소분류 1개짜리는 펼치지 않고 한 줄로 바로 표시
 
 // 속도 점검용: 주소 끝에 ?debug 를 붙이면 화면 왼쪽 아래에 단계별 걸린 시간(ms)이 표시됨
 const T0 = performance.now();
