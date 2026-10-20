@@ -42,8 +42,8 @@
   .cnt { margin-left:auto; font-size:.8rem; font-weight:400; color:var(--sub); }
   .cnt + .arrow { margin-left:4px; }
   .type-box.open .type-toggle .arrow { transform:rotate(90deg); }
-  .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--accent); padding:4px 8px; background:none; border:none; }
-  .type-photo svg, .row-photo svg { width:22px; height:22px; }
+  .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--sub); padding:2px 6px; background:none; border:none; }
+  .type-photo svg, .row-photo svg { width:18px; height:18px; }
   .row { display:flex; align-items:center; gap:8px; padding:8px 14px 8px 11px; border-top:1px solid var(--line); border-left:3px solid transparent; }
   .row.sel { border-left-color:var(--accent); background:var(--accent-l); }
   .row.sel .size { font-weight:600; }
@@ -56,6 +56,7 @@
   .qty button:active { background:var(--bg); }
   .qty input { width:44px; height:36px; text-align:center; font-size:1rem; border:none; border-left:1px solid var(--line-s); border-right:1px solid var(--line-s); border-radius:0; padding:0; background:#fff; -moz-appearance:textfield; }
   .qty input::-webkit-outer-spin-button, .qty input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .qty input[readonly] { pointer-events:none; caret-color:transparent; }
   .qty input.on { font-weight:600; color:var(--accent); }
   .hint { font-size:.8rem; color:var(--warn); margin:0; padding:8px 14px; border-top:1px solid var(--line); }
 
@@ -377,15 +378,19 @@ function makeRow(cat, type, s, single) {
   const q = el('div', 'qty');
   const minus = el('button', '', '−');
   const input = el('input');
-  input.type = 'number'; input.min = '0'; input.max = '9999'; input.inputMode = 'numeric';
+  input.type = 'number'; input.min = '0'; input.max = '9999';
+  input.readOnly = true; input.inputMode = 'none'; input.tabIndex = -1;   // +/− 로만 변경 (직접 입력 없음)
+  const unit = s.unit || 1;
   input.value = cart[key] ? cart[key].qty : 0;
   input.dataset.key = key;
   if (cart[key]) input.classList.add('on');
   const plus = el('button', '', '+');
   const meta = { category: cat.name, type: type.name, size: s.size };
-  minus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) - 1));
-  plus.addEventListener('click', () => setQty(key, meta, (parseInt(input.value) || 0) + 1));
-  input.addEventListener('change', () => setQty(key, meta, parseInt(input.value) || 0));
+  minus.addEventListener('click', () => setQty(key, meta, Math.max(0, (parseInt(input.value) || 0) - unit)));
+  plus.addEventListener('click', () => {
+    const next = (parseInt(input.value) || 0) + unit;
+    if (next <= 9999) setQty(key, meta, next);
+  });
   q.append(minus, input, plus);
   row.appendChild(q);
   return row;
