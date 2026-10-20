@@ -258,7 +258,7 @@
   // ════════════════════════════════════════════
   //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
   // ════════════════════════════════════════════
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbxEYHDb6jWJ3l7WVG2NIFv6TEA3GYHW8cWujnOknEVhL3MTWX6t3gPYQLcjEcUK7e_u/exec';
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbykH2twHz5eLZ9x8oG4LJuy4udUMHWjO--vJigP-pbGbo0Y0FbhiM8WcABjB-o8NR4/exec';
 
   // 재직자 중심 탭 + 퇴사자 분석은 별도 탭으로 분리
   const TABS = [
@@ -418,15 +418,7 @@
   function buildDept() {
     const jobTypes = ['관리직', '생산직'];
 
-    const riskRows = DATA.earlyLeaveRisk.map(r => [
-      r.name, r.dept, r.jobType, r.tenureMonths != null ? r.tenureMonths + '개월' : '-', r.deptEarlyLeaveRate + '%'
-    ]);
-    const riskCard = `
-      <div class="card" style="border-color:#f0d58a;background:#fffbf0;">
-        <h3 style="color:#a9720d;">⚠️ 조기퇴사 위험군</h3>
-        <div class="hint">근속 6개월 미만 + 소속 부서가 과거 초기퇴사(1년 미만 퇴사) 비율이 평균보다 높은 경우예요. 확정된 결과가 아니라 참고용 신호예요.</div>
-        ${riskRows.length ? table(['이름', '부서', '직군', '근속', '부서 초기퇴사율(과거)'], riskRows) : '<p style="color:var(--text-mute);font-size:13px;">해당자 없음</p>'}
-      </div>`;
+
 
     const sections = jobTypes.map(jt => {
       const jtStat = DATA.byJobType.find(j => j.jobType === jt);
@@ -466,7 +458,7 @@
         </div>`;
     }).join('');
 
-    return riskCard + sections;
+    return sections;
   }
 
   function buildAge() {
