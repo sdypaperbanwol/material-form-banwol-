@@ -218,7 +218,9 @@
   .emp-detail .row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f4f5f6; font-size: 13.5px; gap: 12px; }
   .emp-detail .row span:first-child { color: var(--text-mute); font-weight: 600; white-space: nowrap; }
   .emp-detail .row span:last-child { text-align: right; }
-
+  .emp-detail details.row { display: block; }
+  .emp-detail details.row summary { cursor: pointer; list-style: revert; }
+  .emp-detail details.row summary span { text-align: left; }
   .chart-box { position: relative; }
   .chart-hint { font-size: 11.5px; color: var(--text-mute); margin: -8px 0 12px; }
 
@@ -722,8 +724,7 @@
     if (!input) return;
     input.addEventListener('input', () => {
       const q = input.value.trim();
-      const matched = q ? mapMarkers.filter(m => m.name.includes(q)) : mapMarkers;
-
+      const matched = q ? mapMarkers.filter(m => matchName(m.name, q)) : mapMarkers;
       if (mapClusterer) {
         mapClusterer.clear();
         mapClusterer.addMarkers(matched.map(m => m.marker));
