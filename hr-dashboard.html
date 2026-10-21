@@ -485,12 +485,41 @@
       return `<div class="card"><h3>${jt} 자격증 보유 현황 (재직자)</h3>${rows.length ? table(['자격증명', '인원', '보유자'], rows) : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}</div>`;
     }).join('');
   }
+// 시 이름 통일 (서울특별시 → 서울시 등)
+function normCity(s) {
+  return String(s || '')
+    .replace(/(특별시|광역시|특별자치시)$/, '시')
+    .replace(/특별자치도$/, '도');
+}
 
+// region 문자열 → { city, sub }
+// "안산시 상록구" → { city:'안산시', sub:'상록구' }
+// "서울특별시 은평구" → { city:'서울시', sub:'은평구' }
+// "군포시 산본천로" → { city:'군포시', sub:'산본천로' }
+function splitRegion(region) {
+  const parts = String(region || '').trim().split(/\s+/);
+  if (!parts[0] || parts[0] === '미기재') return { city: '미기재', sub: '' };
+  return { city: normCity(parts[0]), sub: parts.slice(1).join(' ') };
+}
+
+// 재직자를 시 단위로 묶기
+function groupByCity() {
+  const map = {};
+  DATA.employees.filter(e => !e.retired).forEach(e => {
+    const { city, sub } = splitRegion(e.region);
+    if (!map[city]) map[city] = { city, count: 0, subs: {} };
+    map[city].count++;
+    const k = sub || '(구/동 미확인)';
+    map[city].subs[k] = (map[city].subs[k] || 0) + 1;
+  });
+  return Object.values(map).sort((a, b) =>
+  (a.city === '미기재') - (b.city === '미기재') || b.count - a.count || a.city.localeCompare(b.city, 'ko'));
+}
   function buildMap() {
-    const regionRows = DATA.byRegion
-  .slice()
-  .sort((a, b) => a.region.localeCompare(b.region, 'ko'))
-  .map(r => ({ key: r.region, cells: [r.region + (r.isAnsan ? ' 🚌' : ''), r.count] }));
+    const regionRows = groupByCity().map(g => ({
+  key: g.city,
+  cells: [g.city + (g.city === '안산시' ? ' 🚌' : ''), g.count]
+}));
     const ansanRows = DATA.byAnsanDong.map(d => [d.dong, d.count]);
     return `
       <div class="card">
@@ -1027,26 +1056,38 @@ function birthYM(e) {
   }
 
   // ── 지역 클릭 → 거주자 명단 모달 ───────────
-  function showRegionDetail(region) {
-    const people = DATA.employees.filter(e => e.region === region && !e.retired)
-      .sort((a, b) => a.dept.localeCompare(b.dept));
+function showRegionDetail(city) {
+  const people = DATA.employees
+    .filter(e => !e.retired && splitRegion(e.region).city === city)
+    .sort((a, b) => splitRegion(a.region).sub.localeCompare(splitRegion(b.region).sub, 'ko'));
 
-    const rows = people.length
-      ? people.map(p => `
+  // 구/동별로 묶기
+  const bySub = {};
+  people.forEach(p => {
+    const k = splitRegion(p.region).sub || '(구/동 미확인)';
+    (bySub[k] = bySub[k] || []).push(p);
+  });
+
+  const body = Object.keys(bySub).sort((a, b) => bySub[b].length - bySub[a].length || a.localeCompare(b, 'ko')).map(sub => `
+    <details style="border-bottom:1px solid #f4f5f6;padding:6px 0;">
+      <summary style="cursor:pointer;font-weight:600;font-size:13.5px;">
+        ${sub} <span style="color:var(--text-mute);font-weight:normal;">(${bySub[sub].length}명)</span>
+      </summary>
+      <div style="margin-top:6px;">
+        ${bySub[sub].map(p => `
           <div class="row" style="cursor:pointer;" onclick="closeModal(); showEmployeeDetail('${p.name.replace(/'/g, "\\'")}')">
             <span>${p.name}</span>
             <span>${p.dept} · ${p.position}</span>
-          </div>`).join('')
-      : `<div class="row"><span>해당 지역 거주자가 없습니다.</span></div>`;
+          </div>`).join('')}
+      </div>
+    </details>`).join('');
 
-    const html = `
-      <div class="emp-detail">
-        <h3 style="margin-top:0;">📍 ${region} 거주자 (${people.length}명)</h3>
-        ${rows}
-      </div>`;
-    openModal(html);
-  }
-
+  openModal(`
+    <div class="emp-detail">
+      <h3 style="margin-top:0;">📍 ${city} 거주자 (${people.length}명)</h3>
+      ${body || '<div class="row"><span>해당 지역 거주자가 없습니다.</span></div>'}
+    </div>`);
+}
 
 
   // 지역/부서/필터 표 클릭 위임 (표는 renderAll 시마다 다시 그려지므로 document에 위임)
