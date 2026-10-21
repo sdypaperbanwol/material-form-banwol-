@@ -258,17 +258,14 @@
   // ════════════════════════════════════════════
   //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
   // ════════════════════════════════════════════
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbzUinas8lXV6lcseJPwibkNsTPj-xCu99BcwWAzd8-ObdtBdD0yyM_N0IJJ0pw-tVzJ/exec';
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbypYG7ETlJDcLfCmHkfnuDdMC8HauzZDTplYi2RqAYqnFwmMTeMJJbhsCAFVOa4sWBE8g/exec';
 
   // 재직자 중심 탭 + 퇴사자 분석은 별도 탭으로 분리
   const TABS = [
     { id: 'overview', label: '개요' },
     { id: 'dept', label: '재직 현황' },
     { id: 'age', label: '연령/생일' },
-    { id: 'hire', label: '입사경로' },
-    { id: 'license', label: '자격증' },
-    { id: 'map', label: '거주지 지도' },
-    { id: 'retire', label: '퇴사자 분석', retireTab: true }
+    { id: 'map', label: '거주지 지도' },    
   ];
 
   let DATA = null;
@@ -283,6 +280,7 @@
   let shuttleVisible = false;
   let shuttleLoaded = false;
   let shuttleWarning = '';
+  let openShuttleInfo = null;
 
   // ── 탭 네비게이션 ──────────────────────────
   function renderNav() {
@@ -401,7 +399,7 @@
           <div class="stat-box retire-box clickable" onclick="showStatusList(true)"><div class="num">${b.retired}</div><div class="label">퇴사자</div></div>
           <div class="stat-box"><div class="num">${b.total}</div><div class="label">전체 누적</div></div>
         </div>
-        <p class="hint" style="margin-top:12px;">퇴사율 등 퇴사 관련 상세 분석은 <b>'퇴사자 분석'</b> 탭에서 볼 수 있어요. 재직자/퇴사자 박스를 클릭하면 전체 명단이 나와요.</p>
+        <p class="hint" style="margin-top:12px;">재직자/퇴사자 박스를 클릭하면 전체 명단이 나와요.</p>
         ${b.groupTransferActive ? `<p class="hint">재직자 중 <b>${b.groupTransferActive}명</b>은 그룹입사일이 입사일보다 빨라요 — 계열사에서 소속만 이동해온 인원으로, 근속연수는 그룹입사일 기준으로 계산돼요.</p>` : ''}
       </div>
       <div class="card">
@@ -416,50 +414,26 @@
   }
 
   function buildDept() {
-    const jobTypes = ['관리직', '생산직'];
-
-
-
-    const sections = jobTypes.map(jt => {
-      const jtStat = DATA.byJobType.find(j => j.jobType === jt);
-      const summaryPills = jtStat ? statPillRow(
-        statPill(`재직 인원 (총 ${jtStat.active}명)`) +
-        statPill(`평균 연령 (${jtStat.avgAge ?? '-'}세)`) +
-        statPill(`평균근속(년) (${jtStat.avgTenure ?? '-'}년)`)
-      ) : '';
-      const deptRows = DATA.byDept.filter(d => d.jobType === jt).map(d => ({
-        key: d.dept + '|' + d.jobType,
-        cells: [d.dept, d.active, d.avgAge ?? '-', d.avgTenure ?? '-']
-      }));
-      const special = DATA.specialEmployment.filter(p => p.jobType === jt);
-      const upcoming = DATA.retireUpcoming.filter(p => p.jobType === jt);
-      const overdue = DATA.retireOverdue.filter(p => p.jobType === jt);
-
-      return `
-        <div class="card">
-          <h4 class="sub">${jt}</h4>
-          ${summaryPills}
-          <h3>부서별 재직 인원·평균연령·근속</h3>
-          ${deptRows.length ? clickableDeptTable(['부서', '재직 인원', '평균연령', '평균근속(년)'], deptRows, 'active') : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}
-        </div>
-        <div class="card">
-          <h3>${jt} 촉탁직·임금피크직 현황</h3>
-          ${special.length ? table(['이름', '부서', '나이', '직급', '구분'], special.map(p => [p.name, p.dept, p.age, p.position, p.employmentNote])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
-        </div>
-        <div class="card">
-          <h3>${jt} 정년 도달 예정자 (3년 이내)</h3>
-          <div class="hint">만 60세 정년 기준, 아직 촉탁·임금피크 전환 전인 재직자예요.</div>
-          ${upcoming.length ? table(['이름', '부서', '나이', '직급', '정년까지'], upcoming.map(p => [p.name, p.dept, p.age, p.position, p.yearsLeft + '년'])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
-        </div>
-        <div class="card" style="border-color:#f0c0c0;background:#fff6f6;">
-          <h3 style="color:var(--danger);">${jt} 정년 초과 · 전환 미확인</h3>
-          <div class="hint">정년(60세)을 넘었는데 촉탁직·임금피크직 전환 기록이 확인되지 않아요. 실제 고용형태를 확인해보는 게 좋아요.</div>
-          ${overdue.length ? table(['이름', '부서', '나이', '직급'], overdue.map(p => [p.name, p.dept, p.age, p.position])) : '<p style="color:var(--text-mute);font-size:13px;">대상자 없음</p>'}
-        </div>`;
-    }).join('');
-
-    return sections;
-  }
+  return ['관리직', '생산직'].map(jt => {
+    const jtStat = DATA.byJobType.find(j => j.jobType === jt);
+    const summaryPills = jtStat ? statPillRow(
+      statPill(`재직 인원 (총 ${jtStat.active}명)`) +
+      statPill(`평균 연령 (${jtStat.avgAge ?? '-'}세)`) +
+      statPill(`평균근속(년) (${jtStat.avgTenure ?? '-'}년)`)
+    ) : '';
+    const deptRows = DATA.byDept.filter(d => d.jobType === jt).map(d => ({
+      key: d.dept + '|' + d.jobType,
+      cells: [d.dept, d.active, d.avgAge ?? '-', d.avgTenure ?? '-']
+    }));
+    return `
+      <div class="card">
+        <h4 class="sub">${jt}</h4>
+        ${summaryPills}
+        <h3>부서별 재직 인원·평균연령·근속</h3>
+        ${deptRows.length ? clickableDeptTable(['부서', '재직 인원', '평균연령', '평균근속(년)'], deptRows, 'active') : '<p style="color:var(--text-mute);font-size:13px;">데이터 없음</p>'}
+      </div>`;
+  }).join('');
+}
 
   function buildAge() {
     return `
@@ -716,7 +690,10 @@
     points.forEach(p => {
       const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(p.lat, p.lng) });
       const info = new kakao.maps.InfoWindow({ content: `<div style="padding:6px;font-size:12px;">${p.name} (${p.dept})</div>` });
-      marker.addListener('click', () => info.open(mapInstance, marker));
+      marker.addListener('click', () => {
+  if (info.__open) { info.close(); info.__open = false; }
+  else { info.open(mapInstance, marker); info.__open = true; }
+});
       mapMarkers.push({ name: p.name, marker, info });
       markerObjs.push(marker);
     });
@@ -793,10 +770,13 @@
     const btn = document.getElementById('shuttleToggleBtn');
     const legend = document.getElementById('shuttleLegend');
 
-    if (shuttleVisible) {
-      shuttlePolylines.forEach(p => p.setMap(null));
-      shuttleOverlays.forEach(o => o.setMap(null));
-      shuttleVisible = false;
+if (shuttleVisible) {
+  shuttlePolylines.forEach(p => p.setMap(null));
+  shuttleOverlays.forEach(o => o.setMap(null));
+  if (openShuttleInfo) { openShuttleInfo.close(); openShuttleInfo = null; }
+  shuttlePolylines = [];
+  shuttleOverlays = [];
+  shuttleVisible = false;
       if (btn) { btn.style.background = 'white'; btn.style.color = 'var(--accent)'; }
       if (legend) legend.innerHTML = '';
       return;
@@ -827,11 +807,12 @@
       return;
     }
 
-    const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'];
-    shuttlePolylines = [];
-    shuttleOverlays = [];
-    let openShuttleInfo = null;
-    let legendSections = '';
+    shuttlePolylines.forEach(p => p.setMap(null));
+shuttleOverlays.forEach(o => o.setMap(null));
+const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'];
+shuttlePolylines = [];
+shuttleOverlays = [];
+let legendSections = '';
 
     shuttleRouteData.forEach((route, i) => {
       const color = colors[i % colors.length];
@@ -856,10 +837,15 @@
           content: `<div style="padding:8px 10px;font-size:12.5px;min-width:130px;"><b>${si + 1}. ${s.stopName}</b>${s.time ? `<br><span style="color:#888;">${s.time}</span>` : ''}</div>`
         });
         el.addEventListener('click', () => {
-          if (openShuttleInfo) openShuttleInfo.close();
-          info.open(mapInstance);
-          openShuttleInfo = info;
-        });
+  if (openShuttleInfo === info) {
+    info.close();
+    openShuttleInfo = null;
+    return;
+  }
+  if (openShuttleInfo) openShuttleInfo.close();
+  info.open(mapInstance);
+  openShuttleInfo = info;
+});
       });
 
       // 지도는 번호만, 전체 이름+시간은 아래 목록으로 따로 정리
@@ -887,14 +873,15 @@
     document.getElementById('sec-overview').innerHTML = buildOverview();
     document.getElementById('sec-dept').innerHTML = buildDept();
     document.getElementById('sec-age').innerHTML = buildAge();
-    document.getElementById('sec-hire').innerHTML = buildHire();
-    document.getElementById('sec-license').innerHTML = buildLicense();
     document.getElementById('sec-map').innerHTML = buildMap();
-    document.getElementById('sec-retire').innerHTML = buildRetireAnalysis();
     renderCharts();
     renderAgeSectionCharts();
-    mapLoaded = false; // 탭 다시 그려졌으니 지도 재로드 허용
-    shuttleVisible = false; // DOM이 새로 그려졌으니 버튼 상태도 초기화
+    mapLoaded = false;
+shuttlePolylines.forEach(p => p.setMap(null));
+shuttleOverlays.forEach(o => o.setMap(null));
+shuttlePolylines = [];
+shuttleOverlays = [];
+shuttleVisible = false;
   }
 
   async function loadData(forceReload) {
