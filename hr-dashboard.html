@@ -899,6 +899,23 @@ shuttleVisible = false;
   }
 
   // ── 이름 검색 ──────────────────────────────
+
+ // 한글 초성 추출 (예: "김성연" → "ㄱㅅㅇ")
+const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+function getChosung(str) {
+  return String(str || '').split('').map(ch => {
+    const code = ch.charCodeAt(0) - 0xAC00;
+    return (code >= 0 && code <= 11171) ? CHO[Math.floor(code / 588)] : ch;
+  }).join('');
+}
+function matchName(name, q) {
+  const query = q.replace(/\s+/g, '');
+  if (!query) return false;
+  if (name.includes(query)) return true;
+  // 입력이 전부 초성(자음)이면 초성 비교
+  if (/^[ㄱ-ㅎ]+$/.test(query)) return getChosung(name).includes(query);
+  return false;
+}
   function setupSearch() {
     const input = document.getElementById('searchInput');
     const resultBox = document.getElementById('searchResults');
@@ -906,7 +923,7 @@ shuttleVisible = false;
     input.addEventListener('input', () => {
       const q = input.value.trim();
       if (!q || !DATA) { resultBox.classList.remove('show'); return; }
-      const matches = DATA.employees.filter(e => e.name.includes(q));
+      const matches = DATA.employees.filter(e => matchName(e.name, q));
       if (!matches.length) {
         resultBox.innerHTML = `<div class="search-item" style="color:#999;">일치하는 사람이 없습니다.</div>`;
       } else {
