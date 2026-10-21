@@ -986,8 +986,7 @@ function birthYM(e) {
         <div class="row"><span>추천인</span><span>${e.referrer || '없음'}</span></div>
         <div class="row"><span>거주지역</span><span>${e.region}</span></div>
         <div class="row"><span>결혼여부</span><span>${e.marry}</span></div>
-        <div class="row"><span>결혼여부</span><span>${e.marry}</span></div>
-${(e.family && e.family.length) ? `
+        ${(e.family && e.family.length) ? `
   <details class="row" style="display:block;">
     <summary style="cursor:pointer;color:var(--text-mute);font-weight:600;">가족관계 (${e.family.length}명)</summary>
     <div style="margin-top:6px;">
