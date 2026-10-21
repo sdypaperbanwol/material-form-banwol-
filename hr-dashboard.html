@@ -258,7 +258,7 @@
   // ════════════════════════════════════════════
   //  설정: Apps Script 웹앱 배포 후 나온 /exec URL로 교체하세요
   // ════════════════════════════════════════════
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbz5ZMGiJrS59Gj0Eux8ZDEf3uRydWzuHCW4Sg69-hq_EUocjW1f-zi34VJL8WFE1VxvHw/exec';
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbxMfz7EApZ2ebAPQO6zY67QLScLBdLwp0z63yIFz40z_iYgnReImAxTItqW63aYUN-gnQ/exec';
 
   // 재직자 중심 탭 + 퇴사자 분석은 별도 탭으로 분리
   const TABS = [
@@ -986,6 +986,17 @@ function birthYM(e) {
         <div class="row"><span>추천인</span><span>${e.referrer || '없음'}</span></div>
         <div class="row"><span>거주지역</span><span>${e.region}</span></div>
         <div class="row"><span>결혼여부</span><span>${e.marry}</span></div>
+        <div class="row"><span>결혼여부</span><span>${e.marry}</span></div>
+${(e.family && e.family.length) ? `
+  <details class="row" style="display:block;">
+    <summary style="cursor:pointer;color:var(--text-mute);font-weight:600;">가족관계 (${e.family.length}명)</summary>
+    <div style="margin-top:6px;">
+      ${e.family.map(f => `
+        <div style="text-align:right;font-size:12.5px;padding:2px 0;">
+          <b>${f.relation}</b> ${f.name}${f.gender ? ' (' + f.gender + ')' : ''}${f.birth ? ' · ' + f.birth : ''}${f.support ? ' · 부양 ' + f.support : ''}${f.remark ? ' · ' + f.remark : ''}
+        </div>`).join('')}
+    </div>
+  </details>` : ''}
         <div class="row"><span>최종학력</span><span>${e.schoolL || '-'} ${e.majorL ? '(' + e.majorL + ')' : ''}</span></div>
         <div class="row"><span>자격증</span><span>${e.license || '없음'}</span></div>
         ${!e.retired ? `<button onclick="focusOnMap('${e.name.replace(/'/g, "\\'")}')" style="width:100%;margin-top:14px;padding:10px;background:var(--navy);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600;">📍 지도에서 위치보기</button>` : ''}
