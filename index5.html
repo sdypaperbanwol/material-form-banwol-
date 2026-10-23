@@ -39,17 +39,19 @@
   .type-box { border-top:1px solid var(--line); }
   .type-box:first-child { border-top:none; }
   .type-toggle { width:100%; display:flex; align-items:center; gap:8px; background:#f8f9fb; border:none; padding:12px 14px; font-size:.97rem; font-weight:600; text-align:left; color:inherit; }
-  .cnt { margin-left:auto; font-size:.8rem; font-weight:400; color:var(--sub); }
+    .cnt { min-width:2.4em; text-align:right; font-size:.8rem; font-weight:400; color:var(--sub); }
   .cnt + .arrow { margin-left:4px; }
   .type-box.open .type-toggle .arrow { transform:rotate(90deg); }
-  .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--sub); padding:2px 6px; background:none; border:none; }
+  .type-photo, .row-photo { display:inline-flex; align-items:center; color:var(--accent); padding:4px 8px; background:none; border:none; }
+  .type-photo.hidden, .row-photo.hidden { display:inline-flex !important; visibility:hidden; }
+  .type-photo { margin-left:auto; }
   .type-photo svg, .row-photo svg { width:18px; height:18px; }
   .row { display:flex; align-items:center; gap:8px; padding:8px 14px 8px 11px; border-top:1px solid var(--line); border-left:3px solid transparent; }
   .row.sel { border-left-color:var(--accent); background:var(--accent-l); }
   .row.sel .size { font-weight:600; }
   .row.out .size { color:var(--sub); }
   .size { flex:1; min-width:0; word-break:break-word; }
-  .stock { font-size:.8rem; color:var(--sub); white-space:nowrap; }
+    .stock { min-width:4.5em; text-align:right; font-size:.8rem; color:var(--sub); white-space:nowrap; }
   .stock.none { color:var(--warn); }
   .qty { display:flex; border:1px solid var(--line-s); border-radius:8px; overflow:hidden; background:#fff; }
   .qty button { width:36px; height:36px; font-size:1.2rem; border:none; background:#fff; color:var(--ink); }
@@ -414,10 +416,10 @@ function buildBody(cat, autoOpen) {
     tp.setAttribute('role', 'button'); tp.setAttribute('aria-label', '사진 보기');
     tp.addEventListener('click', e => { e.stopPropagation(); openPhotoList(type.name + ' 사진', typePhotos(cat.name, type.name), cat.name); });
     if (typePhotos(cat.name, type.name).length) tp.classList.remove('hidden');
-    tt.appendChild(tp);
     const tb = el('span', 'badge hidden', '0');
     tb.dataset.tbadge = cat.name + '||' + type.name;
     tt.appendChild(tb);
+    tt.appendChild(tp);
     tt.appendChild(el('span', 'cnt', `${type.total || type.sizes.length}종`));
     tt.appendChild(el('span', 'arrow', '›'));
     tbox.appendChild(tt);
