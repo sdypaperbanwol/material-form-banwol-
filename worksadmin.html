@@ -1,274 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>근무현황</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출근 현황판</title>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; background:#f5f6f8; margin:0; padding:24px; color:#222; }
-  h1 { font-size:20px; margin:0 0 4px; }
-  .sub { color:#888; font-size:13px; margin-bottom:20px; }
-
-  /* 로그인 카드 */
-  #loginBox { max-width:360px; margin:60px auto; background:#fff; border:1px solid #e0e0e0; border-radius:10px; padding:28px; }
-  #loginBox h2 { margin-top:0; font-size:17px; }
-  #loginBox input { width:100%; padding:10px 12px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
-  #loginBox button { width:100%; padding:10px; background:#1c7ed6; color:#fff; border:none; border-radius:6px; font-size:14px; cursor:pointer; }
-  #loginBox button:hover { background:#1971c2; }
-  #loginErr { color:#e03131; font-size:13px; margin-top:8px; display:none; }
-
-  /* 메인 화면 */
-  #mainBox { display:none; }
-  .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:16px; background:#fff; padding:14px 16px; border-radius:8px; border:1px solid #e0e0e0; flex-wrap:wrap; }
-  .toolbar input[type=date] { padding:7px 10px; border:1px solid #ddd; border-radius:6px; }
-  .toolbar button { padding:7px 14px; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; font-size:13px; }
-  .toolbar button.primary { background:#1c7ed6; color:#fff; border-color:#1c7ed6; }
-  .toolbar .spacer { flex:1; }
-  #logoutBtn { color:#888; }
-
-  .badges { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-  .badge { padding:6px 12px; border-radius:6px; font-size:13px; font-weight:600; background:#eee; }
-  .badge.late { background:#fff3bf; color:#997404; }
-  .badge.working { background:#d3f9d8; color:#2b8a3e; }
-  .badge.scheduled { background:#e7e9ee; color:#555; }
-  .badge.total { background:#e7f5ff; color:#1971c2; }
-
-  table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0; }
-  th, td { padding:10px 14px; font-size:13px; border-bottom:1px solid #eee; text-align:left; }
-  th { background:#fafafa; color:#666; }
-  tr:last-child td { border-bottom:none; }
-
-  .status-pill { display:inline-block; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; }
-  .status-LATE { background:#fff3bf; color:#997404; }
-  .status-WORKING { background:#d3f9d8; color:#2b8a3e; }
-  .status-SCHEDULED { background:#e7e9ee; color:#555; }
-  .status-DONE { background:#dbe4ff; color:#3b5bdb; }
-  .status-ABSENT { background:#ffe3e3; color:#c92a2a; }
-
-  #loadingRow, #emptyRow { text-align:center; color:#999; padding:24px; }
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, 'Segoe UI', '맑은 고딕', sans-serif; margin: 0; padding: 16px; background: #f7f8fa; color: #1f2937; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #111827; color: #e5e7eb; }
+    .card, .site-card { background: #1f2937 !important; border-color: #374151 !important; }
+    th { background: #374151 !important; color: #e5e7eb !important; }
+    td { border-color: #374151 !important; }
+    .absent { background: #3a2222 !important; }
+  }
+  h1 { font-size: 18px; margin: 0 0 14px; }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .filter-bar input, .filter-bar select, .filter-bar button { font-size: 14px; padding: 8px; border-radius: 8px; border: 1px solid #d1d5db; }
+  .filter-bar button { background: #2563eb; color: white; border: none; cursor: pointer; }
+  .filter-bar .chk { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+  .site-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .site-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; text-align: center; }
+  .site-name { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+  .site-num { font-size: 20px; }
+  .card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin-bottom: 16px; overflow-x: auto; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; white-space: nowrap; }
+  th { background: #f3f4f6; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .absent { background: #fef2f2; }
+  .empty { text-align: center; color: #9ca3af; }
+  .err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .tabs button { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none; background: #f3f4f6; color: #374151; cursor: pointer; }
+  .tabs button.on { background: #2563eb; color: white; }
+  .loading { text-align: center; padding: 40px; color: #6b7280; font-size: 14px; }
 </style>
 </head>
 <body>
 
-<!-- 로그인 화면 -->
-<div id="loginBox">
-  <h2>근무현황 로그인</h2>
-  <input id="empNo" placeholder="사번" autocomplete="username">
-  <input id="password" type="password" placeholder="비밀번호" autocomplete="current-password">
-  <button id="loginBtn">로그인</button>
-  <div id="loginErr"></div>
-</div>
+  <h1>출근 현황판</h1>
+  <div id="errorBox" class="err" style="display:none;"></div>
 
-<!-- 메인 화면 -->
-<div id="mainBox">
-  <h1>근무현황</h1>
-  <div class="sub">일자별 출퇴근 기록·근무상태 한눈에 보기</div>
-
-  <div class="toolbar">
-    <input type="date" id="dateInput">
-    <button id="todayBtn">오늘</button>
-    <button id="prevBtn">◀ 전일</button>
-    <button id="nextBtn">다음날 ▶</button>
-    <input type="text" id="searchInput" placeholder="이름 또는 사번" style="padding:7px 10px; border:1px solid #ddd; border-radius:6px;">
-    <button id="searchBtn" class="primary">검색</button>
-    <div class="spacer"></div>
-    <span id="userLabel" style="font-size:13px; color:#666;"></span>
-    <button id="logoutBtn">로그아웃</button>
+  <div class="filter-bar">
+    <input type="date" id="dateInput" onchange="loadData()">
+    <select id="siteSelect" onchange="renderUI()">
+      <option value="전체">전체 사업장</option>
+      <option value="반월">반월</option>
+      <option value="시화">시화</option>
+      <option value="대양">대양</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="onlyCheck" onchange="renderUI()"> 현재 출근자만(근무중)</label>
+    <button onclick="loadData()">새로고침</button>
   </div>
 
-  <div class="badges" id="badges"></div>
+  <div id="loadingBox" class="loading">데이터를 불러오는 중입니다...</div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>No</th><th>사번</th><th>이름</th><th>부서</th>
-        <th>예정시간</th><th>출퇴근</th><th>상태</th>
-      </tr>
-    </thead>
-    <tbody id="tbody">
-      <tr id="loadingRow"><td colspan="7">불러오는 중...</td></tr>
-    </tbody>
-  </table>
-</div>
+  <div id="mainSection" style="display:none;">
+    <div class="site-grid" id="siteCards"></div>
+
+    <div class="card">
+      <div class="tabs">
+        <button id="tabPart" class="on" onclick="switchView('part')">파트별</button>
+        <button id="tabShift" onclick="switchView('shift')">조별</button>
+      </div>
+      <table><tbody id="bucketTable"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h2>출근 명단</h2>
+      <table>
+        <thead><tr><th>이름</th><th>사번</th><th>파트</th><th>조</th><th>출근</th><th>퇴근</th></tr></thead>
+        <tbody id="rowsTable"><tr class="empty"><td colspan="6">데이터 없음</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>출퇴근 변경 요청</h2>
+      <table>
+        <thead><tr><th>이름</th><th>사번</th><th>날짜</th><th>내용</th><th>상태</th></tr></thead>
+        <tbody id="requestsTable"><tr class="empty"><td colspan="5">요청 없음</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 
 <script>
-const API_BASE = 'https://worksadmin.dygroup.co.kr';
+  // 👉 구글 앱스 스크립트 웹 앱 URL 입력
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbx_4iVPueNcl4vesXrnPPdD3wnrw_0HYtKnzTcVY5YQPTPfYvkija7RgSSiMAx9Ouv1/exec';
 
-const loginBox = document.getElementById('loginBox');
-const mainBox = document.getElementById('mainBox');
-const loginErr = document.getElementById('loginErr');
-const dateInput = document.getElementById('dateInput');
-const searchInput = document.getElementById('searchInput');
-const tbody = document.getElementById('tbody');
-const badges = document.getElementById('badges');
-const userLabel = document.getElementById('userLabel');
+  const TARGET_PARTS = ["초지파트", "원질파트", "공무파트", "소각파트", "환경파트", "전기파트"];
+  const SHIFT_TEAMS = ["A", "B", "C", "D"];
+  const SITES = ["반월", "시화", "대양"];
 
-function todayStr() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-}
-function shiftDate(str, delta) {
-  const d = new Date(str + 'T00:00:00');
-  d.setDate(d.getDate() + delta);
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-}
+  let rawData = null;
+  let currentView = 'part';
 
-function getToken() { return localStorage.getItem('work_status_token'); }
-function setToken(t) { localStorage.setItem('work_status_token', t); }
-function clearToken() { localStorage.removeItem('work_status_token'); }
+  window.onload = function() {
+    document.getElementById('dateInput').value = new Date().toISOString().slice(0, 10);
+    loadData();
+  };
 
-async function login(emp_no, password) {
-  const res = await fetch(API_BASE + '/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ emp_no, password })
-  });
-  if (!res.ok) throw new Error('로그인 실패 (상태 ' + res.status + ')');
-  const json = await res.json();
-  return json.data;
-}
+  async function loadData() {
+    const workDate = document.getElementById('dateInput').value;
+    document.getElementById('loadingBox').style.display = 'block';
+    document.getElementById('mainSection').style.display = 'none';
+    document.getElementById('errorBox').style.display = 'none';
 
-async function fetchAttendances(date) {
-  const params = new URLSearchParams({
-    start_date: date,
-    end_date: date,
-    page: '1',
-    size: '100',
-    department_id: '10',
-    include_descendants: 'true'
-  });
-  const res = await fetch(API_BASE + '/api/attendances?' + params.toString(), {
-    headers: { 'Authorization': 'Bearer ' + getToken() }
-  });
-  if (res.status === 401) {
-    clearToken();
-    showLogin('토큰이 만료되었습니다. 다시 로그인해주세요.');
-    throw new Error('unauthorized');
-  }
-  if (!res.ok) throw new Error('조회 실패 (상태 ' + res.status + ')');
-  return res.json();
-}
+    try {
+      const resp = await fetch(`${GAS_URL}?date=${workDate}`);
+      const json = await resp.json();
 
-function fmtTime(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-}
+      if (!json.success) {
+        throw new Error(json.error || '데이터를 가져오지 못했습니다.');
+      }
 
-function statusLabel(s) {
-  const map = { LATE:'지각', WORKING:'근무중', SCHEDULED:'예정', DONE:'퇴근', ABSENT:'결근' };
-  return map[s] || s;
-}
+      rawData = json.data;
+      document.getElementById('loadingBox').style.display = 'none';
+      document.getElementById('mainSection').style.display = 'block';
+      renderUI();
 
-function render(json) {
-  const rows = json.data || [];
-  const counts = json.status_counts || {};
-  const total = json.total ?? rows.length;
-
-  badges.innerHTML = `
-    <span class="badge total">총 ${total}건</span>
-    <span class="badge working">근무중 ${counts.WORKING || 0}</span>
-    <span class="badge late">지각 ${counts.LATE || 0}</span>
-    <span class="badge scheduled">예정 ${counts.SCHEDULED || 0}</span>
-  `;
-
-  const q = searchInput.value.trim();
-  const filtered = q
-    ? rows.filter(r => r.employee_name.includes(q) || r.emp_no.includes(q))
-    : rows;
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr id="emptyRow"><td colspan="7">데이터가 없습니다.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = filtered.map((r, i) => {
-    const scheduled = r.scheduled_start && r.scheduled_end
-      ? `${r.scheduled_start.slice(0,5)}-${r.scheduled_end.slice(0,5)}${r.schedule_is_next_day ? ' (익일)' : ''}`
-      : '자유';
-    const inOut = [fmtTime(r.check_in_time), fmtTime(r.check_out_time)].filter(Boolean).join(' - ') +
-                  (r.check_in_time && !r.check_out_time ? '-' : '');
-    return `<tr>
-      <td>${i+1}</td>
-      <td>${r.emp_no}</td>
-      <td>${r.employee_name} ${r.employee_position ? `<span style="color:#999">${r.employee_position}</span>` : ''}</td>
-      <td>${r.department_name}</td>
-      <td>${scheduled}</td>
-      <td>${inOut}</td>
-      <td><span class="status-pill status-${r.status}">${statusLabel(r.status)}</span></td>
-    </tr>`;
-  }).join('');
-}
-
-async function loadData() {
-  tbody.innerHTML = '<tr id="loadingRow"><td colspan="7">불러오는 중...</td></tr>';
-  try {
-    const json = await fetchAttendances(dateInput.value);
-    render(json);
-  } catch (e) {
-    if (e.message !== 'unauthorized') {
-      tbody.innerHTML = `<tr><td colspan="7" style="color:#e03131">오류: ${e.message}</td></tr>`;
+    } catch (err) {
+      document.getElementById('loadingBox').style.display = 'none';
+      const errBox = document.getElementById('errorBox');
+      errBox.innerText = err.message;
+      errBox.style.display = 'block';
     }
   }
-}
 
-function showLogin(msg) {
-  mainBox.style.display = 'none';
-  loginBox.style.display = 'block';
-  if (msg) {
-    loginErr.textContent = msg;
-    loginErr.style.display = 'block';
+  function switchView(mode) {
+    currentView = mode;
+    document.getElementById('tabPart').className = mode === 'part' ? 'on' : '';
+    document.getElementById('tabShift').className = mode === 'shift' ? 'on' : '';
+    renderUI();
   }
-}
 
-function showMain(user) {
-  loginBox.style.display = 'none';
-  mainBox.style.display = 'block';
-  userLabel.textContent = user ? `${user.name} (${user.department_name})` : '';
-  dateInput.value = todayStr();
-  loadData();
-}
+  function renderUI() {
+    if (!rawData) return;
+    const siteFilter = document.getElementById('siteSelect').value;
+    const onlyPresent = document.getElementById('onlyCheck').checked;
 
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  loginErr.style.display = 'none';
-  const emp_no = document.getElementById('empNo').value.trim();
-  const password = document.getElementById('password').value;
-  if (!emp_no || !password) {
-    loginErr.textContent = '사번과 비밀번호를 입력하세요.';
-    loginErr.style.display = 'block';
-    return;
+    // 1. 사이트별 카드
+    let siteCardsHtml = '';
+    SITES.forEach(s => {
+      const c = rawData.att.siteCounts[s] || { total: 0, working: 0 };
+      siteCardsHtml += `
+        <div class="site-card">
+          <div class="site-name">${s}</div>
+          <div class="site-num"><b>${c.working}</b> / ${c.total}</div>
+        </div>`;
+    });
+    document.getElementById('siteCards').innerHTML = siteCardsHtml;
+
+    // 2. 파트별/조별 테이블
+    let bucketHtml = '';
+    if (currentView === 'part') {
+      const keys = TARGET_PARTS.concat(['기타']).filter(k => rawData.att.partCounts[k]);
+      bucketHtml = keys.map(k => {
+        const c = rawData.att.partCounts[k];
+        return `<tr><td>${k}</td><td class="num">${c.working} / ${c.total}</td></tr>`;
+      }).join('');
+    } else {
+      const keys = SHIFT_TEAMS.concat(['기타']).filter(k => rawData.att.shiftCounts[k]);
+      bucketHtml = keys.map(k => {
+        const c = rawData.att.shiftCounts[k];
+        return `<tr><td>${k}조</td><td class="num">${c.working} / ${c.total}</td></tr>`;
+      }).join('');
+    }
+    document.getElementById('bucketTable').innerHTML = bucketHtml || '<tr><td class="empty">데이터 없음</td></tr>';
+
+    // 3. 출근 명단 필터링 및 정렬
+    let rows = (siteFilter === '전체' ? SITES : [siteFilter]).reduce((acc, s) => acc.concat(rawData.att.rowsBySite[s] || []), []);
+    if (onlyPresent) {
+      rows = rows.filter(r => r.checkIn !== '-' && r.checkOut === '-');
+    }
+
+    // 지정한 파트 순서 정의
+    const PART_ORDER = ["초지파트", "원질파트", "공무파트", "소각파트", "환경파트", "전기파트", "기타"];
+
+    // 파트 순서에 맞게 정렬 (파트가 같으면 이름순)
+    rows.sort((a, b) => {
+      let idxA = PART_ORDER.indexOf(a.part);
+      let idxB = PART_ORDER.indexOf(b.part);
+      if (idxA === -1) idxA = 99;
+      if (idxB === -1) idxB = 99;
+      if (idxA !== idxB) return idxA - idxB;
+      return a.name.localeCompare(b.name);
+    });
+
+    // 파트별로 구분선(헤더)을 넣어가며 HTML 생성
+    let rowsHtml = '';
+    let lastPart = null;
+
+    rows.forEach(r => {
+      if (r.part !== lastPart) {
+        lastPart = r.part;
+        rowsHtml += `
+          <tr style="background: rgba(37, 99, 235, 0.08); font-weight: bold;">
+            <td colspan="6" style="border-top: 2px solid #2563eb; color: #2563eb; padding: 8px;">📍 ${lastPart}</td>
+          </tr>`;
+      }
+      rowsHtml += `
+        <tr class="${r.checkedIn ? '' : 'absent'}">
+          <td>${r.name}</td><td>${r.empNo}</td><td>${r.part}</td><td>${r.shift}조</td><td>${r.checkIn}</td><td>${r.checkOut}</td>
+        </tr>`;
+    });
+
+    document.getElementById('rowsTable').innerHTML = rowsHtml || '<tr><td colspan="6" class="empty">명단 없음</td></tr>';
+
+    // 4. 요청 목록
+    let reqHtml = rawData.requests.length ? rawData.requests.map(r => `
+      <tr>
+        <td>${r.employee_name || r.name || '-'}</td>
+        <td>${r.emp_no || '-'}</td>
+        <td>${r.work_date || '-'}</td>
+        <td>${r.content || r.reason || '-'}</td>
+        <td>${r.status || r.state || '-'}</td>
+      </tr>`).join('') : '<tr><td colspan="5" class="empty">요청 없음</td></tr>';
+    document.getElementById('requestsTable').innerHTML = reqHtml;
   }
-  try {
-    const data = await login(emp_no, password);
-    setToken(data.token);
-    showMain(data.user);
-  } catch (e) {
-    loginErr.textContent = e.message.includes('401') || e.message.includes('실패')
-      ? '사번 또는 비밀번호가 올바르지 않습니다.'
-      : '로그인 중 오류가 발생했습니다: ' + e.message;
-    loginErr.style.display = 'block';
-  }
-});
-
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  clearToken();
-  showLogin();
-});
-
-document.getElementById('todayBtn').addEventListener('click', () => { dateInput.value = todayStr(); loadData(); });
-document.getElementById('prevBtn').addEventListener('click', () => { dateInput.value = shiftDate(dateInput.value, -1); loadData(); });
-document.getElementById('nextBtn').addEventListener('click', () => { dateInput.value = shiftDate(dateInput.value, 1); loadData(); });
-dateInput.addEventListener('change', loadData);
-document.getElementById('searchBtn').addEventListener('click', loadData);
-searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadData(); });
-
-// 시작 시 토큰 있으면 바로 메인 화면 (사용자 정보는 재조회 없이 표시 생략, 필요시 /api/auth/me 등 추가 가능)
-if (getToken()) {
-  showMain(null);
-} else {
-  showLogin();
-}
 </script>
 </body>
 </html>
