@@ -45,13 +45,13 @@
 
   <div class="filter-bar">
     <input type="date" id="dateInput" onchange="loadData()">
-    <select id="siteSelect" onchange="renderUI()">
+<select id="siteSelect" onchange="renderUI()">
       <option value="전체">전체 사업장</option>
-      <option value="반월">반월</option>
+      <option value="반월" selected>반월</option>
       <option value="시화">시화</option>
       <option value="대양">대양</option>
     </select>
-    <label class="chk"><input type="checkbox" id="onlyCheck" onchange="renderUI()"> 현재 출근자만(근무중)</label>
+    <label class="chk"><input type="checkbox" id="onlyCheck" checked onchange="renderUI()"> 현재 출근자만(근무중)</label>
     <button onclick="loadData()">새로고침</button>
   </div>
 
@@ -96,8 +96,11 @@
   let rawData = null;
   let currentView = 'part';
 
-  window.onload = function() {
+window.onload = function() {
     document.getElementById('dateInput').value = new Date().toISOString().slice(0, 10);
+    // 기본값 명시적 지정 (반월, 체크박스 켜기)
+    document.getElementById('siteSelect').value = '반월';
+    document.getElementById('onlyCheck').checked = true;
     loadData();
   };
 
