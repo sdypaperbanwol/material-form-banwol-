@@ -172,35 +172,51 @@ window.onload = function() {
     }
     document.getElementById('bucketTable').innerHTML = bucketHtml || '<tr><td class="empty">데이터 없음</td></tr>';
 
-    // 3. 출근 명단 필터링 및 정렬
+  // 3. 출근 명단 필터링 및 정렬 (탭 상태에 따라 다르게 정렬)
     let rows = (siteFilter === '전체' ? SITES : [siteFilter]).reduce((acc, s) => acc.concat(rawData.att.rowsBySite[s] || []), []);
     if (onlyPresent) {
       rows = rows.filter(r => r.checkIn !== '-' && r.checkOut === '-');
     }
 
-    // 지정한 파트 순서 정의
     const PART_ORDER = ["초지파트", "원질파트", "공무파트", "소각파트", "환경파트", "전기파트", "기타"];
+    const SHIFT_ORDER = ["A", "B", "C", "D", "기타"];
 
-    // 파트 순서에 맞게 정렬 (파트가 같으면 이름순)
-    rows.sort((a, b) => {
-      let idxA = PART_ORDER.indexOf(a.part);
-      let idxB = PART_ORDER.indexOf(b.part);
-      if (idxA === -1) idxA = 99;
-      if (idxB === -1) idxB = 99;
-      if (idxA !== idxB) return idxA - idxB;
-      return a.name.localeCompare(b.name);
-    });
+    if (currentView === 'part') {
+      // 1) 파트별 탭일 때: 파트 순서 정렬
+      rows.sort((a, b) => {
+        let idxA = PART_ORDER.indexOf(a.part);
+        let idxB = PART_ORDER.indexOf(b.part);
+        if (idxA === -1) idxA = 99;
+        if (idxB === -1) idxB = 99;
+        if (idxA !== idxB) return idxA - idxB;
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      // 2) 조별 탭일 때: 조 순서(A->B->C->D) 정렬
+      rows.sort((a, b) => {
+        let idxA = SHIFT_ORDER.indexOf(a.shift);
+        let idxB = SHIFT_ORDER.indexOf(b.shift);
+        if (idxA === -1) idxA = 99;
+        if (idxB === -1) idxB = 99;
+        if (idxA !== idxB) return idxA - idxB;
+        return a.name.localeCompare(b.name);
+      });
+    }
 
-    // 파트별로 구분선(헤더)을 넣어가며 HTML 생성
+    // 탭에 맞는 구분선(헤더)을 넣어가며 HTML 생성
     let rowsHtml = '';
-    let lastPart = null;
+    let lastGroupHeader = null;
 
     rows.forEach(r => {
-      if (r.part !== lastPart) {
-        lastPart = r.part;
+      // 탭 모드에 따라 구분선 단위를 파트 또는 조로 결정
+      const currentGroupHeader = currentView === 'part' ? r.part : `${r.shift}조`;
+
+      if (currentGroupHeader !== lastGroupHeader) {
+        lastGroupHeader = currentGroupHeader;
+        const icon = currentView === 'part' ? '📍' : '👥';
         rowsHtml += `
           <tr style="background: rgba(37, 99, 235, 0.08); font-weight: bold;">
-            <td colspan="6" style="border-top: 2px solid #2563eb; color: #2563eb; padding: 8px;">📍 ${lastPart}</td>
+            <td colspan="6" style="border-top: 2px solid #2563eb; color: #2563eb; padding: 8px;">${icon} ${lastGroupHeader}</td>
           </tr>`;
       }
       rowsHtml += `
