@@ -169,6 +169,10 @@
 
                     <!-- Export Buttons -->
                     <div class="flex items-center gap-2">
+                        <label class="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium px-2 cursor-pointer select-none">
+                            <input type="checkbox" onchange="toggleEmptyFields(this)" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>빈 값·0 표시 (카드)</span>
+                        </label>
                         <span id="bldgCountBadge" class="text-xs text-slate-500 font-medium px-2">총 0건</span>
                         <button onclick="downloadCSV()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium transition-colors">
                             <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
@@ -178,7 +182,7 @@
                 </div>
 
                 <!-- Cards View -->
-                <div id="bldgViewCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div id="bldgViewCards" class="grid grid-cols-1 gap-4"></div>
 
                 <!-- Table View -->
                 <div id="bldgViewTable" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -543,73 +547,185 @@ function fetchBuildingRegisterHubData() {
             }
         }
 
+        // ===== 건축물대장 항목명(한글) 매핑 =====
+        const FIELD_LABELS = {
+            rnum: '순번', platPlc: '대지위치', sigunguCd: '시군구코드', bjdongCd: '법정동코드',
+            platGbCd: '대지구분코드', bun: '번', ji: '지', mgmBldrgstPk: '관리건축물대장PK',
+            regstrGbCd: '대장구분코드', regstrGbCdNm: '대장구분', regstrKindCd: '대장종류코드', regstrKindCdNm: '대장종류',
+            newOldRegstrGbCd: '신구대장구분코드', newOldRegstrGbCdNm: '신구대장구분',
+            newPlatPlc: '도로명대지위치', bldNm: '건물명', splotNm: '특수지명', block: '블록', lot: '로트', bylotCnt: '외필지수',
+            naRoadCd: '새주소도로코드', naBjdongCd: '새주소법정동코드', naUgrndCd: '새주소지상지하코드',
+            naMainBun: '새주소본번', naSubBun: '새주소부번',
+            dongNm: '동명칭', mainAtchGbCd: '주부속구분코드', mainAtchGbCdNm: '주부속구분',
+            platArea: '대지면적', archArea: '건축면적', bcRat: '건폐율', totArea: '연면적',
+            vlRatEstmTotArea: '용적률산정연면적', vlRat: '용적률', totDongTotArea: '총동연면적',
+            strctCd: '구조코드', strctCdNm: '구조', etcStrct: '기타구조',
+            mainPurpsCd: '주용도코드', mainPurpsCdNm: '주용도', etcPurps: '기타용도',
+            roofCd: '지붕코드', roofCdNm: '지붕', etcRoof: '기타지붕',
+            hhldCnt: '세대수', fmlyCnt: '가구수', hoCnt: '호수', heit: '높이',
+            grndFlrCnt: '지상층수', ugrndFlrCnt: '지하층수',
+            rideUseElvtCnt: '승용승강기수', emgenUseElvtCnt: '비상용승강기수',
+            mainBldCnt: '주건축물수', atchBldCnt: '부속건축물수', atchBldArea: '부속건축물면적',
+            totPkngCnt: '총주차수',
+            indrMechUtcnt: '옥내기계식대수', indrMechArea: '옥내기계식면적',
+            oudrMechUtcnt: '옥외기계식대수', oudrMechArea: '옥외기계식면적',
+            indrAutoUtcnt: '옥내자주식대수', indrAutoArea: '옥내자주식면적',
+            oudrAutoUtcnt: '옥외자주식대수', oudrAutoArea: '옥외자주식면적',
+            pmsDay: '허가일', stcnsDay: '착공일', useAprDay: '사용승인일',
+            pmsnoYear: '허가번호년', pmsnoKikCd: '허가번호기관코드', pmsnoKikCdNm: '허가번호기관',
+            pmsnoGbCd: '허가번호구분코드', pmsnoGbCdNm: '허가번호구분', crtnDay: '생성일자',
+            engrGrade: '에너지효율등급', engrRat: '에너지절감율', engrEpi: 'EPI점수',
+            gnBldGrade: '친환경건축물등급', gnBldCert: '친환경건축물인증점수',
+            itgBldGrade: '지능형건축물등급', itgBldCert: '지능형건축물인증점수',
+            flrGbCd: '층구분코드', flrGbCdNm: '층구분', flrNo: '층번호', flrNoNm: '층번호명',
+            area: '면적', areaExctYn: '면적제외여부',
+            hoNm: '호명칭', exposPubuseGbCd: '전유공용구분코드', exposPubuseGbCdNm: '전유공용구분',
+            jiyukCd: '지역코드', jiyukCdNm: '지역', jiguCd: '지구코드', jiguCdNm: '지구',
+            guyukCd: '구역코드', guyukCdNm: '구역'
+        };
+        const AREA_KEYS = new Set(['platArea','archArea','totArea','vlRatEstmTotArea','totDongTotArea','atchBldArea','indrMechArea','oudrMechArea','indrAutoArea','oudrAutoArea','area']);
+        const RATE_KEYS = new Set(['bcRat','vlRat','engrRat']);
+        const DATE_KEYS = new Set(['pmsDay','stcnsDay','useAprDay','crtnDay']);
+        const UNIT_SUFFIX = {
+            heit: ' m', grndFlrCnt: '층', ugrndFlrCnt: '층', rideUseElvtCnt: '대', emgenUseElvtCnt: '대',
+            hhldCnt: '세대', fmlyCnt: '가구', hoCnt: '호', mainBldCnt: '동', atchBldCnt: '동',
+            totPkngCnt: '대', indrMechUtcnt: '대', oudrMechUtcnt: '대', indrAutoUtcnt: '대', oudrAutoUtcnt: '대'
+        };
+
+        // 카드 뷰 그룹 (여기에 없는 항목은 맨 아래 "코드·식별정보"에 모두 표시됨)
+        const CARD_GROUPS = [
+            { title: '대장 정보', keys: ['regstrKindCdNm','regstrGbCdNm','newOldRegstrGbCdNm','platPlc','dongNm','hoNm','mainAtchGbCdNm','splotNm','block','lot','bylotCnt'] },
+            { title: '면적·비율', keys: ['platArea','archArea','bcRat','totArea','vlRatEstmTotArea','vlRat','totDongTotArea','area'] },
+            { title: '층·전유공용', keys: ['flrGbCdNm','flrNoNm','flrNo','exposPubuseGbCdNm','areaExctYn'] },
+            { title: '용도·구조·규모', keys: ['mainPurpsCdNm','etcPurps','strctCdNm','etcStrct','roofCdNm','etcRoof','heit','grndFlrCnt','ugrndFlrCnt','rideUseElvtCnt','emgenUseElvtCnt','mainBldCnt','atchBldCnt','atchBldArea','hhldCnt','fmlyCnt','hoCnt'] },
+            { title: '주차', keys: ['totPkngCnt','indrMechUtcnt','indrMechArea','oudrMechUtcnt','oudrMechArea','indrAutoUtcnt','indrAutoArea','oudrAutoUtcnt','oudrAutoArea'] },
+            { title: '허가·사용승인', keys: ['pmsDay','stcnsDay','useAprDay','pmsnoYear','pmsnoKikCdNm','pmsnoGbCdNm','crtnDay'] },
+            { title: '에너지·인증', keys: ['engrGrade','engrRat','engrEpi','gnBldGrade','gnBldCert','itgBldGrade','itgBldCert'] },
+            { title: '지역·지구·구역', keys: ['jiyukCdNm','jiguCdNm','guyukCdNm'] }
+        ];
+
+        let showEmptyFields = false; // 카드 뷰에서 빈 값/0 표시 여부
+
+        const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const labelOf = (k) => FIELD_LABELS[k] || k;
+        const isBlank = (v) => v === undefined || v === null || String(v).trim() === '';
+        const isZero = (v) => /^0+(\.0+)?$/.test(String(v).trim());
+
+        function formatValue(k, v) {
+            if (isBlank(v)) return '-';
+            const s = String(v).trim();
+            const isNum = !isNaN(Number(s));
+            if (DATE_KEYS.has(k) && /^\d{8}$/.test(s)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+            if (AREA_KEYS.has(k) && isNum) return `${Number(s).toLocaleString('ko-KR', { maximumFractionDigits: 2 })} ㎡`;
+            if (RATE_KEYS.has(k) && isNum) return `${Number(s).toLocaleString('ko-KR', { maximumFractionDigits: 2 })} %`;
+            if (UNIT_SUFFIX[k] && isNum) return `${s}${UNIT_SUFFIX[k]}`;
+            return s;
+        }
+
+        const fieldHtml = (k, v) => `
+            <div class="min-w-0">
+                <div class="text-[11px] text-slate-400">${esc(labelOf(k))}</div>
+                <div class="text-xs text-slate-800 font-medium break-words">${esc(formatValue(k, v))}</div>
+            </div>`;
+
+        function renderCards(items) {
+            const container = document.getElementById('bldgViewCards');
+            container.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-xl border border-slate-200">
+                        <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                        <p>조회된 건축물대장 정보가 없습니다.</p>
+                    </div>`;
+                return;
+            }
+
+            const single = items.length === 1;
+            container.classList.toggle('lg:grid-cols-2', !single);
+            const cols = single ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3';
+
+            items.forEach(item => {
+                const visible = (k) => k in item && (showEmptyFields || !(isBlank(item[k]) || isZero(item[k])));
+                const used = new Set(['bldNm', 'newPlatPlc']);
+                if (!item.newPlatPlc) used.add('platPlc');
+
+                const title = [item.bldNm, item.dongNm, item.flrNoNm, item.hoNm].filter(v => !isBlank(v)).join(' ') || item.platPlc || '건물명 미기재';
+                const addr = item.newPlatPlc || item.platPlc || '';
+                const badge = item.mainPurpsCdNm || item.regstrKindCdNm || '';
+
+                let sections = '';
+                CARD_GROUPS.forEach(g => {
+                    g.keys.forEach(k => used.add(k));
+                    const keys = g.keys.filter(visible);
+                    if (keys.length) {
+                        sections += `
+                            <div class="border-t border-slate-100 pt-3">
+                                <h5 class="text-[11px] font-semibold text-emerald-700 mb-2">${g.title}</h5>
+                                <div class="grid ${cols} gap-x-4 gap-y-2.5">${keys.map(k => fieldHtml(k, item[k])).join('')}</div>
+                            </div>`;
+                    }
+                });
+
+                const rest = Object.keys(item).filter(k => !used.has(k) && visible(k));
+                if (rest.length) {
+                    sections += `
+                        <details class="border-t border-slate-100 pt-3">
+                            <summary class="cursor-pointer text-[11px] font-semibold text-slate-500 hover:text-slate-700">코드·식별정보 (${rest.length})</summary>
+                            <div class="grid ${cols} gap-x-4 gap-y-2.5 mt-2">${rest.map(k => fieldHtml(k, item[k])).join('')}</div>
+                        </details>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-3 pb-1">
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-slate-900 text-sm break-words">${esc(title)}</h4>
+                            <p class="text-xs text-slate-500 mt-0.5 break-words">${esc(addr)}</p>
+                        </div>
+                        ${badge ? `<span class="shrink-0 px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded">${esc(badge)}</span>` : ''}
+                    </div>
+                    ${sections}`;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleEmptyFields(cb) {
+            showEmptyFields = cb.checked;
+            renderCards(fetchedDataItems);
+            lucide.createIcons();
+        }
+
         // Render Building Results into View Options
         function renderBuildingResults(items, fullJson) {
             document.getElementById('bldgCountBadge').textContent = `총 ${items.length}건`;
 
-            // 1. Render Cards View
-            const cardsContainer = document.getElementById('bldgViewCards');
-            cardsContainer.innerHTML = '';
+            // 1. Cards View (전체 항목, 한글명)
+            renderCards(items);
 
-            if (items.length === 0) {
-                cardsContainer.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-xl border border-slate-200">
-                        <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                        <p>조회된 건축물대장 정보가 없습니다.</p>
-                    </div>
-                `;
-            } else {
-                items.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-shadow space-y-3";
-                    
-                    const bldgNm = item.bldNm || item.platPlc || '건물명 미기재';
-                    const mainPurp = item.mainPurpsCdNm || '주용도 정보 없음';
-                    const area = item.totArea ? `${Number(item.totArea).toLocaleString()} ㎡` : '-';
-
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
-                            <div>
-                                <h4 class="font-bold text-slate-900 text-sm">${bldgNm}</h4>
-                                <p class="text-xs text-slate-500 mt-0.5">${item.newPlatPlc || item.platPlc || ''}</p>
-                            </div>
-                            <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded">${mainPurp}</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
-                            <div><span class="text-slate-400">연면적:</span> ${area}</div>
-                            <div><span class="text-slate-400">지상/지하:</span> ${item.grndFlrCnt || 0}층 / ${item.ugrndFlrCnt || 0}층</div>
-                            <div><span class="text-slate-400">주구조:</span> ${item.strctCdNm || '-'}</div>
-                            <div><span class="text-slate-400">사용승인일:</span> ${item.useAprDay || '-'}</div>
-                        </div>
-                    `;
-                    cardsContainer.appendChild(card);
-                });
-            }
-
-            // 2. Render Table View
+            // 2. Table View (한글 항목명 + 영문 키)
             const tHeader = document.getElementById('bldgTableHeader');
             const tBody = document.getElementById('bldgTableBody');
             tHeader.innerHTML = '';
             tBody.innerHTML = '';
 
             if (items.length > 0) {
-                const keys = Object.keys(items[0]);
-                let headHtml = '<tr>';
-                keys.forEach(k => headHtml += `<th class="px-3 py-2.5 whitespace-nowrap">${k}</th>`);
-                headHtml += '</tr>';
-                tHeader.innerHTML = headHtml;
+                const keys = [...new Set(items.flatMap(i => Object.keys(i)))];
+                tHeader.innerHTML = '<tr>' + keys.map(k => `
+                    <th class="px-3 py-2.5 whitespace-nowrap">
+                        <div>${esc(labelOf(k))}</div>
+                        ${FIELD_LABELS[k] ? `<div class="font-normal text-[10px] text-slate-400">${esc(k)}</div>` : ''}
+                    </th>`).join('') + '</tr>';
 
-                items.forEach(item => {
-                    let rowHtml = '<tr class="hover:bg-slate-50 transition-colors">';
-                    keys.forEach(k => {
-                        rowHtml += `<td class="px-3 py-2 whitespace-nowrap border-t border-slate-100">${item[k] !== undefined ? item[k] : ''}</td>`;
-                    });
-                    rowHtml += '</tr>';
-                    tBody.innerHTML += rowHtml;
-                });
+                tBody.innerHTML = items.map(item =>
+                    '<tr class="hover:bg-slate-50 transition-colors">' +
+                    keys.map(k => `<td class="px-3 py-2 whitespace-nowrap border-t border-slate-100">${item[k] !== undefined ? esc(item[k]) : ''}</td>`).join('') +
+                    '</tr>'
+                ).join('');
             }
 
-            // 3. Render JSON View
+            // 3. JSON View
             document.getElementById('bldgJsonPre').innerHTML = syntaxHighlightJson(fullJson);
             lucide.createIcons();
         }
@@ -632,16 +748,16 @@ function fetchBuildingRegisterHubData() {
             btnJson.className = mode === 'json' ? activeClass : inactiveClass;
         }
 
-        // CSV Downloader
+        // CSV Downloader (한글 항목명 헤더)
         function downloadCSV() {
             if (!fetchedDataItems || fetchedDataItems.length === 0) {
                 alert('다운로드할 데이터가 없습니다.');
                 return;
             }
 
-            const keys = Object.keys(fetchedDataItems[0]);
+            const keys = [...new Set(fetchedDataItems.flatMap(i => Object.keys(i)))];
             let csvContent = "\uFEFF"; // UTF-8 BOM for Excel compatibility
-            csvContent += keys.join(",") + "\n";
+            csvContent += keys.map(k => `"${labelOf(k).replace(/"/g, '""')}"`).join(",") + "\n";
 
             fetchedDataItems.forEach(item => {
                 const row = keys.map(k => {
