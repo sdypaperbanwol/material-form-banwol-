@@ -69,7 +69,13 @@
         .lg-3 > tbody > tr > td { padding: 0; border: 0; vertical-align: top; }
         .lg-3 .lg-t { margin-top: 0; }
         .lg-3 > tbody > tr > td + td .lg-t { margin-left: -1px; width: calc(100% + 1px); }
-        .lg-stack .lg-t + .lg-t { margin-top: -1px; }
+        .lg-stack { display: flex; flex-direction: column; flex: 1 1 auto; }
+        .lg-stack > .lg-t { flex: 1 1 auto; margin-top: 0; }
+        .lg-stack > .lg-t + .lg-t { margin-top: -1px; }
+        .lg-flex { display: flex; align-items: stretch; margin-top: 10px; }
+        .lg-col { display: flex; flex-direction: column; min-width: 0; }
+        .lg-col + .lg-col { margin-left: -1px; }
+        .lg-col > .lg-t { flex: 1 1 auto; margin-top: 0; }
         .lg-foot { margin-top: 12px; font-size: 9.5px; color: #475569; line-height: 1.55; }
 
         @page { size: A4 portrait; margin: 8mm; }
@@ -1015,8 +1021,8 @@ function fetchBuildingRegisterHubData() {
             <div class="ledger-page">
                 ${lgHead(kind, 1)}
                 <div class="lg-box">${rows}</div>
-                <table class="lg-3"><tr>
-                    <td style="width:60%">
+                <div class="lg-flex">
+                    <div class="lg-col" style="flex:60 1 0">
                         <table class="lg-t">
                             <tr><th colspan="5">건축물 현황</th></tr>
                             <tr><th>구분</th><th>층별</th><th>구조</th><th>용도</th><th>면적(㎡)</th></tr>
@@ -1024,15 +1030,15 @@ function fetchBuildingRegisterHubData() {
                             ${Array.from({ length: fPad }, () => '<tr>' + fEmpty + '</tr>').join('')}
                             <tr><td colspan="5" class="rest">- 이하여백 -</td></tr>
                         </table>
-                    </td>
-                    <td style="width:40%">
+                    </div>
+                    <div class="lg-col" style="flex:40 1 0">
                         <table class="lg-t">
                             <tr><th colspan="2">소유자 현황</th></tr>
                             <tr><th>성명(명칭)<br>주민(법인)등록번호</th><th>소유권 지분<br>변동일·변동원인</th></tr>
                             <tr><td colspan="2" class="na" style="height:150px">소유자 정보는 API가 제공하지 않습니다.</td></tr>
                         </table>
-                    </td>
-                </tr></table>
+                    </div>
+                </div>
                 ${lgFoot(r, st)}
             </div>`;
         }
@@ -1128,15 +1134,15 @@ function fetchBuildingRegisterHubData() {
             <div class="ledger-page">
                 ${lgHead('', 2)}
                 <div class="lg-box">${head}</div>
-                <table class="lg-3"><tr>
-                    <td style="width:30%">${people}</td>
-                    <td style="width:38%">${parking}</td>
-                    <td style="width:32%">${side}</td>
-                </tr></table>
-                <table class="lg-3"><tr>
-                    <td style="width:46%">${certTable}</td>
-                    <td style="width:54%">${structMgmt}</td>
-                </tr></table>
+                <div class="lg-flex">
+                    <div class="lg-col" style="flex:30 1 0">${people}</div>
+                    <div class="lg-col" style="flex:38 1 0">${parking}</div>
+                    <div class="lg-col" style="flex:32 1 0">${side}</div>
+                </div>
+                <div class="lg-flex">
+                    <div class="lg-col" style="flex:46 1 0">${certTable}</div>
+                    <div class="lg-col" style="flex:54 1 0">${structMgmt}</div>
+                </div>
                 ${changes}
                 ${lgFoot(r, st)}
             </div>`;
