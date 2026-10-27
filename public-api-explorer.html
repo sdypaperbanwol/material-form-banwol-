@@ -81,8 +81,11 @@
         @page { size: A4 landscape; margin: 8mm; }
         @media print {
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            html, body.lg-printing { margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; height: auto !important; display: block !important; }
+            .lg-print-anc { display: block !important; margin: 0 !important; padding: 0 !important; border: 0 !important; max-width: none !important; width: auto !important; min-height: 0 !important; height: auto !important; flex: none !important; gap: 0 !important; background: none !important; box-shadow: none !important; overflow: visible !important; }
+            .lg-print-anc > * { margin-top: 0 !important; }
             .ledger-wrap { overflow: visible; padding: 0; }
-            .ledger-page { width: 100%; min-height: 192mm; margin: 0; border: none; box-shadow: none; padding: 2mm 3mm; page-break-after: always; break-after: page; }
+            .ledger-page { width: 100%; min-height: 0; margin: 0; border: none; box-shadow: none; padding: 3mm 4mm; page-break-after: always; break-after: page; }
             .ledger-page:last-child { page-break-after: auto; break-after: auto; }
         }
     </style>
@@ -1207,11 +1210,12 @@ function fetchBuildingRegisterHubData() {
             renderFormView();
         }
 
-        // 서식 영역만 인쇄: 서식을 감싸는 경로의 다른 요소를 잠시 숨긴다.
-        function printLedger() {
+        // 서식 영역만 인쇄: 서식을 감싸는 경로의 다른 요소는 숨기고, 바깥 여백/최소높이는 인쇄 때만 제거한다.
+        function preparePrint() {
             const target = document.getElementById('ledgerPages');
-            if (!target) return;
+            if (!target) return null;
             const hidden = [];
+            const anc = [];
             let node = target;
             while (node && node !== document.body) {
                 const parent = node.parentElement;
@@ -1222,16 +1226,28 @@ function fetchBuildingRegisterHubData() {
                         sib.style.display = 'none';
                     }
                 });
+                if (parent !== document.body) { parent.classList.add('lg-print-anc'); anc.push(parent); }
                 node = parent;
             }
+            document.body.classList.add('lg-printing');
             const prevZoom = target.style.zoom;
             target.style.zoom = '';
-            let restored = false;
-            const restore = () => {
-                if (restored) return;
-                restored = true;
-                target.style.zoom = prevZoom;
+            return () => {
                 hidden.forEach(([el, d]) => { el.style.display = d; });
+                anc.forEach(a => a.classList.remove('lg-print-anc'));
+                document.body.classList.remove('lg-printing');
+                target.style.zoom = prevZoom;
+            };
+        }
+
+        function printLedger() {
+            const undo = preparePrint();
+            if (!undo) return;
+            let done = false;
+            const restore = () => {
+                if (done) return;
+                done = true;
+                undo();
                 window.removeEventListener('afterprint', restore);
             };
             window.addEventListener('afterprint', restore);
