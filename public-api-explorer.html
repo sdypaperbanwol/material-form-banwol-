@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공공데이터 건축물대장 & API 통합 조회 플랫폼</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Daum/Kakao Postcode API -->
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Json viewer highlights */
+        .json-key { color: #0284c7; font-weight: 600; }
+        .json-string { color: #16a34a; }
+        .json-number { color: #ea580c; }
+        .json-boolean { color: #9333ea; }
+        .json-null { color: #64748b; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-md shadow-emerald-200">
+                        <i data-lucide="building-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-slate-900 leading-tight">공공데이터 건축물대장 Hub</h1>
+                        <p class="text-xs text-slate-500">주소 자동 변환 & 공공 API 통합 조회 플랫폼</p>
+                    </div>
+                </div>
+
+                <!-- Global API Key Modal Trigger & Status -->
+                <div class="flex items-center gap-3">
+                    <div id="keyStatusBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        API 인증키 미설정
+                    </div>
+                    <button onclick="openApiKeyModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
+                        <i data-lucide="key" class="w-4 h-4 text-slate-500"></i>
+                        <span>API 키 관리</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+        <!-- Navigation Tabs -->
+        <nav class="flex border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-sm overflow-x-auto">
+            <button id="tabBtnBuilding" onclick="switchTab('building')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-emerald-700 bg-emerald-50 transition-all whitespace-nowrap">
+                <i data-lucide="home" class="w-4 h-4"></i>
+                건축물대장 빠른 조회
+            </button>
+            <button id="tabBtnGeneric" onclick="switchTab('generic')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap">
+                <i data-lucide="terminal" class="w-4 h-4"></i>
+                범용 공공 API 테스터
+            </button>
+            <button id="tabBtnGas" onclick="switchTab('gas')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                구글 시트(GAS) 연동 가이드
+            </button>
+        </nav>
+
+        <!-- SECTION 1: 건축물대장 전용 대시보드 -->
+        <section id="sectionBuilding" class="space-y-6">
+            <!-- Search & Control Panel -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-emerald-600"></i>
+                            건물 주소 검색 및 파라미터 추출
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">카카오 주소 검색을 이용하면 법정동코드와 번지수가 자동으로 계산됩니다.</p>
+                    </div>
+                    <button onclick="execDaumPostcode()" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm shadow-sm hover:shadow transition-all">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                        <span>주소 찾기 (카카오)</span>
+                    </button>
+                </div>
+
+                <!-- Parameters Grid Form -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">검색된 주소</label>
+                        <input type="text" id="bldgAddress" readonly placeholder="[주소 찾기] 버튼을 눌러 주소를 선택하세요" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">시군구코드 (5자리)</label>
+                        <input type="text" id="bldgSigunguCd" placeholder="예: 11680" class="w-full border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">법정동코드 (5자리)</label>
+                        <input type="text" id="bldgBjdongCd" placeholder="예: 10100" class="w-full border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">번지 (번/지)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="bldgBun" placeholder="번(4)" class="w-1/2 border border-slate-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <input type="text" id="bldgJi" placeholder="지(4)" class="w-1/2 border border-slate-200 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Category Select & Search Button -->
+                <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                        <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">대장 종류:</span>
+                        <div class="flex gap-1.5">
+                            <button onclick="setBldgCategory('getBrTitleInfo', this)" class="bldg-cat-btn active px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-600 bg-emerald-50 text-emerald-700">표제부</button>
+                            <button onclick="setBldgCategory('getBrBasisOulnInfo', this)" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">기본개요</button>
+                            <button onclick="setBldgCategory('getBrFlrOulnInfo', this)" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">층별개요</button>
+                            <button onclick="setBldgCategory('getBrExposPubuseAreaInfo', this)" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">전유공용면적</button>
+                            <button onclick="setBldgCategory('getBrRecapTitleInfo', this)" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">총괄표제부</button>
+                        </div>
+                    </div>
+
+                    <button onclick="fetchBuildingData()" class="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="database" class="w-4 h-4"></i>
+                        <span>건축물대장 데이터 조회</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="bldgLoader" class="hidden my-12 text-center space-y-3">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-600 border-t-transparent"></div>
+                <p class="text-sm font-medium text-slate-600">국토교통부 건축물대장 API 서버와 통신 중입니다...</p>
+            </div>
+
+            <!-- Results View Options & Export -->
+            <div id="bldgResultsContainer" class="hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-100 p-2 rounded-xl">
+                    <!-- View Mode Switcher -->
+                    <div class="flex gap-1">
+                        <button onclick="switchViewMode('cards')" id="viewBtnCards" class="view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-800 shadow-sm">카드 뷰</button>
+                        <button onclick="switchViewMode('table')" id="viewBtnTable" class="view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800">테이블 뷰</button>
+                        <button onclick="switchViewMode('json')" id="viewBtnJson" class="view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800">원본 JSON</button>
+                    </div>
+
+                    <!-- Export Buttons -->
+                    <div class="flex items-center gap-2">
+                        <span id="bldgCountBadge" class="text-xs text-slate-500 font-medium px-2">총 0건</span>
+                        <button onclick="downloadCSV()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium transition-colors">
+                            <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span>CSV 다운로드</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cards View -->
+                <div id="bldgViewCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+                <!-- Table View -->
+                <div id="bldgViewTable" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto max-h-[600px]">
+                        <table class="w-full text-left text-xs">
+                            <thead id="bldgTableHeader" class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0"></thead>
+                            <tbody id="bldgTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- JSON View -->
+                <div id="bldgViewJson" class="hidden bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto font-mono text-xs max-h-[600px]">
+                    <pre id="bldgJsonPre" class="whitespace-pre-wrap"></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: 범용 공공 API 테스터 -->
+        <section id="sectionGeneric" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-5 h-5 text-indigo-600"></i>
+                        커스텀 공공데이터 API 테스트 & 매핑
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">공공데이터포털의 다른 오픈 API 엔드포인트 및 파라미터를 직접 빌드하여 실행합니다.</p>
+                </div>
+
+                <!-- Endpoint Input -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-semibold text-slate-600">API 요청 엔드포인트 URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="genEndpoint" placeholder="https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo" class="flex-1 border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                    </div>
+                </div>
+
+                <!-- Dynamic Key-Value Parameters Builder -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-semibold text-slate-600">요청 파라미터 (Query Parameters)</label>
+                        <button onclick="addParamRow()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> 파라미터 추가
+                        </button>
+                    </div>
+                    <div id="paramRowsContainer" class="space-y-2">
+                        <!-- Dynamic rows appended here -->
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button onclick="executeGenericApi()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md flex items-center gap-2 transition-all">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>API 요청 전송</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Generic Loader -->
+            <div id="genLoader" class="hidden my-12 text-center space-y-3">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+                <p class="text-sm font-medium text-slate-600">요청을 처리하고 있습니다...</p>
+            </div>
+
+            <!-- Generic Results Area -->
+            <div id="genResultsContainer" class="hidden space-y-4">
+                <div class="bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto font-mono text-xs max-h-[500px]">
+                    <pre id="genJsonPre" class="whitespace-pre-wrap"></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: 구글 시트(GAS) 연동 가이드 -->
+        <section id="sectionGas" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div class="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl">
+                        <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">구글 앱스 스크립트(GAS) 백엔드 자동 수집 가이드</h2>
+                        <p class="text-xs text-slate-500">본 도구에서 검색한 데이터를 구글 시트에 자동으로 누적 저장하는 스크립트 코드입니다.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3 text-sm text-slate-600">
+                    <h3 class="font-semibold text-slate-800">사용 방법:</h3>
+                    <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-600 leading-relaxed pl-1">
+                        <li>구글 시트(Google Sheets)를 새로 생성합니다.</li>
+                        <li>상단 메뉴에서 <strong class="text-slate-800">[확장 프로그램] ➔ [Apps Script]</strong>를 클릭합니다.</li>
+                        <li>기존 코드를 모두 지우고 아래의 스크립트 코드를 복사하여 붙여넣습니다.</li>
+                        <li>코드 내 <code class="bg-slate-100 text-pink-600 px-1 py-0.5 rounded">SERVICE_KEY</code> 항목에 본인의 공공데이터 API 키를 입력하고 저장 후 실행합니다.</li>
+                    </ol>
+                </div>
+
+                <div class="relative bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto font-mono text-xs">
+                    <button onclick="copyGasScript()" class="absolute top-3 right-3 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 text-xs flex items-center gap-1.5">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i> 코드 복사
+                    </button>
+                    <pre id="gasCodeBlock" class="whitespace-pre text-slate-300">
+// 구글 앱스 스크립트 (Google Apps Script) - 건축물대장 Hub 전용
+function fetchBuildingRegisterHubData() {
+  const SERVICE_KEY = "YOUR_PUBLIC_DATA_API_KEY_HERE"; // 공공데이터포털 인코딩 인증키
+  const sigunguCd = "11680"; // 예: 강남구
+  const bjdongCd = "10100";  // 예: 역삼동
+  const bun = "0825";        // 4자리 맞춤 (예: 825 -> 0825)
+  const ji = "0000";         // 4자리 맞춤
+  
+  const url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${SERVICE_KEY}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json&numOfRows=100`;
+  
+  try {
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const json = JSON.parse(response.getContentText());
+    const items = json.response.body.items.item;
+    
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    if (!items || items.length === 0) {
+      Logger.log("조회된 데이터가 없습니다.");
+      return;
+    }
+    
+    // 헤더 작성 (첫 줄)
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(Object.keys(items[0]));
+    }
+    
+    // 데이터 행 추가
+    items.forEach(item => {
+      sheet.appendRow(Object.values(item));
+    });
+    
+    Logger.log(`${items.length}건 수집 완료!`);
+  } catch (e) {
+    Logger.log("오류 발생: " + e.toString());
+  }
+}
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Kakao Postcode Modal Layer -->
+    <div id="postcodeLayer" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden relative flex flex-col" style="height: 520px;">
+            <div class="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <span class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600"></i>
+                    우편번호 및 지번주소 검색
+                </span>
+                <button onclick="closeDaumPostcode()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="postcodeEmbedArea" class="flex-1 w-full h-full"></div>
+        </div>
+    </div>
+
+    <!-- Modal: API Key Management -->
+    <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-100 p-6 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="key" class="w-5 h-5 text-emerald-600"></i>
+                    <h3 class="font-bold text-slate-900 text-base">공공데이터 API 인증키 설정</h3>
+                </div>
+                <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    공공데이터포털(data.go.kr)에서 발급받은 **일반 인증키**를 입력하세요. 입력된 키는 외부 서버로 전송되지 않고 브라우저(LocalStorage)에만 안전하게 저장됩니다.
+                </p>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">인코딩/디코딩 인증키 (Service Key)</label>
+                    <input type="text" id="inputApiKey" placeholder="인증키(Decoding 또는 Encoding)를 입력하세요" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeApiKeyModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium">취소</button>
+                <button onclick="saveApiKey()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // App State
+        let currentBldgCategory = 'getBrTitleInfo'; // default API operation
+        let fetchedDataItems = [];
+        let activeTab = 'building';
+
+        // Initialize App on DOM Load
+        window.onload = function() {
+            lucide.createIcons();
+            loadSavedApiKey();
+            initGenericParams();
+        };
+
+        // API Key Storage Helper
+        function loadSavedApiKey() {
+            const key = localStorage.getItem('public_api_key') || '';
+            document.getElementById('inputApiKey').value = key;
+            updateKeyBadge(key);
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('inputApiKey').value.trim();
+            localStorage.setItem('public_api_key', key);
+            updateKeyBadge(key);
+            closeApiKeyModal();
+            alert('API 인증키가 안전하게 저장되었습니다.');
+        }
+
+        function updateKeyBadge(key) {
+            const badge = document.getElementById('keyStatusBadge');
+            if (key) {
+                badge.className = "hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> API 키 설정됨`;
+            } else {
+                badge.className = "hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200";
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> API 키 미설정`;
+            }
+        }
+
+        function openApiKeyModal() { document.getElementById('apiKeyModal').classList.remove('hidden'); }
+        function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.add('hidden'); }
+
+        // Navigation Tabs
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('sectionBuilding').classList.toggle('hidden', tab !== 'building');
+            document.getElementById('sectionGeneric').classList.toggle('hidden', tab !== 'generic');
+            document.getElementById('sectionGas').classList.toggle('hidden', tab !== 'gas');
+
+            // Style Buttons
+            const activeClass = "flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-emerald-700 bg-emerald-50 transition-all whitespace-nowrap";
+            const inactiveClass = "flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap";
+
+            document.getElementById('tabBtnBuilding').className = tab === 'building' ? activeClass : inactiveClass;
+            document.getElementById('tabBtnGeneric').className = tab === 'generic' ? activeClass.replace('emerald', 'indigo') : inactiveClass;
+            document.getElementById('tabBtnGas').className = tab === 'gas' ? activeClass : inactiveClass;
+        }
+
+        // Daum/Kakao Address Postcode Layer Modal Integration (팝업 블록 해결)
+        function execDaumPostcode() {
+            const layer = document.getElementById('postcodeLayer');
+            const embedContainer = document.getElementById('postcodeEmbedArea');
+            embedContainer.innerHTML = ''; // Clear previous instance
+
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    // Extract addresses
+                    const addr = data.roadAddress || data.jibunAddress;
+                    document.getElementById('bldgAddress').value = `${addr} (${data.buildingName || ''})`.trim();
+
+                    // Extract Sigungu & Bjdong Codes from bcode (10 digits)
+                    // bcode = 5-digit Sigungu + 5-digit Bjdong
+                    if (data.bcode && data.bcode.length === 10) {
+                        document.getElementById('bldgSigunguCd').value = data.bcode.substring(0, 5);
+                        document.getElementById('bldgBjdongCd').value = data.bcode.substring(5, 10);
+                    }
+
+                    // Extract Jibun Bun & Ji numbers
+                    let mainNo = "";
+                    let subNo = "";
+
+                    const targetJibun = data.jibunAddress || data.autoJibunAddress || "";
+                    if (targetJibun) {
+                        const jibunMatch = targetJibun.match(/(\d+)(-(\d+))?$/);
+                        if (jibunMatch) {
+                            mainNo = jibunMatch[1] || "";
+                            subNo = jibunMatch[3] || "";
+                        }
+                    }
+
+                    // Pad to 4 digits for API compliance
+                    document.getElementById('bldgBun').value = mainNo ? mainNo.padStart(4, '0') : "0000";
+                    document.getElementById('bldgJi').value = subNo ? subNo.padStart(4, '0') : "0000";
+
+                    closeDaumPostcode();
+                },
+                width: '100%',
+                height: '100%'
+            }).embed(embedContainer);
+
+            layer.classList.remove('hidden');
+        }
+
+        function closeDaumPostcode() {
+            document.getElementById('postcodeLayer').classList.add('hidden');
+        }
+
+        // Category Switcher
+        function setBldgCategory(cat, btn) {
+            currentBldgCategory = cat;
+            document.querySelectorAll('.bldg-cat-btn').forEach(b => {
+                b.className = "bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50";
+            });
+            btn.className = "bldg-cat-btn active px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-600 bg-emerald-50 text-emerald-700";
+        }
+
+        // Fetch Building Register Data (Hub Service)
+        async function fetchBuildingData() {
+            const apiKey = localStorage.getItem('public_api_key');
+            if (!apiKey) {
+                alert('공공데이터 API 인증키를 먼저 설정해주세요.');
+                openApiKeyModal();
+                return;
+            }
+
+            const sigunguCd = document.getElementById('bldgSigunguCd').value.trim();
+            const bjdongCd = document.getElementById('bldgBjdongCd').value.trim();
+            let bun = document.getElementById('bldgBun').value.trim();
+            let ji = document.getElementById('bldgJi').value.trim();
+
+            if (!sigunguCd || !bjdongCd) {
+                alert('시군구코드와 법정동코드가 필요합니다. [주소 찾기] 버튼을 이용해 주소를 먼저 선택하세요.');
+                return;
+            }
+
+            // Pad Bun and Ji to 4 digits if entered as short numbers
+            bun = bun ? bun.padStart(4, '0') : '0000';
+            ji = ji ? ji.padStart(4, '0') : '0000';
+
+            const loader = document.getElementById('bldgLoader');
+            const container = document.getElementById('bldgResultsContainer');
+            
+            loader.classList.remove('hidden');
+            container.classList.add('hidden');
+
+            // 국토교통부 건축물대장정보 서비스 (BldRgstHubService)
+            const baseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/${currentBldgCategory}`;
+            const queryParams = `?serviceKey=${encodeURIComponent(apiKey)}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&_type=json&numOfRows=100`;
+
+            try {
+                const response = await fetch(baseUrl + queryParams);
+                const data = await response.json();
+
+                loader.classList.add('hidden');
+
+                if (data.response && data.response.header && (data.response.header.resultCode === "00" || data.response.header.resultCode === "000")) {
+                    let items = data.response.body.items?.item || [];
+                    if (!Array.isArray(items)) {
+                        items = items ? [items] : [];
+                    }
+                    fetchedDataItems = items;
+                    renderBuildingResults(items, data);
+                    container.classList.remove('hidden');
+                } else {
+                    const errMsg = data.response?.header?.resultMsg || '알 수 없는 오류가 발생했습니다.';
+                    alert(`API 응답 오류: ${errMsg}`);
+                }
+            } catch (err) {
+                loader.classList.add('hidden');
+                alert(`통신 실패: CORS 제한 또는 올바르지 않은 API Key/URL일 수 있습니다.\n상세: ${err.message}`);
+            }
+        }
+
+        // Render Building Results into View Options
+        function renderBuildingResults(items, fullJson) {
+            document.getElementById('bldgCountBadge').textContent = `총 ${items.length}건`;
+
+            // 1. Render Cards View
+            const cardsContainer = document.getElementById('bldgViewCards');
+            cardsContainer.innerHTML = '';
+
+            if (items.length === 0) {
+                cardsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-xl border border-slate-200">
+                        <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                        <p>조회된 건축물대장 정보가 없습니다.</p>
+                    </div>
+                `;
+            } else {
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow transition-shadow space-y-3";
+                    
+                    const bldgNm = item.bldNm || item.platPlc || '건물명 미기재';
+                    const mainPurp = item.mainPurpsCdNm || '주용도 정보 없음';
+                    const area = item.totArea ? `${Number(item.totArea).toLocaleString()} ㎡` : '-';
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm">${bldgNm}</h4>
+                                <p class="text-xs text-slate-500 mt-0.5">${item.newPlatPlc || item.platPlc || ''}</p>
+                            </div>
+                            <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded">${mainPurp}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                            <div><span class="text-slate-400">연면적:</span> ${area}</div>
+                            <div><span class="text-slate-400">지상/지하:</span> ${item.grndFlrCnt || 0}층 / ${item.ugrndFlrCnt || 0}층</div>
+                            <div><span class="text-slate-400">주구조:</span> ${item.strctCdNm || '-'}</div>
+                            <div><span class="text-slate-400">사용승인일:</span> ${item.useAprDay || '-'}</div>
+                        </div>
+                    `;
+                    cardsContainer.appendChild(card);
+                });
+            }
+
+            // 2. Render Table View
+            const tHeader = document.getElementById('bldgTableHeader');
+            const tBody = document.getElementById('bldgTableBody');
+            tHeader.innerHTML = '';
+            tBody.innerHTML = '';
+
+            if (items.length > 0) {
+                const keys = Object.keys(items[0]);
+                let headHtml = '<tr>';
+                keys.forEach(k => headHtml += `<th class="px-3 py-2.5 whitespace-nowrap">${k}</th>`);
+                headHtml += '</tr>';
+                tHeader.innerHTML = headHtml;
+
+                items.forEach(item => {
+                    let rowHtml = '<tr class="hover:bg-slate-50 transition-colors">';
+                    keys.forEach(k => {
+                        rowHtml += `<td class="px-3 py-2 whitespace-nowrap border-t border-slate-100">${item[k] !== undefined ? item[k] : ''}</td>`;
+                    });
+                    rowHtml += '</tr>';
+                    tBody.innerHTML += rowHtml;
+                });
+            }
+
+            // 3. Render JSON View
+            document.getElementById('bldgJsonPre').innerHTML = syntaxHighlightJson(fullJson);
+            lucide.createIcons();
+        }
+
+        // View Mode Switcher
+        function switchViewMode(mode) {
+            document.getElementById('bldgViewCards').classList.toggle('hidden', mode !== 'cards');
+            document.getElementById('bldgViewTable').classList.toggle('hidden', mode !== 'table');
+            document.getElementById('bldgViewJson').classList.toggle('hidden', mode !== 'json');
+
+            const btnCards = document.getElementById('viewBtnCards');
+            const btnTable = document.getElementById('viewBtnTable');
+            const btnJson = document.getElementById('viewBtnJson');
+
+            const activeClass = "view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-800 shadow-sm";
+            const inactiveClass = "view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800";
+
+            btnCards.className = mode === 'cards' ? activeClass : inactiveClass;
+            btnTable.className = mode === 'table' ? activeClass : inactiveClass;
+            btnJson.className = mode === 'json' ? activeClass : inactiveClass;
+        }
+
+        // CSV Downloader
+        function downloadCSV() {
+            if (!fetchedDataItems || fetchedDataItems.length === 0) {
+                alert('다운로드할 데이터가 없습니다.');
+                return;
+            }
+
+            const keys = Object.keys(fetchedDataItems[0]);
+            let csvContent = "\uFEFF"; // UTF-8 BOM for Excel compatibility
+            csvContent += keys.join(",") + "\n";
+
+            fetchedDataItems.forEach(item => {
+                const row = keys.map(k => {
+                    let val = item[k] === undefined || item[k] === null ? "" : String(item[k]);
+                    val = val.replace(/"/g, '""');
+                    return `"${val}"`;
+                });
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `건축물대장_조회결과_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Generic API Tester Logic ---
+        function initGenericParams() {
+            const container = document.getElementById('paramRowsContainer');
+            container.innerHTML = '';
+            addParamRow('_type', 'json');
+            addParamRow('numOfRows', '10');
+            addParamRow('pageNo', '1');
+        }
+
+        function addParamRow(key = '', val = '') {
+            const container = document.getElementById('paramRowsContainer');
+            const row = document.createElement('div');
+            row.className = "flex items-center gap-2 param-row";
+            row.innerHTML = `
+                <input type="text" placeholder="Parameter Key" value="${key}" class="param-key flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                <input type="text" placeholder="Value" value="${val}" class="param-val flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                <button onclick="this.parentElement.remove()" class="p-1.5 text-slate-400 hover:text-red-500 rounded">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            `;
+            container.appendChild(row);
+            lucide.createIcons();
+        }
+
+        async function executeGenericApi() {
+            const endpoint = document.getElementById('genEndpoint').value.trim();
+            const apiKey = localStorage.getItem('public_api_key');
+
+            if (!endpoint) {
+                alert('엔드포인트 URL을 입력하세요.');
+                return;
+            }
+
+            const loader = document.getElementById('genLoader');
+            const container = document.getElementById('genResultsContainer');
+
+            loader.classList.remove('hidden');
+            container.classList.add('hidden');
+
+            const url = new URL(endpoint);
+            if (apiKey) url.searchParams.append('serviceKey', apiKey);
+
+            document.querySelectorAll('.param-row').forEach(row => {
+                const k = row.querySelector('.param-key').value.trim();
+                const v = row.querySelector('.param-val').value.trim();
+                if (k) url.searchParams.append(k, v);
+            });
+
+            try {
+                const res = await fetch(url.toString());
+                const data = await res.json();
+
+                loader.classList.add('hidden');
+                document.getElementById('genJsonPre').innerHTML = syntaxHighlightJson(data);
+                container.classList.remove('hidden');
+            } catch (err) {
+                loader.classList.add('hidden');
+                alert(`요청 실패: ${err.message}`);
+            }
+        }
+
+        // Syntax Highlighting for JSON
+        function syntaxHighlightJson(json) {
+            if (typeof json !== 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        // Copy GAS Script
+        function copyGasScript() {
+            const code = document.getElementById('gasCodeBlock').innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('구글 앱스 스크립트 코드가 클립보드에 복사되었습니다.');
+        }
+    </script>
+</body>
+</html>
