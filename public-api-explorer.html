@@ -107,17 +107,6 @@
                     </div>
                 </div>
 
-                <!-- Global API Key Modal Trigger & Status -->
-                <div class="flex items-center gap-3">
-                    <div id="keyStatusBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                        API 인증키 미설정
-                    </div>
-                    <button onclick="openApiKeyModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
-                        <i data-lucide="key" class="w-4 h-4 text-slate-500"></i>
-                        <span>API 키 관리</span>
-                    </button>
-                </div>
             </div>
         </div>
     </header>
@@ -125,15 +114,15 @@
     <!-- Main Content Area -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
 
-        <!-- Navigation Tabs -->
+        <!-- Navigation Tabs (기관별) -->
         <nav class="flex border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-sm overflow-x-auto">
-            <button id="tabBtnBuilding" onclick="switchTab('building')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-emerald-700 bg-emerald-50 transition-all whitespace-nowrap">
-                <i data-lucide="home" class="w-4 h-4"></i>
-                건축물대장 빠른 조회
+            <button id="tabBtnDatago" onclick="switchTab('datago')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-emerald-700 bg-emerald-50 transition-all whitespace-nowrap">
+                <i data-lucide="database" class="w-4 h-4"></i>
+                공공데이터포털 (data.go.kr)
             </button>
-            <button id="tabBtnGeneric" onclick="switchTab('generic')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap">
-                <i data-lucide="terminal" class="w-4 h-4"></i>
-                다른 API 직접 조회
+            <button id="tabBtnLaw" onclick="switchTab('law')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap">
+                <i data-lucide="scale" class="w-4 h-4"></i>
+                법제처 (국가법령정보)
             </button>
             <button id="tabBtnGuide" onclick="switchTab('guide')" class="flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-lg text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap">
                 <i data-lucide="book-open" class="w-4 h-4"></i>
@@ -144,6 +133,32 @@
                 구글 시트 연동 (선택)
             </button>
         </nav>
+
+        <!-- ORG 1: 공공데이터포털 -->
+        <div id="orgDatago" class="space-y-6">
+            <!-- 인증키 (기관별) -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+                <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <i data-lucide="key" class="w-4 h-4 text-emerald-600"></i>
+                        <span class="text-sm font-semibold text-slate-800">공공데이터포털 인증키</span>
+                        <span id="keyBadgeDatago" class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">미설정</span>
+                    </div>
+                    <div class="flex flex-1 gap-2">
+                        <input type="password" id="inputApiKey" autocomplete="off" placeholder="data.go.kr 일반 인증키 (Decoding·Encoding 모두 가능)" class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                        <button onclick="toggleKeyVisibility('inputApiKey', this)" class="px-3 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg whitespace-nowrap">보기</button>
+                        <button onclick="saveKey('datago', this)" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg whitespace-nowrap">저장</button>
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">data.go.kr에서 활용신청 후 받은 키입니다. 공공데이터포털 API를 호출할 때만 쓰이고 이 브라우저(LocalStorage)에만 저장됩니다.</p>
+            </div>
+
+            <!-- 조회 항목 (하위 탭) -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-slate-500">조회 항목</span>
+                <button id="subBtnBuilding" onclick="switchSub('datago', 'building')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white">건축물대장 빠른 조회</button>
+                <button id="subBtnGeneric" onclick="switchSub('datago', 'generic')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">다른 API 직접 조회</button>
+            </div>
 
         <!-- SECTION 1: 건축물대장 빠른 조회 (공공데이터 API 활용 첫 번째 예시) -->
         <section id="sectionBuilding" class="space-y-6">
@@ -269,7 +284,7 @@
                         <i data-lucide="sliders" class="w-5 h-5 text-indigo-600"></i>
                         다른 공공데이터 API 직접 조회
                     </h2>
-                    <p class="text-xs text-slate-500 mt-0.5">공공데이터포털(data.go.kr)의 다른 API 주소와 요청변수를 직접 입력해 조회합니다. 요청변수는 활용신청한 API 상세 페이지의 요청변수 표를 보고 입력하세요. 인증키(serviceKey)는 자동으로 붙습니다.</p>
+                    <p class="text-xs text-slate-500 mt-0.5">공공데이터포털(data.go.kr)의 다른 API 주소와 요청변수를 직접 입력해 조회합니다. 요청변수는 활용신청한 API 상세 페이지의 요청변수 표를 보고 입력하세요. 위쪽 인증키 칸에 저장한 공공데이터포털 인증키(serviceKey)가 자동으로 붙습니다. 법제처 API는 [법제처] 탭에서 조회하세요.</p>
                     <p class="text-xs text-slate-500 mt-1">건축물대장 계열 API는 지(<code class="bg-slate-100 text-pink-600 px-1 rounded">ji</code>)를 빼고 번(<code class="bg-slate-100 text-pink-600 px-1 rounded">bun</code>)만 넣으면 같은 번지의 건물이 모두 조회됩니다.</p>
                 </div>
 
@@ -316,6 +331,133 @@
             </div>
         </section>
 
+        </div>
+
+        <!-- ORG 2: 법제처 (국가법령정보 공동활용) -->
+        <div id="orgLaw" class="hidden space-y-6">
+            <!-- 인증값 (기관별) -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+                <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <i data-lucide="key" class="w-4 h-4 text-indigo-600"></i>
+                        <span class="text-sm font-semibold text-slate-800">법제처 인증값 (OC)</span>
+                        <span id="keyBadgeLaw" class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">미설정</span>
+                    </div>
+                    <div class="flex flex-1 gap-2">
+                        <input type="password" id="inputLawOc" autocomplete="off" placeholder="법제처 OPEN API 신청 때 정한 인증값(OC)" class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                        <button onclick="toggleKeyVisibility('inputLawOc', this)" class="px-3 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg whitespace-nowrap">보기</button>
+                        <button onclick="saveKey('law', this)" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg whitespace-nowrap">저장</button>
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">공공데이터포털 인증키와 다른 값입니다. 법제처(open.law.go.kr) OPEN API 신청 화면에서 직접 정한 인증값을 입력하세요. 이 브라우저에만 저장됩니다.</p>
+            </div>
+
+            <!-- 조회 항목 (하위 탭) -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-slate-500">조회 항목</span>
+                <button id="subBtnLawSearch" onclick="switchSub('law', 'search')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white">법령 검색 (현행법령)</button>
+            </div>
+
+            <!-- 법령 검색 -->
+            <section id="sectionLaw" class="space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="scale" class="w-5 h-5 text-indigo-600"></i>
+                            법령 검색 (현행법령)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">법령명으로 검색하면 법·시행령·시행규칙의 공포일자, 시행일자, 제·개정 구분이 나옵니다. 최근 개정 여부를 확인할 때 쓰세요.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">검색어</label>
+                            <input type="text" id="lawQuery" placeholder="예: 근로기준법" onkeydown="if(event.key==='Enter') searchLaw()" class="w-full border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">검색 범위</label>
+                            <select id="lawScope" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="1">법령명</option>
+                                <option value="2">본문 내용</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">정렬</label>
+                            <select id="lawSort" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="ddes">공포일자 최신순</option>
+                                <option value="efdes">시행일자 최신순</option>
+                                <option value="lasc">법령명순</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-semibold text-slate-500">자주 보는 법령</span>
+                        <button onclick="searchLaw('근로기준법')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">근로기준법</button>
+                        <button onclick="searchLaw('최저임금법')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">최저임금법</button>
+                        <button onclick="searchLaw('산업안전보건법')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">산업안전보건법</button>
+                        <button onclick="searchLaw('근로자퇴직급여')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">근로자퇴직급여</button>
+                        <button onclick="searchLaw('남녀고용평등')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">남녀고용평등</button>
+                        <button onclick="searchLaw('고용보험법')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">고용보험법</button>
+                    </div>
+
+                    <div class="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-semibold text-slate-500" for="lawDisplay">표시 건수</label>
+                            <select id="lawDisplay" class="border border-slate-200 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="20">20건</option>
+                                <option value="50">50건</option>
+                                <option value="100">100건</option>
+                            </select>
+                        </div>
+                        <button onclick="searchLaw()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                            <span>법령 검색</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="lawLoader" class="hidden my-12 text-center space-y-3">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+                    <p class="text-sm font-medium text-slate-600">법제처 국가법령정보 서버와 통신 중입니다...</p>
+                </div>
+
+                <div id="lawResults" class="hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span id="lawSummary" class="text-xs text-slate-500 font-medium"></span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-3 py-2.5 whitespace-nowrap">법령명</th>
+                                        <th class="px-3 py-2.5 whitespace-nowrap">구분</th>
+                                        <th class="px-3 py-2.5 whitespace-nowrap">소관부처</th>
+                                        <th class="px-3 py-2.5 whitespace-nowrap">공포일자</th>
+                                        <th class="px-3 py-2.5 whitespace-nowrap">시행일자</th>
+                                        <th class="px-3 py-2.5 whitespace-nowrap">제·개정</th>
+                                        <th class="px-3 py-2.5 whitespace-nowrap">비고</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lawTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <details class="bg-slate-900 text-slate-100 rounded-xl overflow-hidden">
+                        <summary class="cursor-pointer px-4 py-2.5 text-xs font-medium text-slate-300">원본 JSON 보기 (인증값은 가려서 표시)</summary>
+                        <div class="px-4 pb-4 overflow-x-auto font-mono text-xs max-h-[500px]"><pre id="lawJsonPre" class="whitespace-pre-wrap"></pre></div>
+                    </details>
+                </div>
+
+                <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600 leading-relaxed space-y-1">
+                    <p class="font-semibold text-slate-700">알아두세요</p>
+                    <p>"사용자 정보 검증에 실패했습니다"가 나오면 법제처 OPEN API 신청정보(마이페이지)에서 인증값과 서버 IP·도메인 등록을 확인하세요.</p>
+                    <p>법령명을 눌러 이동하는 화면은 법제처 공개 법령 페이지이고, 조문 본문 조회는 아직 지원하지 않습니다. 법적 효력이 필요한 내용은 법제처에서 직접 확인하세요.</p>
+                </div>
+            </section>
+        </div>
+
         <!-- SECTION: 시작 가이드 -->
         <section id="sectionGuide" class="hidden space-y-6">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
@@ -325,7 +467,7 @@
                     </div>
                     <div>
                         <h2 class="text-base font-bold text-slate-900">처음 사용하는 방법</h2>
-                        <p class="text-xs text-slate-500">활용신청과 인증키 입력은 한 번만 하면 됩니다. 인증키는 이 브라우저에만 저장됩니다.</p>
+                        <p class="text-xs text-slate-500">인증키는 기관마다 따로 받습니다. 쓰려는 기관 탭에서 한 번만 입력하면 되고, 이 브라우저에만 저장됩니다.</p>
                     </div>
                 </div>
 
@@ -333,30 +475,31 @@
                     <li class="flex gap-3">
                         <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center">1</span>
                         <div class="space-y-1">
-                            <h3 class="font-semibold text-slate-800">공공데이터포털에서 활용신청</h3>
-                            <p class="text-xs leading-relaxed">data.go.kr에 로그인해서 쓰려는 API를 검색하고 [활용신청]을 누릅니다. 건축물대장은 <a href="https://www.data.go.kr/data/15134735/openapi.do" target="_blank" rel="noopener" class="text-emerald-700 underline">국토교통부_건축HUB_건축물대장정보 서비스</a>입니다. 승인 직후에는 인증키가 반영되기까지 시간이 걸릴 수 있습니다.</p>
+                            <h3 class="font-semibold text-slate-800">기관 탭과 조회 항목 고르기</h3>
+                            <p class="text-xs leading-relaxed">위쪽 탭에서 기관(공공데이터포털, 법제처)을 고르면, 그 기관에서 연결해 둔 조회 항목이 아래에 나옵니다. 공공데이터포털에는 건축물대장 빠른 조회와 다른 API 직접 조회가, 법제처에는 법령 검색이 있습니다.</p>
                         </div>
                     </li>
                     <li class="flex gap-3">
                         <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center">2</span>
-                        <div class="space-y-1">
-                            <h3 class="font-semibold text-slate-800">인증키 입력</h3>
-                            <p class="text-xs leading-relaxed">활용신청한 API의 상세 화면(마이페이지)에서 일반 인증키를 복사해, 화면 오른쪽 위 [API 키 관리]에 붙여넣고 저장합니다.</p>
+                        <div class="space-y-2">
+                            <h3 class="font-semibold text-slate-800">기관별 인증키 받기</h3>
+                            <p class="text-xs leading-relaxed"><strong class="text-slate-700">공공데이터포털</strong>: data.go.kr에 로그인해 쓰려는 API를 검색하고 [활용신청]을 누릅니다. 건축물대장은 <a href="https://www.data.go.kr/data/15134735/openapi.do" target="_blank" rel="noopener" class="text-emerald-700 underline">국토교통부_건축HUB_건축물대장정보 서비스</a>입니다. 승인 후 마이페이지의 해당 API 상세 화면에서 일반 인증키를 복사합니다. 승인 직후에는 반영까지 시간이 걸릴 수 있습니다.</p>
+                            <p class="text-xs leading-relaxed"><strong class="text-slate-700">법제처</strong>: <a href="https://open.law.go.kr" target="_blank" rel="noopener" class="text-emerald-700 underline">open.law.go.kr</a>의 OPEN API 신청에서 인증값(OC)을 직접 정해 신청합니다. 신청 후 마이페이지의 API인증키관리에서 확인할 수 있습니다.</p>
                         </div>
                     </li>
                     <li class="flex gap-3">
                         <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center">3</span>
                         <div class="space-y-1">
-                            <h3 class="font-semibold text-slate-800">조회</h3>
-                            <p class="text-xs leading-relaxed">건축물대장은 [건축물대장 빠른 조회]에서 [주소 찾기]로 주소를 고른 뒤 대장 종류를 선택해 조회합니다. [대장 서식]을 고르면 총괄표제부와 표제부를 정부24 대장 모양으로 보고 인쇄할 수 있습니다. 다른 API는 [다른 API 직접 조회]에 주소와 요청변수를 입력합니다.</p>
+                            <h3 class="font-semibold text-slate-800">기관 탭 위쪽 칸에 입력하고 조회</h3>
+                            <p class="text-xs leading-relaxed">해당 기관 탭 맨 위의 인증키 칸에 붙여넣고 [저장]을 누릅니다. 건축물대장은 [주소 찾기]로 주소를 고른 뒤 대장 종류를 선택해 조회하고, [대장 서식]을 고르면 정부24 대장 모양으로 보고 인쇄할 수 있습니다. 법령은 법령명을 입력하거나 자주 보는 법령 버튼을 누릅니다.</p>
                         </div>
                     </li>
                 </ol>
 
                 <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600 leading-relaxed space-y-1">
                     <p class="font-semibold text-slate-700">알아두세요</p>
-                    <p>이 도구는 공공데이터포털(data.go.kr)의 인증키(serviceKey) 방식 API를 지원합니다. 서울 열린데이터광장, 한국은행 ECOS처럼 키를 넣는 방식이 다른 포털은 지원하지 않습니다.</p>
-                    <p>조회 결과는 참고용입니다. 공식 서류가 필요하면 정부24나 세움터에서 발급받으세요.</p>
+                    <p>공공데이터포털 인증키와 법제처 인증값은 서로 바꿔 쓸 수 없습니다. 서울 열린데이터광장, 한국은행 ECOS처럼 키를 넣는 방식이 다른 포털은 아직 지원하지 않습니다.</p>
+                    <p>조회 결과는 참고용입니다. 공식 서류나 법적 효력이 필요하면 정부24, 세움터, 법제처에서 직접 확인하세요.</p>
                 </div>
             </div>
         </section>
@@ -448,56 +591,67 @@ function fetchBuildingRegisterHubData() {
         </div>
     </div>
 
-    <!-- Modal: API Key Management -->
-    <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-100 p-6 space-y-5">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="key" class="w-5 h-5 text-emerald-600"></i>
-                    <h3 class="font-bold text-slate-900 text-base">공공데이터 API 인증키 설정</h3>
-                </div>
-                <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <p class="text-xs text-slate-500 leading-relaxed">
-                    공공데이터포털(data.go.kr)에서 발급받은 <strong>일반 인증키</strong>를 입력하세요. Decoding 키와 Encoding 키 모두 사용할 수 있습니다. 입력된 키는 공공데이터포털 API를 호출할 때만 쓰이고 이 브라우저(LocalStorage)에만 저장됩니다.
-                </p>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">인코딩/디코딩 인증키 (Service Key)</label>
-                    <input type="text" id="inputApiKey" placeholder="인증키를 붙여넣으세요" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-2 pt-2">
-                <button onclick="closeApiKeyModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium">취소</button>
-                <button onclick="saveApiKey()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm">저장하기</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Application Script Logic -->
     <script>
         // App State
         let currentBldgCategory = 'getBrTitleInfo'; // default API operation
         let fetchedDataItems = [];
-        let activeTab = 'building';
+        let activeTab = 'datago';
 
         // Initialize App on DOM Load
         window.onload = function() {
             lucide.createIcons();
-            loadSavedApiKey();
+            loadKeys();
             initGenericParams();
         };
 
-        // API Key Storage Helper
-        function loadSavedApiKey() {
-            const key = localStorage.getItem('public_api_key') || '';
-            document.getElementById('inputApiKey').value = key;
-            updateKeyBadge(key);
+        // 기관별 인증키 저장 (서로 다른 키라서 따로 보관)
+        const KEY_STORE = { datago: 'public_api_key', law: 'law_oc' };
+        const KEY_INPUT = { datago: 'inputApiKey', law: 'inputLawOc' };
+        const KEY_BADGE = { datago: 'keyBadgeDatago', law: 'keyBadgeLaw' };
+        const KEY_LABEL = { datago: '공공데이터포털 인증키', law: '법제처 인증값(OC)' };
+
+        function loadKeys() {
+            Object.keys(KEY_STORE).forEach(org => {
+                const v = localStorage.getItem(KEY_STORE[org]) || '';
+                document.getElementById(KEY_INPUT[org]).value = v;
+                updateKeyBadge(org, v);
+            });
+        }
+
+        function updateKeyBadge(org, v) {
+            const badge = document.getElementById(KEY_BADGE[org]);
+            if (v) {
+                badge.className = 'px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
+                badge.textContent = '설정됨';
+            } else {
+                badge.className = 'px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200';
+                badge.textContent = '미설정';
+            }
+        }
+
+        function saveKey(org, btn) {
+            const v = document.getElementById(KEY_INPUT[org]).value.trim();
+            if (v) localStorage.setItem(KEY_STORE[org], v); else localStorage.removeItem(KEY_STORE[org]);
+            updateKeyBadge(org, v);
+            if (btn) {
+                const prev = btn.textContent;
+                btn.textContent = v ? '저장됨' : '삭제됨';
+                setTimeout(() => { btn.textContent = prev; }, 1500);
+            }
+        }
+
+        function requireKey(org) {
+            switchTab(org);
+            alert(`${KEY_LABEL[org]}를 먼저 입력하고 저장해주세요.`);
+            document.getElementById(KEY_INPUT[org]).focus();
+        }
+
+        function toggleKeyVisibility(inputId, btn) {
+            const el = document.getElementById(inputId);
+            const show = el.type === 'password';
+            el.type = show ? 'text' : 'password';
+            btn.textContent = show ? '숨기기' : '보기';
         }
 
         // Encoding 키(%2B 등 포함)를 넣어도 호출할 때 이중 인코딩되지 않도록 Decoding 형태로 통일
@@ -509,35 +663,14 @@ function fetchBuildingRegisterHubData() {
             return t;
         }
         function getApiKey() { return normalizeApiKey(localStorage.getItem('public_api_key')); }
+        function getLawOc() { return (localStorage.getItem('law_oc') || '').trim(); }
 
-        function saveApiKey() {
-            const key = document.getElementById('inputApiKey').value.trim();
-            localStorage.setItem('public_api_key', key);
-            updateKeyBadge(key);
-            closeApiKeyModal();
-            alert('API 인증키가 안전하게 저장되었습니다.');
-        }
-
-        function updateKeyBadge(key) {
-            const badge = document.getElementById('keyStatusBadge');
-            if (key) {
-                badge.className = "hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
-                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> API 키 설정됨`;
-            } else {
-                badge.className = "hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200";
-                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> API 키 미설정`;
-            }
-        }
-
-        function openApiKeyModal() { document.getElementById('apiKeyModal').classList.remove('hidden'); }
-        function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.add('hidden'); }
-
-        // Navigation Tabs
+        // Navigation Tabs (기관별 상위 탭 + 하위 조회 항목)
         function switchTab(tab) {
             activeTab = tab;
             const tabs = {
-                building: ['sectionBuilding', 'tabBtnBuilding'],
-                generic: ['sectionGeneric', 'tabBtnGeneric'],
+                datago: ['orgDatago', 'tabBtnDatago'],
+                law: ['orgLaw', 'tabBtnLaw'],
                 guide: ['sectionGuide', 'tabBtnGuide'],
                 gas: ['sectionGas', 'tabBtnGas']
             };
@@ -546,7 +679,20 @@ function fetchBuildingRegisterHubData() {
             Object.entries(tabs).forEach(([k, [secId, btnId]]) => {
                 document.getElementById(secId).classList.toggle('hidden', k !== tab);
                 const on = k === tab;
-                document.getElementById(btnId).className = on ? (k === 'generic' ? activeClass.replaceAll('emerald', 'indigo') : activeClass) : inactiveClass;
+                document.getElementById(btnId).className = on ? (k === 'law' ? activeClass.replaceAll('emerald', 'indigo') : activeClass) : inactiveClass;
+            });
+        }
+
+        function switchSub(org, sub) {
+            const subs = {
+                datago: { building: ['sectionBuilding', 'subBtnBuilding'], generic: ['sectionGeneric', 'subBtnGeneric'] },
+                law: { search: ['sectionLaw', 'subBtnLawSearch'] }
+            };
+            const on = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white';
+            const off = 'px-3.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50';
+            Object.entries(subs[org]).forEach(([k, [secId, btnId]]) => {
+                document.getElementById(secId).classList.toggle('hidden', k !== sub);
+                document.getElementById(btnId).className = k === sub ? on : off;
             });
         }
 
@@ -652,8 +798,7 @@ function fetchBuildingRegisterHubData() {
         async function fetchBuildingData() {
             const apiKey = getApiKey();
             if (!apiKey) {
-                alert('공공데이터 API 인증키를 먼저 설정해주세요.');
-                openApiKeyModal();
+                requireKey('datago');
                 return;
             }
 
@@ -1403,14 +1548,30 @@ function fetchBuildingRegisterHubData() {
                 return;
             }
 
+            let url;
+            try {
+                url = new URL(endpoint);
+            } catch (e) {
+                alert('엔드포인트 URL 형식이 올바르지 않습니다. https:// 로 시작하는 전체 주소를 입력하세요.');
+                return;
+            }
+            const host = url.hostname.toLowerCase();
+            if (host === 'law.go.kr' || host.endsWith('.law.go.kr')) {
+                alert('법제처 API는 [법제처] 탭에서 조회하세요. 공공데이터포털 인증키는 법제처로 보내지 않습니다.');
+                return;
+            }
+            let sendKey = !!apiKey;
+            if (apiKey && !(host === 'data.go.kr' || host.endsWith('.data.go.kr'))) {
+                sendKey = confirm(`이 주소(${host})는 data.go.kr이 아닙니다.\n공공데이터포털 인증키를 함께 보낼까요?\n(공공데이터포털에 등록된 API가 아니면 [취소]를 누르세요.)`);
+            }
+
             const loader = document.getElementById('genLoader');
             const container = document.getElementById('genResultsContainer');
 
             loader.classList.remove('hidden');
             container.classList.add('hidden');
 
-            const url = new URL(endpoint);
-            if (apiKey) url.searchParams.append('serviceKey', apiKey);
+            if (sendKey) url.searchParams.append('serviceKey', apiKey);
 
             document.querySelectorAll('.param-row').forEach(row => {
                 const k = row.querySelector('.param-key').value.trim();
@@ -1429,6 +1590,106 @@ function fetchBuildingRegisterHubData() {
                 loader.classList.add('hidden');
                 alert(`요청 실패: ${err.message}`);
             }
+        }
+
+        // (법제처) 법령 검색은 아래 law 섹션 참고
+        // ===== 법제처 국가법령정보: 법령 검색 (현행법령 목록) =====
+        const LAW_API = 'https://www.law.go.kr/DRF/lawSearch.do';
+
+        const lawYmd = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+        const lawDate = (s) => { const t = String(s || '').trim(); return /^\d{8}$/.test(t) ? `${t.slice(0,4)}.${t.slice(4,6)}.${t.slice(6,8)}` : t; };
+
+        function lawBadges(it) {
+            const eff = String(it['시행일자'] || '').trim();
+            const pub = String(it['공포일자'] || '').trim();
+            const today = lawYmd(new Date());
+            const cut = new Date(); cut.setFullYear(cut.getFullYear() - 1);
+            const out = [];
+            if (eff && eff > today) out.push(['시행 예정', 'bg-amber-50 text-amber-700 border-amber-200']);
+            else if (pub && pub >= lawYmd(cut)) out.push(['최근 1년 내 개정', 'bg-emerald-50 text-emerald-700 border-emerald-200']);
+            return out;
+        }
+
+        function lawErrorMessage(data) {
+            const r = data && data.Response;
+            if (r && (r.result || r.msg)) {
+                return `${r.result || '요청에 실패했습니다.'}\n${r.msg || ''}\n\n법제처 OPEN API 신청정보(마이페이지)에서 인증값(OC)과 서버 IP·도메인 등록을 확인하세요.`;
+            }
+            return '응답 형식을 해석하지 못했습니다. 인증값(OC)과 검색어를 확인하세요.';
+        }
+
+        async function searchLaw(queryOverride) {
+            const oc = getLawOc();
+            if (!oc) { requireKey('law'); return; }
+
+            const input = document.getElementById('lawQuery');
+            if (typeof queryOverride === 'string') input.value = queryOverride;
+            const query = input.value.trim();
+            if (!query) { alert('검색어를 입력하세요.'); return; }
+
+            const params = new URLSearchParams({
+                OC: oc,
+                target: 'law',
+                type: 'JSON',
+                query: query,
+                search: document.getElementById('lawScope').value,
+                sort: document.getElementById('lawSort').value,
+                display: document.getElementById('lawDisplay').value,
+                page: '1'
+            });
+
+            const loader = document.getElementById('lawLoader');
+            const results = document.getElementById('lawResults');
+            loader.classList.remove('hidden');
+            results.classList.add('hidden');
+
+            try {
+                const res = await fetch(`${LAW_API}?${params.toString()}`);
+                const data = await res.json();
+                loader.classList.add('hidden');
+
+                const ls = data && data.LawSearch;
+                if (!ls) { alert(lawErrorMessage(data)); return; }
+
+                let items = ls.law || [];
+                if (!Array.isArray(items)) items = items ? [items] : [];
+                const total = Number(ls.totalCnt) || items.length;
+                renderLawResults(items, total, data);
+                results.classList.remove('hidden');
+            } catch (err) {
+                loader.classList.add('hidden');
+                alert(`법제처 서버에 연결하지 못했습니다.\n브라우저 보안(CORS) 제한이나 네트워크 문제일 수 있습니다.\n상세: ${err.message}`);
+            }
+        }
+
+        function renderLawResults(items, total, data) {
+            document.getElementById('lawSummary').textContent = items.length < total
+                ? `총 ${total}건 중 ${items.length}건 표시 (표시 건수를 늘려 더 볼 수 있습니다)`
+                : `총 ${total}건`;
+
+            const body = document.getElementById('lawTableBody');
+            if (!items.length) {
+                body.innerHTML = '<tr><td colspan="7" class="px-3 py-8 text-center text-slate-400">조회된 법령이 없습니다.</td></tr>';
+            } else {
+                body.innerHTML = items.map(it => {
+                    const nm = String(it['법령명한글'] || '').trim();
+                    const link = `https://www.law.go.kr/법령/${encodeURIComponent(nm.replace(/\s+/g, ''))}`;
+                    const badges = lawBadges(it).map(([t, c]) => `<span class="inline-block px-2 py-0.5 rounded-full border text-[10px] font-medium ${c}">${esc(t)}</span>`).join(' ');
+                    return `<tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-3 py-2 font-semibold text-slate-900"><a href="${esc(link)}" target="_blank" rel="noopener" class="hover:underline">${esc(nm)}</a></td>
+                        <td class="px-3 py-2 whitespace-nowrap">${esc(it['법령구분명'] || '')}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${esc(it['소관부처명'] || '')}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${esc(lawDate(it['공포일자']))}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${esc(lawDate(it['시행일자']))}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${esc(it['제개정구분명'] || '')}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${badges}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            // 원본 JSON: 응답 안의 링크에 들어 있는 인증값(OC)은 가려서 표시
+            const masked = JSON.stringify(data, null, 2).replace(/OC=[^&"\\]+/g, 'OC=***');
+            document.getElementById('lawJsonPre').innerHTML = syntaxHighlightJson(masked);
         }
 
         // Syntax Highlighting for JSON
