@@ -41,8 +41,8 @@
 
         /* ===== 대장 서식 (정부24 대장 모양의 조회용 화면) ===== */
         .ledger-wrap { overflow-x: auto; padding-bottom: 8px; }
-        .ledger-page { position: relative; box-sizing: border-box; width: 794px; min-height: 1123px; margin: 0 auto 18px; padding: 26px 30px 22px; background: #fff; color: #111827; border: 1px solid #cbd5e1; box-shadow: 0 1px 4px rgba(15,23,42,.08); font-family: 'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif; font-size: 11px; line-height: 1.35; overflow: hidden; }
-        .ledger-page::after { content: '조회용'; position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%) rotate(-24deg); font-size: 120px; font-weight: 700; letter-spacing: .12em; color: rgba(100,116,139,.09); pointer-events: none; white-space: nowrap; }
+        .ledger-page { position: relative; box-sizing: border-box; width: 1123px; min-height: 794px; margin: 0 auto 18px; padding: 22px 28px 18px; background: #fff; color: #111827; border: 1px solid #cbd5e1; box-shadow: 0 1px 4px rgba(15,23,42,.08); font-family: 'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif; font-size: 11px; line-height: 1.35; overflow: hidden; }
+        .ledger-page::after { content: '조회용'; position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%) rotate(-24deg); font-size: 150px; font-weight: 700; letter-spacing: .12em; color: rgba(100,116,139,.09); pointer-events: none; white-space: nowrap; }
         .ledger-page > * { position: relative; z-index: 1; }
         .lg-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .lg-tag { font-size: 9.5px; color: #b45309; border: 1px solid #f59e0b; background: #fffbeb; padding: 1px 6px; border-radius: 3px; }
@@ -78,11 +78,11 @@
         .lg-col > .lg-t { flex: 1 1 auto; margin-top: 0; }
         .lg-foot { margin-top: 12px; font-size: 9.5px; color: #475569; line-height: 1.55; }
 
-        @page { size: A4 portrait; margin: 8mm; }
+        @page { size: A4 landscape; margin: 8mm; }
         @media print {
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .ledger-wrap { overflow: visible; padding: 0; }
-            .ledger-page { width: 100%; min-height: 272mm; margin: 0; border: none; box-shadow: none; padding: 3mm 4mm; page-break-after: always; break-after: page; }
+            .ledger-page { width: 100%; min-height: 192mm; margin: 0; border: none; box-shadow: none; padding: 2mm 3mm; page-break-after: always; break-after: page; }
             .ledger-page:last-child { page-break-after: auto; break-after: auto; }
         }
     </style>
@@ -1043,15 +1043,16 @@ function fetchBuildingRegisterHubData() {
             </div>`;
         }
 
-        // ---- 2쪽 (총괄표제부/표제부 공통 서식) ----
+        // ---- 2쪽 (총괄표제부/표제부 공통 서식, A4 가로) ----
         function lgPage2(r, isRecap, st) {
             const head = [
                 lgRow([36, 36, 28], [lgCell('대지위치', lgSite(r), { left: 1 }), lgCell('명칭', lgVal(r.bldNm) || lgVal(r.dongNm), { left: 1 }), lgCell('특이사항', '', { na: 1 })]),
-                lgRow([12, 26, 30, 32], [lgCell('지번', lgJibun(r)), lgCell('지번 관련 주소', '', { na: 1 }), lgCell('도로명주소', lgVal(r.newPlatPlc), { left: 1 }), lgCell('도로명주소 관련 주소', '', { na: 1 })])
+                lgRow([10, 26, 34, 30], [lgCell('지번', lgJibun(r)), lgCell('지번 관련 주소', '', { na: 1 }), lgCell('도로명주소', lgVal(r.newPlatPlc), { left: 1 }), lgCell('도로명주소 관련 주소', '', { na: 1 })])
             ].join('');
 
             const people = `
                 <table class="lg-t">
+                    <colgroup><col style="width:30%"><col style="width:38%"><col></colgroup>
                     <tr><th>구분</th><th>성명 또는 명칭</th><th>면허(등록)번호</th></tr>
                     ${['건축주', '설계자', '공사감리자', '공사시공자<br>(현장관리인)'].map(n => `<tr><th>${n}</th>${lgNa()}${lgNa()}</tr>`).join('')}
                 </table>`;
@@ -1066,26 +1067,31 @@ function fetchBuildingRegisterHubData() {
                     <tr><th>전기차</th>${lgNa('미제공', 'colspan="4"')}</tr>
                 </table>`;
 
-            const side = `
+            const elevSewage = `
                 <div class="lg-stack">
                     <table class="lg-t">
-                        <colgroup><col style="width:50%"><col></colgroup><tr><th colspan="2">승강기</th></tr>
+                        <colgroup><col style="width:50%"><col></colgroup>
+                        <tr><th colspan="2">승강기</th></tr>
                         <tr><th>승용</th><th>비상용</th></tr>
                         <tr><td class="c">${esc(lgNum(r.rideUseElvtCnt || 0))}대</td><td class="c">${esc(lgNum(r.emgenUseElvtCnt || 0))}대</td></tr>
                     </table>
                     <table class="lg-t">
-                        <colgroup><col style="width:46%"><col></colgroup><tr><th colspan="2">하수처리시설</th></tr>
+                        <colgroup><col style="width:46%"><col></colgroup>
+                        <tr><th colspan="2">하수처리시설</th></tr>
                         <tr><th>형식</th>${lgNa()}</tr>
                         <tr><th>용량</th>${lgNa()}</tr>
-                        <tr><th>급수설비<br>(저수조)</th>${lgNa()}</tr>
-                    </table>
-                    <table class="lg-t">
-                        <colgroup><col style="width:42%"><col></colgroup><tr><th colspan="2">인허가 시기</th></tr>
-                        <tr><th>허가일</th><td class="c">${esc(lgDate(r.pmsDay))}</td></tr>
-                        <tr><th>착공일</th><td class="c">${esc(lgDate(r.stcnsDay))}</td></tr>
-                        <tr><th>사용승인일</th><td class="c">${esc(lgDate(r.useAprDay))}</td></tr>
+                        <tr><th>급수설비(저수조)</th>${lgNa()}</tr>
                     </table>
                 </div>`;
+
+            const permit = `
+                <table class="lg-t">
+                    <colgroup><col style="width:42%"><col></colgroup>
+                    <tr><th colspan="2">인허가 시기</th></tr>
+                    <tr><th>허가일</th><td class="c">${esc(lgDate(r.pmsDay))}</td></tr>
+                    <tr><th>착공일</th><td class="c">${esc(lgDate(r.stcnsDay))}</td></tr>
+                    <tr><th>사용승인일</th><td class="c">${esc(lgDate(r.useAprDay))}</td></tr>
+                </table>`;
 
             // 건축물 인증 현황
             const certs = [];
@@ -1093,7 +1099,7 @@ function fetchBuildingRegisterHubData() {
             if (lgVal(r.gnBldGrade)) certs.push(['친환경건축물 인증', lgVal(r.gnBldGrade) + (lgNz(r.gnBldCert) ? ` (${lgNum(r.gnBldCert)}점)` : '')]);
             if (lgVal(r.itgBldGrade)) certs.push(['지능형건축물 인증', lgVal(r.itgBldGrade) + (lgNz(r.itgBldCert) ? ` (${lgNum(r.itgBldCert)}점)` : '')]);
             const certRows = certs.map(c => `<tr><td>${esc(c[0])}</td>${lgNa('')}<td>${esc(c[1])}</td></tr>`).join('')
-                + Array.from({ length: Math.max(0, 4 - certs.length) }, () => '<tr><td>&nbsp;</td><td></td><td></td></tr>').join('');
+                + Array.from({ length: Math.max(0, 5 - certs.length) }, () => '<tr><td>&nbsp;</td><td></td><td></td></tr>').join('');
             const certTable = `
                 <table class="lg-t">
                     <tr><th colspan="3">건축물 인증 현황</th></tr>
@@ -1101,33 +1107,36 @@ function fetchBuildingRegisterHubData() {
                     ${certRows}
                 </table>`;
 
-            // 건축물 구조 현황 (내진설계는 표제부 응답에만 있음)
+            // 건축물 구조 현황 / 관리 현황 (내진설계는 표제부 응답에만 있음)
             const seismicYn = lgVal(r.rserthqkDsgnApplyYn);
             const seismic = isRecap ? lgNa() : `<td class="c">${seismicYn === '1' ? '적용' : (seismicYn === '0' ? '비적용' : '')}</td>`;
             const seismicAbl = isRecap ? lgNa() : `<td class="c">${esc(lgVal(r.rserthqkAblty))}</td>`;
-            const structMgmt = `
-                <div class="lg-stack">
-                    <table class="lg-t">
-                        <colgroup><col style="width:56%"><col></colgroup><tr><th colspan="2">건축물 구조 현황</th></tr>
-                        <tr><th>내진설계 적용 여부</th>${seismic}</tr>
-                        <tr><th>내진능력</th>${seismicAbl}</tr>
-                        <tr><th>특수구조 건축물</th>${lgNa()}</tr>
-                        <tr><th>지하수위</th>${lgNa()}</tr>
-                        <tr><th>기초형식</th>${lgNa()}</tr>
-                        <tr><th>구조설계 해석법</th>${lgNa()}</tr>
-                    </table>
-                    <table class="lg-t">
-                        <colgroup><col style="width:56%"><col></colgroup><tr><th colspan="2">건축물 관리 현황</th></tr>
-                        <tr><th>관리계획 수립 여부</th>${lgNa()}</tr>
-                        <tr><th>점검 종류<br>점검유효기간</th>${lgNa()}</tr>
-                    </table>
-                </div>`;
+            const structTable = `
+                <table class="lg-t">
+                    <colgroup><col style="width:56%"><col></colgroup>
+                    <tr><th colspan="2">건축물 구조 현황</th></tr>
+                    <tr><th>내진설계 적용 여부</th>${seismic}</tr>
+                    <tr><th>내진능력</th>${seismicAbl}</tr>
+                    <tr><th>특수구조 건축물</th>${lgNa()}</tr>
+                    <tr><th>지하수위</th>${lgNa()}</tr>
+                    <tr><th>기초형식</th>${lgNa()}</tr>
+                    <tr><th>구조설계 해석법</th>${lgNa()}</tr>
+                </table>`;
+            const mgmtTable = `
+                <table class="lg-t">
+                    <colgroup><col style="width:56%"><col></colgroup>
+                    <tr><th colspan="2">건축물 관리 현황</th></tr>
+                    <tr><th>관리계획 수립 여부</th>${lgNa()}</tr>
+                    <tr><th>점검 종류</th>${lgNa()}</tr>
+                    <tr><th>점검유효기간</th>${lgNa()}</tr>
+                </table>`;
 
             const changes = `
                 <table class="lg-t">
-                    <tr><th colspan="2">변동사항</th><th>그 밖의 기재사항</th></tr>
-                    <tr><th style="width:18%">변동일</th><th>변동내용 및 원인</th><td class="na" rowspan="2" style="width:24%">미제공</td></tr>
-                    <tr><td colspan="2" class="na" style="height:150px">변동일·변동내용·변동원인은 API가 제공하지 않습니다.<br>정부24에서 발급받은 원본으로 확인하세요.</td></tr>
+                    <colgroup><col style="width:11%"><col style="width:43%"><col style="width:11%"><col style="width:35%"></colgroup>
+                    <tr><th colspan="4">변동사항</th></tr>
+                    <tr><th>변동일</th><th>변동내용 및 원인</th><th colspan="2">그 밖의 기재사항</th></tr>
+                    <tr><td colspan="2" class="na" style="height:96px">변동일·변동내용·변동원인은 API가 제공하지 않습니다.<br>정부24에서 발급받은 원본으로 확인하세요.</td><td colspan="2" class="na">미제공</td></tr>
                 </table>`;
 
             return `
@@ -1135,13 +1144,15 @@ function fetchBuildingRegisterHubData() {
                 ${lgHead('', 2)}
                 <div class="lg-box">${head}</div>
                 <div class="lg-flex">
-                    <div class="lg-col" style="flex:30 1 0">${people}</div>
-                    <div class="lg-col" style="flex:38 1 0">${parking}</div>
-                    <div class="lg-col" style="flex:32 1 0">${side}</div>
+                    <div class="lg-col" style="flex:25 1 0">${people}</div>
+                    <div class="lg-col" style="flex:29 1 0">${parking}</div>
+                    <div class="lg-col" style="flex:26 1 0">${elevSewage}</div>
+                    <div class="lg-col" style="flex:20 1 0">${permit}</div>
                 </div>
                 <div class="lg-flex">
-                    <div class="lg-col" style="flex:46 1 0">${certTable}</div>
-                    <div class="lg-col" style="flex:54 1 0">${structMgmt}</div>
+                    <div class="lg-col" style="flex:38 1 0">${certTable}</div>
+                    <div class="lg-col" style="flex:36 1 0">${structTable}</div>
+                    <div class="lg-col" style="flex:26 1 0">${mgmtTable}</div>
                 </div>
                 ${changes}
                 ${lgFoot(r, st)}
@@ -1177,8 +1188,19 @@ function fetchBuildingRegisterHubData() {
                     <p class="text-[11px] text-slate-500">정부24 대장 모양으로 배치한 조회용 화면입니다. 회색 빗금 칸은 API가 제공하지 않는 항목이고, 공식 증명 효력이 없습니다.</p>
                     <div class="ledger-wrap"><div id="ledgerPages">${pages}</div></div>
                 </div>`;
+            fitLedger();
             if (window.lucide) lucide.createIcons();
         }
+
+        // 화면 폭이 서식(1123px)보다 좁으면 비율대로 축소
+        function fitLedger() {
+            const pages = document.getElementById('ledgerPages');
+            const wrap = pages && pages.parentElement;
+            if (!wrap) return;
+            const k = Math.min(1, (wrap.clientWidth - 4) / 1123);
+            pages.style.zoom = k < 1 && k > 0 ? String(k) : '';
+        }
+        window.addEventListener('resize', () => { if (currentViewMode === 'form') fitLedger(); });
 
         function selectLedger(i) {
             ledgerState.selected = i;
@@ -1202,10 +1224,13 @@ function fetchBuildingRegisterHubData() {
                 });
                 node = parent;
             }
+            const prevZoom = target.style.zoom;
+            target.style.zoom = '';
             let restored = false;
             const restore = () => {
                 if (restored) return;
                 restored = true;
+                target.style.zoom = prevZoom;
                 hidden.forEach(([el, d]) => { el.style.display = d; });
                 window.removeEventListener('afterprint', restore);
             };
