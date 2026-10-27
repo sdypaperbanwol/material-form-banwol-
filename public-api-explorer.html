@@ -356,6 +356,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 <span class="text-xs font-semibold text-slate-500">조회 항목</span>
                 <button id="subBtnLawSearch" onclick="switchSub('law', 'search')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white">법령 검색 (현행법령)</button>
+                <button id="subBtnLawExpc" onclick="switchSub('law', 'expc')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">고용노동부 법령해석</button>
             </div>
 
             <!-- 법령 검색 -->
@@ -456,6 +457,97 @@
                     <p>법령명을 눌러 이동하는 화면은 법제처 공개 법령 페이지이고, 조문 본문 조회는 아직 지원하지 않습니다. 법적 효력이 필요한 내용은 법제처에서 직접 확인하세요.</p>
                 </div>
             </section>
+
+            <!-- 고용노동부 법령해석 -->
+            <section id="sectionLawExpc" class="hidden space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="message-square-text" class="w-5 h-5 text-indigo-600"></i>
+                            고용노동부 법령해석 검색
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">근로시간, 연차, 퇴직금 같은 노무 사안에 대한 고용노동부의 공식 법령해석 사례를 찾습니다. 찾은 해석의 질의요지·회신·이유를 복사해 AI에게 붙여넣고 우리 상황에 적용해 물어볼 수 있습니다.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">검색어</label>
+                            <input type="text" id="expcQuery" placeholder="예: 연장근로" onkeydown="if(event.key==='Enter') searchExpc()" class="w-full border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">검색 범위</label>
+                            <select id="expcScope" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="1">안건명</option>
+                                <option value="2">본문 내용</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">표시 건수</label>
+                            <select id="expcDisplay" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="20">20건</option>
+                                <option value="50">50건</option>
+                                <option value="100">100건</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-semibold text-slate-500">자주 찾는 주제</span>
+                        <button onclick="searchExpc('연차')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">연차</button>
+                        <button onclick="searchExpc('연장근로')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">연장근로</button>
+                        <button onclick="searchExpc('휴게')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">휴게</button>
+                        <button onclick="searchExpc('통상임금')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">통상임금</button>
+                        <button onclick="searchExpc('퇴직')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">퇴직</button>
+                        <button onclick="searchExpc('52시간')" class="px-3 py-1 rounded-full text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">52시간</button>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <p class="text-[11px] text-slate-500">상황이나 조건으로 찾으려면 검색 범위를 "본문 내용"으로 바꿔 보세요. 안건명에는 짧은 주제어만 들어 있는 경우가 많습니다.</p>
+                        <button onclick="searchExpc()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all shrink-0">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                            <span>해석 검색</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="expcLoader" class="hidden my-12 text-center space-y-3">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+                    <p class="text-sm font-medium text-slate-600">법제처 서버에서 법령해석을 찾고 있습니다...</p>
+                </div>
+
+                <div id="expcResults" class="hidden space-y-4">
+                    <span id="expcSummary" class="text-xs text-slate-500 font-medium"></span>
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto max-h-[420px]">
+                            <table class="w-full text-left text-xs">
+                                <thead id="expcTableHead" class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0"></thead>
+                                <tbody id="expcTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="expcDetail" class="hidden bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h3 id="expcDetailTitle" class="text-sm font-bold text-slate-900 break-words"></h3>
+                            <p id="expcDetailMeta" class="text-xs text-slate-500 mt-1 break-words"></p>
+                        </div>
+                        <button id="expcCopyBtn" onclick="copyExpcDetail(this)" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium">AI에 붙여넣을 내용 복사</button>
+                    </div>
+                    <div id="expcDetailBody" class="space-y-4"></div>
+                    <details class="bg-slate-900 text-slate-100 rounded-xl overflow-hidden">
+                        <summary class="cursor-pointer px-4 py-2.5 text-xs font-medium text-slate-300">원본 JSON 보기 (인증값은 가려서 표시)</summary>
+                        <div class="px-4 pb-4 overflow-x-auto font-mono text-xs max-h-[400px]"><pre id="expcJsonPre" class="whitespace-pre-wrap"></pre></div>
+                    </details>
+                </div>
+
+                <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600 leading-relaxed space-y-1">
+                    <p class="font-semibold text-slate-700">알아두세요</p>
+                    <p>법령해석은 이미 있었던 질의에 대한 고용노동부의 회신입니다. 우리 사안과 조건이 다르면 결론이 달라질 수 있으니, 실제 위반 여부 판단은 고용노동부나 노무사에게 확인하세요.</p>
+                    <p>오류가 나면 법제처 OPEN API 신청에 "고용노동부 법령해석"이 포함됐는지 확인하세요.</p>
+                </div>
+            </section>
         </div>
 
         <!-- SECTION: 시작 가이드 -->
@@ -476,7 +568,7 @@
                         <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center">1</span>
                         <div class="space-y-1">
                             <h3 class="font-semibold text-slate-800">기관 탭과 조회 항목 고르기</h3>
-                            <p class="text-xs leading-relaxed">위쪽 탭에서 기관(공공데이터포털, 법제처)을 고르면, 그 기관에서 연결해 둔 조회 항목이 아래에 나옵니다. 공공데이터포털에는 건축물대장 빠른 조회와 다른 API 직접 조회가, 법제처에는 법령 검색이 있습니다.</p>
+                            <p class="text-xs leading-relaxed">위쪽 탭에서 기관(공공데이터포털, 법제처)을 고르면, 그 기관에서 연결해 둔 조회 항목이 아래에 나옵니다. 공공데이터포털에는 건축물대장 빠른 조회와 다른 API 직접 조회가, 법제처에는 법령 검색과 고용노동부 법령해석이 있습니다.</p>
                         </div>
                     </li>
                     <li class="flex gap-3">
@@ -686,7 +778,7 @@ function fetchBuildingRegisterHubData() {
         function switchSub(org, sub) {
             const subs = {
                 datago: { building: ['sectionBuilding', 'subBtnBuilding'], generic: ['sectionGeneric', 'subBtnGeneric'] },
-                law: { search: ['sectionLaw', 'subBtnLawSearch'] }
+                law: { search: ['sectionLaw', 'subBtnLawSearch'], expc: ['sectionLawExpc', 'subBtnLawExpc'] }
             };
             const on = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white';
             const off = 'px-3.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50';
@@ -1690,6 +1782,141 @@ function fetchBuildingRegisterHubData() {
             // 원본 JSON: 응답 안의 링크에 들어 있는 인증값(OC)은 가려서 표시
             const masked = JSON.stringify(data, null, 2).replace(/OC=[^&"\\]+/g, 'OC=***');
             document.getElementById('lawJsonPre').innerHTML = syntaxHighlightJson(masked);
+        }
+
+        // ===== 법제처 국가법령정보: 고용노동부 법령해석 (target=moelCgmExpc) =====
+        const LAW_SERVICE_API = 'https://www.law.go.kr/DRF/lawService.do';
+        const EXPC_TARGET = 'moelCgmExpc';
+        const EXPC_COLS = ['안건명', '안건번호', '질의기관명', '해석기관명', '회신기관명', '해석일자', '회신일자', '등록일시'];
+        let expcDetailText = '';
+
+        const maskOc = (obj) => JSON.stringify(obj, null, 2).replace(/OC=[^&"\\]+/g, 'OC=***');
+
+        // 응답의 최상위 키 이름과 상관없이 목록(배열)과 건수를 찾는다
+        function expcPickList(data) {
+            if (!data || typeof data !== 'object' || data.Response) return null;
+            const root = data[Object.keys(data)[0]];
+            if (!root || typeof root !== 'object') return null;
+            let items = null;
+            for (const v of Object.values(root)) { if (Array.isArray(v)) { items = v; break; } }
+            if (!items) {
+                const one = Object.values(root).find(v => v && typeof v === 'object' && !Array.isArray(v) && ('안건명' in v || '법령해석일련번호' in v));
+                items = one ? [one] : [];
+            }
+            return { items, total: Number(root.totalCnt) || items.length };
+        }
+
+        async function searchExpc(queryOverride) {
+            const oc = getLawOc();
+            if (!oc) { requireKey('law'); return; }
+            const input = document.getElementById('expcQuery');
+            if (typeof queryOverride === 'string') input.value = queryOverride;
+            const query = input.value.trim();
+            if (!query) { alert('검색어를 입력하세요.'); return; }
+
+            const params = new URLSearchParams({
+                OC: oc, target: EXPC_TARGET, type: 'JSON', query,
+                search: document.getElementById('expcScope').value,
+                display: document.getElementById('expcDisplay').value,
+                page: '1'
+            });
+            const loader = document.getElementById('expcLoader');
+            const results = document.getElementById('expcResults');
+            document.getElementById('expcDetail').classList.add('hidden');
+            loader.classList.remove('hidden');
+            results.classList.add('hidden');
+
+            try {
+                const res = await fetch(`${LAW_API}?${params.toString()}`);
+                const data = await res.json();
+                loader.classList.add('hidden');
+                const list = expcPickList(data);
+                if (!list) { alert(lawErrorMessage(data)); return; }
+                renderExpcList(list.items, list.total);
+                results.classList.remove('hidden');
+            } catch (err) {
+                loader.classList.add('hidden');
+                alert(`법제처 서버에 연결하지 못했습니다.\n브라우저 보안(CORS) 제한이나 네트워크 문제일 수 있습니다.\n상세: ${err.message}`);
+            }
+        }
+
+        function renderExpcList(items, total) {
+            document.getElementById('expcSummary').textContent = items.length < total
+                ? `총 ${total}건 중 ${items.length}건 표시 (표시 건수를 늘려 더 볼 수 있습니다)`
+                : `총 ${total}건`;
+            const cols = EXPC_COLS.filter(c => items.some(it => !isBlank(it[c])));
+            document.getElementById('expcTableHead').innerHTML =
+                '<tr>' + cols.map(c => `<th class="px-3 py-2.5 whitespace-nowrap">${esc(c)}</th>`).join('') + '<th class="px-3 py-2.5 whitespace-nowrap">본문</th></tr>';
+            const body = document.getElementById('expcTableBody');
+            if (!items.length) {
+                body.innerHTML = `<tr><td colspan="${cols.length + 1}" class="px-3 py-8 text-center text-slate-400">조회된 법령해석이 없습니다.</td></tr>`;
+                return;
+            }
+            body.innerHTML = items.map(it => {
+                const id = it['법령해석일련번호'];
+                const cells = cols.map(c => {
+                    const v = c.endsWith('일자') ? lawDate(it[c]) : (it[c] ?? '');
+                    return `<td class="px-3 py-2 ${c === '안건명' ? 'font-semibold text-slate-900' : 'whitespace-nowrap'}">${esc(v)}</td>`;
+                }).join('');
+                const btn = isBlank(id) ? '' : `<button onclick="showExpcDetail('${esc(id)}')" class="px-2.5 py-1 rounded-md border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-[11px] font-medium whitespace-nowrap">본문 보기</button>`;
+                return `<tr class="hover:bg-slate-50 transition-colors">${cells}<td class="px-3 py-2">${btn}</td></tr>`;
+            }).join('');
+        }
+
+        async function showExpcDetail(id) {
+            const oc = getLawOc();
+            if (!oc) { requireKey('law'); return; }
+            const params = new URLSearchParams({ OC: oc, target: EXPC_TARGET, type: 'JSON', ID: String(id) });
+            const panel = document.getElementById('expcDetail');
+            try {
+                const res = await fetch(`${LAW_SERVICE_API}?${params.toString()}`);
+                const data = await res.json();
+                if (!data || typeof data !== 'object' || data.Response) { alert(lawErrorMessage(data)); return; }
+                const root = data[Object.keys(data)[0]];
+                if (!root || typeof root !== 'object') { alert('본문 응답을 해석하지 못했습니다.'); return; }
+
+                const entries = Object.entries(root).filter(([k, v]) => typeof v !== 'object' && !isBlank(v) && !/링크|link/i.test(k));
+                const LONG_KEYS = ['질의요지', '회신', '이유', '질의내용', '회신내용', '관련법령'];
+                const isLong = (k, v) => LONG_KEYS.includes(k) || String(v).length > 60 || String(v).includes('\n');
+                const meta = entries.filter(([k, v]) => !isLong(k, v) && k !== '안건명');
+                const longs = entries.filter(([k, v]) => isLong(k, v));
+                const title = root['안건명'] || '법령해석';
+
+                document.getElementById('expcDetailTitle').textContent = title;
+                document.getElementById('expcDetailMeta').textContent = meta.map(([k, v]) => `${k} ${k.endsWith('일자') ? lawDate(v) : v}`).join('   ');
+                document.getElementById('expcDetailBody').innerHTML = longs.map(([k, v]) => `
+                    <div>
+                        <h4 class="text-[11px] font-semibold text-indigo-700 mb-1">${esc(k)}</h4>
+                        <div class="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap break-words">${esc(String(v).trim())}</div>
+                    </div>`).join('') || '<p class="text-xs text-slate-400">표시할 본문 항목이 없습니다. 아래 원본 JSON을 확인하세요.</p>';
+                document.getElementById('expcJsonPre').innerHTML = syntaxHighlightJson(maskOc(data));
+
+                expcDetailText = `[고용노동부 법령해석] ${title}\n` +
+                    meta.map(([k, v]) => `${k}: ${k.endsWith('일자') ? lawDate(v) : v}`).join('\n') + '\n\n' +
+                    longs.map(([k, v]) => `■ ${k}\n${String(v).trim()}`).join('\n\n');
+
+                panel.classList.remove('hidden');
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (err) {
+                alert(`본문을 불러오지 못했습니다.\n상세: ${err.message}`);
+            }
+        }
+
+        function copyExpcDetail(btn) {
+            const text = expcDetailText;
+            if (!text) return;
+            const done = () => { const prev = btn.textContent; btn.textContent = '복사됨'; setTimeout(() => { btn.textContent = prev; }, 1500); };
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text; document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); done(); } catch (e) { alert('복사하지 못했습니다. 본문을 직접 선택해 복사하세요.'); }
+                document.body.removeChild(ta);
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(done).catch(fallback);
+            } else {
+                fallback();
+            }
         }
 
         // Syntax Highlighting for JSON
