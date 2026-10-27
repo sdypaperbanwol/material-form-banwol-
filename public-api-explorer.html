@@ -38,6 +38,47 @@
         .json-number { color: #ea580c; }
         .json-boolean { color: #9333ea; }
         .json-null { color: #64748b; }
+
+        /* ===== 대장 서식 (정부24 대장 모양의 조회용 화면) ===== */
+        .ledger-wrap { overflow-x: auto; padding-bottom: 8px; }
+        .ledger-page { position: relative; box-sizing: border-box; width: 794px; min-height: 1123px; margin: 0 auto 18px; padding: 26px 30px 22px; background: #fff; color: #111827; border: 1px solid #cbd5e1; box-shadow: 0 1px 4px rgba(15,23,42,.08); font-family: 'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif; font-size: 11px; line-height: 1.35; overflow: hidden; }
+        .ledger-page::after { content: '조회용'; position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%) rotate(-24deg); font-size: 120px; font-weight: 700; letter-spacing: .12em; color: rgba(100,116,139,.09); pointer-events: none; white-space: nowrap; }
+        .ledger-page > * { position: relative; z-index: 1; }
+        .lg-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .lg-tag { font-size: 9.5px; color: #b45309; border: 1px solid #f59e0b; background: #fffbeb; padding: 1px 6px; border-radius: 3px; }
+        .lg-pg { font-size: 10px; color: #334155; }
+        .lg-title { text-align: center; font-size: 21px; font-weight: 700; letter-spacing: .06em; margin: 8px 0 12px; }
+        .lg-box { margin-bottom: 0; }
+        .lg-rt { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: -1px; }
+        .lg-box > .lg-rt:first-child { margin-top: 0; }
+        .lg-rt td { border: 1px solid #1f2937; padding: 2px 6px 3px; height: 38px; vertical-align: top; overflow: hidden; }
+        .lg-l { display: block; font-size: 9.5px; color: #374151; }
+        .lg-v { display: block; margin-top: 3px; text-align: right; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+        .lg-left .lg-v { text-align: left; }
+        .lg-na { background: repeating-linear-gradient(135deg, #f1f5f9 0, #f1f5f9 5px, #e8edf4 5px, #e8edf4 10px); }
+        .lg-na .lg-v { font-size: 9px; font-weight: 400; color: #94a3b8; text-align: center; }
+        .lg-t { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .lg-t th, .lg-t td { border: 1px solid #1f2937; padding: 3px 5px; font-weight: 400; vertical-align: middle; }
+        .lg-t th { background: rgba(241,245,249,.75); font-weight: 600; text-align: center; font-size: 10px; }
+        .lg-t td.c { text-align: center; }
+        .lg-t td.r { text-align: right; }
+        .lg-t td.na, .lg-t th.na { background: repeating-linear-gradient(135deg, #f1f5f9 0, #f1f5f9 5px, #e8edf4 5px, #e8edf4 10px); color: #94a3b8; font-size: 9px; text-align: center; }
+        .lg-t td.rest { text-align: center; color: #64748b; }
+        .lg-u { color: #94a3b8; font-size: 9px; }
+        .lg-3 { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        .lg-3 > tbody > tr > td { padding: 0; border: 0; vertical-align: top; }
+        .lg-3 .lg-t { margin-top: 0; }
+        .lg-3 > tbody > tr > td + td .lg-t { margin-left: -1px; width: calc(100% + 1px); }
+        .lg-stack .lg-t + .lg-t { margin-top: -1px; }
+        .lg-foot { margin-top: 12px; font-size: 9.5px; color: #475569; line-height: 1.55; }
+
+        @page { size: A4 portrait; margin: 8mm; }
+        @media print {
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .ledger-wrap { overflow: visible; padding: 0; }
+            .ledger-page { width: 100%; min-height: 272mm; margin: 0; border: none; box-shadow: none; padding: 3mm 4mm; page-break-after: always; break-after: page; }
+            .ledger-page:last-child { page-break-after: auto; break-after: auto; }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
@@ -141,6 +182,7 @@
                             <button onclick="setBldgCategory('getBrFlrOulnInfo', this)" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">층별개요</button>
                             <button onclick="setBldgCategory('getBrExposPubuseAreaInfo', this)" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">전유공용면적</button>
                             <button onclick="setBldgCategory('getBrRecapTitleInfo', this)" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">총괄표제부</button>
+                            <button onclick="setBldgCategory('form', this)" title="총괄표제부 + 표제부 + 층별개요를 한꺼번에 조회해 정부24 대장 모양으로 보여줍니다" class="bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50">대장 서식</button>
                         </div>
                     </div>
 
@@ -165,6 +207,7 @@
                         <button onclick="switchViewMode('cards')" id="viewBtnCards" class="view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-800 shadow-sm">카드 뷰</button>
                         <button onclick="switchViewMode('table')" id="viewBtnTable" class="view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800">테이블 뷰</button>
                         <button onclick="switchViewMode('json')" id="viewBtnJson" class="view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800">원본 JSON</button>
+                        <button onclick="switchViewMode('form')" id="viewBtnForm" style="display:none" class="view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800">대장 서식</button>
                     </div>
 
                     <!-- Export Buttons -->
@@ -198,6 +241,9 @@
                 <div id="bldgViewJson" class="hidden bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto font-mono text-xs max-h-[600px]">
                     <pre id="bldgJsonPre" class="whitespace-pre-wrap"></pre>
                 </div>
+
+                <!-- Ledger Form View -->
+                <div id="bldgViewForm" class="hidden"></div>
             </div>
         </section>
 
@@ -491,6 +537,46 @@ function fetchBuildingRegisterHubData() {
         }
 
         // Fetch Building Register Data (Hub Service)
+        // 건축HUB API 한 종류를 모든 페이지에 걸쳐 가져온다 (번 단위 조회, 지번 필터는 호출 쪽에서 처리)
+        async function fetchAllItems(op, apiKey, sigunguCd, bjdongCd, bun) {
+            const baseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/${op}`;
+            const numOfRows = 100;
+            const maxPages = 20;
+            let all = [];
+            let header = null;
+
+            for (let pageNo = 1; pageNo <= maxPages; pageNo++) {
+                const queryParams = `?serviceKey=${encodeURIComponent(apiKey)}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&_type=json&numOfRows=${numOfRows}&pageNo=${pageNo}`;
+                const response = await fetch(baseUrl + queryParams);
+                const data = await response.json();
+
+                // 인증키/권한 오류 (OpenAPI_ServiceResponse 형태)
+                if (data.OpenAPI_ServiceResponse) {
+                    const h = data.OpenAPI_ServiceResponse.cmmMsgHeader || {};
+                    const e = new Error(`API 인증 오류: ${h.returnAuthMsg || h.errMsg || '알 수 없는 오류'}`);
+                    e.isApiError = true;
+                    throw e;
+                }
+
+                const res = data.response;
+                const code = res?.header?.resultCode;
+                if (!res || (code !== '00' && code !== '000')) {
+                    const e = new Error(`API 응답 오류: ${res?.header?.resultMsg || data.header?.resultMsg || '알 수 없는 오류가 발생했습니다.'}`);
+                    e.isApiError = true;
+                    throw e;
+                }
+                if (!header) header = res.header;
+
+                let items = res.body?.items?.item || [];
+                if (!Array.isArray(items)) items = items ? [items] : [];
+                all = all.concat(items);
+                const total = Number(res.body?.totalCount) || all.length;
+
+                if (all.length >= total || items.length === 0) break;
+            }
+            return { items: all, header };
+        }
+
         async function fetchBuildingData() {
             const apiKey = localStorage.getItem('public_api_key');
             if (!apiKey) {
@@ -509,11 +595,12 @@ function fetchBuildingRegisterHubData() {
                 return;
             }
 
-            // Pad Bun and Ji to 4 digits if entered as short numbers
+            // Pad Bun to 4 digits if entered as short numbers
             bun = bun ? bun.padStart(4, '0') : '0000';
             // 지(ji)는 API에 보내지 않고, 번(bun)으로만 조회한 뒤 화면에서 지번을 걸러낸다.
             // (ji를 API에 직접 지정하면 같은 지번의 건물 일부만 돌려주는 경우가 있음)
             const jiFilter = ji ? ji.padStart(4, '0') : null;
+            const byJi = (list) => jiFilter ? list.filter(it => it.ji === undefined || String(it.ji).trim() === jiFilter) : list;
 
             const loader = document.getElementById('bldgLoader');
             const container = document.getElementById('bldgResultsContainer');
@@ -521,56 +608,50 @@ function fetchBuildingRegisterHubData() {
             loader.classList.remove('hidden');
             container.classList.add('hidden');
 
-            // 국토교통부 건축물대장정보 서비스 (BldRgstHubService)
-            const baseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/${currentBldgCategory}`;
-            const numOfRows = 100;
-            const maxPages = 20;
-
             try {
-                let allItems = [];
-                let header = null;
-                let totalCount = 0;
+                if (currentBldgCategory === 'form') {
+                    // 대장 서식: 총괄표제부 + 표제부 + 층별개요를 차례로 조회
+                    const rRecap = await fetchAllItems('getBrRecapTitleInfo', apiKey, sigunguCd, bjdongCd, bun);
+                    const rTitle = await fetchAllItems('getBrTitleInfo', apiKey, sigunguCd, bjdongCd, bun);
+                    const rFloor = await fetchAllItems('getBrFlrOulnInfo', apiKey, sigunguCd, bjdongCd, bun);
+                    const recap = byJi(rRecap.items);
+                    const titles = byJi(rTitle.items);
+                    const floors = byJi(rFloor.items);
 
-                for (let pageNo = 1; pageNo <= maxPages; pageNo++) {
-                    const queryParams = `?serviceKey=${encodeURIComponent(apiKey)}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&_type=json&numOfRows=${numOfRows}&pageNo=${pageNo}`;
-                    const response = await fetch(baseUrl + queryParams);
-                    const data = await response.json();
+                    const items = recap.concat(titles);
+                    const fullJson = {
+                        response: {
+                            header: rRecap.header || rTitle.header,
+                            body: {
+                                총괄표제부: recap,
+                                표제부: titles,
+                                층별개요: floors,
+                                jiFilter: jiFilter
+                            }
+                        }
+                    };
 
-                    // 인증키/권한 오류 (OpenAPI_ServiceResponse 형태)
-                    if (data.OpenAPI_ServiceResponse) {
-                        const h = data.OpenAPI_ServiceResponse.cmmMsgHeader || {};
-                        loader.classList.add('hidden');
-                        alert(`API 인증 오류: ${h.returnAuthMsg || h.errMsg || '알 수 없는 오류'}`);
-                        return;
-                    }
-
-                    const res = data.response;
-                    const code = res?.header?.resultCode;
-                    if (!res || (code !== '00' && code !== '000')) {
-                        loader.classList.add('hidden');
-                        alert(`API 응답 오류: ${res?.header?.resultMsg || data.header?.resultMsg || '알 수 없는 오류가 발생했습니다.'}`);
-                        return;
-                    }
-                    if (!header) header = res.header;
-
-                    let items = res.body?.items?.item || [];
-                    if (!Array.isArray(items)) items = items ? [items] : [];
-                    allItems = allItems.concat(items);
-                    totalCount = Number(res.body?.totalCount) || allItems.length;
-
-                    if (allItems.length >= totalCount || items.length === 0) break;
+                    loader.classList.add('hidden');
+                    fetchedDataItems = items;
+                    renderBuildingResults(items, fullJson);
+                    lgBuildState(recap, titles, floors);
+                    renderFormView();
+                    setFormAvailability(true);
+                    switchViewMode('form');
+                    container.classList.remove('hidden');
+                    return;
                 }
 
-                // 지번 필터 (ji 정보가 없는 응답 항목은 그대로 둔다)
-                const items = jiFilter ? allItems.filter(it => it.ji === undefined || String(it.ji).trim() === jiFilter) : allItems;
+                const r = await fetchAllItems(currentBldgCategory, apiKey, sigunguCd, bjdongCd, bun);
+                const items = byJi(r.items);
 
                 const fullJson = {
                     response: {
-                        header: header,
+                        header: r.header,
                         body: {
                             items: { item: items },
                             totalCount: String(items.length),
-                            fetchedTotalCount: String(allItems.length),
+                            fetchedTotalCount: String(r.items.length),
                             jiFilter: jiFilter
                         }
                     }
@@ -579,10 +660,15 @@ function fetchBuildingRegisterHubData() {
                 loader.classList.add('hidden');
                 fetchedDataItems = items;
                 renderBuildingResults(items, fullJson);
+                setFormAvailability(false);
                 container.classList.remove('hidden');
             } catch (err) {
                 loader.classList.add('hidden');
-                alert(`통신 실패: CORS 제한 또는 올바르지 않은 API Key/URL일 수 있습니다.\n상세: ${err.message}`);
+                if (err.isApiError) {
+                    alert(err.message);
+                } else {
+                    alert(`통신 실패: CORS 제한 또는 올바르지 않은 API Key/URL일 수 있습니다.\n상세: ${err.message}`);
+                }
             }
         }
 
@@ -655,7 +741,7 @@ function fetchBuildingRegisterHubData() {
             if (isBlank(v)) return '-';
             const s = String(v).trim();
             const isNum = !isNaN(Number(s));
-            if (k === 'rserthqkDsgnApplyYn') return s === '1' ? '적용' : (s === '0' ? '미적용' : s);
+            if (k === 'rserthqkDsgnApplyYn') return s === '1' ? '적용' : (s === '0' ? '비적용' : s);
             if (DATE_KEYS.has(k) && /^\d{8}$/.test(s)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
             if (AREA_KEYS.has(k) && isNum) return `${Number(s).toLocaleString('ko-KR', { maximumFractionDigits: 2 })} ㎡`;
             if (RATE_KEYS.has(k) && isNum) return `${Number(s).toLocaleString('ko-KR', { maximumFractionDigits: 2 })} %`;
@@ -771,22 +857,377 @@ function fetchBuildingRegisterHubData() {
             lucide.createIcons();
         }
 
+        // ===== 대장 서식 (정부24 대장 모양의 조회용 화면) =====
+        let ledgerState = { items: [], selected: 0, floors: [], queriedOn: '' };
+        let currentViewMode = 'cards';
+
+        const lgVal = (v) => isBlank(v) ? '' : String(v).trim();
+        const lgNz = (v) => !(isBlank(v) || isZero(v));
+        const lgNum = (v) => Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+        const lgArea = (v) => lgNz(v) ? `${lgNum(v)} ㎡` : '';
+        const lgRate = (v) => lgNz(v) ? `${lgNum(v)} %` : '';
+        const lgLen = (v) => lgNz(v) ? `${lgNum(v)} m` : '';
+        const lgDate = (v) => { const s = lgVal(v); return /^\d{8}$/.test(s) ? `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}` : s; };
+        const lgJibun = (r) => {
+            const b = parseInt(r.bun, 10), j = parseInt(r.ji, 10);
+            if (isNaN(b)) return '';
+            return (String(r.platGbCd) === '1' ? '산 ' : '') + (j > 0 ? `${b}-${j}` : `${b}`);
+        };
+        const lgSite = (r) => lgVal(r.platPlc).replace(/\s*(산\s*)?\d+(-\d+)?번지\s*$/, '').trim();
+        const lgUniqueNo = (r) => `${lgVal(r.sigunguCd)}${lgVal(r.bjdongCd)}-${Number(r.platGbCd || 0) + 1}-${String(lgVal(r.bun)).padStart(4, '0')}${String(lgVal(r.ji)).padStart(4, '0')}`;
+        const lgStrct = (r) => lgVal(r.etcStrct) || lgVal(r.strctCdNm);
+        const lgRoof = (r) => lgVal(r.etcRoof) || lgVal(r.roofCdNm);
+        const lgPurps = (r) => lgVal(r.etcPurps) || lgVal(r.mainPurpsCdNm);
+
+        // 셀 / 행 빌더 (표 기반: 인쇄와 구형 브라우저에서도 안정적)
+        const lgCell = (label, value, o = {}) => {
+            const cls = [o.na ? 'lg-na' : '', o.left ? 'lg-left' : ''].filter(Boolean).join(' ');
+            const body = o.na ? '<span class="lg-v">미제공</span>' : `<span class="lg-v">${esc(value == null ? '' : value)}</span>`;
+            return `<td class="${cls}"><span class="lg-l">${esc(label)}</span>${body}</td>`;
+        };
+        const lgRow = (widths, cells) => `<table class="lg-rt"><colgroup>${widths.map(w => `<col style="width:${w}%">`).join('')}</colgroup><tr>${cells.join('')}</tr></table>`;
+        const lgNa = (txt = '미제공', extra = '') => `<td class="na" ${extra}>${esc(txt)}</td>`;
+
+        const lgHead = (title, n) => `
+            <div class="lg-top">
+                <span class="lg-tag">조회용 참고 화면 (정부24 발급 원본 아님)</span>
+                <span class="lg-pg">(2쪽 중 제${n}쪽)</span>
+            </div>
+            ${n === 1 ? `<h3 class="lg-title">${esc(title)}</h3>` : ''}`;
+
+        const lgFoot = (r, st) => `
+            <div class="lg-foot">
+                자료: 국토교통부 건축HUB 건축물대장정보 오픈API 조회 결과 (자료 생성일 ${esc(lgDate(r.crtnDay) || '-')}, 조회일 ${esc(st.queriedOn)}).<br>
+                회색 빗금 칸은 API가 제공하지 않는 항목입니다. 고유번호는 시군구·법정동·지번 코드를 조합한 값이며, 이 화면은 공식 증명 효력이 없습니다.
+            </div>`;
+
+        // 건축물(동) 정렬: 주건축물 먼저, 사용승인일 최신순. 원본 items는 건드리지 않고 래퍼를 만든다.
+        function lgOrderBuildings(titles) {
+            const byDate = (a, b) => {
+                const x = lgVal(a.r.useAprDay), y = lgVal(b.r.useAprDay);
+                if (!x && !y) return 0; if (!x) return 1; if (!y) return -1;
+                return y.localeCompare(x);
+            };
+            const wrap = titles.map(r => ({ r }));
+            const main = wrap.filter(w => lgVal(w.r.mainAtchGbCd) !== '1').sort(byDate);
+            const sub = wrap.filter(w => lgVal(w.r.mainAtchGbCd) === '1').sort(byDate);
+            main.forEach((w, i) => w.seq = `주${i + 1}`);
+            sub.forEach((w, i) => w.seq = `부${i + 1}`);
+            return main.concat(sub);
+        }
+
+        function lgBuildState(recap, titles, floors) {
+            const ordered = lgOrderBuildings(titles);
+            const items = [];
+            recap.forEach((r, i) => items.push({ type: 'recap', r, chip: recap.length > 1 ? `총괄표제부 ${i + 1}` : '총괄표제부' }));
+            ordered.forEach(w => {
+                const nm = lgVal(w.r.bldNm) || lgVal(w.r.dongNm);
+                items.push({ type: 'title', r: w.r, seq: w.seq, chip: `${w.seq}${nm ? ' ' + nm : ''} (${lgNum(w.r.totArea || 0)}㎡)` });
+            });
+            ledgerState = {
+                items, ordered, floors,
+                selected: 0,
+                queriedOn: new Date().toLocaleDateString('sv-SE')
+            };
+        }
+
+        // ---- 총괄표제부 1쪽 ----
+        function lgRecapPage1(r, st) {
+            const rows = [
+                lgRow([24, 30, 24, 22], [lgCell('건물ID', '', { na: 1 }), lgCell('고유번호', lgUniqueNo(r)), lgCell('명칭', lgVal(r.bldNm), { left: 1 }), lgCell('특이사항', '', { na: 1 })]),
+                lgRow([36, 12, 52], [lgCell('대지위치', lgSite(r), { left: 1 }), lgCell('지번', lgJibun(r)), lgCell('도로명주소', lgVal(r.newPlatPlc), { left: 1 })]),
+                lgRow([20, 20, 20, 20, 20], [lgCell('대지면적', lgArea(r.platArea)), lgCell('연면적', lgArea(r.totArea)), lgCell('지역', '', { na: 1 }), lgCell('지구', '', { na: 1 }), lgCell('구역', '', { na: 1 })]),
+                lgRow([20, 24, 18, 38], [lgCell('건축면적', lgArea(r.archArea)), lgCell('용적률 산정용 연면적', lgArea(r.vlRatEstmTotArea)), lgCell('건축물 수', lgNz(r.mainBldCnt) ? `${lgNum(r.mainBldCnt)} 동` : ''), lgCell('주용도', lgVal(r.mainPurpsCdNm) || lgPurps(r), { left: 1 })]),
+                lgRow([16, 16, 28, 16, 24], [lgCell('건폐율', lgRate(r.bcRat)), lgCell('용적률', lgRate(r.vlRat)),
+                    lgCell('총 호수/가구수/세대수', `${lgNum(r.hoCnt || 0)}호/${lgNum(r.fmlyCnt || 0)}가구/${lgNum(r.hhldCnt || 0)}세대`),
+                    lgCell('총 주차 대 수', lgNz(r.totPkngCnt) ? `${lgNum(r.totPkngCnt)} 대` : ''),
+                    lgCell('부속건축물', lgNz(r.atchBldCnt) ? `${lgNum(r.atchBldCnt)} 동 ${lgArea(r.atchBldArea)}` : '')]),
+                lgRow([25, 25, 25, 25], [lgCell('조경면적', '', { na: 1 }), lgCell('공개 공지·공간 면적', '', { na: 1 }), lgCell('건축선 후퇴면적', '', { na: 1 }), lgCell('건축선 후퇴거리', '', { na: 1 })])
+            ].join('');
+
+            const bRows = st.ordered.map(w => {
+                const b = w.r;
+                return `<tr>
+                    <td class="c">${esc(w.seq)}</td>
+                    <td>${esc(lgVal(b.bldNm) || lgVal(b.dongNm))}</td>
+                    <td>${esc(lgVal(b.newPlatPlc))}</td>
+                    <td>${esc(lgStrct(b))}</td>
+                    <td>${esc(lgRoof(b))}</td>
+                    <td class="c">${esc(`${b.ugrndFlrCnt || 0}/${b.grndFlrCnt || 0}`)}</td>
+                    <td>${esc(lgPurps(b))}</td>
+                    <td class="r">${esc(lgNz(b.totArea) ? lgNum(b.totArea) : '')}</td>
+                    <td class="c" style="white-space:nowrap">${esc(lgDate(b.useAprDay))}</td>
+                    <td class="c">${esc(lgVal(b.pmsnoGbCdNm))}</td>
+                </tr>`;
+            }).join('');
+            const emptyCols = '<td>&nbsp;</td>'.repeat(10);
+            const pad = Math.max(0, 3 - st.ordered.length);
+
+            return `
+            <div class="ledger-page">
+                ${lgHead('건축물대장 총괄표제부(갑)', 1)}
+                <div class="lg-box">${rows}</div>
+                <table class="lg-t" style="table-layout:fixed">
+                    <colgroup><col style="width:6%"><col style="width:7%"><col style="width:18%"><col style="width:17%"><col style="width:8%"><col style="width:8%"><col style="width:9%"><col style="width:9%"><col style="width:12%"><col style="width:6%"></colgroup>
+                    <tr><th colspan="10">건축물 현황</th></tr>
+                    <tr><th>구분</th><th>명칭</th><th>도로명주소</th><th>건축물 주구조</th><th>건축물 지붕</th><th>층수<br>지하/지상</th><th>용도</th><th>면적(㎡)</th><th>사용승인일</th><th>허가<br>구분</th></tr>
+                    ${bRows || `<tr><td colspan="10" class="rest">이 지번에서 조회된 표제부(동) 정보가 없습니다.</td></tr>`}
+                    ${Array.from({ length: pad }, () => '<tr>' + emptyCols + '</tr>').join('')}
+                    <tr><td colspan="10" class="rest">- 이하여백 -</td></tr>
+                </table>
+                <div class="lg-foot">※ 정부24 원본의 &quot;변동일·변동원인&quot; 칸은 API가 제공하지 않아 &quot;사용승인일·허가구분&quot;으로 대신 표시했습니다. 동 순서는 주건축물 먼저, 사용승인일 최신순이며 원본과 다를 수 있습니다.</div>
+                ${lgFoot(r, st)}
+            </div>`;
+        }
+
+        // ---- 일반건축물대장(표제부) 1쪽 ----
+        function lgTitlePage1(w, st) {
+            const r = w.r;
+            const kind = lgVal(r.regstrKindCdNm).includes('일반') ? '일반건축물대장(갑)' : '건축물대장 표제부(갑)';
+            const rows = [
+                lgRow([30, 18, 30, 22], [lgCell('고유번호', lgUniqueNo(r)), lgCell('동명칭', lgVal(r.dongNm), { left: 1 }), lgCell('명칭', lgVal(r.bldNm), { left: 1 }), lgCell('특이사항', '', { na: 1 })]),
+                lgRow([36, 12, 52], [lgCell('대지위치', lgSite(r), { left: 1 }), lgCell('지번', lgJibun(r)), lgCell('도로명주소', lgVal(r.newPlatPlc), { left: 1 })]),
+                lgRow([20, 20, 20, 20, 20], [lgCell('대지면적', lgArea(r.platArea)), lgCell('연면적', lgArea(r.totArea)), lgCell('지역', '', { na: 1 }), lgCell('지구', '', { na: 1 }), lgCell('구역', '', { na: 1 })]),
+                lgRow([18, 22, 26, 14, 20], [lgCell('건축면적', lgArea(r.archArea)), lgCell('용적률 산정용 연면적', lgArea(r.vlRatEstmTotArea)), lgCell('주구조', lgStrct(r), { left: 1 }), lgCell('주용도', lgVal(r.mainPurpsCdNm), { left: 1 }),
+                    lgCell('층수', `지하 ${r.ugrndFlrCnt || 0}층/지상 ${r.grndFlrCnt || 0}층`)]),
+                lgRow([16, 16, 16, 28, 24], [lgCell('건폐율', lgRate(r.bcRat)), lgCell('용적률', lgRate(r.vlRat)), lgCell('높이', lgLen(r.heit)), lgCell('지붕', lgRoof(r), { left: 1 }),
+                    lgCell('부속건축물', lgNz(r.atchBldCnt) ? `${lgNum(r.atchBldCnt)} 동 ${lgArea(r.atchBldArea)}` : '')]),
+                lgRow([25, 25, 25, 25], [lgCell('조경면적', '', { na: 1 }), lgCell('공개 공지·공간 면적', '', { na: 1 }), lgCell('건축선 후퇴면적', '', { na: 1 }), lgCell('건축선 후퇴거리', '', { na: 1 })])
+            ].join('');
+
+            const flrs = st.floors.filter(f => String(f.mgmBldrgstPk) === String(r.mgmBldrgstPk)).sort((a, b) => {
+                const ga = Number(a.flrGbCd) || 0, gb = Number(b.flrGbCd) || 0;
+                if (ga !== gb) return ga - gb;
+                const na = Number(a.flrNo) || 0, nb = Number(b.flrNo) || 0;
+                return ga === 10 ? nb - na : na - nb; // 지하는 깊은 층부터
+            });
+            const fRows = flrs.map(f => `<tr>
+                <td class="c">${esc(lgVal(f.flrGbCdNm))}</td>
+                <td class="c">${esc(lgVal(f.flrNoNm))}</td>
+                <td>${esc(lgStrct(f))}</td>
+                <td>${esc(lgPurps(f))}</td>
+                <td class="r">${esc(lgNz(f.area) ? lgNum(f.area) : '')}</td>
+            </tr>`).join('');
+            const fEmpty = '<td>&nbsp;</td>'.repeat(5);
+            const fPad = Math.max(0, 4 - flrs.length);
+
+            return `
+            <div class="ledger-page">
+                ${lgHead(kind, 1)}
+                <div class="lg-box">${rows}</div>
+                <table class="lg-3"><tr>
+                    <td style="width:60%">
+                        <table class="lg-t">
+                            <tr><th colspan="5">건축물 현황</th></tr>
+                            <tr><th>구분</th><th>층별</th><th>구조</th><th>용도</th><th>면적(㎡)</th></tr>
+                            ${fRows || `<tr><td colspan="5" class="rest">층별개요에서 이 건물과 연결되는 정보를 찾지 못했습니다.</td></tr>`}
+                            ${Array.from({ length: fPad }, () => '<tr>' + fEmpty + '</tr>').join('')}
+                            <tr><td colspan="5" class="rest">- 이하여백 -</td></tr>
+                        </table>
+                    </td>
+                    <td style="width:40%">
+                        <table class="lg-t">
+                            <tr><th colspan="2">소유자 현황</th></tr>
+                            <tr><th>성명(명칭)<br>주민(법인)등록번호</th><th>소유권 지분<br>변동일·변동원인</th></tr>
+                            <tr><td colspan="2" class="na" style="height:150px">소유자 정보는 API가 제공하지 않습니다.</td></tr>
+                        </table>
+                    </td>
+                </tr></table>
+                ${lgFoot(r, st)}
+            </div>`;
+        }
+
+        // ---- 2쪽 (총괄표제부/표제부 공통 서식) ----
+        function lgPage2(r, isRecap, st) {
+            const head = [
+                lgRow([36, 36, 28], [lgCell('대지위치', lgSite(r), { left: 1 }), lgCell('명칭', lgVal(r.bldNm) || lgVal(r.dongNm), { left: 1 }), lgCell('특이사항', '', { na: 1 })]),
+                lgRow([12, 26, 30, 32], [lgCell('지번', lgJibun(r)), lgCell('지번 관련 주소', '', { na: 1 }), lgCell('도로명주소', lgVal(r.newPlatPlc), { left: 1 }), lgCell('도로명주소 관련 주소', '', { na: 1 })])
+            ].join('');
+
+            const people = `
+                <table class="lg-t">
+                    <tr><th>구분</th><th>성명 또는 명칭</th><th>면허(등록)번호</th></tr>
+                    ${['건축주', '설계자', '공사감리자', '공사시공자<br>(현장관리인)'].map(n => `<tr><th>${n}</th>${lgNa()}${lgNa()}</tr>`).join('')}
+                </table>`;
+
+            const pk = (cnt, area) => `<td class="c">${lgNz(cnt) ? esc(lgNum(cnt)) + '대' : '<span class="lg-u">대</span>'}<br>${lgNz(area) ? esc(lgNum(area)) + '㎡' : '<span class="lg-u">㎡</span>'}</td>`;
+            const parking = `
+                <table class="lg-t">
+                    <tr><th colspan="5">주차장</th></tr>
+                    <tr><th>구분</th><th>옥내</th><th>옥외</th><th>인근</th><th>면제</th></tr>
+                    <tr><th>자주식</th>${pk(r.indrAutoUtcnt, r.indrAutoArea)}${pk(r.oudrAutoUtcnt, r.oudrAutoArea)}${lgNa('')}${lgNa('')}</tr>
+                    <tr><th>기계식</th>${pk(r.indrMechUtcnt, r.indrMechArea)}${pk(r.oudrMechUtcnt, r.oudrMechArea)}${lgNa('')}${lgNa('')}</tr>
+                    <tr><th>전기차</th>${lgNa('미제공', 'colspan="4"')}</tr>
+                </table>`;
+
+            const side = `
+                <div class="lg-stack">
+                    <table class="lg-t">
+                        <colgroup><col style="width:50%"><col></colgroup><tr><th colspan="2">승강기</th></tr>
+                        <tr><th>승용</th><th>비상용</th></tr>
+                        <tr><td class="c">${esc(lgNum(r.rideUseElvtCnt || 0))}대</td><td class="c">${esc(lgNum(r.emgenUseElvtCnt || 0))}대</td></tr>
+                    </table>
+                    <table class="lg-t">
+                        <colgroup><col style="width:46%"><col></colgroup><tr><th colspan="2">하수처리시설</th></tr>
+                        <tr><th>형식</th>${lgNa()}</tr>
+                        <tr><th>용량</th>${lgNa()}</tr>
+                        <tr><th>급수설비<br>(저수조)</th>${lgNa()}</tr>
+                    </table>
+                    <table class="lg-t">
+                        <colgroup><col style="width:42%"><col></colgroup><tr><th colspan="2">인허가 시기</th></tr>
+                        <tr><th>허가일</th><td class="c">${esc(lgDate(r.pmsDay))}</td></tr>
+                        <tr><th>착공일</th><td class="c">${esc(lgDate(r.stcnsDay))}</td></tr>
+                        <tr><th>사용승인일</th><td class="c">${esc(lgDate(r.useAprDay))}</td></tr>
+                    </table>
+                </div>`;
+
+            // 건축물 인증 현황
+            const certs = [];
+            if (lgVal(r.engrGrade)) certs.push(['에너지효율등급', lgVal(r.engrGrade) + (lgNz(r.engrRat) ? ` (절감률 ${lgNum(r.engrRat)}%)` : '') + (lgNz(r.engrEpi) ? ` EPI ${lgNum(r.engrEpi)}점` : '')]);
+            if (lgVal(r.gnBldGrade)) certs.push(['친환경건축물 인증', lgVal(r.gnBldGrade) + (lgNz(r.gnBldCert) ? ` (${lgNum(r.gnBldCert)}점)` : '')]);
+            if (lgVal(r.itgBldGrade)) certs.push(['지능형건축물 인증', lgVal(r.itgBldGrade) + (lgNz(r.itgBldCert) ? ` (${lgNum(r.itgBldCert)}점)` : '')]);
+            const certRows = certs.map(c => `<tr><td>${esc(c[0])}</td>${lgNa('')}<td>${esc(c[1])}</td></tr>`).join('')
+                + Array.from({ length: Math.max(0, 4 - certs.length) }, () => '<tr><td>&nbsp;</td><td></td><td></td></tr>').join('');
+            const certTable = `
+                <table class="lg-t">
+                    <tr><th colspan="3">건축물 인증 현황</th></tr>
+                    <tr><th>인증명</th><th>유효기간</th><th>성능</th></tr>
+                    ${certRows}
+                </table>`;
+
+            // 건축물 구조 현황 (내진설계는 표제부 응답에만 있음)
+            const seismicYn = lgVal(r.rserthqkDsgnApplyYn);
+            const seismic = isRecap ? lgNa() : `<td class="c">${seismicYn === '1' ? '적용' : (seismicYn === '0' ? '비적용' : '')}</td>`;
+            const seismicAbl = isRecap ? lgNa() : `<td class="c">${esc(lgVal(r.rserthqkAblty))}</td>`;
+            const structMgmt = `
+                <div class="lg-stack">
+                    <table class="lg-t">
+                        <colgroup><col style="width:56%"><col></colgroup><tr><th colspan="2">건축물 구조 현황</th></tr>
+                        <tr><th>내진설계 적용 여부</th>${seismic}</tr>
+                        <tr><th>내진능력</th>${seismicAbl}</tr>
+                        <tr><th>특수구조 건축물</th>${lgNa()}</tr>
+                        <tr><th>지하수위</th>${lgNa()}</tr>
+                        <tr><th>기초형식</th>${lgNa()}</tr>
+                        <tr><th>구조설계 해석법</th>${lgNa()}</tr>
+                    </table>
+                    <table class="lg-t">
+                        <colgroup><col style="width:56%"><col></colgroup><tr><th colspan="2">건축물 관리 현황</th></tr>
+                        <tr><th>관리계획 수립 여부</th>${lgNa()}</tr>
+                        <tr><th>점검 종류<br>점검유효기간</th>${lgNa()}</tr>
+                    </table>
+                </div>`;
+
+            const changes = `
+                <table class="lg-t">
+                    <tr><th colspan="2">변동사항</th><th>그 밖의 기재사항</th></tr>
+                    <tr><th style="width:18%">변동일</th><th>변동내용 및 원인</th><td class="na" rowspan="2" style="width:24%">미제공</td></tr>
+                    <tr><td colspan="2" class="na" style="height:150px">변동일·변동내용·변동원인은 API가 제공하지 않습니다.<br>정부24에서 발급받은 원본으로 확인하세요.</td></tr>
+                </table>`;
+
+            return `
+            <div class="ledger-page">
+                ${lgHead('', 2)}
+                <div class="lg-box">${head}</div>
+                <table class="lg-3"><tr>
+                    <td style="width:30%">${people}</td>
+                    <td style="width:38%">${parking}</td>
+                    <td style="width:32%">${side}</td>
+                </tr></table>
+                <table class="lg-3"><tr>
+                    <td style="width:46%">${certTable}</td>
+                    <td style="width:54%">${structMgmt}</td>
+                </tr></table>
+                ${changes}
+                ${lgFoot(r, st)}
+            </div>`;
+        }
+
+        function renderFormView() {
+            const host = document.getElementById('bldgViewForm');
+            const st = ledgerState;
+            if (!st.items.length) {
+                host.innerHTML = `<div class="text-center py-12 text-slate-400 bg-white rounded-xl border border-slate-200">조회된 건축물대장 정보가 없습니다.</div>`;
+                return;
+            }
+            if (st.selected >= st.items.length) st.selected = 0;
+            const it = st.items[st.selected];
+            const pages = it.type === 'recap'
+                ? lgRecapPage1(it.r, st) + lgPage2(it.r, true, st)
+                : lgTitlePage1({ r: it.r, seq: it.seq }, st) + lgPage2(it.r, false, st);
+
+            const on = 'px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-600 bg-emerald-50 text-emerald-700';
+            const off = 'px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50';
+            const chips = st.items.map((x, i) => `<button onclick="selectLedger(${i})" class="${i === st.selected ? on : off}">${esc(x.chip)}</button>`).join('');
+
+            host.innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap gap-1.5">${chips}</div>
+                        <button onclick="printLedger()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium">
+                            <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span>이 서식 인쇄 / PDF 저장</span>
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500">정부24 대장 모양으로 배치한 조회용 화면입니다. 회색 빗금 칸은 API가 제공하지 않는 항목이고, 공식 증명 효력이 없습니다.</p>
+                    <div class="ledger-wrap"><div id="ledgerPages">${pages}</div></div>
+                </div>`;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function selectLedger(i) {
+            ledgerState.selected = i;
+            renderFormView();
+        }
+
+        // 서식 영역만 인쇄: 서식을 감싸는 경로의 다른 요소를 잠시 숨긴다.
+        function printLedger() {
+            const target = document.getElementById('ledgerPages');
+            if (!target) return;
+            const hidden = [];
+            let node = target;
+            while (node && node !== document.body) {
+                const parent = node.parentElement;
+                if (!parent) break;
+                Array.from(parent.children).forEach(sib => {
+                    if (sib !== node && !['SCRIPT', 'STYLE', 'LINK'].includes(sib.tagName) && sib.style.display !== 'none') {
+                        hidden.push([sib, sib.style.display]);
+                        sib.style.display = 'none';
+                    }
+                });
+                node = parent;
+            }
+            let restored = false;
+            const restore = () => {
+                if (restored) return;
+                restored = true;
+                hidden.forEach(([el, d]) => { el.style.display = d; });
+                window.removeEventListener('afterprint', restore);
+            };
+            window.addEventListener('afterprint', restore);
+            window.print();
+            setTimeout(restore, 1000);
+        }
+
+        function setFormAvailability(on) {
+            document.getElementById('viewBtnForm').style.display = on ? '' : 'none';
+            if (!on && currentViewMode === 'form') switchViewMode('cards');
+        }
+
         // View Mode Switcher
         function switchViewMode(mode) {
-            document.getElementById('bldgViewCards').classList.toggle('hidden', mode !== 'cards');
-            document.getElementById('bldgViewTable').classList.toggle('hidden', mode !== 'table');
-            document.getElementById('bldgViewJson').classList.toggle('hidden', mode !== 'json');
-
-            const btnCards = document.getElementById('viewBtnCards');
-            const btnTable = document.getElementById('viewBtnTable');
-            const btnJson = document.getElementById('viewBtnJson');
-
+            const map = {
+                cards: ['bldgViewCards', 'viewBtnCards'],
+                table: ['bldgViewTable', 'viewBtnTable'],
+                json: ['bldgViewJson', 'viewBtnJson'],
+                form: ['bldgViewForm', 'viewBtnForm']
+            };
             const activeClass = "view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-800 shadow-sm";
             const inactiveClass = "view-mode-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800";
-
-            btnCards.className = mode === 'cards' ? activeClass : inactiveClass;
-            btnTable.className = mode === 'table' ? activeClass : inactiveClass;
-            btnJson.className = mode === 'json' ? activeClass : inactiveClass;
+            Object.entries(map).forEach(([m, [boxId, btnId]]) => {
+                document.getElementById(boxId).classList.toggle('hidden', m !== mode);
+                document.getElementById(btnId).className = m === mode ? activeClass : inactiveClass;
+            });
+            currentViewMode = mode;
         }
 
         // CSV Downloader (한글 항목명 헤더)
