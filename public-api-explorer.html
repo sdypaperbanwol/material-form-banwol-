@@ -171,6 +171,7 @@
                             건물 주소 검색 및 파라미터 추출
                         </h2>
                         <p class="text-xs text-slate-500 mt-0.5">공공데이터포털 API 활용 첫 번째 예시입니다(국토교통부 건축HUB 건축물대장정보). 카카오 주소 검색을 이용하면 법정동코드와 번지수가 자동으로 계산됩니다.</p>
+                        <p class="text-xs text-slate-500 mt-1">도면(배치도)은 API로 제공되지 않습니다. <a href="https://www.hub.go.kr/portal/psg/idx-arch-data-sub.do" target="_blank" rel="noopener" class="text-emerald-700 underline">건축HUB 사이트 ↗</a>의 유형별 건축데이터 제공 &gt; 도면관리에서 확인하세요.</p>
                     </div>
                     <button onclick="execDaumPostcode()" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm shadow-sm hover:shadow transition-all">
                         <i data-lucide="search" class="w-4 h-4"></i>
@@ -219,6 +220,18 @@
                         <i data-lucide="database" class="w-4 h-4"></i>
                         <span>건축물대장 데이터 조회</span>
                     </button>
+                </div>
+
+                <!-- 다른 건축HUB 데이터 (인허가, 폐쇄말소대장, 에너지, 유지점검) -->
+                <div class="border-t border-slate-100 pt-4 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">다른 건축HUB 데이터:</span>
+                        <select id="hubService" onchange="onHubServiceChange()" class="border border-slate-200 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"></select>
+                        <select id="hubOp" class="border border-slate-200 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"></select>
+                        <input type="text" id="hubExtra" placeholder="추가 요청변수 (예: useYm=202509)" class="flex-1 min-w-[200px] border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <button onclick="runHubOp()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg whitespace-nowrap">선택 항목 조회</button>
+                    </div>
+                    <p class="text-[11px] text-slate-500">위에서 고른 주소(번 단위)로 조회합니다. 각각 공공데이터포털에서 활용신청과 승인이 된 서비스만 조회됩니다. 건물에너지처럼 기간이 필요한 항목은 추가 요청변수에 <code class="bg-slate-100 text-pink-600 px-1 rounded">키=값</code> 형태로 넣고 여러 개는 <code class="bg-slate-100 text-pink-600 px-1 rounded">&amp;</code>로 이어 씁니다.</p>
                 </div>
             </div>
 
@@ -695,6 +708,7 @@ function fetchBuildingRegisterHubData() {
             lucide.createIcons();
             loadKeys();
             initGenericParams();
+            initHubSelects();
         };
 
         // 기관별 인증키 저장 (서로 다른 키라서 따로 보관)
@@ -847,17 +861,69 @@ function fetchBuildingRegisterHubData() {
         }
 
         // Fetch Building Register Data (Hub Service)
+        // ===== 다른 건축HUB 데이터 (공공데이터포털 건축HUB API 5종) =====
+        const HUB_SERVICES = {
+            ArchPmsHubService: { label: '건축인허가', ops: [
+                ['getApBasisOulnInfo', '기본개요'], ['getApDongOulnInfo', '동별개요'], ['getApFlrOulnInfo', '층별개요'], ['getApHoOulnInfo', '호별개요'],
+                ['getApImprprInfo', '대수선'], ['getApExposPubuseAreaInfo', '전유공용면적'], ['getApHdcrMgmRgstInfo', '공작물관리대장'],
+                ['getApDemolExtngMgmRgstInfo', '철거멸실관리대장'], ['getApTmpBldInfo', '가설건축물'], ['getApWclfInfo', '오수정화시설'],
+                ['getApPklotInfo', '주차장'], ['getApAtchPklotInfo', '부설주차장'], ['getApHoExposPubuseAreaInfo', '호별전유공용면적'],
+                ['getApJijiguInfo', '지역지구구역'], ['getApRoadRgstInfo', '도로명대장'], ['getApPlatPlcInfo', '대지위치'], ['getApHsTpInfo', '주택유형'] ] },
+            HsPmsHubService: { label: '주택인허가', ops: [
+                ['getHpBasisOulnInfo', '기본개요'], ['getHpDongOulnInfo', '동별개요'], ['getHpFlrOulnInfo', '층별개요'], ['getHpHoOulnInfo', '호별개요'],
+                ['getHpSbsdFcInfo', '부대시설'], ['getHpWclfInfo', '오수정화시설'], ['getHpPklotInfo', '주차장'], ['getHpAtchPklotInfo', '부설주차장'],
+                ['getHpExposPubuseAreaInfo', '전유공용면적'], ['getHpHoExposPubuseAreaInfo', '행위호전유공용면적'], ['getHpActOulnInfo', '행위개요'],
+                ['getHpMgmCoopTpOulnInfo', '관리공동형별개요'], ['getHpMgmCoopSbsdWlfarFcInfo', '관리공동부대복리시설'], ['getHpJijiguInfo', '지역지구구역'],
+                ['getHpWlfarLotouFcInfo', '복리분양시설'], ['getHpPlatPlcInfo', '대지위치'] ] },
+            ShtRgstHubService: { label: '폐쇄말소대장', ops: [
+                ['getSrBasisOulnInfo', '기본개요'], ['getSrRecapTitleInfo', '총괄표제부'], ['getSrTitleInfo', '표제부'], ['getSrFlrOulnInfo', '층별개요'],
+                ['getSrAtchJibunInfo', '부속지번'], ['getSrExposPubuseAreaInfo', '전유공용면적'], ['getSrWclfInfo', '오수정화시설'],
+                ['getSrExposInfo', '전유부'], ['getSrHsprcInfo', '주택가격'], ['getSrJijiguInfo', '지역지구구역'] ] },
+            BldEngyHubService: { label: '건물에너지', ops: [
+                ['getBeElctyUsgInfo', '지번별 전기사용량'], ['getBeGasUsgInfo', '지번별 가스사용량'] ] },
+            MtnChkHubService: { label: '건축물유지점검', ops: [
+                ['getMaintenanceHistory', '정기점검이력'], ['getInspectionAgency', '점검기관'] ] }
+        };
+
+        function initHubSelects() {
+            const svc = document.getElementById('hubService');
+            svc.innerHTML = Object.entries(HUB_SERVICES).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
+            onHubServiceChange();
+        }
+
+        function onHubServiceChange() {
+            const key = document.getElementById('hubService').value;
+            document.getElementById('hubOp').innerHTML = HUB_SERVICES[key].ops.map(([op, nm]) => `<option value="${op}">${esc(nm)}</option>`).join('');
+        }
+
+        function runHubOp() {
+            // 위쪽 [대장 종류] 버튼의 선택 표시를 해제하고, 선택한 건축HUB 항목으로 조회
+            document.querySelectorAll('.bldg-cat-btn').forEach(b => {
+                b.className = "bldg-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50";
+            });
+            currentBldgCategory = 'hub';
+            return fetchBuildingData();
+        }
+
         // 건축HUB API 한 종류를 모든 페이지에 걸쳐 가져온다 (번 단위 조회, 지번 필터는 호출 쪽에서 처리)
-        async function fetchAllItems(op, apiKey, sigunguCd, bjdongCd, bun) {
-            const baseUrl = `https://apis.data.go.kr/1613000/BldRgstHubService/${op}`;
+        async function fetchAllItems(op, apiKey, sigunguCd, bjdongCd, bun, service = 'BldRgstHubService', extra = null) {
+            const baseUrl = `https://apis.data.go.kr/1613000/${service}/${op}`;
             const numOfRows = 100;
             const maxPages = 20;
             let all = [];
             let header = null;
 
             for (let pageNo = 1; pageNo <= maxPages; pageNo++) {
-                const queryParams = `?serviceKey=${encodeURIComponent(apiKey)}&sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&_type=json&numOfRows=${numOfRows}&pageNo=${pageNo}`;
-                const response = await fetch(baseUrl + queryParams);
+                const q = new URLSearchParams();
+                q.set('serviceKey', apiKey);
+                if (sigunguCd) q.set('sigunguCd', sigunguCd);
+                if (bjdongCd) q.set('bjdongCd', bjdongCd);
+                if (bun) q.set('bun', bun);
+                if (extra) extra.forEach((v, k) => q.set(k, v));
+                q.set('_type', 'json');
+                q.set('numOfRows', String(numOfRows));
+                q.set('pageNo', String(pageNo));
+                const response = await fetch(`${baseUrl}?${q.toString()}`);
                 const data = await response.json();
 
                 // 인증키/권한 오류 (OpenAPI_ServiceResponse 형태)
@@ -899,13 +965,22 @@ function fetchBuildingRegisterHubData() {
             let bun = document.getElementById('bldgBun').value.trim();
             let ji = document.getElementById('bldgJi').value.trim();
 
-            if (!sigunguCd || !bjdongCd) {
+            const isHub = currentBldgCategory === 'hub';
+            const hubSvc = isHub ? document.getElementById('hubService').value : 'BldRgstHubService';
+            const hubOp = isHub ? document.getElementById('hubOp').value : currentBldgCategory;
+            const noAddrOk = isHub && hubOp === 'getInspectionAgency'; // 점검기관은 주소가 아닌 다른 조건으로 조회
+            if (!noAddrOk && (!sigunguCd || !bjdongCd)) {
                 alert('시군구코드와 법정동코드가 필요합니다. [주소 찾기] 버튼을 이용해 주소를 먼저 선택하세요.');
                 return;
             }
+            let extra = null;
+            if (isHub) {
+                const ex = document.getElementById('hubExtra').value.trim();
+                if (ex) extra = new URLSearchParams(ex.replace(/^[?&]/, ''));
+            }
 
             // Pad Bun to 4 digits if entered as short numbers
-            bun = bun ? bun.padStart(4, '0') : '0000';
+            bun = bun ? bun.padStart(4, '0') : (noAddrOk ? '' : '0000');
             // 지(ji)는 API에 보내지 않고, 번(bun)으로만 조회한 뒤 화면에서 지번을 걸러낸다.
             // (ji를 API에 직접 지정하면 같은 지번의 건물 일부만 돌려주는 경우가 있음)
             const jiFilter = ji ? ji.padStart(4, '0') : null;
@@ -951,7 +1026,7 @@ function fetchBuildingRegisterHubData() {
                     return;
                 }
 
-                const r = await fetchAllItems(currentBldgCategory, apiKey, sigunguCd, bjdongCd, bun);
+                const r = await fetchAllItems(hubOp, apiKey, noAddrOk ? '' : sigunguCd, noAddrOk ? '' : bjdongCd, bun, hubSvc, extra);
                 const items = byJi(r.items);
 
                 const fullJson = {
@@ -1086,7 +1161,7 @@ function fetchBuildingRegisterHubData() {
                 const used = new Set(['bldNm', 'newPlatPlc']);
                 if (!item.newPlatPlc) used.add('platPlc');
 
-                const title = [item.bldNm, item.dongNm, item.flrNoNm, item.hoNm].filter(v => !isBlank(v)).join(' ') || item.platPlc || '건물명 미기재';
+                const title = [item.bldNm, item.dongNm, item.flrNoNm, item.hoNm].filter(v => !isBlank(v)).join(' ') || item.platPlc || (item.bun ? `${parseInt(item.bun, 10)}${parseInt(item.ji, 10) > 0 ? '-' + parseInt(item.ji, 10) : ''}번지` : '조회 결과');
                 const addr = item.newPlatPlc || item.platPlc || '';
                 const badge = item.mainPurpsCdNm || item.regstrKindCdNm || '';
 
