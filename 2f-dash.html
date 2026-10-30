@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2공장 배당·입고</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --ground:#E9EEEC;
+  --sheet:#FFFFFF;
+  --ink:#1A2420;
+  --muted:#5F6C67;
+  --line:#D8DFDC;
+  --faint:#F3F6F5;
+  --sh:#2B5F9E;
+  --bw:#C27A14;
+  --err:#B23B2B;
+  --barh:54px;
+  --font:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+small{font-size:11px;color:var(--muted);margin-left:2px;font-weight:400}
+.muted{color:var(--muted);font-size:13px}
+
+.wrap{max-width:880px;margin:0 auto;padding:12px 10px 40px}
+.top{display:flex;align-items:baseline;justify-content:space-between;margin:2px 2px 10px}
+.top h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.stamp{font-size:12px;color:var(--muted)}
+.note{border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:13px;background:#FBEDEA;color:var(--err);border:1px solid #EDC5BD}
+.note.info{background:var(--sheet);color:var(--ink);border-color:var(--line)}
+
+/* 시트 본체 (overflow를 주지 않아야 sticky가 동작한다) */
+.sheet{background:var(--sheet);border-radius:12px;border:1px solid var(--line)}
+.bar{position:sticky;top:0;z-index:6;height:var(--barh);background:var(--sheet);border-bottom:1px solid var(--line);border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 10px}
+.tabs{display:flex;gap:2px;background:var(--faint);border-radius:9px;padding:3px}
+.tab{border:0;background:transparent;border-radius:7px;padding:7px 16px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tab.on{background:var(--sheet);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.refresh{border:1px solid var(--line);background:var(--sheet);border-radius:8px;padding:6px 11px;font-size:13px}
+.refresh[disabled],.go[disabled]{opacity:.5;cursor:default}
+
+/* 입고 현황 조회 조건 */
+.ctl{display:flex;flex-direction:column;gap:8px;padding:10px;border-bottom:1px solid var(--line)}
+.ctl[hidden]{display:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip:hover{border-color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.dates{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.dates input{border:1px solid var(--line);background:var(--sheet);border-radius:8px;padding:7px 8px;min-width:0;flex:1 1 130px}
+.dates .sep{color:var(--muted)}
+.go{border:0;background:var(--ink);color:#fff;border-radius:8px;padding:8px 18px;font-weight:600}
+
+#app{padding:0 10px 8px}
+.blk{padding:14px 0;border-top:1px solid var(--line)}
+.blk:first-child{border-top:0}
+.blk h2{margin:0 0 8px;font-size:14px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+.sub{font-weight:400;font-size:12px;color:var(--muted)}
+.asof{font-size:12px;color:var(--muted);margin:-2px 0 12px}
+.empty{padding:28px 8px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);margin-bottom:4px}
+.dim{opacity:.45;pointer-events:none}
+
+/* ---------- 총 배당 ---------- */
+.funs{display:grid;gap:18px}
+.fun h3{margin:0 0 8px;font-size:14px;font-weight:700;display:flex;align-items:baseline;gap:10px;border-left:4px solid var(--line);padding-left:8px}
+.fun.sh h3{border-color:var(--sh)}
+.fun.bw h3{border-color:var(--bw)}
+.fun h3 em{font-style:normal;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}
+.prog{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--faint);border:1px solid var(--line)}
+.prog i{display:block;height:100%}
+i.s-done{background:#1F7A5A}
+i.s-yard{background:#6FB39A}
+i.s-wait{background:#C4D3CC}
+.plegend{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:12px;color:var(--muted);margin:7px 0 8px}
+.plegend b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.plegend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--faint);border:1px solid var(--line)}
+.plegend .s-done::before{background:#1F7A5A;border-color:#1F7A5A}
+.plegend .s-yard::before{background:#6FB39A;border-color:#6FB39A}
+.plegend .s-wait::before{background:#C4D3CC;border-color:#C4D3CC}
+
+.wait{padding-top:8px;border-top:1px dashed var(--line)}
+.wl{font-size:12px;color:var(--muted);margin-bottom:5px}
+.wl b{color:var(--ink);font-weight:700}
+.tag{margin-left:6px;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.vehs{display:flex;flex-wrap:wrap;gap:5px}
+.veh{display:inline-flex;gap:6px;align-items:baseline;border:1px solid var(--line);background:var(--faint);border-radius:6px;padding:2px 7px;font-size:12px}
+.veh b{font-weight:700}
+.veh span{color:var(--muted)}
+
+.fl{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--muted)}
+
+.atab{margin:0 -10px}
+table.al{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:12px}
+.al col.cn{width:22%}
+.al th{background:var(--sheet);position:sticky;z-index:3;font-weight:600;color:var(--muted);font-size:11px;text-align:center;padding:0 1px;border-bottom:1px solid var(--ink)}
+.al thead tr.g th{top:var(--barh);height:26px;font-size:12px;border-bottom:2px solid var(--line)}
+.al thead tr.g th.sh{color:var(--sh);border-bottom-color:var(--sh)}
+.al thead tr.g th.bw{color:var(--bw);border-bottom-color:var(--bw)}
+.al thead tr.h th{top:calc(var(--barh) + 26px);height:24px}
+.al td{padding:6px 1px;text-align:center;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.al td + td,.al th + th{border-left:1px solid #E6ECE9}
+.al .nm{text-align:left;padding-left:10px;overflow-wrap:anywhere;word-break:keep-all;border-right:1px solid var(--line)}
+.al .nm + *{border-left:0}
+.al .sep{border-left:2px solid #B9C4BF}
+.al tbody tr.r:nth-child(even) td{background:#F8FAF9}
+.al tbody tr.r:hover td{background:#EDF2F0}
+.al td.z{color:#B3BDB9}
+.al td.diff{color:var(--err);font-weight:700}
+.al tr.tot td{background:var(--faint);font-weight:700}
+.al tr.tot.last td{border-bottom:2px solid var(--ink)}
+.al td.none{text-align:center;color:var(--muted);padding:22px 0}
+.x{display:none}
+
+/* ---------- 입고 현황 ---------- */
+.period{font-size:12px;color:var(--muted);margin-bottom:6px}
+.grand{display:flex;gap:22px;flex-wrap:wrap}
+.grand b{display:block;font-size:12px;font-weight:500;color:var(--muted)}
+.grand span{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+
+.facs{display:grid;gap:26px;padding:14px 0 6px;border-top:1px solid var(--line)}
+.fac{min-width:0}
+.fac h3{margin:0 0 6px;font-size:14px;font-weight:700;display:flex;align-items:baseline;gap:10px;border-left:4px solid var(--line);padding-left:8px}
+.fac.sh h3{border-color:var(--sh)}
+.fac.bw h3{border-color:var(--bw)}
+.fac h3 em{font-style:normal;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.fstats{display:flex;gap:22px;margin:0 0 4px 12px}
+.fstats b{display:block;font-size:11px;font-weight:500;color:var(--muted)}
+.fstats span{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.fac h4{margin:14px 0 4px;font-size:13px;font-weight:700}
+.fac h4 .sub{margin-left:6px}
+table.mt{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px}
+.mt th{font-weight:600;color:var(--muted);font-size:11px;text-align:right;padding:0 0 4px 4px;border-bottom:1px solid var(--ink)}
+.mt th:first-child,.mt td:first-child{text-align:left;padding-left:0}
+.mt td{padding:5px 0 5px 4px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;line-height:1.3}
+.mt td:first-child{overflow-wrap:anywhere;word-break:keep-all}
+.mt th:nth-child(2),.mt td:nth-child(2){width:34px}
+.mt th:nth-child(3),.mt td:nth-child(3),.mt th:nth-child(4),.mt td:nth-child(4){width:68px}
+.mt.dt th:nth-child(n+2),.mt.dt td:nth-child(n+2){width:auto}
+.mt td:nth-child(4){font-weight:600}
+.mt tr.tot td{font-weight:700;border-bottom:0;border-top:1px solid var(--ink)}
+
+/* 접기 / 입고 목록 */
+.lf{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+.foldh{margin:0;font-size:14px}
+.fold{display:flex;width:100%;justify-content:space-between;align-items:baseline;border:0;background:transparent;padding:0;font:inherit;font-weight:700;font-size:13px;text-align:left}
+.fold .sub{margin-left:8px}
+.fold .lab{font-weight:500;font-size:12px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.dayblk{padding:10px 0 12px;border-top:1px solid var(--line)}
+
+@media (min-width:600px){
+  body{font-size:15px}
+  #app{padding:0 20px 10px}
+  .atab{margin:0}
+  table.al{font-size:13px}
+  .al th{font-size:12px}
+  .al col.cn{width:130px}
+  .al .nm,.al th.nm{padding-left:8px}
+  .x{display:inline}
+  .mt{font-size:13.5px}
+}
+@media (min-width:720px){
+  .funs{grid-template-columns:1fr 1fr;column-gap:36px}
+  .facs{grid-template-columns:1fr 1fr;column-gap:36px}
+  .grand span{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>2공장 배당·입고</h1>
+    <div class="stamp" id="stamp"></div>
+  </div>
+
+  <div id="notice"></div>
+
+  <div class="sheet">
+    <div class="bar">
+      <div class="tabs" id="tabs">
+        <button class="tab on" data-tab="alloc">총 배당</button>
+        <button class="tab" data-tab="incoming">입고 현황</button>
+      </div>
+      <button class="refresh" id="refresh" title="총 배당 탭에서는 통합조회를 실행한 뒤 갱신합니다">새로고침</button>
+    </div>
+
+    <div class="ctl" id="ctl" hidden>
+      <div class="chips">
+        <button class="chip" data-range="today">오늘</button>
+        <button class="chip" data-range="yesterday">어제</button>
+        <button class="chip" data-range="7">최근 7일</button>
+        <button class="chip" data-range="month">이번 달</button>
+      </div>
+      <div class="dates">
+        <input type="date" id="start" aria-label="시작일">
+        <span class="sep">~</span>
+        <input type="date" id="end" aria-label="종료일">
+        <button class="go" id="go">조회</button>
+      </div>
+    </div>
+
+    <div id="app"><div class="empty">불러오는 중입니다.</div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ★ GAS 웹앱 배포 주소(/exec 로 끝나는 URL)를 여기에 넣는다 */
+var API_URL = 'https://script.google.com/macros/s/AKfycbzXlp8_k8rk_8ytf6790575GXbDSpLu7q-OgEag7dg5xfG65Q9HkuBwoyTAeTdkFv1kwA/exec';
+
+var SITES = ['sihwa', 'banwol'];
+var SITE = { sihwa:{ name:'시화', cls:'sh' }, banwol:{ name:'반월', cls:'bw' } };
+
+var $ = function(id){ return document.getElementById(id); };
+var esc = function(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+};
+var fmt = function(n){ return Math.round(n).toLocaleString('ko-KR'); };
+var pad = function(n){ return String(n).padStart(2,'0'); };
+var iso = function(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); };
+
+var state = {
+  data: null, rows: [],
+  tab: 'alloc',
+  onlyOpen: false,   // 미입고만 (배당 - 입고 >= 1)
+  dayOpen: false,
+  loading: false,
+  custOpen: { sihwa:false, banwol:false }   // 거래처별 표 펼침
+};
+
+/* ---------- 공통 ---------- */
+function sum(rows){
+  var o = { cnt:0, s:0, q:0 };
+  rows.forEach(function(r){ o.cnt++; o.s += r.s; o.q += r.q; });
+  return o;
+}
+function agg(rows, keyFn){
+  var m = new Map();
+  rows.forEach(function(r){
+    var k = keyFn(r) || '(미지정)';
+    var o = m.get(k);
+    if(!o){ o = { k:k, cnt:0, s:0, q:0 }; m.set(k, o); }
+    o.cnt++; o.s += r.s; o.q += r.q;
+  });
+  return Array.from(m.values()).sort(function(a, b){ return (b.q - a.q) || (b.s - a.s); });
+}
+function periodLabel(){
+  var s = state.data.start, e = state.data.end;
+  var f = function(x){ return x.slice(0,4) + '.' + x.slice(4,6) + '.' + x.slice(6,8); };
+  return s === e ? f(s) : f(s) + ' ~ ' + f(e);
+}
+function dayKeys(){
+  var s = state.data.start, e = state.data.end;
+  var d = new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8));
+  var end = new Date(+e.slice(0,4), +e.slice(4,6)-1, +e.slice(6,8));
+  var keys = [];
+  while(d <= end){
+    keys.push(d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()));
+    d.setDate(d.getDate() + 1);
+  }
+  return keys;
+}
+function foldHead(act, key, title, sub, open){
+  return '<h2 class="foldh"><button class="fold" data-act="' + act + '" data-k="' + key + '" aria-expanded="' + open + '">' +
+         '<span>' + title + '<span class="sub">' + sub + '</span></span>' +
+         '<span class="lab">' + (open ? '접기' : '펼치기') + '</span></button></h2>';
+}
+
+/* =====================================================
+   총 배당 탭
+   ===================================================== */
+function allocOK(){
+  var a = state.data && state.data.alloc;
+  return !!(a && !a.error && a.totals && a.totals.length);
+}
+
+function waitingHTML(site){
+  var a = state.data.sites[site].arrival;
+  var h = '<div class="wait"><div class="wl">대기 차량 <b>' + a.rows.length + '대</b><span class="tag">실시간</span></div>';
+  if(a.error) return h + '<div class="muted">목록을 가져오지 못했습니다. (' + esc(a.error) + ')</div></div>';
+  if(!a.rows.length) return h + '<div class="muted">대기 중인 차량이 없습니다.</div></div>';
+  return h + '<div class="vehs">' + a.rows.map(function(r){
+    return '<span class="veh"><b>' + esc(r.v) + '</b>' + (r.c ? '<span>' + esc(r.c) + '</span>' : '') + '</span>';
+  }).join('') + '</div></div>';
+}
+
+function siteBlock(site){
+  var s = SITE[site], h = '<div class="fun ' + s.cls + '">';
+  if(allocOK()){
+    var v = state.data.alloc.totals[0][site];   // 합 계(전체): 배당, 대기중, 입차중, 입고, 차이
+    var plan = v[0], wait = v[1], yard = v[2], done = v[3];
+    var used = wait + yard + done;
+    var denom = Math.max(plan, used, 1);
+    var w = function(x){ return (x / denom * 100) + '%'; };
+    var miss = Math.max(0, plan - used);
+    h += '<h3>' + s.name + '<em>배당 ' + fmt(plan) + '대</em></h3>' +
+         '<div class="prog" role="img" aria-label="입고 ' + done + ', 입차중 ' + yard + ', 대기중 ' + wait + ', 미도착 ' + miss + '">' +
+         '<i class="s-done" style="width:' + w(done) + '"></i><i class="s-yard" style="width:' + w(yard) + '"></i><i class="s-wait" style="width:' + w(wait) + '"></i></div>' +
+         '<div class="plegend"><span class="s-done">입고 <b>' + fmt(done) + '</b></span><span class="s-yard">입차중 <b>' + fmt(yard) + '</b></span>' +
+         '<span class="s-wait">대기중 <b>' + fmt(wait) + '</b></span><span class="s-miss">미도착 <b>' + fmt(miss) + '</b></span></div>';
+  } else {
+    h += '<h3>' + s.name + '</h3>';
+  }
+  return h + waitingHTML(site) + '</div>';
+}
+
+function cells(v, sep){
+  var h = '';
+  for(var i = 0; i < 5; i++){
+    var x = v[i], cls = [];
+    if(i === 0 && sep) cls.push('sep');
+    if(x === 0) cls.push('z');
+    if(i === 4 && x !== 0) cls.push('diff');
+    var txt = x === 0 ? '-' : (i === 4 ? (x > 0 ? '+' + fmt(x) : '-' + fmt(Math.abs(x))) : fmt(x));
+    h += '<td' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>' + txt + '</td>';
+  }
+  return h;
+}
+
+function head5(sep){
+  return '<th' + (sep ? ' class="sep"' : '') + '>배당</th><th>대기<span class="x">중</span></th><th>입차<span class="x">중</span></th><th>입고</th><th>차이</th>';
+}
+
+// 미도착 = 배당 - 대기중 - 입차중 - 입고 (대기중·입차중은 이미 온 차량으로 본다)
+function remain(v){ return v[0] - v[1] - v[2] - v[3]; }
+
+function allocTable(){
+  if(!allocOK()) return '';
+  var a = state.data.alloc;
+  var rows = a.rows.filter(function(r){
+    return r.sihwa.concat(r.banwol).some(function(x){ return x !== 0; });
+  });
+  var all = rows.length;
+  if(state.onlyOpen){
+    rows = rows.filter(function(r){
+      return remain(r.sihwa) >= 1 || remain(r.banwol) >= 1;
+    });
+  }
+  var h = '<section class="blk"><h2>거래처별 배당<span class="sub">' +
+          (state.onlyOpen ? rows.length + '곳 (전체 ' + all + '곳)' : all + '곳') + '</span></h2>' +
+          '<div class="fl"><button class="chip' + (state.onlyOpen ? ' on' : '') + '" data-act="onlyopen" aria-pressed="' + state.onlyOpen + '">미도착만</button>' +
+          '<span class="hint">배당 − (대기중 + 입차중 + 입고)가 1대 이상 남은 곳만</span></div>';
+
+  h += '<div class="atab"><table class="al"><colgroup><col class="cn"><col span="10"></colgroup>' +
+       '<thead><tr class="g"><th class="nm"></th><th colspan="5" class="sh">시화</th><th colspan="5" class="bw sep">반월</th></tr>' +
+       '<tr class="h"><th class="nm">거래처</th>' + head5(false) + head5(true) + '</tr></thead><tbody>';
+
+  a.totals.forEach(function(r, i){
+    var lab = String(r.n).replace(/^합\s*계\s*\(?/, '').replace(/\)\s*$/, '') || r.n;
+    h += '<tr class="tot' + (i === a.totals.length - 1 ? ' last' : '') + '"><td class="nm">' + esc(lab) + '</td>' + cells(r.sihwa, false) + cells(r.banwol, true) + '</tr>';
+  });
+  if(!rows.length){
+    h += '<tr><td class="none" colspan="11">' + (state.onlyOpen ? '미도착 거래처가 없습니다.' : '배당된 거래처가 없습니다.') + '</td></tr>';
+  }
+  rows.forEach(function(r){
+    h += '<tr class="r"><td class="nm">' + esc(r.n) + '</td>' + cells(r.sihwa, false) + cells(r.banwol, true) + '</tr>';
+  });
+  return h + '</tbody></table></div></section>';
+}
+
+function allocTab(){
+  var a = state.data.alloc;
+  var h = '<section class="blk"><h2>오늘 배당 현황';
+  if(a && !a.error) h += '<span class="sub">' + esc(a.date) + '</span>';
+  h += '</h2>';
+  if(!a || a.error){
+    h += '<div class="muted" style="margin-bottom:10px">배당표를 읽지 못했습니다.' + (a && a.error ? ' (' + esc(a.error) + ')' : '') + '</div>';
+  } else if(!a.totals.length){
+    h += '<div class="muted" style="margin-bottom:10px">시트에서 합계 행을 찾지 못했습니다.</div>';
+  } else {
+    h += '<div class="asof">총 배당 시트 기준입니다. 통합조회 마지막 실행 ' + esc(a.runAt || '기록 없음') + '</div>';
+  }
+  h += '<div class="funs">' + SITES.map(siteBlock).join('') + '</div></section>';
+  return h + allocTable();
+}
+
+/* =====================================================
+   입고 현황 탭
+   ===================================================== */
+function tableHTML(col, groups){
+  var h = '<table class="mt"><thead><tr><th>' + col + '</th><th>건수</th><th>실중량</th><th>인수량</th></tr></thead><tbody>';
+  groups.forEach(function(g){
+    h += '<tr><td>' + esc(g.k) + '</td><td>' + g.cnt + '</td><td>' + fmt(g.s) + '</td><td>' + fmt(g.q) + '</td></tr>';
+  });
+  return h + '</tbody></table>';
+}
+
+function custFold(site, groups){
+  var open = state.custOpen[site];
+  var h = '<div class="lf">' + foldHead('togglecust', site, '거래처별', groups.length + '곳', open);
+  if(open) h += '<div style="margin-top:6px">' + tableHTML('거래처', groups) + '</div>';
+  return h + '</div>';
+}
+
+function facBlock(site){
+  var s = SITE[site];
+  var rows = state.rows.filter(function(r){ return r.site === site; });
+  var t = sum(rows);
+  var h = '<div class="fac ' + s.cls + '"><h3>' + s.name + '<em>' + fmt(t.cnt) + '건</em></h3>';
+  if(!rows.length) return h + '<div class="muted" style="margin-left:12px">이 기간에 입고 내역이 없습니다.</div></div>';
+  h += '<div class="fstats"><div><b>실중량</b><span>' + fmt(t.s) + '</span><small>kg</small></div>' +
+       '<div><b>인수량</b><span>' + fmt(t.q) + '</span><small>kg</small></div></div>';
+  var items = agg(rows, function(r){ return r.i; });
+  h += '<h4>품목별<span class="sub">' + items.length + '개</span></h4>' + tableHTML('품목', items);
+  h += custFold(site, agg(rows, function(r){ return r.n; }));
+  return h + '</div>';
+}
+
+function dayBlock(){
+  var keys = dayKeys();
+  if(keys.length < 2) return '';
+  var set = new Set(keys);
+  if(state.rows.some(function(r){ return !set.has(r.d); })){
+    keys = Array.from(new Set(state.rows.map(function(r){ return r.d; }))).sort();
+  }
+  var h = '<div class="dayblk">' + foldHead('toggleday', '', '일별 인수량', 'kg, ' + keys.length + '일', state.dayOpen);
+  if(state.dayOpen){
+    var map = {};
+    keys.forEach(function(k){ map[k] = { sihwa:0, banwol:0 }; });
+    state.rows.forEach(function(r){ if(map[r.d]) map[r.d][r.site] += r.q; });
+    h += '<table class="mt dt" style="margin-top:8px"><thead><tr><th>날짜</th><th>시화</th><th>반월</th><th>합계</th></tr></thead><tbody>';
+    keys.forEach(function(k){
+      var v = map[k], z = function(x){ return x ? fmt(x) : '-'; };
+      h += '<tr><td>' + esc(k.slice(5)) + '</td><td>' + z(v.sihwa) + '</td><td>' + z(v.banwol) + '</td><td>' + z(v.sihwa + v.banwol) + '</td></tr>';
+    });
+    h += '</tbody></table>';
+  }
+  return h + '</div>';
+}
+
+function incomingTab(){
+  if(!state.rows.length){
+    return '<div class="empty"><b>이 기간에 입고 내역이 없습니다.</b>날짜를 바꿔 다시 조회해보세요.</div>';
+  }
+  var t = sum(state.rows);
+  var h = '<section class="blk"><div class="period">' + esc(periodLabel()) + ' 입고 합계</div><div class="grand">' +
+          '<div><b>건수</b><span>' + fmt(t.cnt) + '</span><small>건</small></div>' +
+          '<div><b>실중량</b><span>' + fmt(t.s) + '</span><small>kg</small></div>' +
+          '<div><b>인수량</b><span>' + fmt(t.q) + '</span><small>kg</small></div></div></section>';
+  h += dayBlock();
+  h += '<div class="facs">' + SITES.map(facBlock).join('') + '</div>';
+  return h;
+}
+
+/* =====================================================
+   렌더
+   ===================================================== */
+function showNotice(msg, kind){
+  $('notice').innerHTML = msg ? '<div class="note' + (kind === 'info' ? ' info' : '') + '">' + esc(msg) + '</div>' : '';
+}
+
+function showSync(sy){
+  if(!sy) return;
+  if(sy.ran) showNotice('통합조회를 실행하고 갱신했습니다.', 'info');
+  else if(sy.reason === 'cooldown') showNotice('방금 갱신되어(' + sy.ago + '초 전) 통합조회는 다시 실행하지 않고 현재 값을 불러왔습니다.', 'info');
+  else if(sy.reason === 'busy') showNotice('다른 갱신이 진행 중이라 통합조회를 실행하지 않았습니다. 잠시 후 다시 눌러주세요.', 'info');
+  else showNotice('통합조회 실행 실패: ' + (sy.msg || '알 수 없는 오류'));
+}
+
+function render(){
+  document.querySelectorAll('.tab').forEach(function(b){
+    b.classList.toggle('on', b.dataset.tab === state.tab);
+  });
+  $('ctl').hidden = state.tab !== 'incoming';
+  if(!state.data) return;
+
+  $('stamp').textContent = '조회 ' + state.data.fetchedAt;
+
+  var errs = [];
+  SITES.forEach(function(k){
+    var src = state.tab === 'incoming' ? state.data.sites[k].incoming : state.data.sites[k].arrival;
+    if(src.error) errs.push(SITE[k].name + (state.tab === 'incoming' ? ' 입고' : ' 대기 차량') + ' 조회 실패 (' + src.error + ')');
+  });
+  showNotice(errs.join(' / '));
+
+  $('app').innerHTML = state.tab === 'alloc' ? allocTab() : incomingTab();
+}
+
+/* =====================================================
+   데이터 불러오기
+   ===================================================== */
+function setBusy(b){
+  state.loading = b;
+  $('go').disabled = b;
+  $('refresh').disabled = b;
+  $('go').textContent = b ? '조회 중' : '조회';
+  $('refresh').textContent = b ? '갱신 중' : '새로고침';
+  $('app').classList.toggle('dim', b && !!state.data);
+}
+
+function load(force, sync){
+  var s = $('start').value.replace(/-/g,''), e = $('end').value.replace(/-/g,'');
+  if(!s || !e){ showNotice('시작일과 종료일을 선택하세요.'); return; }
+  if(s > e){ showNotice('시작일이 종료일보다 늦습니다.'); return; }
+  if(state.loading) return;
+  if(API_URL.indexOf('여기에_배포ID') >= 0){
+    showNotice('dashboard.html의 API_URL에 GAS 웹앱 주소를 넣어야 합니다.');
+    return;
+  }
+  showNotice('');
+  setBusy(true);
+  var url = API_URL + '?start=' + s + '&end=' + e + (force ? '&force=1' : '') + (sync ? '&sync=1' : '');
+  fetch(url)
+    .then(function(res){
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(r){
+      setBusy(false);
+      if(!r || !r.ok){ showNotice((r && r.error) || '조회에 실패했습니다.'); return; }
+      state.data = r;
+      state.rows = [];
+      SITES.forEach(function(k){
+        r.sites[k].incoming.rows.forEach(function(row){
+          state.rows.push(Object.assign({ site:k }, row));
+        });
+      });
+      render();
+      showSync(r.sync);
+    })
+    .catch(function(err){
+      setBusy(false);
+      showNotice('서버 호출 실패: ' + (err && err.message ? err.message : err));
+      if(!state.data) $('app').innerHTML = '<div class="empty">데이터를 불러오지 못했습니다.</div>';
+    });
+}
+
+/* =====================================================
+   이벤트
+   ===================================================== */
+document.querySelectorAll('[data-range]').forEach(function(b){
+  b.addEventListener('click', function(){
+    var t = new Date(), s = new Date(t), e = new Date(t), r = b.dataset.range;
+    if(r === 'yesterday'){ s.setDate(s.getDate() - 1); e = new Date(s); }
+    else if(r === '7'){ s.setDate(s.getDate() - 6); }
+    else if(r === 'month'){ s = new Date(t.getFullYear(), t.getMonth(), 1); }
+    $('start').value = iso(s);
+    $('end').value = iso(e);
+    load(false);
+  });
+});
+
+$('go').addEventListener('click', function(){ load(true); });
+$('refresh').addEventListener('click', function(){ load(true, state.tab === 'alloc'); });
+
+document.addEventListener('click', function(ev){
+  var el = ev.target.closest('[data-tab],[data-act]');
+  if(!el) return;
+
+  if(el.dataset.tab){
+    state.tab = el.dataset.tab;
+    render();
+    window.scrollTo({ top: 0 });
+    return;
+  }
+  if(!state.data) return;
+
+  var act = el.dataset.act, k = el.dataset.k;
+  if(act === 'onlyopen'){
+    state.onlyOpen = !state.onlyOpen;
+    render();
+  } else if(act === 'toggleday'){
+    state.dayOpen = !state.dayOpen;
+    render();
+  } else if(act === 'togglecust'){
+    state.custOpen[k] = !state.custOpen[k];
+    render();
+  }
+});
+
+/* ---------- 시작 ---------- */
+(function init(){
+  var t = new Date();
+  $('start').value = iso(t);
+  $('end').value = iso(t);
+  load(false);
+})();
+
+})();
+</script>
+</body>
+</html>
