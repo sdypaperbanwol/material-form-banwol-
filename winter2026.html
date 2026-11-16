@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>2026년 동절기 방한의류 사이즈 조사</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f6f9; padding: 20px; font-family: 'Malgun Gothic', sans-serif; }
+    .card { max-width: 600px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: none; }
+    .product-img { width: 100%; background: #fff; border-radius: 8px; margin-bottom: 12px; border: 1px solid #dee2e6; }
+    .required::after { content: " *"; color: #dc3545; }
+  </style>
+</head>
+<body>
+  <div class="container my-4">
+    <div class="card p-4 bg-white">
+      <h3 class="text-center mb-2 fw-bold text-primary">2026년 동절기 방한의류 신청</h3>
+      <p class="text-muted text-center small mb-4">패딩 자켓, 패딩 조끼 중 1인 1벌만 선택해 주세요.</p>
+
+      <!-- 제품 사진: 레포지토리에 같은 이름으로 올리면 표시됨 (없으면 숨김) -->
+      <img src="product_jacket.png" alt="패딩 자켓 사진 및 사이즈표" class="product-img p-2" onerror="this.remove()">
+      <img src="product_vest.png" alt="패딩 조끼 사진 및 사이즈표" class="product-img p-2" onerror="this.remove()">
+
+      <div class="alert alert-warning small mt-2">
+        <ul class="mb-0 ps-3">
+          <li>신청하면 입력한 번호로 <b>확인 문자</b>가 발송됩니다. 문자를 꼭 받았는지 확인하세요.</li>
+          <li>문자가 오지 않으면 번호가 잘못 입력된 것이니 반월지원파트로 연락 바랍니다.</li>
+          <li>신청 후에는 직접 수정할 수 없습니다. 수정이 필요하면 반월지원파트로 연락 바랍니다.</li>
+        </ul>
+      </div>
+
+      <form id="surveyForm" onsubmit="submitForm(event)">
+        <div class="mb-3">
+          <label class="form-label fw-bold required" for="name">성명</label>
+          <input type="text" class="form-control" id="name" required placeholder="예: 홍길동">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold required" for="phone">핸드폰 번호</label>
+          <input type="tel" class="form-control" id="phone" required inputmode="numeric" placeholder="01012345678 (- 없이 입력)">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold required" for="item">신청 품목</label>
+          <select class="form-select" id="item" required>
+            <option value="">품목을 선택해주세요</option>
+            <option value="패딩 자켓">패딩 자켓</option>
+            <option value="패딩 조끼">패딩 조끼</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-bold required" for="size">사이즈</label>
+          <select class="form-select" id="size" required>
+            <option value="">사이즈를 선택해주세요</option>
+            <option>90(S)</option>
+            <option>95(M)</option>
+            <option>100(L)</option>
+            <option>105(XL)</option>
+            <option>110(XXL)</option>
+            <option>115(XXXL)</option>
+          </select>
+        </div>
+
+        <div id="formMsg" class="alert alert-danger d-none"></div>
+        <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-2 fw-bold fs-5">신청하기</button>
+      </form>
+
+      <!-- 신청 완료 화면 -->
+      <div id="done" class="d-none text-center">
+        <div id="doneBox" class="alert alert-success">
+          <h5 class="fw-bold mb-2">신청이 완료되었습니다</h5>
+          <div id="doneDetail" class="fs-5 fw-bold mb-2"></div>
+          <div id="doneSms"></div>
+        </div>
+        <p class="small text-muted mb-0">수정이 필요하면 반월지원파트로 연락 바랍니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // GAS 웹 앱 배포 URL로 교체
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlWzQYiWZ7euZSEFzy6j6LBXrdYrFoXg-4Z4cpuaC7YLq69wholuop5Vczam13sO61hQ/exec";
+
+    function showError(msg) {
+      const box = document.getElementById('formMsg');
+      box.textContent = msg;
+      box.classList.remove('d-none');
+    }
+
+    function submitForm(event) {
+      event.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      document.getElementById('formMsg').classList.add('d-none');
+
+      const formData = {
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.replace(/\D/g, ''),
+        item: document.getElementById('item').value,
+        size: document.getElementById('size').value
+      };
+
+      if (!/^01[016789]\d{7,8}$/.test(formData.phone)) {
+        showError('핸드폰 번호를 확인해 주세요.');
+        return;
+      }
+      if (!confirm(formData.name + ' / ' + formData.phone + '\n' + formData.item + ' ' + formData.size + '\n\n이대로 신청할까요? 신청 후에는 직접 수정할 수 없습니다.')) return;
+
+      btn.disabled = true;
+      btn.textContent = '신청 처리 중...';
+
+      // Content-Type을 text/plain으로 보내야 사전 요청(preflight) 없이 GAS 응답을 읽을 수 있음
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(formData)
+      })
+      .then(res => res.json())
+      .then(r => {
+        if (r.status !== 'success') {
+          showError(r.message || '신청 중 오류가 발생했습니다.');
+          btn.disabled = false;
+          btn.textContent = '신청하기';
+          return;
+        }
+        document.getElementById('surveyForm').classList.add('d-none');
+        document.getElementById('doneDetail').textContent = r.name + ' / ' + r.item + ' ' + r.size;
+        const sms = document.getElementById('doneSms');
+        if (r.smsOk) {
+          sms.textContent = '입력한 번호로 확인 문자를 보냈습니다. 문자를 꼭 받았는지 확인하세요.';
+        } else {
+          document.getElementById('doneBox').className = 'alert alert-warning';
+          sms.textContent = '신청은 접수되었지만 확인 문자 발송에 실패했습니다. 반월지원파트로 연락 바랍니다.';
+        }
+        document.getElementById('done').classList.remove('d-none');
+      })
+      .catch(() => {
+        showError('전송 중 오류가 발생했습니다. 잠시 후 다시 시도하거나 반월지원파트로 연락 바랍니다.');
+        btn.disabled = false;
+        btn.textContent = '신청하기';
+      });
+    }
+  </script>
+</body>
+</html>
