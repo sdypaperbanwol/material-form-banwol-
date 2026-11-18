@@ -10,19 +10,34 @@
     .card { max-width: 600px; margin: 0 auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: none; }
     .product-img { width: 100%; background: #fff; border-radius: 8px; margin-bottom: 12px; border: 1px solid #dee2e6; }
     .required::after { content: " *"; color: #dc3545; }
+    #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; display: none; }
+    #lightbox.show { display: block; }
+    #lightboxScroll { position: absolute; inset: 0; overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y pinch-zoom; }
+    #lightboxScroll img { display: block; width: 250%; max-width: none; margin: 60px auto 20px; background: #fff; }
+    #lightboxClose { position: fixed; top: 12px; right: 12px; z-index: 10000; width: 44px; height: 44px; border-radius: 50%; border: none; background: #fff; color: #000; font-size: 26px; line-height: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+    #lightboxHint { position: fixed; top: 22px; left: 16px; z-index: 10000; color: #fff; font-size: 13px; }
   </style>
 </head>
 <body>
+  <!-- 사진 확대 화면 -->
+  <div id="lightbox">
+    <div id="lightboxHint">밀어서 이동 · 두 손가락으로 확대</div>
+    <button type="button" id="lightboxClose" aria-label="닫기" onclick="closeLightbox()">&times;</button>
+    <div id="lightboxScroll" onclick="if(event.target===this)closeLightbox()">
+      <img src="product.png" alt="사진 및 사이즈표 확대">
+    </div>
+  </div>
+
   <div class="container my-4">
     <div class="card p-4 bg-white">
       <h3 class="text-center mb-2 fw-bold text-primary">2026년 동절기 방한의류 신청</h3>
       <p class="text-center small mb-4">2026년 경영 목표 달성을 위해 힘써 주신 임직원 여러분의 노고에 감사드리며,<br>연말을 맞아 동절기 의류를 지급합니다.</p>
 
       <!-- 제품 사진: 레포지토리에 product.png 로 올리면 표시됨. 누르면 크게 열림 -->
-      <a href="product.png" target="_blank" id="productLink">
-        <img src="product.png" alt="패딩 자켓·조끼 사진 및 사이즈표" class="product-img p-2" onerror="document.getElementById('productLink').remove()">
-      </a>
-      <p class="text-muted text-center small mb-2">사진을 누르면 크게 볼 수 있습니다.</p>
+      <div id="productWrap">
+        <img src="product.png" alt="패딩 자켓·조끼 사진 및 사이즈표" class="product-img p-2" style="cursor:zoom-in" onclick="openLightbox()" onerror="document.getElementById('productWrap').remove()">
+        <p class="text-muted text-center small mb-2">사진을 누르면 크게 볼 수 있습니다.</p>
+      </div>
 
       <div class="border rounded p-3 small mb-3">
         <div class="fw-bold mb-1">안내 사항</div>
@@ -30,9 +45,8 @@
           <li>패딩 자켓, 패딩 조끼 중 <b>1인 1벌</b>만 선택할 수 있습니다.</li>
           <li>사이즈는 위 제품 사진과 사이즈표(단위: cm)를 참고해 주세요.</li>
           <li>발주 후에는 사이즈 변경이나 교환이 어려우니 신중히 선택해 주세요.</li>
-          <li>11/19(목) 09시까지 신청 바랍니다.</li>
-          
-        </ol>
+          <li>2026년 11월 19일(목) 09:00까지 신청 바랍니다.</li>
+          </ol>
         <div class="text-muted">문의: 반월지원파트 김성연</div>
       </div>
 
@@ -95,7 +109,18 @@
 
   <script>
     // GAS 웹 앱 배포 URL로 교체
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlWzQYiWZ7euZSEFzy6j6LBXrdYrFoXg-4Z4cpuaC7YLq69wholuop5Vczam13sO61hQ/exec";
+    const SCRIPT_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+
+    function openLightbox() {
+      document.getElementById('lightbox').classList.add('show');
+      document.body.style.overflow = 'hidden';
+      document.getElementById('lightboxScroll').scrollTo(0, 0);
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
     function showError(msg) {
       const box = document.getElementById('formMsg');
